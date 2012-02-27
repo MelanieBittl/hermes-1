@@ -89,7 +89,7 @@ namespace Hermes
       int get_order(int index) const;
       int get_order(int index, int mode_) const;
 
-    protected:
+   // protected:
       /// Selects HERMES_MODE_TRIANGLE or HERMES_MODE_QUAD.
       virtual void set_mode(int mode);
 
@@ -142,7 +142,7 @@ namespace Hermes
 
       /// Returns space type.
       virtual SpaceType get_space_type() const = 0;
-
+ protected:
       int mode;
       int nvert;
 

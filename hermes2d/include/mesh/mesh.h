@@ -148,7 +148,7 @@ namespace Hermes
       bool is_curved() const;
       int get_nvert() const;
 
-    protected:
+    //protected:
       int iro_cache;     ///< increase in integration order, see RefMap::calc_inv_ref_order()
 
       // helper functions to obtain the index of the next or previous vertex/edge
