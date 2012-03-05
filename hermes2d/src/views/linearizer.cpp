@@ -632,7 +632,7 @@ namespace Hermes
           for (unsigned int i = 0; i < e[0]->get_num_surf(); i++)
             process_edge(iv[i], iv[e[0]->next_vert(i)], e[0]->en[i]->marker);
         }
-
+				trav.finish();	
         find_min_max();
 
         this->unlock_data();
@@ -649,6 +649,8 @@ namespace Hermes
           delete ydisp;
 
         // clean up
+				delete [] meshes;
+				delete [] trfs;
         ::free(hash_table);
         ::free(info);
       }
