@@ -193,7 +193,7 @@ namespace Hermes
       /// "order_increase".
       virtual Space<Scalar>* dup(Mesh* mesh, int order_increase = 0) const = 0;
 
-    protected:
+   // protected:
       static Node* get_mid_edge_vertex_node(Element* e, int i, int j);
 
       /// Sets polynomial orders to elements created by Mesh::regularize() using "parents".
@@ -219,7 +219,7 @@ namespace Hermes
 
       /// Number of degrees of freedom (dimension of the space).
       int ndof;
-
+protected:
       static const int H2D_UNASSIGNED_DOF = -2; ///< DOF which was not assigned yet.
       static const int H2D_CONSTRAINED_DOF = -1; ///< DOF which is constrained.
 
