@@ -98,8 +98,10 @@ namespace Hermes
       for (int j = 0; j<n; j++)
       {
         for (int i = Ap[j]; i < Ap[j + 1]; i++)
-        {  
-					vector_out[Ai[i]] += vector_in[j]*Ax[i];
+
+        {
+         vector_out[Ai[i]] += vector_in[j]*Ax[i];
+
         }
       }
     }
