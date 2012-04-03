@@ -68,6 +68,12 @@ namespace Hermes
       return this->cnt;
     }
 
+		    template<typename Scalar>
+    Scalar* AsmList<Scalar>::get_coef()
+    {
+      return this->coef;
+    }
+
     template<typename Scalar>
     void AsmList<Scalar>::add_triplet(int i, int d, Scalar c)
     {

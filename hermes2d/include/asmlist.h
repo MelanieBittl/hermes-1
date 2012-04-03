@@ -40,6 +40,7 @@ namespace Hermes
 
       int* get_idx();
       int* get_dof();
+			Scalar* get_coef();
       unsigned int get_cnt();
 
       /// Adds a record for one basis function (shape functions index, basis functions index, coefficient).

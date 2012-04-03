@@ -153,7 +153,8 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 			if(non_smooth_dy == true) smooth_dy_in_elem[e->id]=0; 
 			if((non_smooth == true)&&(non_smooth_dx == true)&&(non_smooth_dy == true)) break;
 		}
-		if(max(smooth_fct_in_elem[e->id], min(smooth_dx_in_elem[e->id],smooth_dy_in_elem[e->id]))==1){
+	//	if(max(smooth_fct_in_elem[e->id], min(smooth_dx_in_elem[e->id],smooth_dy_in_elem[e->id]))==1){
+		if(min(smooth_dx_in_elem[e->id],smooth_dy_in_elem[e->id])==1){
 					smooth_elem_patch[e->id]=1;
 		}
 	}

@@ -1,5 +1,67 @@
 #include "definitions.h"
-//---------------Massematrix-----------
+
+
+//Massmatrix
+
+ WeakFormMassmatrix::WeakFormMassmatrix(Solution<double>* sln_prev_time) : WeakForm<double>(1) {
+		MassMatrixFormVol* mass_form= new  MassMatrixFormVol(0, 0);	
+		add_matrix_form(mass_form);
+		MassMatrixVectorFormVol* vector_form = new MassMatrixVectorFormVol(0);
+		vector_form->ext.push_back(sln_prev_time);
+		add_vector_form(vector_form);
+  }
+ WeakFormMassmatrix::~WeakFormMassmatrix(){
+		delete get_mfvol()[0];
+		delete get_vfvol()[0];
+		WeakForm<double>::delete_all();
+
+	};
+
+
+    template<typename Real, typename Scalar>
+    Scalar MassMatrixFormVol::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+		     Scalar result = Scalar(0); 
+	  for (int i = 0; i < n; i++)
+			result += wt[i] * (u->val[i] * v->val[i]);
+	  return result;
+
+    };
+
+   double MassMatrixFormVol::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+    };
+
+    Ord MassMatrixFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, ExtData<Ord> *ext) const {
+      return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+    };
+
+
+
+    template<typename Real, typename Scalar>
+    Scalar MassMatrixVectorFormVol::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+	  Scalar result = Scalar(0);
+	  Func<Scalar>* u_prev_time = ext->fn[0];
+	  for (int i = 0; i < n; i++)
+			result += wt[i] *  u_prev_time->val[i] * v->val[i];
+	  return result;
+
+    };
+
+   double MassMatrixVectorFormVol::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+    };
+
+    Ord MassMatrixVectorFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
+      return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
+    };
+
+
+
+
+//---------------Massematrix/tau-----------
  CustomWeakFormMassmatrix::CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time) : WeakForm<double>(1) {
 		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0, time_step);	
 		add_matrix_form(mass_form);
@@ -102,7 +164,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
   Scalar result = Scalar(0); 
   Func<Scalar>* u_prev_time = ext->fn[0];
   for (int i = 0; i < n; i++)
-    result += -wt[i] * ( v->val[i] * (u_prev_time->dx[i] * (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5)));
+    result += -wt[i] *0.5*( v->val[i] * (u_prev_time->dx[i] * (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5)));
   return result;
     };
      double VectorFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
@@ -112,6 +174,65 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
      Ord VectorFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
+
+//------Matrix & Vektorform for higher Order solution----------------
+
+
+  ConvectionForm::ConvectionForm( double tau, Solution<double>* sln_prev_time) : WeakForm<double>(1) {
+    add_matrix_form(new ConvectionMatForm(0, 0,  tau));
+    VectorConvection* vector_form = new VectorConvection(0,  tau);
+    vector_form->ext.push_back(sln_prev_time);
+    add_vector_form(vector_form);
+  }
+ ConvectionForm::~ConvectionForm(){
+		delete get_mfvol()[0];
+		delete get_vfvol()[0];
+		WeakForm<double>::delete_all();
+	};
+
+
+ template<typename Real, typename Scalar>
+    Scalar ConvectionMatForm::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+         Scalar result = Scalar(0); 
+				for (int i = 0; i < n; i++) 
+					result += wt[i] * (u->val[i] * v->val[i] / tau + 0.5*v->val[i] *(u->dx[i] * (0.5- e->y[i]) + u->dy[i] * (e->x[i]-0.5) ));	
+				return result;
+
+    }
+
+   double ConvectionMatForm::value(int n, double *wt, Func<double>  *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, ExtData<double>  *ext) const {
+      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+    }
+
+   Ord ConvectionMatForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, ExtData<Ord> *ext) const {
+      return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+    }
+
+    template<typename Real, typename Scalar>
+    Scalar VectorConvection::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+  Scalar result = Scalar(0);
+  Func<Scalar>* u_prev_newton = u_ext[0];
+  Func<Scalar>* u_prev_time = ext->fn[0];
+  for (int i = 0; i < n; i++) 
+    result += wt[i] * ((u_prev_newton->val[i] - u_prev_time->val[i]) * v->val[i] / tau +
+                      0.5*v->val[i] * (u_prev_newton->dx[i] * (0.5- e->y[i]) + u_prev_newton->dy[i] *  (e->x[i]-0.5) +
+			u_prev_time->dx[i] *  (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5)));
+	
+  return result;
+
+    }
+
+    double VectorConvection::value(int n, double *wt, Func<double > *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+    }
+
+     Ord VectorConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
+      return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
+    }
+
 
 
 

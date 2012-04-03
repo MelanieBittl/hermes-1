@@ -1,4 +1,8 @@
 add_subdirectory(FCT_h_adap)
+add_subdirectory(FCT_h_adap_2)
 add_subdirectory(FCT_hp_adap)
-
+add_subdirectory(FCT_hp_adap_2)
+add_subdirectory(FCT_stationary)
+add_subdirectory(FCT_stationary_2)
+add_subdirectory(FCT_stationary_Galerkin)
 

@@ -125,7 +125,7 @@ namespace Hermes
       /// Deletes all volumetric and surface forms.
       void delete_all();
 
-    protected:
+   // protected:
       /// Internal. Used by DiscreteProblem to detect changes in the weakform.
       int get_seq() const { return seq; }
 

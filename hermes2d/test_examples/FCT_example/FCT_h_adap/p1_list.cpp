@@ -9,7 +9,7 @@ void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list,AsmList<Scalar
 		Element* e =NULL;
 	bool more = false;
 	for_all_active_elements(e, space->get_mesh()){
-	 //if((space->get_element_order(e->id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(e->id)==1)){	//Ordnung soll 1 
+	 if((space->get_element_order(e->id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(e->id)==1)){	//Ordnung soll 1 
 			space->get_element_assembly_list(e, al);
 	  	for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
 		  int index =  space->get_shapeset()->get_vertex_index(iv);
@@ -26,7 +26,7 @@ void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list,AsmList<Scalar
 				}
 			}
 		   }
-		//}
+		}
 	}
 	}
 }

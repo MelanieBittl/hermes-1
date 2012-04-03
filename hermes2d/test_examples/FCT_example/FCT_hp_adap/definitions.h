@@ -9,11 +9,51 @@
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
+//Massematrix
+class MassMatrixFormVol : public MatrixFormVol<double> 
+{
+  public:
+    // This weak form is custom since it contains a nonlinearity in the diffusion term.
+    MassMatrixFormVol(int i, int j) 
+      : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM){ };
 
-//---------------Massematrix-----------
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
 
-class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>   
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
 
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, ExtData<Ord> *ext) const;
+
+};
+
+
+class MassMatrixVectorFormVol : public VectorFormVol<double>
+{
+public:
+	MassMatrixVectorFormVol(int i) : VectorFormVol<double>(i) { };
+
+	template<typename Real, typename Scalar>
+	Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+
+	virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+
+	virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+};
+
+class  WeakFormMassmatrix  : public WeakForm<double>     
+{
+public:
+  WeakFormMassmatrix (Solution<double>* sln_prev_time);
+	~WeakFormMassmatrix ();
+};
+
+
+//---------------Massematrix/tau-----------
+
+class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double> 
 {
   public:
     // This weak form is custom since it contains a nonlinearity in the diffusion term.
@@ -102,6 +142,54 @@ public:
 	~CustomWeakFormConvection();  
 };
 
+
+//------Matrix & Vektorform for higher Order solution----------------
+
+ class ConvectionMatForm : public MatrixFormVol<double>
+  {
+  public:
+    // This weak form is custom since it contains a nonlinearity in the diffusion term.
+    ConvectionMatForm(int i, int j, double tau) : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM), tau(tau) { }
+
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const ;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const ;
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, ExtData<Ord> *ext) const;
+    
+    // Members.
+  
+    double tau;
+  };
+
+  // This form (residual) is custom since it contains a nonlinear term.
+ class VectorConvection : public VectorFormVol<double>
+  {
+  public:
+    VectorConvection(int i,double tau) : VectorFormVol<double>(i), tau(tau) { }
+
+    template<typename Real, typename Scalar>
+    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+
+    virtual double value(int n, double *wt, Func<double>  *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+
+
+    // Members.
+    
+    double tau;
+  };
+
+class ConvectionForm : public WeakForm<double> 
+{
+public:
+  ConvectionForm( double tau, Solution<double>* sln_prev_time) ;
+	~ConvectionForm();
+  };
 
 
 
@@ -238,6 +326,10 @@ public:
   GradientReconstruction_2(Solution<double>* sln);
 	~GradientReconstruction_2();
 };
+
+
+
+
 
 //------------------- Initial condition ----------------
 

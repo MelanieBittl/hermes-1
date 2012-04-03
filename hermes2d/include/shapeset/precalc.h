@@ -50,7 +50,7 @@ namespace Hermes
       /// Destructor.
       virtual ~PrecalcShapeset();
     
-    private:
+   // private:
       virtual void set_quad_2d(Quad2D* quad_2d);
 
       /// \brief Frees all precalculated tables.

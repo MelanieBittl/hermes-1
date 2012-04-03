@@ -516,7 +516,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void DiscreteProblem<Scalar>::assemble(Scalar* coeff_vec, SparseMatrix<Scalar>* mat,
+ 		void DiscreteProblem<Scalar>::assemble(Scalar* coeff_vec, SparseMatrix<Scalar>* mat,
       Vector<Scalar>* rhs,
       bool force_diagonal_blocks, bool add_dir_lift,
       Table* block_weights)

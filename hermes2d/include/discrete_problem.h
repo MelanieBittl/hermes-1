@@ -81,17 +81,17 @@ namespace Hermes
       /// weighting of matrix blocks in systems. The parameter add_dir_lift decides
       /// whether Dirichlet lift will be added while coeff_vec is converted into
       /// Solutions.
-      void assemble(Scalar* coeff_vec, SparseMatrix<Scalar>* mat, Vector<Scalar>* rhs = NULL,
+         virtual void assemble(Scalar* coeff_vec, SparseMatrix<Scalar>* mat, Vector<Scalar>* rhs = NULL,
         bool force_diagonal_blocks = false, bool add_dir_lift = true, Table* block_weights = NULL);
 
       /// Assembling.
       /// Without the matrix.
-      void assemble(Scalar* coeff_vec, Vector<Scalar>* rhs = NULL,
+      virtual void assemble(Scalar* coeff_vec, Vector<Scalar>* rhs = NULL,
         bool force_diagonal_blocks = false, bool add_dir_lift = true, Table* block_weights = NULL);
 
       /// Light version passing NULL for the coefficient vector. External solutions
       /// are initialized with zeros.
-      void assemble(SparseMatrix<Scalar>* mat, Vector<Scalar>* rhs = NULL, bool force_diagonal_blocks = false,
+      virtual void assemble(SparseMatrix<Scalar>* mat, Vector<Scalar>* rhs = NULL, bool force_diagonal_blocks = false,
         Table* block_weights = NULL);
 
       /// Light version passing NULL for the coefficient vector. External solutions
@@ -169,13 +169,13 @@ namespace Hermes
         bool* bnd, SurfPos* surf_pos, Element* trav_base);
 
       /// Assemble volume matrix forms.
-      void assemble_volume_matrix_forms(Stage<Scalar>& stage,
+      virtual void assemble_volume_matrix_forms(Stage<Scalar>& stage,
         SparseMatrix<Scalar>* mat, Vector<Scalar>* rhs, bool force_diagonal_blocks, Table* block_weights,
         Hermes::vector<PrecalcShapeset*>& spss, Hermes::vector<RefMap*>& refmap, Hermes::vector<Solution<Scalar>*>& u_ext,
         int marker, Hermes::vector<AsmList<Scalar>*>& al);
 
       /// Assemble volume vector forms.
-      void assemble_volume_vector_forms(Stage<Scalar>& stage,
+      virtual void assemble_volume_vector_forms(Stage<Scalar>& stage,
         SparseMatrix<Scalar>* mat, Vector<Scalar>* rhs, bool force_diagonal_blocks, Table* block_weights,
         Hermes::vector<PrecalcShapeset*>& spss, Hermes::vector<RefMap*>& refmap, Hermes::vector<Solution<Scalar>*>& u_ext,
         int marker, Hermes::vector<AsmList<Scalar>*>& al);
