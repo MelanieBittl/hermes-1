@@ -97,7 +97,7 @@ namespace Hermes
 
       virtual Shapeset* clone() = 0;
 
-    protected:
+    //protected:
       /// Returns the maximum poly degree for all shape functions.
       int get_max_order() const;
 

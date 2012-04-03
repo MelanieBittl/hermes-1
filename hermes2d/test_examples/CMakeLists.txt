@@ -19,3 +19,5 @@ IF(WITH_TRILINOS)
 ENDIF(WITH_TRILINOS)
 
 add_subdirectory("linear-advection-dg-adapt")
+
+add_subdirectory("FCT")

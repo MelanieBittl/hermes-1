@@ -158,6 +158,10 @@ namespace Hermes
       bool vsplit() const;
       bool bsplit() const;
 
+      /// Returns a pointer to the neighboring element across the edge 'ie', or
+      /// NULL if it does not exist or is across an irregular edge.
+      Element* get_neighbor(int ie) const;
+
     protected:
       int iro_cache;     ///< increase in integration order, see RefMap::calc_inv_ref_order()
 
@@ -165,9 +169,7 @@ namespace Hermes
       int next_vert(int i) const;
       int prev_vert(int i) const;
 
-      /// Returns a pointer to the neighboring element across the edge 'ie', or
-      /// NULL if it does not exist or is across an irregular edge.
-      Element* get_neighbor(int ie) const;
+
 
       void ref_all_nodes();
       void unref_all_nodes(HashTable* ht);

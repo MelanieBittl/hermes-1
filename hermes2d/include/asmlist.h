@@ -41,6 +41,11 @@ namespace Hermes
       int* get_idx();
       int* get_dof();
       unsigned int get_cnt();
+			Scalar* get_coef();
+
+			/// Adds a record for one basis function (shape functions index, basis functions index, coefficient).
+      void add_triplet(int i, int d, Scalar c);
+
     private:
       /// Copy constructor.
       AsmList(const AsmList<Scalar> & other);
@@ -51,8 +56,7 @@ namespace Hermes
       unsigned int cnt;       ///< the number of items in the arrays idx, dof and coef
       unsigned int cap;       ///< internal
       
-      /// Adds a record for one basis function (shape functions index, basis functions index, coefficient).
-      void add_triplet(int i, int d, Scalar c);
+
 
       /// Internal. Enlarges the storage capacity.
       void enlarge();

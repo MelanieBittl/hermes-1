@@ -194,11 +194,14 @@ namespace Hermes
       /// "order_increase".
       virtual Space<Scalar>* dup(Mesh* mesh, int order_increase = 0) const = 0;
 
+      /// Sets polynomial orders to elements created by Mesh::regularize() using "parents".
+      void distribute_orders(Mesh* mesh, int* parents);
+
     protected:
       static Node* get_mid_edge_vertex_node(Element* e, int i, int j);
 
       /// Sets polynomial orders to elements created by Mesh::regularize() using "parents".
-      void distribute_orders(Mesh* mesh, int* parents);
+     // void distribute_orders(Mesh* mesh, int* parents);
 
       /// Internal. Obtains the order of an edge, according to the minimum rule.
       virtual int get_edge_order(Element* e, int edge) const;
