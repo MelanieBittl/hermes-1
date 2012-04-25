@@ -49,6 +49,7 @@ const std::string BDY_OUT = "outlet";
 #include "p1_list.cpp"
 #include "reg_estimator.cpp"
 #include "z_z.cpp"
+#include "p_indicator.cpp"
 
 
 int main(int argc, char* argv[])
@@ -139,6 +140,7 @@ lin.save_solution_vtk(&u_prev_time, "init_hpadap_neu.vtk", "u", mode_3D);
 	 double diag;
 	Element* e =NULL;
 	for_all_active_elements(e, &mesh){diag = e->get_diameter(); break;}
+	const double h_start = diag;
 	const double h_min = diag/8; 
 	info("h_min=%f", h_min);
 
@@ -264,9 +266,9 @@ u_H = coeff_vec_2;
 */
 
 
-			Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
+		//	Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		//	Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
-			sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
+	/*		sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
 	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
@@ -354,7 +356,7 @@ if(ps==2) u_prev_time.copy(&u_new);
 	memset(no_of_refinement_steps,0, ref_space->get_mesh()->get_max_element_id()*sizeof(int));
 			smoothness_indicator(ref_space,&u_new,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al);
 			changed = h_p_adap(ref_space,&u_prev_time, &u_new,&e_h, &e_h_p,&R_h_1,&R_h_2,  &massmatrix,
-			adapting,dof_list,dof_list_2, al, &p1_elements,&neighbor,elements_to_refine,no_of_refinement_steps,h_min,h_max, ts,ps,smooth_elem);			
+			adapting,dof_list,dof_list_2, al, &p1_elements,&neighbor,elements_to_refine,no_of_refinement_steps,h_min,h_max, ts,ps,smooth_elem, h_start);			
 			sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
 				mview.show(ref_space);

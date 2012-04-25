@@ -120,7 +120,7 @@ template<typename Scalar>
 
 
 template<typename Scalar>
-bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scalar>* sln,Solution<Scalar>* u_2h,Solution<Scalar>* u_2h_2p,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2, CustomWeakFormMassmatrix* massmatrix, HPAdapt* adapt, AsmList<Scalar>* dof_list,AsmList<Scalar>* dof_list_2, AsmList<Scalar>* al,  std::list<int>* list,std::list<int>* neighbor, int* elements_to_refine,int* no_of_refinement_steps,double h_min, double h_max, int ts, int ps, int* smooth_elem)
+bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scalar>* sln,Solution<Scalar>* u_2h,Solution<Scalar>* u_2h_2p,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2, CustomWeakFormMassmatrix* massmatrix, HPAdapt* adapt, AsmList<Scalar>* dof_list,AsmList<Scalar>* dof_list_2, AsmList<Scalar>* al,  std::list<int>* list,std::list<int>* neighbor, int* elements_to_refine,int* no_of_refinement_steps,double h_min, double h_max, int ts, int ps, int* smooth_elem, double h_start)
 {		
 
 	if(!list->empty()) list->clear();
@@ -135,23 +135,51 @@ int id;
 //-----------h-Adapt	
 
 		double* elem_error = new double[space->get_mesh()->get_max_element_id()];
-		calc_z_z_error( space, sln, R_h_1, R_h_2, elem_error);
-		double mean_value_z=0.;
+		//double* elem_error_p = new double[space->get_mesh()->get_max_element_id()];
+		calc_z_z_error( space, sln, R_h_1, R_h_2, elem_error,smooth_elem);
+		//p_refine( space, sln, R_h_1, R_h_2, elem_error_p,smooth_elem);
+
+		double mean_value_z =0.;
 		double std_dev_z = 0.0;
+		double mean_value_p =0.;
+		double std_dev_p = 0.0;
+		int counter_h =0; int counter_p=0;
 		int counter = space->get_mesh()->get_num_active_elements();
+
 		for_all_active_elements(e, space->get_mesh()){
+			if(smooth_elem[e->id]==1){
+				mean_value_p += elem_error[e->id];
+				std_dev_p += elem_error[e->id]*elem_error[e->id];
+				counter_p++;	
+			}else{
 				mean_value_z += elem_error[e->id];
-				std_dev_z += elem_error[e->id]*elem_error[e->id];			
+				std_dev_z += elem_error[e->id]*elem_error[e->id];
+				counter_h++;	
+			}		
 		}	
 
-		std_dev_z -= ((mean_value_z*mean_value_z)/counter); mean_value_z/=counter;
-		std_dev_z/=(counter-1);
+		std_dev_z -= ((mean_value_z*mean_value_z)/counter_h); mean_value_z/=counter_h;
+		std_dev_z/=(counter_h-1);
 		std_dev_z = std::sqrt(std_dev_z);
+
+		std_dev_p -= ((mean_value_p*mean_value_p)/counter_p); mean_value_p/=counter_p;
+		std_dev_p/=(counter_p-1);
+		std_dev_p = std::sqrt(std_dev_z);
 		double tol_z = mean_value_z;
+		double tol_p = mean_value_p;
+
+
+
 
 		for_all_active_elements(e, space->get_mesh()){	
 			int i = 1;	
-		if(elem_error[e->id] >tol_z){ 
+			if(smooth_elem[e->id]==1){
+					if(elem_error[e->id] >tol_p){
+										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
+					}else{
+									refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+					}
+			}else if(elem_error[e->id] >tol_z){ 
 										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]> (tol_z+i*std_dev_z))&&(i<2)){
 					 													no_of_refinement_steps[e->id]++; i++;
@@ -161,11 +189,11 @@ int id;
 					while((elem_error[e->id]< (EPS/i*1000))&&(i<3)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
-			}else if(smooth_elem[e->id]==1){
-							refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
 			}else {refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++;
 			}
 		}
+
+
 
 
 		//-----------p-Adapt
@@ -282,7 +310,9 @@ Element* elem_neigh=NULL;
 	for_all_active_elements(e, space->get_mesh()){  
 		elem_diag=e->get_diameter();
 		if((space->get_element_order(e->id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(e->id)==1)){
-					for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
+			if(elem_diag>h_start){	p2_neighbor =true;
+			}else{
+						for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
 							 	elem_neigh = e->get_neighbor(iv);
 								if(elem_neigh!=NULL){ 
 										id = elem_neigh->id;	
@@ -299,10 +329,11 @@ Element* elem_neigh=NULL;
 												break;
 								}
 						}
-						if(p2_neighbor==false){list->push_back(e->id);					
-						}  // Elemente fuer FCT
-						else {p2_neighbor =false;				
-						}
+			}
+			if(p2_neighbor==false){list->push_back(e->id);					
+			}  // Elemente fuer FCT
+			else {p2_neighbor =false;				
+			}
 		}
 	}
 

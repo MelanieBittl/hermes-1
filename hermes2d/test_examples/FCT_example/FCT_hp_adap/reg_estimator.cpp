@@ -161,7 +161,7 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 
 
 	
-for(int i =0; i<ndof;i++){
+	for(int i =0; i<ndof;i++){
 			non_smooth = false; smooth_dof[i]=0;
 			for(elem_id=dof_elem_list[i].begin();elem_id!=dof_elem_list[i].end();elem_id++){
 					if(smooth_elem_patch[*elem_id]==0){ non_smooth = true; break;}

@@ -17,7 +17,7 @@ using namespace Hermes::Hermes2D::Views;
 
 const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const int P_MAX = 2; 
+const int P_MAX = 1; 
 const double h_max = 0.1;                       
 const double time_step = 1e-3;                           // Time step.
 
@@ -179,10 +179,10 @@ mesh.copy(&basemesh);
 				AsmList<double>*  dof_list= new AsmList<double>;
 				AsmList<double>*  dof_list_2= new AsmList<double>;
 
-			if(ps==1)
+			//if(ps==1)
 					p1_list_fast(ref_space, dof_list,dof_list_2, al);
-			else
-				p1_list(ref_space, dof_list,dof_list_2, al,&p1_elements,&neighbor);
+			//else
+				//p1_list(ref_space, dof_list,dof_list_2, al,&p1_elements,&neighbor);
 
 
 			int ref_ndof = ref_space->get_num_dofs();

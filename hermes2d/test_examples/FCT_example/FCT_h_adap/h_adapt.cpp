@@ -79,7 +79,7 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 
 
 //------------------Elemente fuer FCT speichern
-	if(!list->empty()) list->clear();
+/*	if(!list->empty()) list->clear();
 	if(!neighbor->empty()) neighbor->clear();
 	bool p2_neighbor =false;Element* elem_neigh =NULL;
 	double elem_diag =0; 
@@ -105,7 +105,7 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 			else {p2_neighbor =false;				
 			}
 		
-	}
+	}*/
 
 return refine;
 
