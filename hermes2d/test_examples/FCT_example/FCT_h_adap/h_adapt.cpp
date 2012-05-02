@@ -9,38 +9,37 @@ int max(int a, int b){
 
 
 	template<typename Scalar>
-bool init_coarse(Space<Scalar>* space,Solution<Scalar>* sln, HPAdapt* adapt, int* elements_to_refine,int* no_of_refinement_steps,double h_min, double h_max){
-
-	bool refine = false;  //->verfeinern oder vergroebern?	
-	Element* e = NULL;
-	int dof = space->get_num_dofs();
-	Scalar* zeros = new Scalar[dof]; for(int i =0; i<dof; i++) zeros[i] = 0.;
-		Solution<Scalar>* zero_sln = new Solution<Scalar>(space, zeros);
-			Adapt<Scalar>* adaptivity_h = new Adapt<Scalar>(space ,HERMES_H1_NORM);
-		double err_est_h = adaptivity_h->calc_err_est(zero_sln,sln,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
-		for_all_active_elements(e, space->get_mesh()){
-		 if((std::sqrt(adaptivity_h->get_element_error_squared(0, e->id))<EPS)){ 
-										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++;
-			}
-		}
-	if(refine==true) refine = adapt->adapt(elements_to_refine,no_of_refinement_steps,P_MAX, h_min,h_max,NDOF_STOP);
-
-
-	return refine;
-}
-
-
-	template<typename Scalar>
-bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,HPAdapt* adapt, AsmList<Scalar>* dof_list,AsmList<Scalar>* dof_list_2, AsmList<Scalar>* al,  std::list<int>* list,std::list<int>* neighbor, int* elements_to_refine,int* no_of_refinement_steps,double h_min, double h_max, int ts, int ps)
-//bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,  HPAdapt* adapt, int* elements_to_refine,int* no_of_refinement_steps,double h_min, double h_max,  int ps)
+bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,  HPAdapt* adapt,double h_min, double h_max)
 {		
 
-
+	int ndof = space->get_num_dofs();
 	Element* e = NULL;
 	bool refine = false;  //->verfeinern oder vergroebern?	
-
-
+	int* elements_to_refine = new int[space->get_mesh()->get_max_element_id()];   // 0 = nothing..
+	int* no_of_refinement_steps = new int[space->get_mesh()->get_max_element_id()];	
 		double* elem_error = new double[space->get_mesh()->get_max_element_id()];
+
+//-------------- aus reg_estimator------------------------------
+	GradientReconstruction_1* grad_1 = new GradientReconstruction_1(sln);
+	GradientReconstruction_2* grad_2 = new GradientReconstruction_2(sln);
+
+	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, space);
+	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, space);
+	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ; 
+	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ndof);
+	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
+	dp_1->assemble(mass_matrix,rhs_1); 
+	dp_2->assemble(rhs_2);
+	UMFPackLinearSolver<double> * solver_1 = new UMFPackLinearSolver<double> (mass_matrix,rhs_1);
+	if(solver_1->solve()){ 				
+		Solution<double> ::vector_to_solution(solver_1->get_sln_vector() , space, R_h_1);	
+	}else error ("Matrix solver failed.\n");
+	UMFPackLinearSolver<double> * solver_2 = new UMFPackLinearSolver<double> (mass_matrix,rhs_2);	
+	if(solver_2->solve()){ 				
+		Solution<double> ::vector_to_solution(solver_2->get_sln_vector() , space, R_h_2);	
+	}else error ("Matrix solver failed.\n");
+//--------------------------
+
 
 		calc_z_z_error( space, sln, R_h_1, R_h_2, elem_error);
 
@@ -58,7 +57,8 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 		double tol_h = mean_value_h;
 
 
-		for_all_active_elements(e, space->get_mesh()){	
+		for_all_active_elements(e, space->get_mesh()){									
+			no_of_refinement_steps[e->id]=0;					
 			int i = 1;	
 			if(elem_error[e->id] >tol_h){ 
 										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
@@ -67,45 +67,31 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 					}
 			}else	if(elem_error[e->id] <EPS){ 
 										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
-					while((elem_error[e->id]< (EPS/i*100))&&(i<3)){
+					while((elem_error[e->id]< (EPS/i*100))&&(i<2)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
+			}else {
+					elements_to_refine[e->id] = 0;
 			}
 		}	
 
-		delete [] elem_error;
+
 
 	if(refine==true) refine = adapt->adapt(elements_to_refine,no_of_refinement_steps,P_MAX, h_min,h_max,NDOF_STOP);
 
+			delete [] elements_to_refine;
+			delete [] no_of_refinement_steps;
+		delete [] elem_error;
 
-//------------------Elemente fuer FCT speichern
-/*	if(!list->empty()) list->clear();
-	if(!neighbor->empty()) neighbor->clear();
-	bool p2_neighbor =false;Element* elem_neigh =NULL;
-	double elem_diag =0; 
-	int id;
-	for_all_active_elements(e, space->get_mesh()){  
-		elem_diag=e->get_diameter();
-			for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
-					 	elem_neigh = e->get_neighbor(iv);
-						if(elem_neigh!=NULL){ 
-								id = elem_neigh->id;	
-							 if(elem_diag != elem_neigh->get_diameter()){
-											// Nachbar ist kleiner => haengender Knoten, kein FCT ueber haengendne Knoten hinweg
-									p2_neighbor =true; //neighbor->push_back(e->id);
-									break;
-								}
-						}
-						if(e->vn[iv]->is_constrained_vertex() ==true)	{	p2_neighbor =true; //neighbor->push_back(e->id);
-										break;
-						}
-			}
-			if(p2_neighbor==false){list->push_back(e->id);					
-			}  // Elemente fuer FCT
-			else {p2_neighbor =false;				
-			}
-		
-	}*/
+	delete grad_1;
+	delete grad_2;
+	delete dp_1;
+	delete dp_2;
+	delete mass_matrix;
+	delete rhs_1;
+	delete rhs_2;
+	delete solver_1;
+	delete solver_2;
 
 return refine;
 
