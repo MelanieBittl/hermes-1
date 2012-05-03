@@ -54,8 +54,8 @@ const std::string BDY_OUT = "outlet";
 int main(int argc, char* argv[])
 {
   // Time measurement.
-  TimePeriod cpu_time;
-  cpu_time.tick();
+ // TimePeriod cpu_time;
+ // cpu_time.tick();
 
    // Load the mesh.
   Mesh mesh, basemesh;
@@ -150,7 +150,7 @@ mesh.copy(&basemesh);
 //Adaptivity loop
 	do
 	{			  // Time measurement.
-  cpu_time.tick(HERMES_SKIP);
+  //cpu_time.tick(HERMES_SKIP);
 
 			//	AsmList<double>*  dof_list= new AsmList<double>;
 			int ref_ndof = ref_space->get_num_dofs();
@@ -236,17 +236,17 @@ for(unsigned int i = 0; i < dof_list->get_cnt(); i ++){
 //----------------- Project the initial condition on the FE space->coeff_vec	
 			//info("projection");
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
-				//	Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
-	//	smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
+				Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
+		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
 		//Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
 
 
-			Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
+			//Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 
-		sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
+	/*	sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
 	/*sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
@@ -287,15 +287,15 @@ for(unsigned int i = 0; i < dof_list->get_cnt(); i ++){
 			 Lowview.show(&high_sln);*/ 
 
   // CPU time 
-  double time1 = cpu_time.tick().last();
+  //double time1 = cpu_time.tick().last();
   // Time measurement.
-  cpu_time.tick(HERMES_SKIP);
+ // cpu_time.tick(HERMES_SKIP);
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 			//	info("assemble fluxes");	
-			//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
+			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
 			 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec_2,coeff_vec, coeff_vec_3, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
 		//coeff_vec = u_old, coeff_vec_2 = u_L,coeff_vec_3= flux
 
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
@@ -306,9 +306,9 @@ for(unsigned int i = 0; i < dof_list->get_cnt(); i ++){
 			}else error ("Matrix solver failed.\n");	 
 
   // Measure the projection time.
-  double flux_time = cpu_time.tick().last();
+  //double flux_time = cpu_time.tick().last();
 
-info("CPU_Time:  %g -------------- %g", time1, flux_time);
+//info("CPU_Time:  %g -------------- %g", time1, flux_time);
 
 			 // Visualize the solution.
  		//	sprintf(title, "p1-sln adap-step %i", ps);
@@ -385,7 +385,7 @@ info("CPU_Time:  %g -------------- %g", time1, flux_time);
 }
 while (current_time < T_FINAL);
 
-lin.save_solution_vtk(&u_prev_time, "end_h_adap.vtk", "solution", mode_3D);
+lin.save_solution_vtk(&u_prev_time, "end_h_adap_smooth.vtk", "solution", mode_3D);
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 

@@ -41,7 +41,8 @@ return u_h_hat;
 
 }
 
-void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_fct_in_elem, int* smooth_dx_in_elem, int* smooth_dy_in_elem,int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al){
+
+void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al,bool proj){
 
 	if(sln==NULL) error("smoothness_indicator: sln=NULL");
 	if(space==NULL) error("smoothness_indicator: space=NULL");
@@ -105,64 +106,71 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 	double u_i; double u_dx ,u_dy;
 	double u_min, u_max, u_min_dx, u_min_dy, u_max_dx, u_max_dy;
 	std::list<int>::iterator elem_id; 
-
+	int smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem;
 	double epsilon = EPS; 
 
 	bool non_smooth = false; bool non_smooth_dx = false;bool non_smooth_dy = false;
 
 	for_all_active_elements(e, space->get_mesh()){
-		non_smooth = false; non_smooth_dx = false; non_smooth_dy = false;
-		smooth_fct_in_elem[e->id]=1; //erstmal als smooth annehmen	
-		smooth_dx_in_elem[e->id] =1; smooth_dy_in_elem[e->id] =1; smooth_elem_patch[e->id]=0;
-		space->get_element_assembly_list(e, al);		
-			x_c = 0.; y_c = 0.;
-		for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 		 
-			 vn = e->vn[iv];
-				x[iv]=vn->x; y[iv]=vn->y;  //x/y-Koordinaten der Knotenpunkte
-				x_c+= (vn->x); y_c+= (vn->y);   // Mittelpunkte bestimmen
-		}
-		x_c/=e->get_nvert(); y_c/=e->get_nvert();
-		for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 			
-			for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
-					if((al->get_idx()[j]==index[iv])&&(al->get_dof()[j]!=-1.0)){
-							u_i = linear_approx(e, x[iv], y[iv],x_c, y_c,sln, R_h_1,R_h_2);	
-							u_dx =	linear_approx_dx(e, x[iv], y[iv],x_c, y_c,sln, R_h_1,R_h_2);
-							u_dy =	linear_approx_dy(e, x[iv], y[iv],x_c, y_c,sln, R_h_1,R_h_2);	
-							u_min = u_c[e->id]; u_max =u_c[e->id];	
-							u_min_dx= d_u_c_dx[e->id];	u_max_dx= d_u_c_dx[e->id];	
-							u_min_dy= d_u_c_dy[e->id];	u_max_dy= d_u_c_dy[e->id];								
-							for(elem_id=dof_elem_list[al->get_dof()[j]].begin();elem_id!=dof_elem_list[al->get_dof()[j]].end();elem_id++){	
-								if(u_c[*elem_id]>u_max) u_max =	u_c[*elem_id];
-								else if(u_c[*elem_id]<u_min) u_min =	u_c[*elem_id];	
-								if(d_u_c_dx[*elem_id]>u_max_dx) u_max_dx =	d_u_c_dx[*elem_id];
-								else if(d_u_c_dx[*elem_id]<u_min_dx) u_min_dx =	d_u_c_dx[*elem_id];	
-								if(d_u_c_dy[*elem_id]>u_max_dy) u_max_dy =	d_u_c_dy[*elem_id];
-								else if(d_u_c_dy[*elem_id]<u_min_dy) u_min_dy =	d_u_c_dy[*elem_id];								
-							}
-							if((u_i>u_min+epsilon)&&(u_i<u_max-epsilon)) non_smooth = false;
-							else non_smooth = true;
-							if((u_dx>u_min_dx+epsilon)&&(u_dx<u_max_dx-epsilon)) non_smooth_dx = false;
-							else non_smooth_dx = true;
-							if((u_dy>u_min_dy+epsilon)&&(u_dy<u_max_dy-epsilon)) non_smooth_dy = false;
-							else non_smooth_dy = true;			
-							break;
-					}
+			non_smooth = false; non_smooth_dx = false; non_smooth_dy = false;
+			smooth_fct_in_elem =1; //erstmal als smooth annehmen	
+			smooth_dx_in_elem =1; 
+			smooth_dy_in_elem =1; 
+			smooth_elem_patch[e->id]=0;
+			space->get_element_assembly_list(e, al);		
+				x_c = 0.; y_c = 0.;
+			for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 		 
+				 vn = e->vn[iv];
+					x[iv]=vn->x; y[iv]=vn->y;  //x/y-Koordinaten der Knotenpunkte
+					x_c+= (vn->x); y_c+= (vn->y);   // Mittelpunkte bestimmen
 			}
-			if(non_smooth == true) smooth_fct_in_elem[e->id]=0; 
-			if(non_smooth_dx == true) smooth_dx_in_elem[e->id]=0; 
-			if(non_smooth_dy == true) smooth_dy_in_elem[e->id]=0; 
-			if((non_smooth == true)&&(non_smooth_dx == true)&&(non_smooth_dy == true)) break;
-		}
-		if(max(smooth_fct_in_elem[e->id], min(smooth_dx_in_elem[e->id],smooth_dy_in_elem[e->id]))==1){
-			//if(smooth_fct_in_elem[e->id]==1){
-					smooth_elem_patch[e->id]=1;
-		}
+			x_c/=e->get_nvert(); y_c/=e->get_nvert();
+			for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 			
+				for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
+						if((al->get_idx()[j]==index[iv])&&(al->get_dof()[j]!=-1.0)){
+								u_i = linear_approx(e, x[iv], y[iv],x_c, y_c,sln, R_h_1,R_h_2);	
+								u_dx =	linear_approx_dx(e, x[iv], y[iv],x_c, y_c,sln, R_h_1,R_h_2);
+								u_dy =	linear_approx_dy(e, x[iv], y[iv],x_c, y_c,sln, R_h_1,R_h_2);	
+								u_min = u_c[e->id]; u_max =u_c[e->id];	
+								u_min_dx= d_u_c_dx[e->id];	u_max_dx= d_u_c_dx[e->id];	
+								u_min_dy= d_u_c_dy[e->id];	u_max_dy= d_u_c_dy[e->id];								
+								for(elem_id=dof_elem_list[al->get_dof()[j]].begin();elem_id!=dof_elem_list[al->get_dof()[j]].end();elem_id++){	
+									if(u_c[*elem_id]>u_max) u_max =	u_c[*elem_id];
+									else if(u_c[*elem_id]<u_min) u_min =	u_c[*elem_id];	
+									if(d_u_c_dx[*elem_id]>u_max_dx) u_max_dx =	d_u_c_dx[*elem_id];
+									else if(d_u_c_dx[*elem_id]<u_min_dx) u_min_dx =	d_u_c_dx[*elem_id];	
+									if(d_u_c_dy[*elem_id]>u_max_dy) u_max_dy =	d_u_c_dy[*elem_id];
+									else if(d_u_c_dy[*elem_id]<u_min_dy) u_min_dy =	d_u_c_dy[*elem_id];								
+								}
+								if((u_i>u_min+epsilon)&&(u_i<u_max-epsilon)) non_smooth = false;
+								else non_smooth = true;
+								if((u_dx>u_min_dx+epsilon)&&(u_dx<u_max_dx-epsilon)) non_smooth_dx = false;
+								else non_smooth_dx = true;
+								if((u_dy>u_min_dy+epsilon)&&(u_dy<u_max_dy-epsilon)) non_smooth_dy = false;
+								else non_smooth_dy = true;			
+								break;
+						}
+				}
+				if(non_smooth == true) smooth_fct_in_elem=0; 
+				if(non_smooth_dx == true) smooth_dx_in_elem=0; 
+				if(non_smooth_dy == true) smooth_dy_in_elem=0; 
+				if((non_smooth == true)&&(non_smooth_dx == true)&&(non_smooth_dy == true)) break;
+			}
+			if(proj==true){
+				if(max(smooth_fct_in_elem, min(smooth_dx_in_elem,smooth_dy_in_elem))==1)
+								smooth_elem_patch[e->id]=1;
+			}else{
+				if(min(smooth_dx_in_elem,smooth_dy_in_elem)==1)
+							smooth_elem_patch[e->id]=1;
+				}
+
 	}
 
 
-
+	
 for(int i =0; i<ndof;i++){
-			non_smooth = false; smooth_dof[i]=0;
+			non_smooth = false; 
+			smooth_dof[i]=0;
 			for(elem_id=dof_elem_list[i].begin();elem_id!=dof_elem_list[i].end();elem_id++){
 					if(smooth_elem_patch[*elem_id]==0){ non_smooth = true; break;}
 			}
@@ -174,7 +182,6 @@ for(int i =0; i<ndof;i++){
 						smooth_dof[i]=1;
 			}
 	}
-
 
 	
 
@@ -199,8 +206,12 @@ for(int i =0; i<ndof;i++){
 
 }
 
-/*
-//fuer exakte Loesungen :ExactSolutionScalar<double>* sln
+
+
+
+
+
+/*//fuer exakte Loesungen :ExactSolutionScalar<double>* sln
 
 double linear_approx_init(Element* e, double x_i, double y_i,double x_c, double y_c,
 								ExactSolutionScalar<double>* sln, Solution<double>* R_h_1,Solution<double>* R_h_2){
@@ -244,7 +255,7 @@ return u_h_hat;
 }
 
 
-void smoothness_indicator_init(Space<double>* space,ExactSolutionScalar<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_fct_in_elem, int* smooth_dx_in_elem, int* smooth_dy_in_elem,int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al){
+void smoothness_indicator_init(Space<double>* space,ExactSolutionScalar<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_fct_in_elem, int* smooth_dx_in_elem, int* smooth_dy_in_elem, AsmList<double>* al){
 
 	if(sln==NULL) error("smoothness_indicator: sln=NULL");
 	if(space==NULL) error("smoothness_indicator: space=NULL");
@@ -365,10 +376,6 @@ void smoothness_indicator_init(Space<double>* space,ExactSolutionScalar<double>*
 			if(non_smooth_dx == true) smooth_dx_in_elem[e->id]=0; 
 			if(non_smooth_dy == true) smooth_dy_in_elem[e->id]=0; 
 			if((non_smooth == true)&&(non_smooth_dx == true)&&(non_smooth_dy == true)) break;
-		}
-		if(max(smooth_fct_in_elem[e->id], min(smooth_dx_in_elem[e->id],smooth_dy_in_elem[e->id]))==1){
-			//if(smooth_fct_in_elem[e->id]==1){
-					smooth_elem_patch[e->id]=1;
 		}
 	}
 

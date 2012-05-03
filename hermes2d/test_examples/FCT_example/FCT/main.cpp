@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 1; 
 const double h_max = 0.1;                       
@@ -179,9 +179,14 @@ double f;
 			high_rhs->add_matrix(mass_matrix); 
 
 		//Initialisierung von Q_plus_old,Q_minus_old
-	for(int i =0;i<ndof;i++){
-		for(int j =(i+1); j<ndof;j++){		
-			if(mass_matrix->get(i,j)!=0.0){
+	double* Ax_mass = mass_matrix->get_Ax();
+	int* Ai_mass = mass_matrix->get_Ai();
+	int* Ap_mass = mass_matrix->get_Ap();
+
+		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
+				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
+							int i = Ai_mass[indx];	
+							if((Ax_mass[indx]!=0.)&&(j<i)){
 						f = lumped_matrix->get_Ax()[i]*(u_prev_time.get_pt_value(P_plus[j], P_minus[j])- u_prev_time.get_pt_value(P_plus[i], P_minus[i])); 
 						if(f>Q_plus_old[i]) Q_plus_old[i] = f;				
 						if(f<Q_minus_old[i]) Q_minus_old[i] = f;			
@@ -227,7 +232,7 @@ do
 	//-------------------------solution of lower order------------	
 			  // Solve the linear system and if successful, obtain the solution. M_L/tau u^L=  M_L/tau+ (1-theta)(K+D) u^n
 				for(int i=0; i<ref_ndof;i++) coeff_vec_2[i]=lumped_double[i]*time_step/lumped_matrix->get(i,i);	
-					//Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &low_sln);
+					Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &low_sln);
 				u_L = coeff_vec_2;		
 
 		//-------------solution of higher order
@@ -244,9 +249,9 @@ do
 			 Lowview.show(&high_sln);*/ 
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
-	//		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al,true);
+			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al,true);
 			 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, flux_double, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
 		
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 			vec_rhs->add_vector(flux_double);
@@ -258,9 +263,10 @@ do
 				for(int i=0; i<ref_ndof;i++){ coeff_vec[i]=u_new_double[i];	Q_plus_old[i]=0.;Q_minus_old[i]=0.;}
 
 		//Initialisierung von Q_plus_old,Q_minus_old
-	for(int i =0;i<ndof;i++){
-		for(int j =(i+1); j<ndof;j++){		
-			if(mass_matrix->get(i,j)!=0.0){
+		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
+				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
+							int i = Ai_mass[indx];	
+							if((Ax_mass[indx]!=0.)&&(j<i)){
 						f = lumped_matrix->get_Ax()[i]*(coeff_vec[j]- coeff_vec[i])/time_step; 
 						if(f>Q_plus_old[i]) Q_plus_old[i] = f;				
 						if(f<Q_minus_old[i]) Q_minus_old[i] = f;			
@@ -303,7 +309,7 @@ do
 }
 while (current_time < T_FINAL);
 
-lin.save_solution_vtk(&u_new, "end_uniform_wQold.vtk", "solution", mode_3D);
+lin.save_solution_vtk(&u_new, "end_uniform_wQold_smooth.vtk", "solution", mode_3D);
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 

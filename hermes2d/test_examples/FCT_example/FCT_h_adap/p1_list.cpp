@@ -22,7 +22,7 @@ void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list, AsmList<Scala
 									if(dof_list->get_dof()[i]==al->get_dof()[j]){ more =true; break;}	//ueberpruefen ob dof schon in liste enhalten
 								}
 								if(more==false){ dof_list->add_triplet(index, al->get_dof()[j], 1.0);  //dof=-1 =>dirichlet
-																	if(al->get_dof()[j]	!=1.){	x[al->get_dof()[j]]	= vn->x;y[al->get_dof()[j]]	= vn->y;}
+																	x[al->get_dof()[j]]	= vn->x;y[al->get_dof()[j]]	= vn->y;
 								}
 								more = false;
 						}

@@ -4,8 +4,7 @@
 
 
 template<typename Scalar>
-void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list, AsmList<Scalar>* al,double* x, double* y){
-
+void coord_dof(Space<Scalar>* space, AsmList<Scalar>* al,double* x, double* y){
 		Element* e =NULL;
 	bool more = false;
 	for_all_active_elements(e, space->get_mesh()){
@@ -14,17 +13,11 @@ void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list, AsmList<Scala
 	  	for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
 				int index =  space->get_shapeset()->get_vertex_index(iv);
 				Node* vn = e->vn[iv];
-				if (space->get_element_order(e->id) == 0) break;
+				//if (space->get_element_order(e->id) == 0) break;
 				if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
 					for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
 						if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
-								for(unsigned int i = 0; i < dof_list->get_cnt(); i ++){ 
-									if(dof_list->get_dof()[i]==al->get_dof()[j]){ more =true; break;}	//ueberpruefen ob dof schon in liste enhalten
-								}
-								if(more==false){ dof_list->add_triplet(index, al->get_dof()[j], 1.0);  //dof=-1 =>dirichlet
-																	if(al->get_dof()[j]	!=1.){	x[al->get_dof()[j]]	= vn->x;y[al->get_dof()[j]]	= vn->y;}
-								}
-								more = false;
+								x[al->get_dof()[j]]	= vn->x; y[al->get_dof()[j]]	= vn->y;
 						}
 					}
 				 }
@@ -34,66 +27,64 @@ void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list, AsmList<Scala
 }
 
 template<typename Scalar>
-void p1_list(Space<Scalar>* space, AsmList<Scalar>* dof_list,AsmList<Scalar>* al, std::list<int>* list,double* x, double* y )
+void p1_list(Space<Scalar>* space, bool* fct, AsmList<Scalar>* al, double* x, double* y, double h_start )
 {
-	int test =0;
 	Element* e =NULL;
-	Element* parent =NULL;
+Element* elem_neigh=NULL;
 	bool more = false;
-	int elem_id;
-	std::list<int>::iterator it;
-  for(it=list->begin();it!=list->end();it++){
-			elem_id = *it;
-		 	if((space->get_element_order(elem_id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(elem_id)==1)){	//Ordnung soll 1 
-				e= space->get_mesh()->get_element_fast(elem_id);
-				if(e->active){
-					space->get_element_assembly_list(e, al);
-					for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
-							int index =  space->get_shapeset()->get_vertex_index(iv);
-							Node* vn = e->vn[iv];
-							if (space->get_element_order(elem_id) == 0) break;
-							if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
-								for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
-										if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
-											for(unsigned int i = 0; i < dof_list->get_cnt(); i ++){ 
-												if(dof_list->get_dof()[i]==al->get_dof()[j]){ more =true; break;}	//ueberpruefen ob dof schon in liste enhalten
-											}
-											if(more==false){ dof_list->add_triplet(e->id, al->get_dof()[j], 1.0);  //dof=-1 =>dirichlet
-																	if(al->get_dof()[j]	!=1.){	x[al->get_dof()[j]]	= vn->x;y[al->get_dof()[j]]	= vn->y;}
-											}
-											more = false;
-										}
-								}
-						 	}
-						}
+	bool  p2_neighbor =false;
+	double elem_diag =0; 
+	int elem_id,id;
+	for_all_active_elements(e, space->get_mesh()){  
+		if((space->get_element_order(e->id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(e->id)==1)){
+				elem_diag=e->get_diameter();
+				elem_id= e->id;
+				if(elem_diag>h_start){	p2_neighbor =true;
 				}else{
-					parent = e;
-					for(int s=0; s<	e->get_num_surf();s++){
-							e = parent->sons[s];
-							space->get_element_assembly_list(e, al);
-							for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
-									int index =  space->get_shapeset()->get_vertex_index(iv);
-									Node* vn = e->vn[iv];
-									if (space->get_element_order(elem_id) == 0) break;
-									if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
-										for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
-												if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
-													for(unsigned int i = 0; i < dof_list->get_cnt(); i ++){ 
-														if(dof_list->get_dof()[i]==al->get_dof()[j]){ more =true; break;}	//ueberpruefen ob dof schon in liste enhalten
-													}
-											if(more==false){ dof_list->add_triplet(e->id, al->get_dof()[j], 1.0);  //dof=-1 =>dirichlet
-																	if(al->get_dof()[j]	!=1.){	x[al->get_dof()[j]]	= vn->x;y[al->get_dof()[j]]	= vn->y;}
+							for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
+								 	elem_neigh = e->get_neighbor(iv);
+									if(elem_neigh!=NULL){ 
+											 id = elem_neigh->id;	
+											if((space->get_element_order(id)== H2D_MAKE_QUAD_ORDER(2, 2))||(space->get_element_order(id)==2)){
+												p2_neighbor =true; 
+												break;
+											}else if(elem_diag != elem_neigh->get_diameter()){
+														// Nachbar ist kleiner => haengender Knoten, kein FCT ueber haengendne Knoten hinweg
+												p2_neighbor =true; 
+												break;
 											}
-													more = false;
-												}
-										}
-								 	}
-								}
-					}
+									}
+									if(e->vn[iv]->is_constrained_vertex() ==true)	{	p2_neighbor =true; 
+													break;
+									}
+							}
 				}
-			}
-	}	
+				if(p2_neighbor==false){
+							space->get_element_assembly_list(e, al);
+						for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
+								int index =  space->get_shapeset()->get_vertex_index(iv);
+								Node* vn = e->vn[iv];
+								if (space->get_element_order(elem_id) == 0) break;
+								if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
+									for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
+											if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
+																			x[al->get_dof()[j]]	= vn->x;y[al->get_dof()[j]]	= vn->y;
+																		fct[al->get_dof()[j]]=true;
+											}
+									}
+							 	}
+							}					
+				}  // Elemente fuer FCT
+					else {p2_neighbor =false;				
+				}
+		}
+	}
+
 }
+
+
+
+
 
 /*
 

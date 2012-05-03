@@ -1,6 +1,6 @@
 project(FCT_hp_adap_2)
 
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp hp_adapt.cpp mass_dp.cpp)
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp hp_adapt.cpp )
 #include (${hermes2d_SOURCE_DIR}/CMake.common)
 #set_common_target_properties(${PROJECT_NAME})
 

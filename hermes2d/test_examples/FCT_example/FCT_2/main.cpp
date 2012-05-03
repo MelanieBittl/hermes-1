@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
   info("ndof = %d", ndof);
 
  // Initialize solution of lower & higher order
-  Solution<double>  low_sln, u_new;
+  Solution<double>  low_sln, u_new,high_sln;
 		Solution<double> R_h_1, R_h_2;
 
   // Previous time level solution (initialized by the initial condition).
@@ -137,7 +137,7 @@ lin.save_solution_vtk(&u_prev_time, "init_uniform.vtk", "u", mode_3D);
 			double* Q_plus = new double[ref_ndof]; double* Q_minus = new double[ref_ndof];	
 			double* Q_plus_old = new double[ref_ndof]; double* Q_minus_old = new double[ref_ndof];	
 			double* R_plus = new double[ref_ndof]; double* R_minus = new double[ref_ndof];	
-				for(int i=0; i<ref_ndof;i++){ coeff_vec[i]=0.0;	coeff_vec_2[i]=0.0;	Q_plus_old[i]=0.;	Q_minus_old[i]=0.;}
+				for(int i=0; i<ref_ndof;i++){ 	Q_plus_old[i]=0.;	Q_minus_old[i]=0.;}
 
 			p1_list_fast(ref_space, dof_list, al,P_plus,P_minus);
 
@@ -185,7 +185,7 @@ lin.save_solution_vtk(&u_prev_time, "init_uniform.vtk", "u", mode_3D);
 			double* lumped_double = new double[ref_ndof];
 			UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
 
-
+double f;
 		//Initialisierung von Q_plus_old,Q_minus_old
 	/*for(int i =0;i<ndof;i++){
 		for(int j =(i+1); j<ndof;j++){		
@@ -206,22 +206,27 @@ lin.save_solution_vtk(&u_prev_time, "init_uniform.vtk", "u", mode_3D);
 			//info("projection");
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
 			Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
-		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al);
+		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+			Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
 
 			Solution<double> ::vector_to_solution(coeff_vec, ref_space, &u_new);
 
-			/*sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
+
+		sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
-			sprintf(title, "proj. lumpedLoesung, ps=%i, ts=%i", ps,ts);
+	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
+			Lowview.set_title(title);
 			Lowview.show(&low_sln);
-			mview.show(ref_space);		
-			View::wait(HERMES_WAIT_KEYPRESS);*/
-	
 
+
+//lin.save_solution_vtk(&u_new, "proj_FCT.vtk", "u", mode_3D);
+	//lin.save_solution_vtk(&low_sln, "lumped_proj.vtk", "u", mode_3D);
+	//lin.save_solution_vtk(&high_sln, "high_proj.vtk", "u", mode_3D);
+	//View::wait(HERMES_WAIT_KEYPRESS);
 
 
 
@@ -252,10 +257,10 @@ do
   //cpu_time.tick(HERMES_SKIP);
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
-		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al);
+		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al);
 			//	info("assemble fluxes");	
 			 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,vec_rhs, u_L,coeff_vec, flux_double, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus);
 
 
 				for(int i=0; i<ref_ndof;i++){

@@ -10,12 +10,11 @@ int max(int a, int b){
 
 
 template<typename Scalar>
-bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2, CustomWeakFormMassmatrix* massmatrix, HPAdapt* adapt, AsmList<Scalar>* dof_list,AsmList<Scalar>* al,  std::list<int>* list, int* elements_to_refine,int* no_of_refinement_steps,double h_min, double h_max, int ts, int ps, int* smooth_elem, double h_start)
+bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2, CustomWeakFormMassmatrix* massmatrix, HPAdapt* adapt, AsmList<Scalar>* al,  double h_min, double h_max, int ts, int ps, int* smooth_elem, double h_start)
 {		
 
-	if(!list->empty()) list->clear();
-
-
+	int* elements_to_refine = new int[space->get_mesh()->get_max_element_id()];   // 0 = nothing..
+	int* no_of_refinement_steps = new int[space->get_mesh()->get_max_element_id()];	
 	Element* e = NULL;
 	bool refine = false;  //->verfeinern oder vergroebern?	
 	int id;
@@ -55,7 +54,8 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scala
 
 
 
-		for_all_active_elements(e, space->get_mesh()){	
+		for_all_active_elements(e, space->get_mesh()){
+		no_of_refinement_steps[e->id]=0;	
 			int i = 1;	
 			if(smooth_elem[e->id]==1){
 					if(elem_error[e->id] >tol_p){
@@ -108,41 +108,8 @@ Element* elem_neigh=NULL;
 
 
 
-
-//------------------Elemente fuer FCT speichern
-	 p2_neighbor =false;
-	double elem_diag =0; 
-	for_all_active_elements(e, space->get_mesh()){  
-		elem_diag=e->get_diameter();
-		if((space->get_element_order(e->id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(e->id)==1)){
-			if(elem_diag>h_start){	p2_neighbor =true;
-			}else{
-						for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
-							 	elem_neigh = e->get_neighbor(iv);
-								if(elem_neigh!=NULL){ 
-										id = elem_neigh->id;	
-										if((space->get_element_order(id)== H2D_MAKE_QUAD_ORDER(2, 2))||(space->get_element_order(id)==2)){
-											p2_neighbor =true; 
-											break;
-										}else if(elem_diag != elem_neigh->get_diameter()){
-													// Nachbar ist kleiner => haengender Knoten, kein FCT ueber haengendne Knoten hinweg
-											p2_neighbor =true; 
-											break;
-										}
-								}
-								if(e->vn[iv]->is_constrained_vertex() ==true)	{	p2_neighbor =true; 
-												break;
-								}
-						}
-			}
-			if(p2_neighbor==false){list->push_back(e->id);					
-			}  // Elemente fuer FCT
-			else {p2_neighbor =false;				
-			}
-		}
-	}
-
-
+			delete [] elements_to_refine;
+			delete [] no_of_refinement_steps;
 	return refine;
 
 }
