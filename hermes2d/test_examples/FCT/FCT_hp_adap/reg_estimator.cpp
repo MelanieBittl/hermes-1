@@ -41,7 +41,7 @@ return u_h_hat;
 
 }
 
-void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_fct_in_elem, int* smooth_dx_in_elem, int* smooth_dy_in_elem,int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al){
+void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al,UMFPackMatrix<double> * mass_matrix,bool proj){
 
 	if(sln==NULL) error("smoothness_indicator: sln=NULL");
 	if(space==NULL) error("smoothness_indicator: space=NULL");
@@ -54,10 +54,10 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 
 	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, space);
 	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, space);
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ; 
+
 	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ndof);
 	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
-	dp_1->assemble(mass_matrix,rhs_1); 
+	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearSolver<double> * solver_1 = new UMFPackLinearSolver<double> (mass_matrix,rhs_1);
 	if(solver_1->solve()){ 				
@@ -105,15 +105,17 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 	double u_i; double u_dx ,u_dy;
 	double u_min, u_max, u_min_dx, u_min_dy, u_max_dx, u_max_dy;
 	std::list<int>::iterator elem_id; 
-
+			 int smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem;
 	double epsilon = EPS; 
 
 	bool non_smooth = false; bool non_smooth_dx = false;bool non_smooth_dy = false;
 
 	for_all_active_elements(e, space->get_mesh()){
 		non_smooth = false; non_smooth_dx = false; non_smooth_dy = false;
-		smooth_fct_in_elem[e->id]=1; //erstmal als smooth annehmen	
-		smooth_dx_in_elem[e->id] =1; smooth_dy_in_elem[e->id] =1; smooth_elem_patch[e->id]=0;
+			smooth_fct_in_elem =1; //erstmal als smooth annehmen	
+			smooth_dx_in_elem =1; 
+			smooth_dy_in_elem =1; 
+			smooth_elem_patch[e->id]=0;
 		space->get_element_assembly_list(e, al);		
 			x_c = 0.; y_c = 0.;
 		for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 		 
@@ -148,19 +150,22 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 							break;
 					}
 			}
-			if(non_smooth == true) smooth_fct_in_elem[e->id]=0; 
-			if(non_smooth_dx == true) smooth_dx_in_elem[e->id]=0; 
-			if(non_smooth_dy == true) smooth_dy_in_elem[e->id]=0; 
-			if((non_smooth == true)&&(non_smooth_dx == true)&&(non_smooth_dy == true)) break;
-		}
-		//if(max(smooth_fct_in_elem[e->id], min(smooth_dx_in_elem[e->id],smooth_dy_in_elem[e->id]))==1){
-		if(min(smooth_dx_in_elem[e->id],smooth_dy_in_elem[e->id])==1)
-					smooth_elem_patch[e->id]=1;
-		
+				if(non_smooth == true) smooth_fct_in_elem=0; 
+				if(non_smooth_dx == true) smooth_dx_in_elem=0; 
+				if(non_smooth_dy == true) smooth_dy_in_elem=0; 
+				if((non_smooth == true)&&(non_smooth_dx == true)&&(non_smooth_dy == true)) break;
+			}
+			if(proj==true){
+				if(max(smooth_fct_in_elem, min(smooth_dx_in_elem,smooth_dy_in_elem))==1)
+								smooth_elem_patch[e->id]=1;
+			}else{
+				if(min(smooth_dx_in_elem,smooth_dy_in_elem)==1)
+							smooth_elem_patch[e->id]=1;
+				}
 	}
 
 
-	
+
 for(int i =0; i<ndof;i++){
 			non_smooth = false; smooth_dof[i]=0;
 			for(elem_id=dof_elem_list[i].begin();elem_id!=dof_elem_list[i].end();elem_id++){
@@ -195,7 +200,7 @@ for(int i =0; i<ndof;i++){
 	delete grad_2;
 	delete dp_1;
 	delete dp_2;
-	delete mass_matrix;
+
 	delete rhs_1;
 	delete rhs_2;
 	delete solver_1;
