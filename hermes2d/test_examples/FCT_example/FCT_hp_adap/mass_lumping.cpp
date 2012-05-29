@@ -20,7 +20,7 @@ int i;
 	return lumped_matrix;
 }
 
-//Mass lumping an den Stellen von AsmList, sonst standard Massmatrix
+//Mass lumping an den Stellen von fct, sonst standard Massmatrix
 template<typename Scalar>
 UMFPackMatrix<Scalar>* massLumping(bool* fct, UMFPackMatrix<Scalar>* mass_matrix)
 {  //al=NULL=>lumped=mass

@@ -4,7 +4,7 @@
 
 
 template<typename Scalar>
-void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list, AsmList<Scalar>* al,double* x, double* y){
+void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* al,double* x, Solution<Scalar>* sln){
 
 		Element* e =NULL;
 	bool more = false;
@@ -18,13 +18,8 @@ void p1_list_fast(Space<Scalar>* space, AsmList<Scalar>* dof_list, AsmList<Scala
 				if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
 					for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
 						if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
-								for(unsigned int i = 0; i < dof_list->get_cnt(); i ++){ 
-									if(dof_list->get_dof()[i]==al->get_dof()[j]){ more =true; break;}	//ueberpruefen ob dof schon in liste enhalten
-								}
-								if(more==false){ dof_list->add_triplet(index, al->get_dof()[j], 1.0);  //dof=-1 =>dirichlet
-																	x[al->get_dof()[j]]	= vn->x;y[al->get_dof()[j]]	= vn->y;
-								}
-								more = false;
+										if(x[al->get_dof()[j]]==0.)		x[al->get_dof()[j]]	= sln->get_pt_value(vn->x, vn->y);
+
 						}
 					}
 				 }

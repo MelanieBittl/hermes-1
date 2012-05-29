@@ -16,7 +16,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 
 const double h_max = 0.1;                       
@@ -182,6 +182,7 @@ do
 
 
 			if((ps==1)){
+
 					coord_dof(ref_space,al, P_plus,P_minus);
 				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
 			  // Set up the matrix, and rhs according to the solver selection.=>For Masslumping
@@ -251,13 +252,18 @@ do
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus );
 			Solution<double> ::vector_to_solution(coeff_vec, ref_space, &u_new);
 
-		sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
+
+		
+
+
+	sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
-/*	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
+	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
 			Lowview.set_title(title);
 			Lowview.show(&low_sln);
-	sprintf(title, "proj. high_Loesung, ps=%i, ts=%i", ps,ts);
+	//View::wait(HERMES_WAIT_KEYPRESS);
+	/*sprintf(title, "proj. high_Loesung, ps=%i, ts=%i", ps,ts);
 			hview.set_title(title);
 			hview.show(&high_sln);
 
@@ -265,7 +271,7 @@ do
 	//lin.save_solution_vtk(&low_sln, "lumped_proj.vtk", "u", mode_3D);
 		//lin.save_solution_vtk(&high_sln, "high_proj.vtk", "u", mode_3D);
 	View::wait(HERMES_WAIT_KEYPRESS);*/
-	
+
 	
 	//-------------rhs lower Order M_L/tau+ (1-theta)(K+D) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, lumped_double); 

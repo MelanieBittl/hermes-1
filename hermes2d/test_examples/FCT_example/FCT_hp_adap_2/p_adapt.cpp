@@ -20,8 +20,8 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 	int id;
 
 //-----------h-Adapt	
-		double* elem_error = new double[space->get_mesh()->get_max_element_id()];
-		calc_z_z_error( space, sln, R_h_1, R_h_2, elem_error,smooth_elem);
+				double* elem_error = new double[space->get_mesh()->get_max_element_id()];
+	calc_z_z_error( space, sln, R_h_1, R_h_2, elem_error,smooth_elem);
 		double mean_value_z =0.;
 		double std_dev_z = 0.0;
 		double mean_value_p =0.;
@@ -54,7 +54,7 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 
 
 
-		for_all_active_elements(e, space->get_mesh()){
+for_all_active_elements(e, space->get_mesh()){
 		no_of_refinement_steps[e->id]=0;	
 			int i = 1;	
 			if(smooth_elem[e->id]==1){
@@ -76,8 +76,12 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 			}else {refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++;
 			}
 		}
-
-
+/*
+for_all_active_elements(e, space->get_mesh()){			no_of_refinement_steps[e->id]=0;
+			if(smooth_elem[e->id]==1){
+										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
+			}else elements_to_refine[e->id] =0;
+		}*/
 		
 
 delete [] elem_error;
@@ -98,7 +102,7 @@ Element* elem_neigh=NULL;
 								}
 							}
 					}
-					if(p2_neighbor==false){refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++;
+					if(p2_neighbor==false){refine = true; elements_to_refine[e->id] = 1; //no_of_refinement_steps[e->id]++;
 			}
 					else p2_neighbor = false;			
 				}
