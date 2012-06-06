@@ -26,7 +26,7 @@ const double T_FINAL = 2*PI;                       // Time interval length.
 const double P_ADAP_TOL_EX = 0.2;   
 const int 	 P_ADAP_MAX_ITER = 2;
  
-const double EPS = 1e-6;
+const double EPS = 1e-10;
 const double EPS_smooth = 1e-10;
 
 const double NEWTON_TOL = 1e-5;                   // Stopping criterion for the Newton's method.
@@ -91,11 +91,11 @@ int main(int argc, char* argv[])
 
 
   // Initialize views.
-	ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
+	//ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
 	//Lowview.show(&u_prev_time, HERMES_EPS_HIGH);
 	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 	//sview.show(&u_prev_time, HERMES_EPS_HIGH); 
-	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
+
 	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 	//mview.show(&space);
 
@@ -164,9 +164,9 @@ mesh.copy(&basemesh);
 
 			double* coeff_vec = new double[ref_ndof];
 			double* coeff_vec_2 = new double[ref_ndof];
-			double* coeff_vec_3 = new double[ref_ndof]; 
+
 			double* lumped_double = new double[ref_ndof];
-			UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
+
 
 			double* P_plus = new double[ref_ndof]; double* P_minus = new double[ref_ndof];
 			double* Q_plus = new double[ref_ndof]; double* Q_minus = new double[ref_ndof];	
@@ -178,8 +178,6 @@ mesh.copy(&basemesh);
 
 
 if(ps==1){
-
-
 
 			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.;}
 			//p1_list_fast(ref_space, al, P_plus,&u_prev_time);
@@ -195,16 +193,9 @@ if(ps==1){
 			//--------------------------------------------------------------------------------------------
 			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 			lowmat_rhs->add_matrix(diffusion); 
-			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
-			//(-theta)(K+D)
-			if(theta==0) low_matrix->zero();
-			else	low_matrix->multiply_with_Scalar(-theta);
 			//(1-theta)(K+D)
 			if(theta ==1) lowmat_rhs->zero();
 			else lowmat_rhs->multiply_with_Scalar((1.0-theta));
-
-			//M_L/tau - theta(D+K)
-			low_matrix->add_matrix(lumped_matrix);  
 			//M_L/tau+(1-theta)(K+D)
 			lowmat_rhs->add_matrix(lumped_matrix);
 
@@ -236,9 +227,9 @@ if(ps==1){
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
 				Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
-		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
+		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
 			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
 
 
 
@@ -270,7 +261,7 @@ if(ps==1){
 				//coeff_vec_2 = u_L
 					Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &low_sln);	
 
- 			changed = h_p_adap(ref_space,&low_sln,&R_h_1,&R_h_2,adapting,h_min,h_max);		
+ 			changed = h_p_adap(ref_space,mass_matrix,&low_sln,&R_h_1,&R_h_2,adapting,h_min,h_max);		
 		/*	sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
 				mview.show(ref_space);*/
@@ -278,8 +269,10 @@ if(ps==1){
 			delete lumped_matrix; 
 			delete diffusion;
 
-}else{
 
+}else{
+			UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
+			double* coeff_vec_3 = new double[ref_ndof]; 
 			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.;}
 		//	p1_list_fast(ref_space, al, P_plus,&u_prev_time);
 
@@ -384,7 +377,7 @@ if(ps==1){
 			UMFPackLinearSolver<double> * highOrd = new UMFPackLinearSolver<double> (high_matrix,vec_rhs);	
 			if(highOrd->solve()){ 
 				u_H = highOrd->get_sln_vector();  
-				Solution<double> ::vector_to_solution(u_H, ref_space, &high_sln);	
+				//Solution<double> ::vector_to_solution(u_H, ref_space, &high_sln);	
 			  }else error ("Matrix solver failed.\n");
 
    		/*	sprintf(title, "high-sln adap-step %i", ps);
@@ -412,38 +405,33 @@ if(ps==1){
 
   // Measure the projection time.
   //double flux_time = cpu_time.tick().last();
-
 //info("CPU_Time:  %g -------------- %g", time1, flux_time);
 
 			 // Visualize the solution.			 
-	/*	sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
+		sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
-					sview.show(&u_new); */
+					sview.show(&u_new);
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
 			
- 			u_prev_time.copy(&u_new); 			
-
-
-
+ 			u_prev_time.copy(&u_new); 
 			delete newSol; 
 			delete highOrd;
 			high_rhs->free();
 			high_matrix->free();
 			delete lumped_matrix; 
 			delete diffusion;
+			delete vec_rhs;
+		  low_matrix->free();
+			delete[] coeff_vec_3;
 
-}
 
-
-			
+		}			
 
 			ps++;	
 	  // Clean up.
-			delete[] coeff_vec_3; 
-			delete vec_rhs;
-			delete[] lumped_double;
 
+			delete[] lumped_double;
 		delete [] smooth_elem;
 		delete [] smooth_dof;
  			delete [] P_plus;
@@ -454,10 +442,8 @@ if(ps==1){
 			delete [] Q_minus_old;
 			delete [] R_plus;
 			delete [] R_minus;
-
 			delete[] coeff_vec_2;
 			 delete [] coeff_vec;
-		  low_matrix->free();
 	 		lowmat_rhs->free();
 
 
@@ -471,17 +457,16 @@ if(ps==1){
   // Increase time step counter
   ts++;
 
-
-
-
 }
 while (current_time < T_FINAL);
 
-mview.show(ref_space);
-				 sview.set_title(title);
-					sview.show(&u_new);
+				// sview.set_title(title);
+lin.save_solution_vtk(&u_prev_time, "end_h_adap_smooth.vtk", "solution", mode_3D);
 
-lin.save_solution_vtk(&u_prev_time, "end_h_adap_smooth_wQold.vtk", "solution", mode_3D);
+
+//sview.show(&u_new);
+mview.show(ref_space);
+mview.save_numbered_screenshot("solution.bmp", true);
 
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);

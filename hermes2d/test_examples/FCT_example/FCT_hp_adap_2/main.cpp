@@ -27,10 +27,9 @@ const double T_FINAL = 2*PI;                       // Time interval length.
 const double P_ADAP_TOL_EX = 0.2;   
 const int 	 P_ADAP_MAX_ITER = 2;
  
-const double EPS = 1e-6;
+const double EPS = 1e-8;
+const double EPS_h = 1e-6;
 
-const double NEWTON_TOL = 1e-5;                   // Stopping criterion for the Newton's method.
-const int NEWTON_MAX_ITER = 20;                  // Maximum allowed number of Newton iterations.
 
 const int NDOF_STOP = 20000;   
 
@@ -87,12 +86,12 @@ int main(int argc, char* argv[])
 
 
   // Initialize views.
-	ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
+//	ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
 	//Lowview.show(&u_prev_time, HERMES_EPS_HIGH);
 	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
-	ScalarView hview("Solution", new WinGeom(500, 0, 500, 400));
+	//ScalarView hview("Solution", new WinGeom(500, 0, 500, 400));
 	//sview.show(&u_prev_time, HERMES_EPS_HIGH); 
-	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
+	//ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
 	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 	//mview.show(&space);
 
@@ -219,8 +218,8 @@ do
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 		
 				//Initialisierung von Q_plus_old,Q_minus_old
-			for(int i=0; i<ref_ndof;i++){ Q_plus_old[i]=0.;Q_minus_old[i]=0.;}
-			 Ax_mass = mass_matrix->get_Ax();
+		for(int i=0; i<ref_ndof;i++){ Q_plus_old[i]=0.;Q_minus_old[i]=0.;}
+	/*		 Ax_mass = mass_matrix->get_Ax();
 			 Ai_mass = mass_matrix->get_Ai();
 			 Ap_mass = mass_matrix->get_Ap();
 			for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
@@ -235,28 +234,26 @@ do
 							if(f<Q_minus_old[j]) Q_minus_old[j] = f;
 						}
 					}
-				}	
+				}	*/
 
 
 
 			// Project the initial condition on the FE space->coeff_vec	
 			//info("projection");
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
-			Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
+		//	Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
 		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
-
-			Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
-
+		//	Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus );
-			Solution<double> ::vector_to_solution(coeff_vec, ref_space, &u_new);
 
 
-		
 
 
-	sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
+			/*	Solution<double> ::vector_to_solution(coeff_vec, ref_space, &u_new);
+
+sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
 	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
@@ -288,7 +285,7 @@ do
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem,smooth_elem,smooth_dof,al,true);
 
-			 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,vec_rhs, u_L, flux_double, 
+		/*	 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,vec_rhs, u_L, flux_double, 
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus);		
 	
 				for(int i=0; i<ref_ndof;i++){
@@ -297,13 +294,11 @@ do
 				}
 				Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);	
 
-
-
-
 			smoothness_indicator(ref_space,&u_new,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,false);
-			changed = h_p_adap(ref_space, &u_new,&R_h_1,&R_h_2, adapting, h_min,h_max, ts,ps,smooth_elem);	
+			changed = h_p_adap(ref_space, &u_new,&R_h_1,&R_h_2, adapting, h_min,h_max, ts,ps,smooth_elem);	*/
 
-		
+					smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
+			changed = h_p_adap(ref_space, &low_sln,&R_h_1,&R_h_2, adapting, h_min,h_max, ts,ps,smooth_elem);
 			sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
 				mview.show(ref_space);
@@ -358,7 +353,7 @@ do
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 		
 		//Initialisierung von Q_plus_old,Q_minus_old
-	 Ax_mass = mass_matrix->get_Ax();
+	/* Ax_mass = mass_matrix->get_Ax();
 	 Ai_mass = mass_matrix->get_Ai();
 	 Ap_mass = mass_matrix->get_Ap();
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
@@ -375,23 +370,22 @@ do
 						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
 					}
 				}
-			}
+			}*/
 
 
 			// Project the initial condition on the FE space->coeff_vec	
 			//info("projection");
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
 			Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
-		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
+		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
-
-			Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
-
+		//	Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 			lumped_flux_limiter(fct,mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus );
-			Solution<double> ::vector_to_solution(coeff_vec, ref_space, &u_new);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus,smooth_dof);
 
-		sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
+		//	Solution<double> ::vector_to_solution(coeff_vec, ref_space, &u_new);
+
+	/*	sprintf(title, "proj. FCT_Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
 /*	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
@@ -421,10 +415,10 @@ do
 			  }else error ("Matrix solver failed.\n");
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
-		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
+		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
 			//	info("assemble fluxes");	
 			 antidiffusiveFlux(fct,mass_matrix,lumped_matrix,conv_matrix,diffusion,vec_rhs, u_L, flux_double, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus );		
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus,smooth_dof);		
 	
 
 			vec_rhs->zero(); 
@@ -444,9 +438,9 @@ do
 
 			 // Visualize the solution.
  
-		//	  sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i", current_time,ts);
-			//  sview.set_title(title);
-			//  sview.show(&u_new);
+			  sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i", current_time,ts);
+			  sview.set_title(title);
+			  sview.show(&u_new);
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -491,10 +485,10 @@ do
 		
 
 			 // Visualize the solution.
-sprintf(title, "End: Time %3.2f, timestep=%i", current_time,ts);
-			  sview.set_title(title);
+//sprintf(title, "End: Time %3.2f, timestep=%i", current_time,ts);
+			 // sview.set_title(title);
 			// Lowview.show(&low_sln);	 
-		sview.show(&u_new);
+		//sview.show(&u_new);
 		//mview.show(ref_space);
 	  // Update global time.
   current_time += time_step;

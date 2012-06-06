@@ -13,18 +13,18 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-3;
-const double T_FINAL = 0.3;                       // Time interval length. 
+const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 1.;
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
 // Boundary markers.
-const std::string BDY_Solid = "solid";
-
+const std::string BDY_Solid = "r";
+//const std::string BDY_l = "l";
 
 //FCT & p-Adaptivity
 #include "mass_lumping.cpp"
@@ -65,8 +65,7 @@ int main(int argc, char* argv[])
   // Initialize boundary conditions.
  // DefaultEssentialBCConst<double>  bc_essential(BDY, 0.0);
 //  EssentialBCs<double>  bcs(&bc_essential);
-
-/*    EssentialBCs<double> bcs_rho;
+ /* EssentialBCs<double> bcs_rho;
   bcs_rho.add_boundary_condition(new CustomBC_rho(BDY_Solid,KAPPA));
     EssentialBCs<double> bcs_e;
   bcs_e.add_boundary_condition(new CustomBC_e(BDY_Solid,KAPPA));
@@ -82,14 +81,14 @@ EssentialBCs<double>  bcs_v_x(&bc_essential);
 
 
   // Initialize boundary condition types and spaces with default shapesets.
- /*H1Space<double> space_rho(&mesh,&bcs_rho,  P_INIT);
+/* H1Space<double> space_rho(&mesh,&bcs_rho,  P_INIT);
   H1Space<double> space_rho_v_x(&mesh,&bcs_v_x,  P_INIT);
   H1Space<double> space_rho_v_y(&mesh,&bcs_v_y,  P_INIT);
   H1Space<double> space_e(&mesh,&bcs_e,  P_INIT);*/
 
 
 
- H1Space<double> space_rho(&mesh,P_INIT);
+H1Space<double> space_rho(&mesh,P_INIT);
   H1Space<double> space_rho_v_x(&mesh,P_INIT);
   H1Space<double> space_rho_v_y(&mesh,P_INIT);
   H1Space<double> space_e(&mesh, P_INIT);
@@ -147,7 +146,7 @@ CustomInitialCondition_e prev_e(&mesh, KAPPA);
 	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double> ;  
 	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * matrix_S = new UMFPackMatrix<double> ; 
-//	UMFPackVector<double> * rhs_surf = new UMFPackVector<double> (ndof);  
+	UMFPackVector<double> * rhs_surf = new UMFPackVector<double> (ndof);  
 
 			double* coeff_vec = new double[ndof];
 			double* coeff_vec_2 = new double[ndof];
@@ -162,15 +161,48 @@ CustomInitialCondition_e prev_e(&mesh, KAPPA);
 
 
     dp_mass.assemble(mass_matrix);
-   dp_surf.assemble(matrix_S);
-    dp_K.assemble(matrix_K);
-
 	//----------------------MassLumping M_L--------------------------------------------------------------------
 		UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
-		int size = matrix_K->get_size();
+
+//Projection of the initial condition
+			Lumped_Projection::project_lumped(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec, matrix_solver);
+			OGProjection<double>::project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus);
+
+			/*		Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&new_rho,&new_rho_v_x,&new_rho_v_y,&new_rho_e));	
+
+	Solution<double>::vector_to_solutions(coeff_vec_2, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&high_rho,&high_rho_v_x,&high_rho_v_y,&high_rho_e));	
+
+s1_n.show(&new_rho);
+			s2_n.show(&new_rho_v_x);
+			s3_n.show(&new_rho_v_y);
+			s4_n.show(&new_rho_e);
+
+		s1_n.show(&high_rho);
+			s2_n.show(&high_rho_v_x);
+			s3_n.show(&high_rho_v_y);
+			s4_n.show(&high_rho_e);*/
+
+	//View::wait(HERMES_WAIT_KEYPRESS);
+
+// Time stepping loop:
+	double current_time = 0.0; 
+	int ts = 1;
+	char title[100];
+
+
+
+
+//Timestep loop
+do
+{	 info(" Time step %d, time %3.5f", ts, current_time); 
+
+  if(ts==1) dp_surf.assemble(matrix_S,rhs_surf);
+	else dp_surf.assemble(matrix_S);
+    dp_K.assemble(matrix_K);
 					//------------------------artificial DIFFUSION D---------------------------------------		
-			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,&prev_rho, &prev_rho_v_x, 
-    &prev_rho_v_y, &prev_e,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e);
+			//UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e);
+			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e);
 
 		lumped_matrix->multiply_with_Scalar(1./time_step); //M_L/tau
 
@@ -186,45 +218,13 @@ CustomInitialCondition_e prev_e(&mesh, KAPPA);
 			lowmat_rhs->multiply_with_Scalar((1.0-theta));  //(1-theta)L(U)
 			lowmat_rhs->add_matrix(lumped_matrix);  //M_L/t+(1-theta)L(U)
 
+		lumped_matrix->multiply_with_Scalar(time_step); //M_L
 
-
-
-//Projection of the initial condition
-			Lumped_Projection::project_lumped(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec, matrix_solver);
-			OGProjection<double>::project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec_2, matrix_solver, HERMES_L2_NORM);
-			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus);
-
-				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&new_rho,&new_rho_v_x,&new_rho_v_y,&new_rho_e));	
-
-			//	Solution<double>::vector_to_solutions(coeff_vec_2, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&high_rho,&high_rho_v_x,&high_rho_v_y,&high_rho_e));	
-
-		s1_n.show(&new_rho);
-			s2_n.show(&new_rho_v_x);
-			s3_n.show(&new_rho_v_y);
-			s4_n.show(&new_rho_e);
-
-			/*s1_n.show(&high_rho);
-			s2_n.show(&high_rho_v_x);
-			s3_n.show(&high_rho_v_y);
-			s4_n.show(&high_rho_e);*/
-
-	View::wait(HERMES_WAIT_KEYPRESS);
-
-// Time stepping loop:
-	double current_time = 0.0; 
-	int ts = 1;
-	char title[100];
-
-
-		lumped_matrix->multiply_with_Scalar(time_step); 
-
-//Timestep loop
-do
-{	 info(" Time step %d, time %3.5f", ts, current_time); 
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(L) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
-			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2);
+			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
+		vec_rhs->add_vector(rhs_surf);
 
 	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
 			UMFPackLinearSolver<double> * lowOrd = new UMFPackLinearSolver<double> (low_matrix,vec_rhs);	
@@ -243,7 +243,7 @@ do
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 		antidiffusiveFlux(mass_matrix,lumped_matrix,matrix_K,diffusion, matrix_L, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus);
 				for(int i=0; i<ndof;i++){
-								 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);		//time_step?
+								 coeff_vec[i] = u_L[i] + coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);		
 				}
 
 				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e));	
@@ -284,6 +284,13 @@ do
 
 
 delete lowOrd;
+delete diffusion;
+//matrix_K->free();
+//matrix_S->free();
+matrix_L->free();
+lowmat_rhs->free();
+low_matrix->free();
+
 
 	  // Update global time.
   current_time += time_step;
@@ -299,9 +306,9 @@ while (current_time < T_FINAL);
 //Cleanup
 delete mass_matrix;
 delete matrix_K;
+delete matrix_S;
 delete matrix_L;
 delete lumped_matrix;
-delete diffusion;
 	delete low_matrix;
 	delete lowmat_rhs;
 			delete vec_rhs;

@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 1; 
 const double h_max = 0.1;                       
@@ -292,14 +292,16 @@ do
 			/*sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
 					sview.show(&u_new);*/
-		
+
+
 
 			 // Visualize the solution.
 //sprintf(title, "End: Time %3.2f, timestep=%i", current_time,ts);
 			 // sview.set_title(title);
 			// Lowview.show(&low_sln);	 
 		//sview.show(&u_new);
-		//mview.show(ref_space);
+	//	mview.show(ref_space);
+		     //   mview.save_numbered_screenshot("solution.bmp", true);
 	  // Update global time.
   current_time += time_step;
 

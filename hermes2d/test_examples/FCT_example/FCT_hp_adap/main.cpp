@@ -27,10 +27,7 @@ const double P_ADAP_TOL_EX = 0.2;
 const int 	 P_ADAP_MAX_ITER = 2;
  
 const double EPS_smooth = 1e-10;
-const double EPS_h = 1e-5;
-
-const double NEWTON_TOL = 1e-5;                   // Stopping criterion for the Newton's method.
-const int NEWTON_MAX_ITER = 20;                  // Maximum allowed number of Newton iterations.
+const double EPS_h = 1e-10;
 
 const int NDOF_STOP = 20000;   
 
@@ -91,20 +88,21 @@ int main(int argc, char* argv[])
 
 
   // Initialize views.
-	ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
+	//ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
 	//Lowview.show(&u_prev_time, HERMES_EPS_HIGH);
-	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
-ScalarView hview("Solution", new WinGeom(0, 500, 500, 400));
+//ScalarView hview("Solution", new WinGeom(0, 500, 500, 400));
 	//sview.show(&u_prev_time, HERMES_EPS_HIGH); 
-	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
+//	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
+	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 	//mview.show(&space);
 
 
   // Output solution in VTK format.
 Linearizer lin;
+Orderizer ord;
 bool mode_3D = true;
-lin.save_solution_vtk(&u_prev_time, "init_hpadap_neu.vtk", "u", mode_3D);
+//lin.save_solution_vtk(&u_prev_time, "init_hpadap_neu.vtk", "u", mode_3D);
 
 		  // Initialize
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
@@ -258,8 +256,6 @@ do
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
 
 
-
-
 		//	Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		//	Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 		/*	sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
@@ -287,34 +283,10 @@ do
 				// u_L = coeff_vec_2 
 					Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &low_sln);	
 
-		//-------------solution of higher order------
-			/*	high_rhs->multiply_with_vector(coeff_vec, coeff_vec_3); 
-			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_3);
 
-			UMFPackLinearSolver<double> * highOrd = new UMFPackLinearSolver<double> (high_matrix,vec_rhs);	
-			if(highOrd->solve()){ 
-				u_H = highOrd->get_sln_vector();  
-			//	Solution<double> ::vector_to_solution(u_H, ref_space, &high_sln);	
-			  }else error ("Matrix solver failed.\n");
-
-		//---------------------------------------antidiffusive fluxes-----------------------------------	
 			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
-		 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec_2,coeff_vec, coeff_vec_3, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
-		
-			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
-			vec_rhs->add_vector(coeff_vec_3);
-			UMFPackLinearSolver<double> * newSol = new UMFPackLinearSolver<double> (low_matrix,vec_rhs);	
-			if(newSol->solve()){ 
-				Solution<double> ::vector_to_solution(newSol->get_sln_vector(), ref_space, &u_new);	
-			}else error ("Matrix solver failed.\n");	 
-
-			smoothness_indicator(ref_space,&u_new,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,false);
-			changed = h_p_adap(ref_space,&u_new,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);	*/
-
-			//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,false);
-			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
-			changed = h_p_adap(ref_space, &low_sln,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);			
+			changed = h_p_adap(ref_space, &low_sln,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);		
+	
 			sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
 				mview.show(ref_space);
@@ -323,8 +295,7 @@ do
 
 			delete lumped_matrix; 
 			delete diffusion;
-			//delete highOrd;
-			//delete newSol; 	
+	
 
 
 			}else{
@@ -469,8 +440,9 @@ do
 			}else error ("Matrix solver failed.\n");	
 
 
-			 // Visualize the solution.		 
-			sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
+			 // Visualize the solution.	
+	
+sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
 					sview.show(&u_new);
 				
@@ -532,21 +504,46 @@ do
 
   // Increase time step counter
   ts++;
+/*
+if(ts==1000){
+			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_1000.vtk", "solution", mode_3D);
+			//ord.save_orders_vtk(ref_space, "mesh_1000.vtk");
+}
 
+if(ts==2000){
+			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_2000.vtk", "solution", mode_3D);
+		//ord.save_orders_vtk(ref_space, "mesh_2000.vtk");
+}
+if(ts==3000){
+	lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_3000.vtk", "solution", mode_3D);
+		//ord.save_orders_vtk(ref_space, "mesh_3000.vtk");
+}
 
+if(ts==4000){
+		lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_4000.vtk", "solution", mode_3D);
+		//ord.save_orders_vtk(ref_space, "mesh_4000.vtk");
+}
 
+if(ts==5000){
+			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_5000.vtk", "solution", mode_3D);
+		//ord.save_orders_vtk(ref_space, "mesh_5000.vtk");
+	}
+*/
 
 }
 while (current_time < T_FINAL);
-		mview.show(ref_space);
-lin.save_solution_vtk(&u_prev_time, "end_hpadap_test_smooth.vtk", "solution", mode_3D);
+
+lin.save_solution_vtk(&u_prev_time, "end_hpadap_smooth.vtk", "solution", mode_3D);
+		ord.save_orders_vtk(ref_space, "mesh_end.vtk");
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 
 			  sprintf(title, "korrigierte Loesung: Time %3.2f", current_time);
 			  sview.set_title(title);
 			  sview.show(&u_new);*/
+	//	mview.show(ref_space);
 		mview.show(ref_space);
+mview.save_numbered_screenshot("solution.bmp", true);
 
 		delete dp_convection;
 		delete dp_mass; 

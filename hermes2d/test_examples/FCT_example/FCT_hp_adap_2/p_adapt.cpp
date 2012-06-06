@@ -68,7 +68,7 @@ for_all_active_elements(e, space->get_mesh()){
 					while((elem_error[e->id]> (tol_z+i*std_dev_z))&&(i<2)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
-			}else	if(elem_error[e->id] <EPS){ 
+			}else	if(elem_error[e->id] <EPS_h){ 
 										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; i++;
 					while((elem_error[e->id]< (EPS/i*1000))&&(i<3)){
 					 													no_of_refinement_steps[e->id]++; i++;

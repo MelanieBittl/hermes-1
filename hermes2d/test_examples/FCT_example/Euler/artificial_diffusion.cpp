@@ -109,8 +109,9 @@ protected:
 
 
 //artificial Diffusion
-UMFPackMatrix<double>* artificialDiffusion(double kappa,Solution<double>* prev_rho, Solution<double>* prev_rho_vel_x, 
-    Solution<double>* prev_rho_vel_y, Solution<double>* prev_energy,H1Space<double>* space_rho,H1Space<double>* space_rho_v_x, H1Space<double>* space_rho_v_y,H1Space<double>* space_e){
+//UMFPackMatrix<double>* artificialDiffusion(double kappa,Solution<double>* prev_rho, Solution<double>* prev_rho_vel_x, Solution<double>* prev_rho_vel_y, Solution<double>* prev_energy,H1Space<double>* space_rho,H1Space<double>* space_rho_v_x, H1Space<double>* space_rho_v_y,H1Space<double>* space_e){
+
+UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,H1Space<double>* space_rho,H1Space<double>* space_rho_v_x, H1Space<double>* space_rho_v_y,H1Space<double>* space_e){
 
  	ConvectionOperator_x conv_1;
 	ConvectionOperator_y conv_2;
@@ -135,10 +136,34 @@ UMFPackMatrix<double>* artificialDiffusion(double kappa,Solution<double>* prev_r
 		double* coeff_energy = new double[dof_rho];
 
 
-		OGProjection<double>::project_global(space_rho, prev_rho, coeff_rho, matrix_solver, HERMES_L2_NORM);
+for(int i =0;i<dof_rho; i++){
+		coeff_rho[i]=coeff[i];
+}
+	int k = 0;
+for(int i = dof_rho; i<(dof_rho+dof_vel_x);i++){
+		coeff_vel_x[k] =coeff[i];
+		k++;
+}
+k = 0;
+for(int i = (dof_rho+dof_vel_x); i<(dof_rho+dof_vel_x+dof_vel_y);i++){
+		coeff_vel_y[k] =coeff[i];
+		k++;
+}
+k = 0;
+for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
+		coeff_energy[k] =coeff[i];
+		k++;
+}
+
+/*Lumped_Projection::project_lumped(space_rho, prev_rho, coeff_rho, matrix_solver);
+		Lumped_Projection::project_lumped(space_rho_v_x, prev_rho_vel_x, coeff_vel_x, matrix_solver);
+		Lumped_Projection::project_lumped(space_rho_v_y, prev_rho_vel_y, coeff_vel_y, matrix_solver);
+		Lumped_Projection::project_lumped(space_e, prev_energy, coeff_energy, matrix_solver);
+
+		/*		OGProjection<double>::project_global(space_rho, prev_rho, coeff_rho, matrix_solver, HERMES_L2_NORM);
 		OGProjection<double>::project_global(space_rho_v_x, prev_rho_vel_x, coeff_vel_x, matrix_solver, HERMES_L2_NORM);
 		OGProjection<double>::project_global(space_rho_v_y, prev_rho_vel_y, coeff_vel_y, matrix_solver, HERMES_L2_NORM);
-		OGProjection<double>::project_global(space_e, prev_energy, coeff_energy, matrix_solver, HERMES_L2_NORM);
+		OGProjection<double>::project_global(space_e, prev_energy, coeff_energy, matrix_solver, HERMES_L2_NORM);*/
 
 
 	 int size = c_matrix_1->get_size();

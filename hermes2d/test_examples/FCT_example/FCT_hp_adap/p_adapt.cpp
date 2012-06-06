@@ -54,30 +54,56 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 
 
 
-		for_all_active_elements(e, space->get_mesh()){
+	/*	for_all_active_elements(e, space->get_mesh()){
 		no_of_refinement_steps[e->id]=0;	
 			int i = 1;	
 			if(smooth_elem[e->id]==1){
 					if(elem_error[e->id] >tol_p){
 										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
+					}else if(elem_error[e->id] <EPS_smooth){
+							refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
 					}else{
-								refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+							//refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+					}
+
+			}else	if(elem_error[e->id] <EPS_h){ 
+										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
+					while((elem_error[e->id]< (EPS_h/i*1000))&&(i<3)){
+					 													no_of_refinement_steps[e->id]++; i++;
 					}
 			}else if(elem_error[e->id] >tol_z){ 
 										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]> (tol_z+i*std_dev_z))&&(i<2)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
-			}else	if(elem_error[e->id] <EPS_h){ 
-										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; i++;
+
+			}else {//refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++;
+			}
+		}*/
+
+	for_all_active_elements(e, space->get_mesh()){
+		no_of_refinement_steps[e->id]=0;	
+			int i = 1;	
+			if(elem_error[e->id] <EPS_h){ 
+										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]< (EPS_h/i*1000))&&(i<3)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
-			}else {refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++;
+			}else if(smooth_elem[e->id]==1){
+					if(elem_error[e->id] >tol_p){
+										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
+					}else if(elem_error[e->id] >EPS_h){
+										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+					}
+			}else if(elem_error[e->id] >tol_z){ 
+										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+					while((elem_error[e->id]> (tol_z+i*std_dev_z))&&(i<2)){
+					 													no_of_refinement_steps[e->id]++; i++;
+					}
+			}else{
+										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
 			}
 		}
-
-
 		
 
 delete [] elem_error;
@@ -94,7 +120,10 @@ Element* elem_neigh=NULL;
 								id = elem_neigh->id;	
 								if(((space->get_element_order(id)== H2D_MAKE_QUAD_ORDER(2, 2))||(space->get_element_order(id)==2))||(elements_to_refine[id]==2)){
 									p2_neighbor =true;
-									break;
+									//break;
+								}
+									else{
+											refine = true; elements_to_refine[id] = 1; no_of_refinement_steps[id]=1;
 								}
 							}
 					}

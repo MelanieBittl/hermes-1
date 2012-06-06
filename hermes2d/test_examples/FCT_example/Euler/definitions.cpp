@@ -80,20 +80,37 @@
 
     VectorFormVol<double>* EulerEquationsLinearFormTime::clone() { return new EulerEquationsLinearFormTime(*this); }
 
+
+
 //-----------Surface--------------------------
   EulerEquationsWeakForm_Surf::EulerEquationsWeakForm_Surf(double kappa, Solution<double>* prev_density, Solution<double>* prev_density_vel_x, 
     Solution<double>* prev_density_vel_y, Solution<double>* prev_energy, int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa))
 	{
 
- 		add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_rho(kappa));
-    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_x( kappa));
-    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_y( kappa));
-    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_e( kappa));
+ 		add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_rho(kappa,0));
+ 		add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_rho(kappa,1));
+ 		add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_rho(kappa,2));
+ 		add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_rho(kappa,3));
 
-  /*add_vector_form_surf(new EulerEquationsLinearFormBoundary_rho(kappa));
-    add_vector_form_surf(new EulerEquationsLinearFormBoundary_vel_x( kappa));
-    add_vector_form_surf(new EulerEquationsLinearFormBoundary_vel_y( kappa));
-    add_vector_form_surf(new EulerEquationsLinearFormBoundary_e(kappa));*/
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_x( kappa,0));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_x( kappa,1));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_x( kappa,2));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_x( kappa,3));
+
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_y( kappa,0));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_y( kappa,1));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_y( kappa,2));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_vel_y( kappa,3));
+
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_e( kappa,0));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_e( kappa,1));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_e( kappa,2));
+    add_matrix_form_surf(new EulerEquationsBilinearFormBoundary_e( kappa,3));
+
+		add_vector_form_surf(new EulerEquationsLinearFormBoundary_rho(kappa));
+    add_vector_form_surf(new EulerEquationsLinearFormBoundary_v_x( kappa));
+    add_vector_form_surf(new EulerEquationsLinearFormBoundary_v_y( kappa));
+    add_vector_form_surf(new EulerEquationsLinearFormBoundary_e(kappa));
 
     for(unsigned int vector_form_i = 0;vector_form_i < this->vfsurf.size();vector_form_i++) 
     {
@@ -131,37 +148,38 @@
 		 {
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
-      {		/*double n_x = 0.;
-					double n_y = 0.;
-					if(e->y[i]==-0.5) n_y = -1.;
-					else if(e->y[i]==0.5) n_y = 1.;
-					else if(e->x[i]==-0.5) n_x = -1.;
-					else if(e->x[i]==0.5) n_x = 1.;*/
-
+      {		
+				if((e->x[i]>-0.5)&&(e->x[i]<0.5)){
+				if(j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==1){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}
+			}
       }
       return (-result);
     }  
@@ -192,32 +210,39 @@
     {
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
-      {
+      {				
+			if((e->x[i]>-0.5)&&(e->x[i]<0.5)){
+				if(j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==1){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}
       }
+			}
             return (-result);
     }
 
@@ -242,31 +267,38 @@
     {
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
-      {
+      {				
+			if((e->x[i]>-0.5)&&(e->x[i]<0.5)){
+				if(j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==1){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
            * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}
+			}
       }
             return (-result);
     }
@@ -291,31 +323,38 @@
     {
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
-      {
+      {				
+			if((e->x[i]>-0.5)&&(e->x[i]<0.5)){
+				if(j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
            * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
            * e->ny[i]*v->val[i];
+				}else if(j==1){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
            * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}else if(j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
            * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
           * e->ny[i]*v->val[i];
+				}else if(j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
            * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
+				}
+			}
       }
             return (-result);
     }
@@ -334,14 +373,245 @@
 
     MatrixFormSurf<double>* EulerEquationsBilinearFormBoundary_e::clone() { return new EulerEquationsBilinearFormBoundary_e(*this); }
 
+//Linearform
+
+
+  template<typename Real, typename Scalar>
+    Scalar EulerEquationsLinearFormBoundary_rho::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
+      Geom<Real> *e, ExtData<Scalar> *ext) const  
+		 {
+      Scalar result = Scalar(0);
+      for (int i = 0;i < n;i++) 
+      {	if((e->x[i]==-0.5)||(e->x[i]==0.5)){
+        result += wt[i] * ext->fn[0]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[0]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[1]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[1]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_0_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_0_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+			}
+      }
+      return (-result);
+    }  
+
+
+    double EulerEquationsLinearFormBoundary_rho::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
+      Geom<double> *e, ExtData<double> *ext) const
+    {
+      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+    } 
+
+
+    Ord EulerEquationsLinearFormBoundary_rho::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+      ExtData<Ord> *ext) const 
+    {
+      return Ord(20);
+    }
+
+    VectorFormSurf<double>* EulerEquationsLinearFormBoundary_rho::clone()
+    {
+					return new EulerEquationsLinearFormBoundary_rho(*this);
+    }
+
+
+    template<typename Real, typename Scalar>
+    Scalar EulerEquationsLinearFormBoundary_v_x::vector_form(int n, double *wt, Func<Scalar> *u_ext[],  Func<Real> *v, 
+      Geom<Real> *e, ExtData<Scalar> *ext) const  
+    {
+      Scalar result = Scalar(0);
+      for (int i = 0;i < n;i++) 
+      {if((e->x[i]==-0.5)||(e->x[i]==0.5)){
+        result += wt[i] * ext->fn[0]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i];
+        result += wt[i] * ext->fn[0]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[1]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[1]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_1_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_1_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+			}
+      }
+            return (-result);
+    }
+
+    double EulerEquationsLinearFormBoundary_v_x::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
+      Geom<double> *e, ExtData<double> *ext) const 
+    {
+      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+    }
+
+    Ord EulerEquationsLinearFormBoundary_v_x::ord(int n, double *wt, Func<Ord> *u_ext[],Func<Ord> *v, Geom<Ord> *e, 
+      ExtData<Ord> *ext) const 
+    {
+      return Ord(20);
+    }
+
+    VectorFormSurf<double>* EulerEquationsLinearFormBoundary_v_x::clone() { return new EulerEquationsLinearFormBoundary_v_x(*this); }
+
+
+  template<typename Real, typename Scalar>
+    Scalar EulerEquationsLinearFormBoundary_v_y::vector_form(int n, double *wt, Func<Scalar> *u_ext[],Func<Real> *v, 
+      Geom<Real> *e, ExtData<Scalar> *ext) const 
+    {
+      Scalar result = Scalar(0);
+      for (int i = 0;i < n;i++) 
+      {if((e->x[i]==-0.5)||(e->x[i]==0.5)){
+        result += wt[i] * ext->fn[0]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i];
+        result += wt[i] * ext->fn[0]->val[i]
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[1]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i];
+        result += wt[i] * ext->fn[1]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_2_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+           * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_2_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+				}
+      }
+            return (-result);
+    }
+
+    double EulerEquationsLinearFormBoundary_v_y::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
+      Geom<double> *e, ExtData<double> *ext) const 
+    {
+      return vector_form<double, double>(n, wt, u_ext,v, e, ext);
+    }
+
+    Ord EulerEquationsLinearFormBoundary_v_y::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+      ExtData<Ord> *ext) const 
+    {
+      return Ord(20);
+    }
+
+    VectorFormSurf<double>* EulerEquationsLinearFormBoundary_v_y::clone() { return new EulerEquationsLinearFormBoundary_v_y(*this); }
+
+  template<typename Real, typename Scalar>
+    Scalar EulerEquationsLinearFormBoundary_e::vector_form(int n, double *wt, Func<Scalar> *u_ext[],Func<Real> *v, 
+      Geom<Real> *e, ExtData<Scalar> *ext) const 
+    {
+      Scalar result = Scalar(0);
+      for (int i = 0;i < n;i++) 
+      {if((e->x[i]==-0.5)||(e->x[i]==0.5)){
+        result += wt[i] * ext->fn[0]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
+           * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[0]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
+           * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[1]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
+           * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[1]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+           * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[2]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
+          * e->ny[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_1_3_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+           * e->nx[i]*v->val[i];
+        result += wt[i] * ext->fn[3]->val[i] 
+        * (static_cast<EulerEquationsWeakForm_Surf*>(wf))->euler_fluxes->A_2_3_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
+          * e->ny[i]*v->val[i];
+				}
+      }
+            return (-result);
+    }
+
+    double EulerEquationsLinearFormBoundary_e::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
+      Geom<double> *e, ExtData<double> *ext) const 
+    {
+      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+    }
+
+    Ord EulerEquationsLinearFormBoundary_e::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+      ExtData<Ord> *ext) const
+    {
+      return Ord(20);
+    }
+
+    VectorFormSurf<double>* EulerEquationsLinearFormBoundary_e::clone() { return new EulerEquationsLinearFormBoundary_e(*this); }
+
+
+
+
+
+
+
 
 //----------Matrix K--------------
   EulerEquationsWeakForm_K::EulerEquationsWeakForm_K(double kappa,double time_step, Solution<double>* prev_density, Solution<double>* prev_density_vel_x, Solution<double>* prev_density_vel_y, Solution<double>* prev_energy, int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa))
 	{
-    add_matrix_form(new EulerEquationsBilinearFormDensity());
-    add_matrix_form(new EulerEquationsBilinearFormDensityVelX(kappa));
-    add_matrix_form(new EulerEquationsBilinearFormDensityVelY(kappa));
-    add_matrix_form(new EulerEquationsBilinearFormEnergy(kappa));
+    add_matrix_form(new EulerEquationsBilinearFormDensity(0));
+    add_matrix_form(new EulerEquationsBilinearFormDensity(1));
+    add_matrix_form(new EulerEquationsBilinearFormDensity(2));
+    add_matrix_form(new EulerEquationsBilinearFormDensity(3));
+
+   add_matrix_form(new EulerEquationsBilinearFormDensityVelX(kappa,0));
+   add_matrix_form(new EulerEquationsBilinearFormDensityVelX(kappa,1));
+   add_matrix_form(new EulerEquationsBilinearFormDensityVelX(kappa,2));
+   add_matrix_form(new EulerEquationsBilinearFormDensityVelX(kappa,3));
+
+    add_matrix_form(new EulerEquationsBilinearFormDensityVelY(kappa,0));
+    add_matrix_form(new EulerEquationsBilinearFormDensityVelY(kappa,1));
+    add_matrix_form(new EulerEquationsBilinearFormDensityVelY(kappa,2));
+    add_matrix_form(new EulerEquationsBilinearFormDensityVelY(kappa,3));
+
+    add_matrix_form(new EulerEquationsBilinearFormEnergy(kappa,0));
+    add_matrix_form(new EulerEquationsBilinearFormEnergy(kappa,1));
+    add_matrix_form(new EulerEquationsBilinearFormEnergy(kappa,2));
+    add_matrix_form(new EulerEquationsBilinearFormEnergy(kappa,3));
 
     for(unsigned int vector_form_i = 0;vector_form_i < this->mfvol.size();vector_form_i++) 
     {
@@ -374,30 +644,36 @@
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
       {
+			if(j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_0_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_0_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if(j==1){
+				
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_0_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_0_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if(j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_0_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_0_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if(j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_0_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_0_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+				}
       }
       return result;
     }
@@ -433,30 +709,35 @@
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
       {
+			if(j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_1_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_1_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if (j==1){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_1_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_1_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if (j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_1_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_1_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if (j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_1_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_1_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+				}
       }
       return result;
     }
@@ -484,30 +765,35 @@
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
       {
+			if(j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_2_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_2_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if (j==1){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_2_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_2_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if (j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_2_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_2_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if (j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_2_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_2_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+				}
       }
       return result;
     }
@@ -534,30 +820,35 @@
       Scalar result = Scalar(0);
       for (int i = 0;i < n;i++) 
       {
+			 if (j==0){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_3_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_3_0<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
           * v->dy[i];
+			}else if (j==1){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_3_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_3_1<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+			}else if (j==2){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_3_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_3_2<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], ext->fn[3]->val[i]) 
           * v->dy[i];
+			}else if (j==3){
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_1_3_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dx[i];
         result += wt[i] * u->val[i] 
         * (static_cast<EulerEquationsWeakForm_K*>(wf))->euler_fluxes->A_2_3_3<Scalar>(ext->fn[0]->val[i], ext->fn[1]->val[i], ext->fn[2]->val[i], Scalar(0)) 
           * v->dy[i];
+				}
       }
       return result;
     }
