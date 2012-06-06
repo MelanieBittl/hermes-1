@@ -22,7 +22,7 @@ double linear_approx_dx(Element* e, double x_i, double y_i,double x_c, double y_
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
 
 		double u_h_hat = d_u_h_x_c + R_h_1->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(x_i-x_c)
-															 + R_h_2->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(y_i-y_c);
+															 + R_h_1->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2)*(y_i-y_c);
 return u_h_hat;
 
 }
@@ -35,7 +35,7 @@ double linear_approx_dy(Element* e, double x_i, double y_i,double x_c, double y_
 
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2);
 
-		double u_h_hat = d_u_h_x_c + R_h_1->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2)*(x_i-x_c)
+		double u_h_hat = d_u_h_x_c + R_h_2->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(x_i-x_c)
 																+R_h_2->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2)*(y_i-y_c);
 return u_h_hat;
 
@@ -106,7 +106,7 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 	double u_min, u_max, u_min_dx, u_min_dy, u_max_dx, u_max_dy;
 	std::list<int>::iterator elem_id; 
 			 int smooth_fct_in_elem,smooth_dx_in_elem,smooth_dy_in_elem;
-	double epsilon = EPS; 
+	double epsilon = EPS_smooth; 
 
 	bool non_smooth = false; bool non_smooth_dx = false;bool non_smooth_dy = false;
 

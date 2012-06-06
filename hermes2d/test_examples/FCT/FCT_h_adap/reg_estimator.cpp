@@ -22,7 +22,7 @@ double linear_approx_dx(Element* e, double x_i, double y_i,double x_c, double y_
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
 
 		double u_h_hat = d_u_h_x_c + R_h_1->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(x_i-x_c)
-															 + R_h_2->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(y_i-y_c);
+															 + R_h_1->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2)*(y_i-y_c);
 return u_h_hat;
 
 }
@@ -35,7 +35,7 @@ double linear_approx_dy(Element* e, double x_i, double y_i,double x_c, double y_
 
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2);
 
-		double u_h_hat = d_u_h_x_c + R_h_1->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2)*(x_i-x_c)
+		double u_h_hat = d_u_h_x_c + R_h_2->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(x_i-x_c)
 																+R_h_2->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2)*(y_i-y_c);
 return u_h_hat;
 

@@ -14,8 +14,8 @@ project(hermes)
 	# OpenMP
   # "-1" stands for using as many threads as is the number of available cores.
   # Please be aware that the variable OMP_NUM_THREADS, that is often used for this purpose, is ignored.
-	set(NUM_THREADS -1)
-  
+	#set(NUM_THREADS -1)
+ 		set(NUM_THREADS 4)
 	# HermesCommon
 		set(HERMES_COMMON_DEBUG     YES)
 		set(HERMES_COMMON_RELEASE   YES)

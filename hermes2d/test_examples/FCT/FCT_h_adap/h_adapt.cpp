@@ -9,7 +9,7 @@ int max(int a, int b){
 
 
 	template<typename Scalar>
-bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,  HPAdapt* adapt,double h_min, double h_max)
+bool h_p_adap(Space<Scalar>* space,	UMFPackMatrix<double> * mass_matrix,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,  HPAdapt* adapt,double h_min, double h_max)
 {		
 
 	int ndof = space->get_num_dofs();
@@ -25,10 +25,10 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 
 	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, space);
 	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, space);
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ; 
+	//UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ; 
 	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ndof);
 	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
-	dp_1->assemble(mass_matrix,rhs_1); 
+	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearSolver<double> * solver_1 = new UMFPackLinearSolver<double> (mass_matrix,rhs_1);
 	if(solver_1->solve()){ 				
@@ -87,7 +87,7 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 	delete grad_2;
 	delete dp_1;
 	delete dp_2;
-	delete mass_matrix;
+	//delete mass_matrix;
 	delete rhs_1;
 	delete rhs_2;
 	delete solver_1;

@@ -26,7 +26,8 @@ const double T_FINAL = 2*PI;                       // Time interval length.
 const double P_ADAP_TOL_EX = 0.2;   
 const int 	 P_ADAP_MAX_ITER = 2;
  
-const double EPS = 1e-6;
+const double EPS = 1e-10;
+const double EPS_smooth = 1e-10;
 
 const double NEWTON_TOL = 1e-5;                   // Stopping criterion for the Newton's method.
 const int NEWTON_MAX_ITER = 20;                  // Maximum allowed number of Newton iterations.
@@ -98,13 +99,14 @@ ScalarView hview("Solution", new WinGeom(0, 500, 500, 400));
 	//sview.show(&u_prev_time, HERMES_EPS_HIGH); 
 	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
 	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
-	//mview.show(&space);
+
 
 
   // Output solution in VTK format.
 Linearizer lin;
 bool mode_3D = true;
-lin.save_solution_vtk(&u_prev_time, "init_hpadap_neu.vtk", "u", mode_3D);
+//lin.save_solution_vtk(&u_prev_time, "init_hpadap_neu.vtk", "u", mode_3D);
+Orderizer ord;
 
 		  // Initialize
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
@@ -143,9 +145,11 @@ lin.save_solution_vtk(&u_prev_time, "init_hpadap_neu.vtk", "u", mode_3D);
 
 
 
+
 	AsmList<double>*  al = new AsmList<double>;	
 
 	H1Space<double>* ref_space = new H1Space<double>(&mesh, &bcs, P_INIT);	
+
 
 
 
@@ -188,8 +192,9 @@ do
 
 
 		if(ps==1){
-			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;}
-					coord_dof(ref_space, al, P_plus,&u_prev_time);	
+			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.;}
+			//	if(ts==1)	coord_dof(ref_space, al, P_plus,&u_prev_time);
+				//else	coord_dof(ref_space, al, P_plus,&u_prev);
 
 		//----------------------MassLumping M_L/tau--------------------------------------------------------------------
 			dp_mass->assemble(mass_matrix,vec_rhs); 	
@@ -216,16 +221,16 @@ do
 			lowmat_rhs->add_matrix(lumped_matrix);	
 
 
-			high_matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
+		/*	high_matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 			high_matrix->multiply_with_Scalar(-theta);
 			high_matrix->add_matrix(mass_matrix);  
 			high_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 			high_rhs->multiply_with_Scalar((1.0-theta));
-			high_rhs->add_matrix(mass_matrix); 
+			high_rhs->add_matrix(mass_matrix); */
 
 
 			//Initialisierung von Q_plus_old,Q_minus_old
-	 Ax_mass = mass_matrix->get_Ax();
+	/*Ax_mass = mass_matrix->get_Ax();
 	 Ai_mass = mass_matrix->get_Ai();
 	 Ap_mass = mass_matrix->get_Ap();
 
@@ -241,7 +246,7 @@ do
 						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
 					}
 				}
-			}
+			}*/
 
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
@@ -262,26 +267,35 @@ do
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
 
 
-
-
+/*
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
-		//	Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
-		/*	sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
+			Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
+
+info("error_fct=%f",Global<double>::calc_rel_error(&u_new ,&u_prev_time,HERMES_L2_NORM));
+info("error_low=%f",Global<double>::calc_rel_error(&low_sln ,&u_prev_time,HERMES_L2_NORM));
+info("error_high=%f",Global<double>::calc_rel_error(&high_sln ,&u_prev_time,HERMES_L2_NORM));
+ //calc_norm(MeshFunction<Scalar>* sln, int norm_type);
+info("norm_fct=%f",Global<double>::calc_norm(&u_prev_time, HERMES_L2_NORM));
+info("norm_fct=%f",Global<double>::calc_norm(&u_new, HERMES_L2_NORM));
+info("norm_low=%f",Global<double>::calc_norm(&low_sln ,HERMES_L2_NORM));
+info("norm_high=%f",Global<double>::calc_norm(&high_sln ,HERMES_L2_NORM));
+
+		sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
-	/*sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
+	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
 			Lowview.set_title(title);
 			Lowview.show(&low_sln);
 	sprintf(title, "proj. high_Loesung, ps=%i, ts=%i", ps,ts);
 			hview.set_title(title);
-			hview.show(&high_sln);*/
+			hview.show(&high_sln);
 
 //lin.save_solution_vtk(&u_new, "proj_FCT_2.vtk", "u", mode_3D);
 	//lin.save_solution_vtk(&low_sln, "lumped_proj.vtk", "u", mode_3D);
 		//lin.save_solution_vtk(&high_sln, "high_proj.vtk", "u", mode_3D);
-	//View::wait(HERMES_WAIT_KEYPRESS);
-	
 
+
+	View::wait(HERMES_WAIT_KEYPRESS);*/
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(K+D) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, lumped_double); 
@@ -291,40 +305,17 @@ do
 				// u_L = coeff_vec_2 
 					Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &low_sln);	
 
-		//-------------solution of higher order------
-			high_rhs->multiply_with_vector(coeff_vec, coeff_vec_3); 
-			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_3);
-
-			UMFPackLinearSolver<double> * highOrd = new UMFPackLinearSolver<double> (high_matrix,vec_rhs);	
-			if(highOrd->solve()){ 
-				u_H = highOrd->get_sln_vector();  
-			//	Solution<double> ::vector_to_solution(u_H, ref_space, &high_sln);	
-			  }else error ("Matrix solver failed.\n");
-
-		//---------------------------------------antidiffusive fluxes-----------------------------------	
-			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
-			 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec_2,coeff_vec, coeff_vec_3, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
-		
-			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
-			vec_rhs->add_vector(coeff_vec_3);
-			UMFPackLinearSolver<double> * newSol = new UMFPackLinearSolver<double> (low_matrix,vec_rhs);	
-			if(newSol->solve()){ 
-				Solution<double> ::vector_to_solution(newSol->get_sln_vector(), ref_space, &u_new);	
-			}else error ("Matrix solver failed.\n");	 
-
-			smoothness_indicator(ref_space,&u_new,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,false);
-			changed = h_p_adap(ref_space,&u_prev_time, &u_new,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);			
-			/*sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
+				//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
+smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
+			changed = h_p_adap(ref_space,&u_prev_time, &low_sln,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);	
+	/*	sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
 				mview.show(ref_space);*/
 
-			
 
 			delete lumped_matrix; 
 			delete diffusion;
-			delete highOrd;
-			delete newSol; 	
+	
 
 
 			}else{
@@ -332,7 +323,10 @@ do
 //P=2 -----------------------------( nicht uniformes Gitter!!!!!!)
 					bool* fct = new bool[ref_ndof]; 
 			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.; fct[i]=false;}
-					 p1_list(ref_space, fct, al,P_plus,&u_prev_time,h_start);		
+					//if(ts==1) p1_list(ref_space, fct, al,P_plus,&u_prev_time,h_start);		
+					//else p1_list(ref_space, fct, al,P_plus,&u_prev,h_start);		
+					p1_list(ref_space, fct, al,h_start);		
+
 
 				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
 			dp_mass->assemble(mass_matrix,vec_rhs); 	
@@ -370,7 +364,7 @@ do
 
 
 		//Initialisierung von Q_plus_old,Q_minus_old
-	 Ax_mass = mass_matrix->get_Ax();
+/*	 Ax_mass = mass_matrix->get_Ax();
 	 Ai_mass = mass_matrix->get_Ai();
 	 Ap_mass = mass_matrix->get_Ap();
 		for(int j = 0; j<ref_ndof; j++){ //Spalten durchlaufen
@@ -387,12 +381,10 @@ do
 						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
 					}
 				}
-			}		
+			}*/		
 
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
-
-
 
 			// Project the initial condition on the FE space->coeff_vec	
 			if(ts==1) {
@@ -411,12 +403,12 @@ do
 
 
 
-			Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
+		/*	Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		//	Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 			sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
-	/*sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
+	sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
 			Lowview.set_title(title);
 			Lowview.show(&low_sln);
    	/*		sprintf(title, "high-sln adap-step %i", ps);
@@ -472,9 +464,9 @@ do
 
 
 			 // Visualize the solution.		 
-			sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
+			/*sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
-					sview.show(&u_new);
+					sview.show(&u_new);*/
 				
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
@@ -490,6 +482,8 @@ do
 			delete lowOrd;
 			delete newSol; 	
 			delete [] fct;
+			high_rhs->free();
+			high_matrix->free();
 
 }//Ende ps hoeher
 			
@@ -501,8 +495,7 @@ do
 			delete vec_rhs;
 			delete[] lumped_double;
 
-			high_rhs->free();
-			high_matrix->free();
+
 		delete [] smooth_elem;
 		delete [] smooth_dof;
  			delete [] P_plus;
@@ -537,13 +530,38 @@ do
   ts++;
     // Copy last reference solution into u_prev_time.
   //  u_prev_time.copy(&u_new);
+/*
+if(ts==1000){
+			lin.save_solution_vtk(&u_prev, "hpadap_smooth_1000.vtk", "solution", mode_3D);
+			ord.save_orders_vtk(ref_space, "mesh_1000.vtk");
+}
 
-
+if(ts==2000){
+			lin.save_solution_vtk(&u_prev, "hpadap_smooth_2000.vtk", "solution", mode_3D);
+		ord.save_orders_vtk(ref_space, "mesh_2000.vtk");
+}
+if(ts==3000){
+	lin.save_solution_vtk(&u_prev, "hpadap_smooth_3000.vtk", "solution", mode_3D);
+		ord.save_orders_vtk(ref_space, "mesh_3000.vtk");
+}
+if(ts==4000){
+		lin.save_solution_vtk(&u_prev, "hpadap_smooth_4000.vtk", "solution", mode_3D);
+		ord.save_orders_vtk(ref_space, "mesh_4000.vtk");
+}
+if(ts==5000){
+			lin.save_solution_vtk(&u_prev, "hpadap_smooth_5000.vtk", "solution", mode_3D);
+		ord.save_orders_vtk(ref_space, "mesh_5000.vtk");
+	}*/
 
 }
 while (current_time < T_FINAL);
 
-lin.save_solution_vtk(&u_prev_time, "end_hpadap_neu.vtk", "solution", mode_3D);
+
+lin.save_solution_vtk(&u_prev, "end_hpadap_smooth.vtk", "solution", mode_3D);
+ord.save_orders_vtk(ref_space, "mesh_end.vtk");
+//sview.show(&u_new);
+		mview.show(ref_space);
+mview.save_numbered_screenshot("solution.bmp", true);
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 
