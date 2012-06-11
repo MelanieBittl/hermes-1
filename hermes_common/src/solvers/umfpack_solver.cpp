@@ -886,7 +886,7 @@ namespace Hermes
     }
 
     template<>
-    bool UMFPackLinearSolver<double>::setup_factorization()
+    bool UMFPackLinearMatrixSolver<double>::setup_factorization()
     {
       _F_;
       // Perform both factorization phases for the first time.
@@ -929,27 +929,27 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    UMFPackLinearSolver<Scalar>::UMFPackLinearSolver(UMFPackMatrix<Scalar> *m, UMFPackVector<Scalar> *rhs)
+    UMFPackLinearMatrixSolver<Scalar>::UMFPackLinearMatrixSolver(UMFPackMatrix<Scalar> *m, UMFPackVector<Scalar> *rhs)
       : DirectSolver<Scalar>(HERMES_FACTORIZE_FROM_SCRATCH), m(m), rhs(rhs), symbolic(NULL), numeric(NULL)
     {
       _F_;
     }
 
     template<typename Scalar>
-    UMFPackLinearSolver<Scalar>::~UMFPackLinearSolver()
+    UMFPackLinearMatrixSolver<Scalar>::~UMFPackLinearMatrixSolver()
     {
       _F_;
       free_factorization_data();
     }
 
     template<typename Scalar>
-    int UMFPackLinearSolver<Scalar>::get_matrix_size()
+    int UMFPackLinearMatrixSolver<Scalar>::get_matrix_size()
     {
       return m->get_size();
     }
 
     template<>
-    bool UMFPackLinearSolver<std::complex<double> >::setup_factorization()
+    bool UMFPackLinearMatrixSolver<std::complex<double> >::setup_factorization()
     {
       _F_;
       // Perform both factorization phases for the first time.
@@ -992,7 +992,7 @@ namespace Hermes
     }
 
     template<>
-    void UMFPackLinearSolver<double>::free_factorization_data()
+    void UMFPackLinearMatrixSolver<double>::free_factorization_data()
     {
       _F_;
       if (symbolic != NULL) umfpack_di_free_symbolic(&symbolic);
@@ -1002,7 +1002,7 @@ namespace Hermes
     }
 
     template<>
-    void UMFPackLinearSolver<std::complex<double> >::free_factorization_data()
+    void UMFPackLinearMatrixSolver<std::complex<double> >::free_factorization_data()
     {
       _F_;
       if (symbolic != NULL) umfpack_zi_free_symbolic(&symbolic);
@@ -1012,7 +1012,7 @@ namespace Hermes
     }
 
     template<>
-    bool UMFPackLinearSolver<double>::solve()
+    bool UMFPackLinearMatrixSolver<double>::solve()
     {
       _F_;
       assert(m != NULL);
@@ -1024,7 +1024,7 @@ namespace Hermes
 
       int status;
 
-      if ( !setup_factorization() ) throw Exceptions::LinearSolverException("LU factorization could not be completed.");
+      if ( !setup_factorization() ) throw Exceptions::LinearMatrixSolverException("LU factorization could not be completed.");
 
       if(sln)
         delete [] sln;
@@ -1045,7 +1045,7 @@ namespace Hermes
     }
 
     template<>
-    bool UMFPackLinearSolver<std::complex<double> >::solve()
+    bool UMFPackLinearMatrixSolver<std::complex<double> >::solve()
     {
       _F_;
       assert(m != NULL);
@@ -1081,8 +1081,8 @@ namespace Hermes
       return true;
     }
 
-    template class HERMES_API UMFPackLinearSolver<double>;
-    template class HERMES_API UMFPackLinearSolver<std::complex<double> >;
+    template class HERMES_API UMFPackLinearMatrixSolver<double>;
+    template class HERMES_API UMFPackLinearMatrixSolver<std::complex<double> >;
   }
 }
 #endif
