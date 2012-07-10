@@ -59,11 +59,11 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
 	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
-	UMFPackLinearSolver<double> * solver_1 = new UMFPackLinearSolver<double> (mass_matrix,rhs_1);
+	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);
 	if(solver_1->solve()){ 				
 		Solution<double> ::vector_to_solution(solver_1->get_sln_vector() , space, R_h_1);	
 	}else error ("Matrix solver failed.\n");
-	UMFPackLinearSolver<double> * solver_2 = new UMFPackLinearSolver<double> (mass_matrix,rhs_2);	
+	UMFPackLinearMatrixSolver<double> * solver_2 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_2);	
 	if(solver_2->solve()){ 				
 		Solution<double> ::vector_to_solution(solver_2->get_sln_vector() , space, R_h_2);	
 	}else error ("Matrix solver failed.\n");
@@ -278,11 +278,11 @@ void smoothness_indicator_init(Space<double>* space,ExactSolutionScalar<double>*
 	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
 	dp_1->assemble(mass_matrix,rhs_1); 
 	dp_2->assemble(rhs_2);
-	UMFPackLinearSolver<double> * solver_1 = new UMFPackLinearSolver<double> (mass_matrix,rhs_1);
+	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);
 	if(solver_1->solve()){ 				
 		Solution<double> ::vector_to_solution(solver_1->get_sln_vector() , space, R_h_1);	
 	}else error ("Matrix solver failed.\n");
-	UMFPackLinearSolver<double> * solver_2 = new UMFPackLinearSolver<double> (mass_matrix,rhs_2);	
+	UMFPackLinearMatrixSolver<double> * solver_2 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_2);	
 	if(solver_2->solve()){ 				
 		Solution<double> ::vector_to_solution(solver_2->get_sln_vector() , space, R_h_2);	
 	}else error ("Matrix solver failed.\n");

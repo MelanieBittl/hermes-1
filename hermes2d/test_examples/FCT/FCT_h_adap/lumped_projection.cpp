@@ -47,7 +47,7 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 		 }
 
 		 lumped_matrix->create(size, size, col, row, diag);  //lumped Matrix aufstellen
-		UMFPackLinearSolver<double>* solver = new UMFPackLinearSolver<double>(lumped_matrix,rhs);		
+		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(lumped_matrix,rhs);		
 		if(solver->solve()){ 
 			coeff_vec = solver->get_sln_vector();		
 		}
@@ -58,7 +58,7 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 		delete lumped_matrix;
 	}else{ 
 		dp->assemble(rhs);
-		UMFPackLinearSolver<double>* solver = new UMFPackLinearSolver<double>(mat,rhs);		
+		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(mat,rhs);		
 		if(solver->solve()) 
 			coeff_vec = solver->get_sln_vector();			
 	 	 else error ("Matrix solver failed.\n");

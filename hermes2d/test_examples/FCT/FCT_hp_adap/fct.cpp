@@ -337,7 +337,7 @@ void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMat
 	UMFPackVector<Scalar>* vec_rhs = new UMFPackVector<Scalar>(ndof);	
 	vec_rhs->zero(); vec_rhs->add_vector(rhs);
 	Scalar* sol =NULL;
-	UMFPackLinearSolver<Scalar>* lowOrd = new UMFPackLinearSolver<Scalar>(lumped_matrix,vec_rhs);
+	UMFPackLinearMatrixSolver<Scalar>* lowOrd = new UMFPackLinearMatrixSolver<Scalar>(lumped_matrix,vec_rhs);
 	if(lowOrd->solve()){ 
 		sol = lowOrd->get_sln_vector();  			
 	}else error ("Matrix in lumped_flux solver failed.\n");
@@ -537,7 +537,7 @@ void lumped_flux_limiter(AsmList<Scalar>* al,UMFPackMatrix<Scalar>* mass_matrix,
 
 	vec_rhs->add_vector(rhs);
 	Scalar* sol =NULL;
-	UMFPackLinearSolver<Scalar>* lowOrd = new UMFPackLinearSolver<Scalar>(lumped_matrix,vec_rhs);
+	UMFPackLinearMatrixSolver<Scalar>* lowOrd = new UMFPackLinearMatrixSolver<Scalar>(lumped_matrix,vec_rhs);
 	if(lowOrd->solve()){ 
 		sol = lowOrd->get_sln_vector();  			
 	}else error ("Matrix in lumped_flux solver failed.\n");

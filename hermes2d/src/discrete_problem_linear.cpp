@@ -13,17 +13,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "discrete_problem_linear.h"
 #include <iostream>
+#include <algorithm>
 #include "global.h"
 #include "integrals/h1.h"
 #include "quadrature/limit_order.h"
-#include "discrete_problem_linear.h"
 #include "mesh/traverse.h"
 #include "space/space.h"
 #include "shapeset/precalc.h"
 #include "mesh/refmap.h"
 #include "function/solution.h"
 #include "neighbor.h"
+#include "api2d.h"
 
 using namespace Hermes::Algebra::DenseMatrixOperations;
 
@@ -52,16 +54,14 @@ namespace Hermes
       bool force_diagonal_blocks,
       Table* block_weights)
     {
-      _F_;
-
       this->current_mat = mat;
       this->current_rhs = rhs;
       this->current_force_diagonal_blocks = force_diagonal_blocks;
       this->current_block_weights = block_weights;
 
       // Check that the block scaling table have proper dimension.
-      if (block_weights != NULL)
-        if (block_weights->get_size() != this->wf->get_neq())
+      if(block_weights != NULL)
+        if(block_weights->get_size() != this->wf->get_neq())
           throw Exceptions::LengthException(6, block_weights->get_size(),this-> wf->get_neq());
 
       // Creating matrix sparse structure.
@@ -82,16 +82,16 @@ namespace Hermes
           ext_functions.push_back(this->wf->vfsurf.at(form_i)->ext[ext_i]);
 
       // Structures that cloning will be done into.
-      PrecalcShapeset*** pss = new PrecalcShapeset**[HermesApi.getParamValue("num_threads")];
-      PrecalcShapeset*** spss = new PrecalcShapeset**[HermesApi.getParamValue("num_threads")];
-      RefMap*** refmaps = new RefMap**[HermesApi.getParamValue("num_threads")];
-      Solution<Scalar>*** u_ext = new Solution<Scalar>**[HermesApi.getParamValue("num_threads")];
-      AsmList<Scalar>*** als = new AsmList<Scalar>**[HermesApi.getParamValue("num_threads")];
-      MeshFunction<Scalar>*** ext = new MeshFunction<Scalar>**[HermesApi.getParamValue("num_threads")];
-      Hermes::vector<MatrixFormVol<Scalar>*>* mfvol = new Hermes::vector<MatrixFormVol<Scalar>*>[HermesApi.getParamValue("num_threads")];
-      Hermes::vector<MatrixFormSurf<Scalar>*>* mfsurf = new Hermes::vector<MatrixFormSurf<Scalar>*>[HermesApi.getParamValue("num_threads")];
-      Hermes::vector<VectorFormVol<Scalar>*>* vfvol = new Hermes::vector<VectorFormVol<Scalar>*>[HermesApi.getParamValue("num_threads")];
-      Hermes::vector<VectorFormSurf<Scalar>*>* vfsurf = new Hermes::vector<VectorFormSurf<Scalar>*>[HermesApi.getParamValue("num_threads")];
+      PrecalcShapeset*** pss = new PrecalcShapeset**[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      PrecalcShapeset*** spss = new PrecalcShapeset**[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      RefMap*** refmaps = new RefMap**[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      Solution<Scalar>*** u_ext = new Solution<Scalar>**[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      AsmList<Scalar>*** als = new AsmList<Scalar>**[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      MeshFunction<Scalar>*** ext = new MeshFunction<Scalar>**[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      Hermes::vector<MatrixFormVol<Scalar>*>* mfvol = new Hermes::vector<MatrixFormVol<Scalar>*>[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      Hermes::vector<MatrixFormSurf<Scalar>*>* mfsurf = new Hermes::vector<MatrixFormSurf<Scalar>*>[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      Hermes::vector<VectorFormVol<Scalar>*>* vfvol = new Hermes::vector<VectorFormVol<Scalar>*>[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      Hermes::vector<VectorFormSurf<Scalar>*>* vfsurf = new Hermes::vector<VectorFormSurf<Scalar>*>[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
 
       // Fill these structures.
       this->init_assembling(NULL, pss, spss, refmaps, u_ext, als, ext_functions, ext, mfvol, mfsurf, vfvol, vfsurf);
@@ -108,9 +108,9 @@ namespace Hermes
 
       trav_master.begin(meshes.size(), &(meshes.front()));
 
-      Traverse* trav = new Traverse[HermesApi.getParamValue("num_threads")];
-      Hermes::vector<Transformable *>* fns = new Hermes::vector<Transformable *>[HermesApi.getParamValue("num_threads")];
-      for(unsigned int i = 0; i < HermesApi.getParamValue("num_threads"); i++)
+      Traverse* trav = new Traverse[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      Hermes::vector<Transformable *>* fns = new Hermes::vector<Transformable *>[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+      for(unsigned int i = 0; i < Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned j = 0; j < this->spaces.size(); j++)
           fns[i].push_back(pss[i][j]);
@@ -134,9 +134,9 @@ namespace Hermes
       MatrixFormSurf<Scalar>** current_mfsurf;
       VectorFormVol<Scalar>** current_vfvol;
       VectorFormSurf<Scalar>** current_vfsurf;
-      
+
 #define CHUNKSIZE 1
-      int num_threads_used = HermesApi.getParamValue("num_threads");
+      int num_threads_used = Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads);
 #pragma omp parallel shared(trav_master, mat, rhs) private(state_i, current_pss, current_spss, current_refmaps, current_als, current_mfvol, current_mfsurf, current_vfvol, current_vfsurf) num_threads(num_threads_used)
       {
 #pragma omp for schedule(dynamic, CHUNKSIZE)
@@ -173,10 +173,10 @@ namespace Hermes
       deinit_assembling(pss, spss, refmaps, u_ext, als, ext_functions, ext, mfvol, mfsurf, vfvol, vfsurf);
 
       trav_master.finish();
-      for(unsigned int i = 0; i < HermesApi.getParamValue("num_threads"); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads); i++)
         trav[i].finish();
 
-      for(unsigned int i = 0; i < HermesApi.getParamValue("num_threads"); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads); i++)
       {
         fns[i].clear();
       }
@@ -184,9 +184,9 @@ namespace Hermes
       delete [] trav;
 
       /// \todo Should this be really here? Or in assemble()?
-      if (this->current_mat != NULL)
+      if(this->current_mat != NULL)
         this->current_mat->finish();
-      if (this->current_rhs != NULL)
+      if(this->current_rhs != NULL)
         this->current_rhs->finish();
 
       if(this->DG_matrix_forms_present || this->DG_vector_forms_present)
@@ -201,7 +201,6 @@ namespace Hermes
     template<typename Scalar>
     void DiscreteProblemLinear<Scalar>::assemble_matrix_form(MatrixForm<Scalar>* form, int order, Func<double>** base_fns, Func<double>** test_fns, RefMap** current_refmaps, Solution<Scalar>** current_u_ext, AsmList<Scalar>** current_als, Traverse::State* current_state)
     {
-      _F_;
       bool surface_form = (dynamic_cast<MatrixFormVol<Scalar>*>(form) == NULL);
 
       double block_scaling_coef = this->block_scaling_coeff(form);
@@ -234,25 +233,25 @@ namespace Hermes
       // Actual form-specific calculation.
       for (unsigned int i = 0; i < current_als[form->i]->cnt; i++)
       {
-        if (current_als[form->i]->dof[i] < 0)
+        if(current_als[form->i]->dof[i] < 0)
           continue;
 
-        if ((!tra || surface_form) && current_als[form->i]->dof[i] < 0) 
+        if((!tra || surface_form) && current_als[form->i]->dof[i] < 0)
           continue;
         if(std::abs(current_als[form->i]->coef[i]) < 1e-12)
           continue;
-        if (!sym)
+        if(!sym)
         {
           for (unsigned int j = 0; j < current_als[form->j]->cnt; j++)
           {
             // Is this necessary, i.e. is there a coefficient smaller than 1e-12?
-            if (std::abs(current_als[form->j]->coef[j]) < 1e-12)
+            if(std::abs(current_als[form->j]->coef[j]) < 1e-12)
               continue;
 
             Func<double>* u = base_fns[j];
             Func<double>* v = test_fns[i];
 
-            if (current_als[form->j]->dof[j] >= 0)
+            if(current_als[form->j]->dof[j] >= 0)
             {
               if(surface_form)
                 local_stiffness_matrix[i][j] = 0.5 * block_scaling_coeff(form) * form->value(n_quadrature_points, jacobian_x_weights, u_ext, u, v, geometry, &ext) * form->scaling_factor * current_als[form->j]->coef[j] * current_als[form->i]->coef[i];
@@ -276,10 +275,10 @@ namespace Hermes
         {
           for (unsigned int j = 0; j < current_als[form->j]->cnt; j++)
           {
-            if (j < i && current_als[form->j]->dof[j] >= 0)
+            if(j < i && current_als[form->j]->dof[j] >= 0)
               continue;
             // Is this necessary, i.e. is there a coefficient smaller than 1e-12?
-            if (std::abs(current_als[form->j]->coef[j]) < 1e-12)
+            if(std::abs(current_als[form->j]->coef[j]) < 1e-12)
               continue;
 
             Func<double>* u = base_fns[j];
@@ -287,7 +286,7 @@ namespace Hermes
 
             Scalar val = block_scaling_coeff(form) * form->value(n_quadrature_points, jacobian_x_weights, u_ext, u, v, geometry, &ext) * form->scaling_factor * current_als[form->j]->coef[j] * current_als[form->i]->coef[i];
 
-            if (current_als[form->j]->dof[j] >= 0)
+            if(current_als[form->j]->dof[j] >= 0)
               local_stiffness_matrix[i][j] = local_stiffness_matrix[j][i] = val;
             else
             {
@@ -303,9 +302,9 @@ namespace Hermes
       this->current_mat->add(current_als[form->i]->cnt, current_als[form->j]->cnt, local_stiffness_matrix, current_als[form->i]->dof, current_als[form->j]->dof);
 
       // Insert also the off-diagonal (anti-)symmetric block, if required.
-      if (tra)
+      if(tra)
       {
-        if (form->sym < 0)
+        if(form->sym < 0)
           chsgn(local_stiffness_matrix, current_als[form->i]->cnt, current_als[form->j]->cnt);
         transpose(local_stiffness_matrix, current_als[form->i]->cnt, current_als[form->j]->cnt);
 #pragma omp critical (mat)
@@ -313,9 +312,9 @@ namespace Hermes
 
         // Linear problems only: Subtracting Dirichlet lift contribution from the RHS:
         for (unsigned int j = 0; j < current_als[form->i]->cnt; j++)
-          if (current_als[form->i]->dof[j] < 0)
+          if(current_als[form->i]->dof[j] < 0)
             for (unsigned int i = 0; i < current_als[form->j]->cnt; i++)
-              if (current_als[form->j]->dof[i] >= 0)
+              if(current_als[form->j]->dof[i] >= 0)
                 this->current_rhs->add(current_als[form->j]->dof[i], -local_stiffness_matrix[i][j]);
       }
 
@@ -326,7 +325,7 @@ namespace Hermes
       geometry->free();
       delete geometry;
     }
-    
+
     template class HERMES_API DiscreteProblemLinear<double>;
     template class HERMES_API DiscreteProblemLinear<std::complex<double> >;
   }

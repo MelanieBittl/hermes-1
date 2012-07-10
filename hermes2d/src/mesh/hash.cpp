@@ -29,7 +29,7 @@ namespace Hermes
 
     HashTable::~HashTable()
     {
-      free(); 
+      free();
     }
 
     void HashTable::init(int size)
@@ -38,7 +38,7 @@ namespace Hermes
       nqueries = ncollisions = 0;
 
       mask = size-1;
-      if (size & mask) error("Parameter 'size' must be a power of two.");
+      if(size & mask) throw Hermes::Exceptions::Exception("Parameter 'size' must be a power of two.");
 
       // allocate and initialize the hash tables
       v_table = new Node*[size];
@@ -61,21 +61,21 @@ namespace Hermes
       *ptr = NULL;
     }
 
-    Node* HashTable::get_node(int id) const 
+    Node* HashTable::get_node(int id) const
     {
-      return &(nodes[id]); 
+      return &(nodes[id]);
     }
 
     /// Returns the total number of nodes stored.
-    int HashTable::get_num_nodes() const 
+    int HashTable::get_num_nodes() const
     {
-      return nodes.get_num_items(); 
+      return nodes.get_num_items();
     }
 
     /// Returns the maximum node id number plus one.
-    int HashTable::get_max_node_id() const 
+    int HashTable::get_max_node_id() const
     {
-      return nodes.get_size(); 
+      return nodes.get_size();
     }
 
     void HashTable::copy(const HashTable* ht)
@@ -102,10 +102,10 @@ namespace Hermes
       for_all_nodes(node, this)
       {
         int p1 = node->p1, p2 = node->p2;
-        if (p1 > p2) std::swap(p1, p2);
+        if(p1 > p2) std::swap(p1, p2);
         int idx = hash(p1, p2);
 
-        if (node->type == HERMES_TYPE_VERTEX)
+        if(node->type == HERMES_TYPE_VERTEX)
         {
           node->next_hash = v_table[idx];
           v_table[idx] = node;
@@ -121,12 +121,12 @@ namespace Hermes
     void HashTable::free()
     {
       nodes.free();
-      if (v_table != NULL)
+      if(v_table != NULL)
       {
         delete [] v_table;
         v_table = NULL;
       }
-      if (e_table != NULL)
+      if(e_table != NULL)
       {
         delete [] e_table;
         e_table = NULL;
@@ -136,9 +136,9 @@ namespace Hermes
 
     void HashTable::dump_hash_stat()
     {
-      if (ncollisions > 2*nqueries)
+      if(ncollisions > 2*nqueries)
       {
-        warn("Hashtable: nqueries = %d ncollisions = %d", nqueries, ncollisions);
+        this->warn("Hashtable: nqueries = %d ncollisions = %d", nqueries, ncollisions);
       }
     }
 
@@ -147,7 +147,8 @@ namespace Hermes
       nqueries++;
       while (node != NULL)
       {
-        if (node->p1 == p1 && node->p2 == p2) return node;
+        if(node->p1 == p1 && node->p2 == p2)
+          return node;
         node = node->next_hash;
         ncollisions++;
       }
@@ -157,10 +158,10 @@ namespace Hermes
     Node* HashTable::get_vertex_node(int p1, int p2)
     {
       // search for the node in the vertex hashtable
-      if (p1 > p2) std::swap(p1, p2);
+      if(p1 > p2) std::swap(p1, p2);
       int i = hash(p1, p2);
       Node* node = search_list(v_table[i], p1, p2);
-      if (node != NULL) return node;
+      if(node != NULL) return node;
 
       // not found - create a new one
       Node* newnode = nodes.add();
@@ -185,10 +186,10 @@ namespace Hermes
     Node* HashTable::get_edge_node(int p1, int p2)
     {
       // search for the node in the edge hashtable
-      if (p1 > p2) std::swap(p1, p2);
+      if(p1 > p2) std::swap(p1, p2);
       int i = hash(p1, p2);
       Node* node = search_list(e_table[i], p1, p2);
-      if (node != NULL) return node;
+      if(node != NULL) return node;
 
       // not found - create a new one
       Node* newnode = nodes.add();
@@ -211,13 +212,13 @@ namespace Hermes
 
     Node* HashTable::peek_vertex_node(int p1, int p2)
     {
-      if (p1 > p2) std::swap(p1, p2);
+      if(p1 > p2) std::swap(p1, p2);
       return search_list(v_table[hash(p1, p2)], p1, p2);
     }
 
     Node* HashTable::peek_edge_node(int p1, int p2)
     {
-      if (p1 > p2) std::swap(p1, p2);
+      if(p1 > p2) std::swap(p1, p2);
       return search_list(e_table[hash(p1, p2)], p1, p2);
     }
 
@@ -229,7 +230,7 @@ namespace Hermes
       Node* node = *ptr;
       while (node != NULL)
       {
-        if (node->id == id)
+        if(node->id == id)
         {
           *ptr = node->next_hash;
           break;
@@ -250,7 +251,7 @@ namespace Hermes
       Node* node = *ptr;
       while (node != NULL)
       {
-        if (node->id == id)
+        if(node->id == id)
         {
           *ptr = node->next_hash;
           break;

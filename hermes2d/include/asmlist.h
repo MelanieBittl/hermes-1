@@ -34,7 +34,7 @@ namespace Hermes
     public:
       /// Constructor.
       AsmList();
-      
+
       /// Destructor.
       ~AsmList();
 
@@ -55,7 +55,6 @@ namespace Hermes
       Scalar* coef;  ///< array of coefficients
       unsigned int cnt;       ///< the number of items in the arrays idx, dof and coef
       unsigned int cap;       ///< internal
-      
 
 
       /// Internal. Enlarges the storage capacity.

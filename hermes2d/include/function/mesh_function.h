@@ -67,9 +67,10 @@ namespace Hermes
 
       virtual void pop_transform();
 
-      virtual MeshFunction<Scalar>* clone() 
+      virtual MeshFunction<Scalar>* clone()
       {
-        error("You need to implement MeshFunction::clone() to be able to use paralellization"); return NULL; 
+        throw Hermes::Exceptions::Exception("You need to implement MeshFunction::clone() to be able to use paralellization");
+        return NULL;
       }
 
     protected:
@@ -90,7 +91,7 @@ namespace Hermes
       friend class RefMap;
       template<typename T> friend class KellyTypeAdapt;
       template<typename T> friend class Adapt;
-      
+
       template<typename T> friend class Func;
       template<typename T> friend class Geom;
 

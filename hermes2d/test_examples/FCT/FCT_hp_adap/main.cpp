@@ -23,14 +23,12 @@ const double time_step = 1e-3;                           // Time step.
 
 const double T_FINAL = 2*PI;                       // Time interval length.
 
-const double P_ADAP_TOL_EX = 0.2;   
-const int 	 P_ADAP_MAX_ITER = 2;
+
  
 const double EPS = 1e-10;
 const double EPS_smooth = 1e-10;
 
-const double NEWTON_TOL = 1e-5;                   // Stopping criterion for the Newton's method.
-const int NEWTON_MAX_ITER = 20;                  // Maximum allowed number of Newton iterations.
+
 
 const int NDOF_STOP = 20000;   
 
@@ -308,9 +306,11 @@ info("norm_high=%f",Global<double>::calc_norm(&high_sln ,HERMES_L2_NORM));
 				//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
 smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
 			changed = h_p_adap(ref_space,&u_prev_time, &low_sln,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);	
-	/*	sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
+sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
-				mview.show(ref_space);*/
+				mview.show(ref_space);
+
+
 
 
 			delete lumped_matrix; 
@@ -426,7 +426,7 @@ smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al
 	//-------------------------solution of lower order------------	
 			  // Solve the linear system and if successful, obtain the solution. M_L/tau u^L=  M_L/tau+ (1-theta)(K+D) u^n
 			lumped_matrix->multiply_with_Scalar(1./time_step); //M_L/tau
-			UMFPackLinearSolver<double> * lowOrd = new UMFPackLinearSolver<double> (lumped_matrix,vec_rhs);	
+			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (lumped_matrix,vec_rhs);	
 			if(lowOrd->solve()){ 
 				u_L = lowOrd->get_sln_vector();  
 				Solution<double> ::vector_to_solution(u_L, ref_space, &low_sln);	
@@ -438,7 +438,7 @@ smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al
 			high_rhs->multiply_with_vector(coeff_vec, coeff_vec_3); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_3);
 
-			UMFPackLinearSolver<double> * highOrd = new UMFPackLinearSolver<double> (high_matrix,vec_rhs);	
+			UMFPackLinearMatrixSolver<double> * highOrd = new UMFPackLinearMatrixSolver<double> (high_matrix,vec_rhs);	
 			if(highOrd->solve()){ 
 				u_H = highOrd->get_sln_vector();  
 				Solution<double> ::vector_to_solution(u_H, ref_space, &high_sln);	
@@ -457,16 +457,16 @@ smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al
 	
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 			vec_rhs->add_vector(coeff_vec_3);
-			UMFPackLinearSolver<double> * newSol = new UMFPackLinearSolver<double> (low_matrix,vec_rhs);	
+			UMFPackLinearMatrixSolver<double> * newSol = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
 			if(newSol->solve()){ 
 				Solution<double> ::vector_to_solution(newSol->get_sln_vector(), ref_space, &u_new);	
 			}else error ("Matrix solver failed.\n");	
 
 
 			 // Visualize the solution.		 
-			/*sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
+			sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
-					sview.show(&u_new);*/
+					sview.show(&u_new);
 				
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
@@ -558,7 +558,7 @@ while (current_time < T_FINAL);
 
 
 lin.save_solution_vtk(&u_prev, "end_hpadap_smooth.vtk", "solution", mode_3D);
-ord.save_orders_vtk(ref_space, "mesh_end.vtk");
+//ord.save_orders_vtk(ref_space, "mesh_end.vtk");
 //sview.show(&u_new);
 		mview.show(ref_space);
 mview.save_numbered_screenshot("solution.bmp", true);

@@ -72,7 +72,7 @@ namespace Hermes
 
       /// Base class for Linearizer, Orderizer, Vectorizer.
 
-      class HERMES_API LinearizerBase
+      class HERMES_API LinearizerBase : public Hermes::Mixins::TimeMeasurable, public Hermes::Mixins::Loggable
       {
       public:
         void set_max_absolute_value(double max_abs);
@@ -111,6 +111,8 @@ namespace Hermes
         double eps;
 
         double min_val, max_val;
+
+        int del_slot;   ///< free slot index after a triangle which was deleted
 
         int peek_vertex(int p1, int p2);
 

@@ -72,8 +72,8 @@ namespace Hermes
     /// All shape functions are defined on the reference domain. For triangles, this is the
     /// standard triangle (-1,-1), (1,-1), (-1,1), and for quads this is the square (-1,1)^2.
     ///
-    /// The polynomial degree (or 'order') is an integer typically in the range [1-10] for H1
-    /// shapesets and [0-10] for H(curl) shapesets. Quadrilaterals are allowed to have different
+    /// The polynomial degree (or 'order') is an integer typically in the range[1-10] for H1
+    /// shapesets and[0-10] for H(curl) shapesets. Quadrilaterals are allowed to have different
     /// orders in the x and y directions (of the reference domain). The 'order' for quads thus
     /// has to be formed with the macro H2D_MAKE_QUAD_ORDER(), see h2d_common.h.
     ///
@@ -82,14 +82,14 @@ namespace Hermes
     ///
     /// Shape functions are always Real-valued.
     ///
-    class HERMES_API Shapeset
+    class HERMES_API Shapeset : public Hermes::Mixins::Loggable
     {
     public:
       ~Shapeset();
-      
+
       /// Shape-function function type. Internal.
       typedef double (*shape_fn_t)(double, double);
-      
+
       /// Returns the polynomial degree of the specified shape function.
       /// If on quads, it returns encoded orders. The orders has to be decoded through macros
       /// H2D_GET_H_ORDER and H2D_GET_V_ORDER.

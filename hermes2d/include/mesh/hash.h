@@ -38,7 +38,7 @@ namespace Hermes
     /// HashTable is a base class for Mesh. It serves as a container for all nodes
     /// of a mesh. Moreover, it has node searching functions based on hash tables.
     ///
-    class HERMES_API HashTable
+    class HERMES_API HashTable : public Hermes::Mixins::Loggable
     {
     public:
       /// Retrieves a node by its id number.
@@ -75,7 +75,7 @@ namespace Hermes
       Array<Node> nodes; ///< Array storing all nodes
 
       /// Initializes the hash table.
-      /// \param size [in] Hash table size; must be a power of two.
+      /// \param size[in] Hash table size; must be a power of two.
       void init(int size = H2D_DEFAULT_HASH_SIZE);
 
       /// Copies another hash table contents
@@ -95,7 +95,6 @@ namespace Hermes
 
       /// Removes an edge node with parent id's p1 and p2.
       void remove_edge_node(int id);
-
 
       // Internal members
     private:

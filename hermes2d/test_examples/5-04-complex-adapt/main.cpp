@@ -66,10 +66,6 @@ const double OMEGA = 2 * M_PI * FREQ;
 
 int main(int argc, char* argv[])
 {
-  // Time measurement.
-  TimePeriod cpu_time;
-  cpu_time.tick();
-
   // Load the mesh.
   Mesh mesh;
   MeshReaderH2D mloader;
@@ -85,7 +81,6 @@ int main(int argc, char* argv[])
   // Create an H1 space with default shapeset.
   H1Space<std::complex<double> > space(&mesh, &bcs, P_INIT);
   int ndof = space.get_num_dofs();
-  info("ndof = %d", ndof);
 
   // Initialize the weak formulation.
   CustomWeakForm wf("Air", MU_0, "Iron", MU_IRON, GAMMA_IRON,
@@ -108,23 +103,17 @@ int main(int argc, char* argv[])
   int as = 1; bool done = false;
   do
   {
-    info("---- Adaptivity step %d:", as);
-
     // Construct globally refined reference mesh and setup reference space.
     Space<std::complex<double> >* ref_space = Space<std::complex<double> >::construct_refined_space(&space);
 
     DiscreteProblem<std::complex<double> > dp(&wf, ref_space);
 
     // Perform Newton's iteration and translate the resulting coefficient vector into a Solution.
-    Hermes::Hermes2D::NewtonSolver<std::complex<double> > newton(&dp, matrix_solver_type);
+    Hermes::Hermes2D::NewtonSolver<std::complex<double> > newton(&dp);
 
     int ndof_ref = ref_space->get_num_dofs();
 
     // Initialize reference problem.
-    info("Solving on reference mesh.");
-
-    // Time measurement.
-    cpu_time.tick();
 
     // Initial coefficient vector for the Newton's method.
     std::complex<double>* coeff_vec = new std::complex<double>[ndof_ref];
@@ -132,7 +121,7 @@ int main(int argc, char* argv[])
 
     // Perform Newton's iteration and translate the resulting coefficient vector into a Solution.
     // For iterative solver.
-    if (matrix_solver_type == SOLVER_AZTECOO)
+    if(matrix_solver_type == SOLVER_AZTECOO)
     {
       newton.set_iterative_method(iterative_method);
       newton.set_preconditioner(preconditioner);
@@ -140,16 +129,15 @@ int main(int argc, char* argv[])
     try{
       newton.solve(coeff_vec);
     }
-    catch(Hermes::Exceptions::Exception e)
+    catch(Hermes::Exceptions::Exception& e)
     {
       e.printMsg();
-      error("Newton's iteration failed.");
     }
     Hermes::Hermes2D::Solution<std::complex<double> >::vector_to_solution(newton.get_sln_vector(), ref_space, &ref_sln);
 
     // Project the fine mesh solution onto the coarse mesh.
-    info("Projecting reference solution on coarse mesh.");
-    OGProjection<std::complex<double> >::project_global(&space, &ref_sln, &sln, matrix_solver_type);
+    OGProjection<std::complex<double> > ogProjection;
+    ogProjection.project_global(&space, &ref_sln, &sln);
 
     // View the coarse mesh solution and polynomial orders.
     RealFilter real_filter(&sln);
@@ -158,31 +146,20 @@ int main(int argc, char* argv[])
     oview.show(&space);
 
     // Calculate element errors and total error estimate.
-    info("Calculating error estimate.");
     Adapt<std::complex<double> >* adaptivity = new Adapt<std::complex<double> >(&space);
     double err_est_rel = adaptivity->calc_err_est(&sln, &ref_sln) * 100;
-
-    // Report results.
-    info("ndof_coarse: %d, ndof_fine: %d, err_est_rel: %g%%",
-      space.get_num_dofs(), ref_space->get_num_dofs(), err_est_rel);
-
-    // Time measurement.
-    cpu_time.tick();
 
     // Add entry to DOF and CPU convergence graphs.
     graph_dof.add_values(space.get_num_dofs(), err_est_rel);
     graph_dof.save("conv_dof_est.dat");
-    graph_cpu.add_values(cpu_time.accumulated(), err_est_rel);
-    graph_cpu.save("conv_cpu_est.dat");
 
     // If err_est too large, adapt the mesh.
-    if (err_est_rel < ERR_STOP) done = true;
+    if(err_est_rel < ERR_STOP) done = true;
     else
     {
-      info("Adapting coarse mesh.");
       done = adaptivity->adapt(&selector, THRESHOLD, STRATEGY, MESH_REGULARITY);
     }
-    if (space.get_num_dofs() >= NDOF_STOP) done = true;
+    if(space.get_num_dofs() >= NDOF_STOP) done = true;
 
     // Clean up.
     delete [] coeff_vec;
@@ -192,8 +169,6 @@ int main(int argc, char* argv[])
     as++;
   }
   while (done == false);
-
-  verbose("Total running time: %g s", cpu_time.accumulated());
 
   // Show the reference solution - the final result.
   sview.set_title("Fine mesh solution");

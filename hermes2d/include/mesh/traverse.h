@@ -15,6 +15,9 @@
 
 #ifndef __H2D_TRAVERSE_H
 #define __H2D_TRAVERSE_H
+
+#include "hermes_common.h"
+
 namespace Hermes
 {
   namespace Hermes2D
@@ -31,12 +34,12 @@ namespace Hermes
     struct SurfPos
     {
       int marker;    ///< surface marker (surface = edge in 2D and face in 3D)
-      int surf_num;	 ///< local element surface number
+      int surf_num;   ///< local element surface number
 
       Element *base; ///< for internal use
 
       int v1, v2;    ///< H2D only: edge endpoint vertex id numbers
-      double t;      ///< H2D only: position between v1 and v2 in the range [0..1]
+      double t;      ///< H2D only: position between v1 and v2 in the range[0..1]
       double lo, hi; ///< H2D only: for internal use
     };
 
@@ -45,14 +48,12 @@ namespace Hermes
     struct State;
     struct Rect;
 
-
     struct UniData
     {
       Element* e;
       uint64_t idx;
     };
-    
-      
+
     static const uint64_t ONE = (uint64_t) 1 << 63;
 
     struct Rect
@@ -60,12 +61,11 @@ namespace Hermes
       uint64_t l, b, r, t;
     };
 
-      
     /// Traverse is a multi-mesh traversal utility class. Given N meshes sharing the
     /// same base mesh it walks through all (pseudo-)elements of the union of all
     /// the N meshes.
     ///
-    class HERMES_API Traverse
+    class HERMES_API Traverse : public Hermes::Mixins::Loggable
     {
     public:
       Traverse(bool master = false);
@@ -105,7 +105,7 @@ namespace Hermes
       void init_transforms(State* s, int i);
 
       UniData** construct_union_mesh(Mesh* unimesh);
-      
+
       int num;
       Mesh** meshes;
       Transformable** fn;

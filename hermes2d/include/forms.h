@@ -50,24 +50,24 @@ namespace Hermes
       T *curl;           ///< Components of the curl of a vector field.
       T *div;            ///< Components of the div of a vector field.
       uint64_t sub_idx;  ///< Sub-element transformation.
-      
+
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_val_central(int k) const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      virtual T& get_val_central(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_val_neighbor(int k) const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      virtual T& get_val_neighbor(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_dx_central(int k) const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      virtual T& get_dx_central(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_dx_neighbor(int k) const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      virtual T& get_dx_neighbor(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_dy_central(int k) const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS);  return * new T; }
+      virtual T& get_dy_central(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS);  return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_dy_neighbor(int k) const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      virtual T& get_dy_neighbor(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_laplace_central(int k) { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      virtual T& get_laplace_central(int k) { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T& get_laplace_neighbor(int k) { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
-      
+      virtual T& get_laplace_neighbor(int k) { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+
       /// Dellocates an instance of Func<Ord>
       virtual void free_ord();
 
@@ -80,7 +80,7 @@ namespace Hermes
       /// Alternatively, both Func::get_*_central and Func::get_*_neighbor could return the central values as
       /// expected from a continuous function.
       virtual ~Func() { };
-      
+
       void subtract(const Func<T>& func);
       void add(T* attribute, T* other_attribute);
 
@@ -89,7 +89,7 @@ namespace Hermes
     protected:
       const int num_gip; ///< Number of integration points used by this intance.
       const int nc;      ///< Number of components. Currently accepted values are 1 (H1, L2 space) and 2 (Hcurl, Hdiv space).
-      
+
       /// Constructor.
       /** \param[in] num_gip A number of integration points.
       *  \param[in] num_comps A number of components. */
@@ -199,21 +199,21 @@ namespace Hermes
     public:
       T diam;           ///< Element diameter (for edge, diameter of the parent element).
       T area;           ///< Element area (for edge, area of the parent element).
-      T *x, *y;         ///< Coordinates [in physical domain].
-      T *nx, *ny;       ///< Normals [in physical domain] (locally oriented
+      T *x, *y;         ///< Coordinates[in physical domain].
+      T *nx, *ny;       ///< Normals[in physical domain] (locally oriented
       ///< to point outside the element). Only for edge
       ///< (undefined for element).
-      T *tx, *ty;       ///< Tangents [in physical domain]. Only for edge.
+      T *tx, *ty;       ///< Tangents[in physical domain]. Only for edge.
       int id;           ///< ID number of the element (undefined for edge).
       int isurf;        ///< Order number of an edge of the element.
 
       /// Methods designed for discontinuous functions, return errors here.
-      virtual int get_neighbor_marker() const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return -1; }
+      virtual int get_neighbor_marker() const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return -1; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual int get_neighbor_id()     const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return -1; }
+      virtual int get_neighbor_id()     const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return -1; }
       /// Methods designed for discontinuous functions, return errors here.
-      virtual T   get_neighbor_diam()   const { error(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return  T(); }
-      
+      virtual T   get_neighbor_diam()   const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return  T(); }
+
       /// Virtual destructor allowing deallocation of inherited classes (InterfaceGeom) in polymorphic cases.
       virtual ~Geom() {};
 
@@ -222,9 +222,9 @@ namespace Hermes
       virtual void free_ord() {};
       int elem_marker;       ///< Element marker (for both volumetric and surface forms).
       int edge_marker;       ///< Edge marker (for surface forms only).
-      
+
     protected:
-      int orientation;  ///< 0 .... if (nx, ny) is equal to the global normal,
+      int orientation;  ///< 0 .... if(nx, ny) is equal to the global normal,
       ///< otherwise 1 (each edge has a unique global normal).
       ///< Only for edge.
 
@@ -243,7 +243,6 @@ namespace Hermes
       friend class ErrorEstimatorFormKelly;
       template<typename Scalar> friend class Adapt;
     };
-
 
     /// Small class which contains information about the element on the other side of an interface.
     ///
@@ -265,7 +264,7 @@ namespace Hermes
       /// Constructor.
       InterfaceGeom(Geom<T>* geom, int n_marker, int n_id, T n_diam);
       Geom<T>* wrapped_geom;
-      
+
       virtual void free();
       virtual void free_ord();
 
@@ -282,7 +281,6 @@ namespace Hermes
     HERMES_API Geom<double>* init_geom_vol(RefMap *rm, const int order);
     /// Init element geometry for surface integrals.
     HERMES_API Geom<double>* init_geom_surf(RefMap *rm, int isurf, int marker, const int order, double3*& tan);
-
 
     /// Init the function for calculation the integration order.
     HERMES_API Func<Hermes::Ord>* init_fn_ord(const int order);
