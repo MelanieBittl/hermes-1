@@ -38,85 +38,18 @@ public:
 };
 
 
-
-/// Custom boundary condition
-class CustomBC_v_x : public EssentialBoundaryCondition<double> {
+class CustomInitialCondition_p : public ExactSolutionScalar<double>
+{
 public:
-  CustomBC_v_x(std::string marker, double kappa) 
-           : EssentialBoundaryCondition<double>(Hermes::vector<std::string>()), kappa(kappa)
-  {
-    markers.push_back(marker);
-  }
+  CustomInitialCondition_p(Mesh* mesh) : ExactSolutionScalar<double>(mesh) {};
+   ~CustomInitialCondition_p(){};
 
-  ~CustomBC_v_x() {};
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 
-  inline EssentialBCValueType get_value_type() const { 
-    return EssentialBoundaryCondition<double>::BC_FUNCTION; 
-  }
+  virtual double value (double x, double y) const;
 
-  virtual double value(double x, double y, double n_x, double n_y, double t_x, double t_y) const;
-
+ virtual Ord ord(Ord x, Ord y) const ;
 	double kappa;
 };
-
-class CustomBC_v_y : public EssentialBoundaryCondition<double> {
-public:
-  CustomBC_v_y(std::string marker, double kappa) 
-           : EssentialBoundaryCondition<double>(Hermes::vector<std::string>()), kappa(kappa)
-  {
-    markers.push_back(marker);
-  }
-
-  ~CustomBC_v_y() {};
-
-  inline EssentialBCValueType get_value_type() const { 
-    return EssentialBoundaryCondition<double>::BC_FUNCTION; 
-  }
-
-  virtual double value(double x, double y, double n_x, double n_y, double t_x, double t_y) const;
-
-	double kappa;
-
-};
-class CustomBC_rho : public EssentialBoundaryCondition<double> {
-public:
-  CustomBC_rho(std::string marker, double kappa) 
-           : EssentialBoundaryCondition<double>(Hermes::vector<std::string>()), kappa(kappa)
-  {
-    markers.push_back(marker);
-  }
-
-  ~CustomBC_rho() {};
-
-  inline EssentialBCValueType get_value_type() const { 
-    return EssentialBoundaryCondition<double>::BC_FUNCTION; 
-  }
-
-  virtual double value(double x, double y, double n_x, double n_y, double t_x, double t_y) const;
-
-	double kappa;
-
-};
-
-class CustomBC_e : public EssentialBoundaryCondition<double> {
-public:
-  CustomBC_e(std::string marker, double kappa) 
-           : EssentialBoundaryCondition<double>(Hermes::vector<std::string>()), kappa(kappa)
-  {
-    markers.push_back(marker);
-  }
-
-  ~CustomBC_e() {};
-
-  inline EssentialBCValueType get_value_type() const { 
-    return EssentialBoundaryCondition<double>::BC_FUNCTION; 
-  }
-
-  virtual double value(double x, double y, double n_x, double n_y, double t_x, double t_y) const;
-
-	double kappa;
-
-};
-
 
 #endif

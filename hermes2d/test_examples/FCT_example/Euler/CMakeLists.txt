@@ -1,6 +1,6 @@
 project(Euler)
 
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp euler_util.cpp initial_condition.cpp)
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp euler_util.cpp initial_condition.cpp boundary_condition.cpp)
 #include (${hermes2d_SOURCE_DIR}/CMake.common)
 #set_common_target_properties(${PROJECT_NAME})
 

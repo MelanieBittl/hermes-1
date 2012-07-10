@@ -23,14 +23,11 @@ const double time_step = 1e-3;                           // Time step.
 
 const double T_FINAL = 2*PI;                       // Time interval length.
 
-const double P_ADAP_TOL_EX = 0.2;   
-const int 	 P_ADAP_MAX_ITER = 2;
- 
-const double EPS = 1e-10;
-const double EPS_smooth = 1e-10;
 
-const double NEWTON_TOL = 1e-5;                   // Stopping criterion for the Newton's method.
-const int NEWTON_MAX_ITER = 20;                  // Maximum allowed number of Newton iterations.
+const double EPS = 1e-8;
+const double EPS_smooth = 1e-8;
+
+
 
 const int NDOF_STOP = 20000;   
 
@@ -84,7 +81,9 @@ int main(int argc, char* argv[])
 
   // Previous time level solution (initialized by the initial condition).
   CustomInitialCondition u_prev_time(&mesh);   	
-	
+
+
+
   // Initialize the weak formulation.
 	CustomWeakFormMassmatrix  massmatrix(time_step, &u_prev_time);
 	CustomWeakFormConvection  convection(&u_prev_time);
@@ -108,8 +107,13 @@ bool mode_3D = true;
 		  // Initialize
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
 	UMFPackMatrix<double> * conv_matrix = new UMFPackMatrix<double> ;   //K
-	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double> ;  
+	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double> ; 
+
+	UMFPackMatrix<double> * mass_matrix_uni = new UMFPackMatrix<double> ;   //M_c/tau
+	UMFPackMatrix<double> * conv_matrix_uni = new UMFPackMatrix<double> ;   //K
+	UMFPackMatrix<double> * lowmat_rhs_uni = new UMFPackMatrix<double> ; 
+
 
 		UMFPackMatrix<double> * high_matrix = new UMFPackMatrix<double> ;  
 	UMFPackMatrix<double> * high_rhs = new UMFPackMatrix<double> ; 
@@ -142,6 +146,31 @@ bool mode_3D = true;
 	int* Ai_mass;
 	int* Ap_mass;
 	int ref_ndof;
+
+
+
+				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
+			dp_mass->assemble(mass_matrix_uni); 	
+			UMFPackMatrix<double> * lumped_matrix_uni = massLumping(mass_matrix_uni);
+			//------------------------artificial DIFFUSION D---------------------------------------	
+			dp_convection->assemble(conv_matrix_uni, NULL,true);
+			UMFPackMatrix<double> * diffusion_uni = artificialDiffusion(conv_matrix_uni);
+
+			lowmat_rhs_uni->create(conv_matrix_uni->get_size(),conv_matrix_uni->get_nnz(), conv_matrix_uni->get_Ap(), conv_matrix_uni->get_Ai(),conv_matrix_uni->get_Ax());
+			lowmat_rhs_uni->add_matrix(diffusion_uni); 
+			//(1-theta)(K+D)
+			if(theta ==1) lowmat_rhs_uni->zero();
+			else lowmat_rhs_uni->multiply_with_Scalar((1.0-theta));
+			//M_L/tau+(1-theta)(K+D)
+			lowmat_rhs_uni->add_matrix(lumped_matrix_uni);
+			lumped_matrix_uni->multiply_with_Scalar(time_step);  // M_L
+			mass_matrix_uni->multiply_with_Scalar(time_step);  // massmatrix = M_C
+
+	int* elements_to_refine = new int[ref_space->get_mesh()->get_max_element_id()];   // 0 = nothing..
+	int* no_of_refinement_steps = new int[ref_space->get_mesh()->get_max_element_id()];	
+		double* elem_error = new double[ref_space->get_mesh()->get_max_element_id()];
+
+
 //Timestep loop
 do
 {	 info(" Time step %d, time %3.5f", ts, current_time); 
@@ -182,56 +211,36 @@ if(ps==1){
 			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.;}
 			//p1_list_fast(ref_space, al, P_plus,&u_prev_time);
 
-				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
-			dp_mass->assemble(mass_matrix); 	
-			UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
-
-			//------------------------artificial DIFFUSION D---------------------------------------	
-			dp_convection->assemble(conv_matrix, NULL,true);
-			UMFPackMatrix<double> * diffusion = artificialDiffusion(conv_matrix);
-
-			//--------------------------------------------------------------------------------------------
-			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
-			lowmat_rhs->add_matrix(diffusion); 
-			//(1-theta)(K+D)
-			if(theta ==1) lowmat_rhs->zero();
-			else lowmat_rhs->multiply_with_Scalar((1.0-theta));
-			//M_L/tau+(1-theta)(K+D)
-			lowmat_rhs->add_matrix(lumped_matrix);
 
 			//Initialisierung von Q_plus_old,Q_minus_old
-/*	Ax_mass = mass_matrix->get_Ax();
-	Ai_mass = mass_matrix->get_Ai();
-	Ap_mass = mass_matrix->get_Ap();
+	/*Ax_mass = mass_matrix_uni->get_Ax();
+	Ai_mass = mass_matrix_uni->get_Ai();
+	Ap_mass = mass_matrix_uni->get_Ap();
 
 		for(int j = 0; j<ref_ndof; j++){ //Spalten durchlaufen
 				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
 							int i = Ai_mass[indx];	
 							if((Ax_mass[indx]!=0.)&&(j<i)){
-						f = lumped_matrix->get_Ax()[i]*(P_plus[j]- P_plus[i]); 
+						f = lumped_matrix_uni->get_Ax()[i]*(P_plus[j]- P_plus[i])/time_step; 
 						if(f>Q_plus_old[i]) Q_plus_old[i] = f;				
 						if(f<Q_minus_old[i]) Q_minus_old[i] = f;			
-						f= lumped_matrix->get_Ax()[j]*(P_plus[i]- P_plus[j]); 
+						f= lumped_matrix_uni->get_Ax()[j]*(P_plus[i]- P_plus[j])/time_step; 
 						if(f>Q_plus_old[j]) Q_plus_old[j] = f;	
 						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
 					}
 				}
 			}*/
 
-			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
-			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 
-		
+	
 //----------------- Project the initial condition on the FE space->coeff_vec	
 			//info("projection");
-			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
+			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix_uni);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
-				Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
-		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
-			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
+			//	Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
+	//	smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
+			lumped_flux_limiter(mass_matrix_uni, lumped_matrix_uni, coeff_vec, coeff_vec_2,
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
-
-
 
 			//Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		//Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
@@ -253,37 +262,33 @@ if(ps==1){
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(K+D) u^n------------	
 //coeff_vec = u_old = u_n	
-			lowmat_rhs->multiply_with_vector(coeff_vec, lumped_double); 
+			lowmat_rhs_uni->multiply_with_vector(coeff_vec, lumped_double); 
 
 	//-------------------------solution of lower order------------	
 			  // Solve the linear system and if successful, obtain the solution. M_L/tau u^L=  M_L/tau+ (1-theta)(K+D) u^n
-				for(int i=0; i<ref_ndof;i++) coeff_vec_2[i]=lumped_double[i]*time_step/lumped_matrix->get_Ax()[i];	
+				for(int i=0; i<ref_ndof;i++) coeff_vec_2[i]=lumped_double[i]*time_step/lumped_matrix_uni->get_Ax()[i];	
 				//coeff_vec_2 = u_L
 					Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &low_sln);	
 
- 			changed = h_p_adap(ref_space,mass_matrix,&low_sln,&R_h_1,&R_h_2,adapting,h_min,h_max);		
-		/*	sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
+ 			changed = h_p_adap(ref_space,mass_matrix_uni,&low_sln,&R_h_1,&R_h_2,adapting,h_min,h_max,elements_to_refine,no_of_refinement_steps, elem_error);		
+			/*sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
 				mview.show(ref_space);*/
 
-			delete lumped_matrix; 
-			delete diffusion;
 
 
 }else{
 			UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
 			double* coeff_vec_3 = new double[ref_ndof]; 
 			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.;}
-		//	p1_list_fast(ref_space, al, P_plus,&u_prev_time);
+			//p1_list_fast(ref_space, al, P_plus,&u_prev_time);
 
 				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
 			dp_mass->assemble(mass_matrix); 	
 			UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
-
 			//------------------------artificial DIFFUSION D---------------------------------------	
 			dp_convection->assemble(conv_matrix, NULL,true);
 			UMFPackMatrix<double> * diffusion = artificialDiffusion(conv_matrix);
-
 			//--------------------------------------------------------------------------------------------
 			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 			lowmat_rhs->add_matrix(diffusion); 
@@ -309,7 +314,7 @@ if(ps==1){
 
 
 			//Initialisierung von Q_plus_old,Q_minus_old
-/*	Ax_mass = mass_matrix->get_Ax();
+	/*Ax_mass = mass_matrix->get_Ax();
 	Ai_mass = mass_matrix->get_Ai();
 	Ap_mass = mass_matrix->get_Ap();
 
@@ -339,8 +344,6 @@ if(ps==1){
 		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
 			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
-
-
 
 			//Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		//Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
@@ -408,9 +411,9 @@ if(ps==1){
 //info("CPU_Time:  %g -------------- %g", time1, flux_time);
 
 			 // Visualize the solution.			 
-		sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
+		/*sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
-					sview.show(&u_new);
+					sview.show(&u_new);*/
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
 			
@@ -423,6 +426,7 @@ if(ps==1){
 			delete diffusion;
 			delete vec_rhs;
 		  low_matrix->free();
+	 		lowmat_rhs->free();
 			delete[] coeff_vec_3;
 
 
@@ -444,7 +448,7 @@ if(ps==1){
 			delete [] R_minus;
 			delete[] coeff_vec_2;
 			 delete [] coeff_vec;
-	 		lowmat_rhs->free();
+
 
 
 	}while(ps<3);
@@ -460,13 +464,22 @@ if(ps==1){
 }
 while (current_time < T_FINAL);
 
-				// sview.set_title(title);
-lin.save_solution_vtk(&u_prev_time, "end_h_adap_smooth.vtk", "solution", mode_3D);
+CustomInitialCondition exact_solution(ref_space->get_mesh());
+	Adapt<double>* error_estimation = new Adapt<double>(ref_space, HERMES_L2_NORM);	
+double err_est = error_estimation->calc_err_est(&exact_solution,&u_prev_time,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
+double err_est_2 = error_estimation->calc_err_est(&u_prev_time,&exact_solution,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
+printf("err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
+FILE * pFile;
+pFile = fopen ("error.txt","w");
+     fprintf (pFile, "err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
+fclose (pFile);
+
+lin.save_solution_vtk(&u_prev_time, "end_non_smooth_h_adap.vtk", "solution", mode_3D);
 
 
 //sview.show(&u_new);
-mview.show(ref_space);
-mview.save_numbered_screenshot("solution.bmp", true);
+//mview.show(ref_space);
+//mview.save_numbered_screenshot("solution.bmp", true);
 
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
@@ -487,9 +500,15 @@ mview.save_numbered_screenshot("solution.bmp", true);
 	delete high_matrix;
 	delete high_rhs;
 
+	delete mass_matrix_uni;  
+	delete conv_matrix_uni;
+	delete lowmat_rhs_uni;
 delete al;
 
 
+			delete [] elements_to_refine;
+			delete [] no_of_refinement_steps;
+		delete [] elem_error;
 
 
   // Wait for the view to be closed.

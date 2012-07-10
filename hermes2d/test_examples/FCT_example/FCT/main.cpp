@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 1; 
 const double h_max = 0.1;                       
@@ -74,19 +74,19 @@ int main(int argc, char* argv[])
 
 
   // Initialize views.
-	ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
+	//ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
 	//Lowview.show(&u_prev_time, HERMES_EPS_HIGH);
-	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
+	//ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 	//sview.show(&u_prev_time, HERMES_EPS_HIGH); 
-	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
-	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
+	//ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
+	//OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 	//mview.show(&space);
 
 
   // Output solution in VTK format.
 Linearizer lin;
 bool mode_3D = true;
-lin.save_solution_vtk(&u_prev_time, "init.vtk", "u", mode_3D);
+//lin.save_solution_vtk(&u_prev_time, "init.vtk", "u", mode_3D);
 
 		  // Initialize
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
@@ -173,7 +173,7 @@ double f;
 			high_rhs->add_matrix(mass_matrix); 
 
 		//Initialisierung von Q_plus_old,Q_minus_old
-	double* Ax_mass = mass_matrix->get_Ax();
+/*	double* Ax_mass = mass_matrix->get_Ax();
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
@@ -189,7 +189,7 @@ double f;
 						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
 					}
 				}
-			}	
+			}	*/
 
 
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
@@ -257,9 +257,9 @@ do
 			 Lowview.show(&high_sln);*/ 
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
-		//	smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
+			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
 		 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, flux_double, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
 		
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 			vec_rhs->add_vector(flux_double);
@@ -273,7 +273,7 @@ do
 
 
 		//Initialisierung von Q_plus_old,Q_minus_old
-		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
+	/*	for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
 				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
 							int i = Ai_mass[indx];	
 							if((Ax_mass[indx]!=0.)&&(j<i)){
@@ -285,7 +285,7 @@ do
 						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
 					}
 				}
-			}	
+			}	*/
 
 
 			 // Visualize the solution.		 
@@ -317,7 +317,13 @@ do
 }
 while (current_time < T_FINAL);
 
-lin.save_solution_vtk(&u_new, "end_uniform_wQold.vtk", "solution", mode_3D);
+CustomInitialCondition exact_solution(ref_space->get_mesh());
+	Adapt<double>* error_estimation = new Adapt<double>(ref_space, HERMES_L2_NORM);	
+double err_est = error_estimation->calc_err_est(&exact_solution,&u_new,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
+double err_est_2 = error_estimation->calc_err_est(&u_new,&exact_solution,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
+printf("err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
+
+lin.save_solution_vtk(&u_new, "end_smooth_uniform.vtk", "solution", mode_3D);
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 

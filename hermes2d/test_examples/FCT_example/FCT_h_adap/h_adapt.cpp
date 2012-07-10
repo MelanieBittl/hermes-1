@@ -9,15 +9,13 @@ int max(int a, int b){
 
 
 	template<typename Scalar>
-bool h_p_adap(Space<Scalar>* space,UMFPackMatrix<double> * mass_matrix,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,  HPAdapt* adapt,double h_min, double h_max)
+bool h_p_adap(Space<Scalar>* space,UMFPackMatrix<double> * mass_matrix,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,  HPAdapt* adapt,double h_min, double h_max, 	int* elements_to_refine,	int* no_of_refinement_steps,double* elem_error)
 {		
 
 	int ndof = space->get_num_dofs();
 	Element* e = NULL;
 	bool refine = false;  //->verfeinern oder vergroebern?	
-	int* elements_to_refine = new int[space->get_mesh()->get_max_element_id()];   // 0 = nothing..
-	int* no_of_refinement_steps = new int[space->get_mesh()->get_max_element_id()];	
-		double* elem_error = new double[space->get_mesh()->get_max_element_id()];
+
 
 //-------------- aus reg_estimator------------------------------
 	GradientReconstruction_1* grad_1 = new GradientReconstruction_1(sln);
@@ -79,9 +77,6 @@ bool h_p_adap(Space<Scalar>* space,UMFPackMatrix<double> * mass_matrix,Solution<
 
 	if(refine==true) refine = adapt->adapt(elements_to_refine,no_of_refinement_steps,P_MAX, h_min,h_max,NDOF_STOP);
 
-			delete [] elements_to_refine;
-			delete [] no_of_refinement_steps;
-		delete [] elem_error;
 
 	delete grad_1;
 	delete grad_2;

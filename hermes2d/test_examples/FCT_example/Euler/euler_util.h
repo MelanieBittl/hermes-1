@@ -6,7 +6,7 @@
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
-// Class calculating various quantities
+//------------------------- Class calculating various quantities-----------
 class QuantityCalculator
 {
 public:
@@ -18,11 +18,13 @@ public:
  
   // Calculates speed of sound.
   static double calc_sound_speed(double rho, double rho_v_x, double rho_v_y, double energy, double kappa);
+
+  // Calculates enthalpy.
+  static double enthalpy(double rho, double rho_v_x, double rho_v_y, double energy, double kappa);
 };
 
 
-
-// Filters.
+//----------------------Filters.--------------------------------------
 class MachNumberFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public: 
@@ -48,6 +50,32 @@ protected:
   double kappa;
 };
 
+
+class VelocityFilter : public Hermes::Hermes2D::SimpleFilter<double>
+{
+public: 
+  VelocityFilter(Hermes::vector<MeshFunction<double>*> solutions, int coord) : SimpleFilter<double>(solutions), coord(coord) {};
+  ~VelocityFilter() 
+  {
+    for(int i = 0; i < this->num; i++)
+      delete this->sln[i];
+  };
+
+  MeshFunction<double>* clone()
+  {
+    Hermes::vector<MeshFunction<double>*> slns;
+    for(int i = 0; i < this->num; i++)
+      slns.push_back(this->sln[i]->clone());
+    VelocityFilter* filter = new VelocityFilter(slns,this->coord);
+    return filter;
+  }
+protected:
+  virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
+
+	int coord; // x=1 or y=2
+};
+
+
 class PressureFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public: 
@@ -72,6 +100,7 @@ protected:
   double kappa;
 };
 
+
 class EntropyFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public: 
@@ -94,7 +123,44 @@ protected:
 
   double kappa, rho_ext, p_ext;
 };
+//----------------RiemannInvariants---------------------
+class RiemannInvariants
+{
+public:
+	RiemannInvariants(double kappa) : kappa(kappa){};
+	double get_w1(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y);
+	double get_w2(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y);
+	double get_w3(double rho, double rho_v_x, double rho_v_y, double rho_energy, double t_x, double t_y);
+	double get_w4(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y);
 
+	bool solid_wall(double rho, double rho_v_x, double rho_v_y, double n_x, double n_y);
+
+	double get_ev1(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y);
+	double get_ev2(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y);
+	double get_ev3(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y);
+	double get_ev4(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y);
+
+	double get_pressure(double w_1, double w_2, double w_3, double w_4);
+	double get_v_x(double w_1, double w_2, double w_3, double w_4, double n_x, double t_x);
+	double get_v_y(double w_1, double w_2, double w_3, double w_4,double n_y, double t_y);
+	double get_speed_sound(double w_1, double w_4);
+
+	double get_rho(double w_1, double w_2, double w_3, double w_4);
+	double get_rho_v_x(double w_1, double w_2, double w_3, double w_4, double n_x, double t_x);
+	double get_rho_v_y(double w_1, double w_2, double w_3, double w_4,double n_y, double t_y);
+	double get_energy(double w_1, double w_2, double w_3, double w_4, double n_x, double n_y, double t_x, double t_y);
+
+	void get_free_stream(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, double t_x, double t_y,
+					double* new_variables, 
+					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, int& boundary, bool solid );
+
+protected:
+	double kappa;
+
+};
+
+
+//--------------------Euler-Fluxes-------------------------
 class EulerFluxes
 {
 public:
