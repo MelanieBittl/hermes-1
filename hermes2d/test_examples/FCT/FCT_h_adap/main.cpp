@@ -15,7 +15,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 
 const double h_max = 0.1;                       
@@ -152,10 +152,11 @@ bool mode_3D = true;
 	AsmList<double> al;
 
 		int ref_ndof;
+    OGProjection<double> ogProjection;
 
 //Timestep loop
 do
-{	 info(" Time step %d, time %3.5f", ts, current_time); 
+{	 printf(" Time step %d, time %3.5f \n", ts, current_time); 
 	
 	mesh.copy(&basemesh);
 	ref_space->set_mesh(&mesh);	ref_space->set_uniform_order(1); ref_space->assign_dofs(); 
@@ -170,7 +171,7 @@ do
 
 			ref_ndof = ref_space->get_num_dofs();
 
-			info(" adap- step %d, timestep %d,ndof = %d ", ps, ts, ref_ndof); 
+			printf(" adap- step %d, timestep %d,ndof = %d ", ps, ts, ref_ndof); 
 
 			double* coeff_vec = new double[ref_ndof];
 			double* coeff_vec_2 = new double[ref_ndof];
@@ -228,10 +229,11 @@ if(ps==1){
 	//--------Project the initial condition on the FE space->coeff_vec	---------------
 			if(ts==1) {
 				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,  matrix_solver, lumped_matrix_uni);
-							OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+    ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
 			}else{
 				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  matrix_solver, lumped_matrix_uni);
-			OGProjection<double>::project_global(ref_space,&u_prev, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+    ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
+
 			}
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
 //		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,&al,mass_matrix);
@@ -324,10 +326,10 @@ if(ps==1){
 	//--------Project the initial condition on the FE space->coeff_vec	---------------
 			if(ts==1) {
 				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,  matrix_solver, lumped_matrix);
-							OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+    		ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
 			}else{
 				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  matrix_solver, lumped_matrix);
-			OGProjection<double>::project_global(ref_space,&u_prev, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+		    ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
 			}
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
 		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,&al,mass_matrix);
@@ -361,7 +363,7 @@ if(ps==1){
 			if(highOrd->solve()){ 
 				u_H = highOrd->get_sln_vector();  
 				//Solution<double> ::vector_to_solution(u_H, ref_space, &high_sln);	
-			  }else error ("Matrix solver failed.\n");
+			  }else printf ("Matrix solver failed.\n");
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,&al,mass_matrix);
@@ -373,7 +375,7 @@ antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec
 			if(newSol->solve()){ 
 				u_new_double = newSol->get_sln_vector();  
 				Solution<double>::vector_to_solution(u_new_double, ref_space, &u_new);	
-			}else error ("Matrix solver failed.\n");	 
+			}else printf ("Matrix solver failed.\n");	 
 
 			 // Visualize the solution.			 
 

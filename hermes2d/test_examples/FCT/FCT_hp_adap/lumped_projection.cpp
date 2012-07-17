@@ -12,12 +12,12 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 {
 
       // Sanity check.
-    if(space == NULL) error("this->space == NULL in project_internal().");
+    if(space == NULL) printf("this->space == NULL in project_internal().");
 
       // Get dimension of the space.
       int ndof = space->get_num_dofs();
 
-	if(mat!=NULL) if(mat->get_size()!=ndof) error("matrix=%i, ndof=%i", mat->get_size(),ndof);
+	if(mat!=NULL) if(mat->get_size()!=ndof) printf("matrix=%i, ndof=%i", mat->get_size(),ndof);
 
   // Initialize DiscreteProblem.
   DiscreteProblem<double>* dp = new DiscreteProblem<double>(wf, space);
@@ -49,7 +49,7 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 		if(solver->solve()){ 
 			coeff_vec = solver->get_sln_vector();		
 		}
-	  	else error ("Matrix solver failed.\n");
+	  	else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 		 if (target_vec != NULL)
     		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
 		delete solver;
@@ -59,7 +59,7 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(mat,rhs);		
 		if(solver->solve()) 
 			coeff_vec = solver->get_sln_vector();			
-	 	 else error ("Matrix solver failed.\n");
+	 	 else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 		 if (target_vec != NULL)
     		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
 		delete solver;
@@ -76,7 +76,7 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 void Lumped_Projection::project_lumped( const  Space<double>* space, MeshFunction<double>* source_meshfn,
                              double* target_vec, MatrixSolverType matrix_solver ,UMFPackMatrix<double>*  mat )
 {
-			 _F_;
+	
 
       // Sanity checks.
       if (target_vec == NULL) throw Exceptions::NullException(3);

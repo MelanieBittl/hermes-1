@@ -60,7 +60,7 @@ protected:
         static SolFunctionDomain lumped_projection_biform(int n, double *wt, Func<SolFunctionDomain> *u_ext[], Func<TestFunctionDomain> *u,
           Func<TestFunctionDomain> *v, Geom<TestFunctionDomain> *e, ExtData<SolFunctionDomain> *ext) 
         {
-          _F_
+     
             SolFunctionDomain result = SolFunctionDomain(0);
           for (int i = 0; i < n; i++)
             result += wt[i] * (u->val[i] * v->val[i]);
@@ -108,7 +108,7 @@ protected:
         SolFunctionDomain lumped_projection_residual(int n, double *wt, Func<SolFunctionDomain> *u_ext[], Func<TestFunctionDomain> *v,
           Geom<TestFunctionDomain> *e, ExtData<SolFunctionDomain> *ext) const
         {
-          _F_
+
             SolFunctionDomain result = SolFunctionDomain(0);
           for (int i = 0; i < n; i++)
 							result += wt[i] * (ext->fn[0]->val[i]) * v->val[i];

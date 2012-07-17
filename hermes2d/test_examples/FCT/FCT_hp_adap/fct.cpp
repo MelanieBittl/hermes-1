@@ -340,7 +340,7 @@ void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMat
 	UMFPackLinearMatrixSolver<Scalar>* lowOrd = new UMFPackLinearMatrixSolver<Scalar>(lumped_matrix,vec_rhs);
 	if(lowOrd->solve()){ 
 		sol = lowOrd->get_sln_vector();  			
-	}else error ("Matrix in lumped_flux solver failed.\n");
+	}else printf ("Matrix in lumped_flux solver failed.\n");
 	for(int i=0; i<ndof;i++) u_L[i] =sol[i];
 
 	delete lowOrd;	

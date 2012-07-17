@@ -37,7 +37,7 @@ UMFPackMatrix<Scalar>* massLumping(AsmList<Scalar>* al, UMFPackMatrix<Scalar>* m
 		for(unsigned int i = 0; i < al->get_cnt(); i ++){
 			for(unsigned int j = (i+1); j < al->get_cnt(); j ++){	//Mc_ij = Mc_ji				
 				if(al->get_dof()[i]!=al->get_dof()[j]){  //kein Diagonaleintrag!
-					if((al->get_dof()[i]>=size)||(al->get_dof()[j]>=size)) error("massLumping:wrong DOF");				
+					if((al->get_dof()[i]>=size)||(al->get_dof()[j]>=size)) throw Hermes::Exceptions::Exception("massLumping:wrong DOF");				
 					a = lumped_matrix->get(al->get_dof()[i],al->get_dof()[j]);
 					if(a!=0.0){
 						lumped_matrix->add(al->get_dof()[i],al->get_dof()[i],a);    //zur Diagonale hinzufuegen
@@ -65,7 +65,7 @@ UMFPackMatrix<Scalar>* pure_p1_massLumping(AsmList<Scalar>* al,UMFPackMatrix<Sca
 	if(al!=NULL){  //nur wenn Liste fuer Vertex-DOFS vorhanden
 	for(unsigned int i = 0; i < al->get_cnt(); i ++){
 		for(unsigned int j = i; j < al->get_cnt(); j ++){	//Mc_ij = Mc_ji				
-				if((al->get_dof()[i]>=size)||(al->get_dof()[j]>=size)) error("massLumping:wrong DOF");				
+				if((al->get_dof()[i]>=size)||(al->get_dof()[j]>=size)) throw Hermes::Exceptions::Exception("massLumping:wrong DOF");				
 				a = mass_matrix->get(al->get_dof()[i],al->get_dof()[j]);
 				if(a!=0.0){
 					lumped_matrix->add(al->get_dof()[i],al->get_dof()[i],a);    //zur Diagonale hinzufuegen

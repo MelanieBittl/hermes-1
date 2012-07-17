@@ -43,8 +43,8 @@ return u_h_hat;
 
 void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al,UMFPackMatrix<double> * mass_matrix,bool proj){
 
-	if(sln==NULL) error("smoothness_indicator: sln=NULL");
-	if(space==NULL) error("smoothness_indicator: space=NULL");
+	if(sln==NULL) throw Hermes::Exceptions::Exception("smoothness_indicator: sln=NULL");
+	if(space==NULL) throw Hermes::Exceptions::Exception("smoothness_indicator: space=NULL");
 
 	int ndof = space->get_num_dofs();
 
@@ -62,11 +62,11 @@ void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<do
 	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);
 	if(solver_1->solve()){ 				
 		Solution<double> ::vector_to_solution(solver_1->get_sln_vector() , space, R_h_1);	
-	}else error ("Matrix solver failed.\n");
+	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 	UMFPackLinearMatrixSolver<double> * solver_2 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_2);	
 	if(solver_2->solve()){ 				
 		Solution<double> ::vector_to_solution(solver_2->get_sln_vector() , space, R_h_2);	
-	}else error ("Matrix solver failed.\n");
+	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 
 
 

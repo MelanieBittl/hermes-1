@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
   H1Space<double> space(&mesh, &bcs, P_INIT);
 
   int ndof = space.get_num_dofs();
-  info("ndof = %d", ndof);
+  printf("ndof = %d", ndof);
 
  // Initialize solution of lower & higher order
   Solution<double>  low_sln, u_new, high_sln, u_prev;
@@ -148,13 +148,13 @@ Orderizer ord;
 
 	H1Space<double>* ref_space = new H1Space<double>(&mesh, &bcs, P_INIT);	
 
-
+    OGProjection<double> ogProjection;
 
 
 
 //Timestep loop
 do
-{	 info(" Time step %d, time %3.5f", ts, current_time); 
+{	 printf(" Time step %d, time %3.5f", ts, current_time); 
 	
 	mesh.copy(&basemesh);
 	ref_space->set_mesh(&mesh);	ref_space->set_uniform_order(1); ref_space->assign_dofs(); //mview.show(ref_space);
@@ -166,7 +166,7 @@ do
 	{	
 			int ref_ndof = ref_space->get_num_dofs();
 
-			info(" adap- step %d, timestep %d,ndof = %d ", ps, ts, ref_ndof); 
+			printf(" adap- step %d, timestep %d,ndof = %d ", ps, ts, ref_ndof); 
 
 	DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, ref_space);
 	DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, ref_space);
@@ -252,11 +252,13 @@ do
 			//------------------ Project the initial condition on the FE space->coeff_vec	--------------
 			if(ts==1) {
 				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,  matrix_solver, lumped_matrix);
-							OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+    ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
+
 
 			}else{
 				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  matrix_solver, lumped_matrix);
-			OGProjection<double>::project_global(ref_space,&u_prev, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+    ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
+
 			}
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
 		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,mass_matrix,true);
@@ -269,14 +271,14 @@ do
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 			Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 
-info("error_fct=%f",Global<double>::calc_rel_error(&u_new ,&u_prev_time,HERMES_L2_NORM));
-info("error_low=%f",Global<double>::calc_rel_error(&low_sln ,&u_prev_time,HERMES_L2_NORM));
-info("error_high=%f",Global<double>::calc_rel_error(&high_sln ,&u_prev_time,HERMES_L2_NORM));
+printf("error_fct=%f",Global<double>::calc_rel_error(&u_new ,&u_prev_time,HERMES_L2_NORM));
+printf("error_low=%f",Global<double>::calc_rel_error(&low_sln ,&u_prev_time,HERMES_L2_NORM));
+printf("error_high=%f",Global<double>::calc_rel_error(&high_sln ,&u_prev_time,HERMES_L2_NORM));
  //calc_norm(MeshFunction<Scalar>* sln, int norm_type);
-info("norm_fct=%f",Global<double>::calc_norm(&u_prev_time, HERMES_L2_NORM));
-info("norm_fct=%f",Global<double>::calc_norm(&u_new, HERMES_L2_NORM));
-info("norm_low=%f",Global<double>::calc_norm(&low_sln ,HERMES_L2_NORM));
-info("norm_high=%f",Global<double>::calc_norm(&high_sln ,HERMES_L2_NORM));
+printf("norm_fct=%f",Global<double>::calc_norm(&u_prev_time, HERMES_L2_NORM));
+printf("norm_fct=%f",Global<double>::calc_norm(&u_new, HERMES_L2_NORM));
+printf("norm_low=%f",Global<double>::calc_norm(&low_sln ,HERMES_L2_NORM));
+printf("norm_high=%f",Global<double>::calc_norm(&high_sln ,HERMES_L2_NORM));
 
 		sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
@@ -389,11 +391,11 @@ sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			// Project the initial condition on the FE space->coeff_vec	
 			if(ts==1) {
 				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,  matrix_solver, lumped_matrix);
-							OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+    ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
 
 			}else{
 				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  matrix_solver, lumped_matrix);
-			OGProjection<double>::project_global(ref_space,&u_prev, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+    ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
 			}
 						Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
 		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,mass_matrix,true);
@@ -430,7 +432,7 @@ sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			if(lowOrd->solve()){ 
 				u_L = lowOrd->get_sln_vector();  
 				Solution<double> ::vector_to_solution(u_L, ref_space, &low_sln);	
-			  }else error ("Matrix solver failed.\n");
+			  }else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
 
 
@@ -442,7 +444,7 @@ sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			if(highOrd->solve()){ 
 				u_H = highOrd->get_sln_vector();  
 				Solution<double> ::vector_to_solution(u_H, ref_space, &high_sln);	
-			  }else error ("Matrix solver failed.\n");
+			  }else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 
    		/*	sprintf(title, "high-sln adap-step %i", ps);
 			  hview.set_title(title);
@@ -460,7 +462,7 @@ sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			UMFPackLinearMatrixSolver<double> * newSol = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
 			if(newSol->solve()){ 
 				Solution<double> ::vector_to_solution(newSol->get_sln_vector(), ref_space, &u_new);	
-			}else error ("Matrix solver failed.\n");	
+			}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");	
 
 
 			 // Visualize the solution.		 

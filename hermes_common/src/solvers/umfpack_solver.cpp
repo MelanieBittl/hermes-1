@@ -84,7 +84,7 @@ namespace Hermes
     template<typename Scalar>
     void CSCMatrix<Scalar>::multiply_with_vector(Scalar* vector_in, Scalar* vector_out)
     {
-			      _F_;
+
       int n = this->size;
       for (int j = 0; j<n; j++) vector_out[j] = 0;
       for (int j = 0; j<n; j++)
