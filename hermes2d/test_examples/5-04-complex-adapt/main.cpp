@@ -66,6 +66,9 @@ const double OMEGA = 2 * M_PI * FREQ;
 
 int main(int argc, char* argv[])
 {
+  Hermes::Mixins::TimeMeasurable m;
+  m.tick();
+
   // Load the mesh.
   Mesh mesh;
   MeshReaderH2D mloader;
@@ -99,14 +102,16 @@ int main(int argc, char* argv[])
   // DOF and CPU convergence graphs initialization.
   SimpleGraph graph_dof, graph_cpu;
 
+  DiscreteProblem<std::complex<double> > dp(&wf, &space);
+
   // Adaptivity loop:
   int as = 1; bool done = false;
   do
   {
     // Construct globally refined reference mesh and setup reference space.
     Space<std::complex<double> >* ref_space = Space<std::complex<double> >::construct_refined_space(&space);
-
-    DiscreteProblem<std::complex<double> > dp(&wf, ref_space);
+      
+    dp.set_space(ref_space);
 
     // Perform Newton's iteration and translate the resulting coefficient vector into a Solution.
     Hermes::Hermes2D::NewtonSolver<std::complex<double> > newton(&dp);
@@ -126,13 +131,15 @@ int main(int argc, char* argv[])
       newton.set_iterative_method(iterative_method);
       newton.set_preconditioner(preconditioner);
     }
-    try{
+    try
+    {
       newton.solve(coeff_vec);
     }
     catch(Hermes::Exceptions::Exception& e)
     {
       e.printMsg();
     }
+
     Hermes::Hermes2D::Solution<std::complex<double> >::vector_to_solution(newton.get_sln_vector(), ref_space, &ref_sln);
 
     // Project the fine mesh solution onto the coarse mesh.
@@ -148,6 +155,7 @@ int main(int argc, char* argv[])
     // Calculate element errors and total error estimate.
     Adapt<std::complex<double> >* adaptivity = new Adapt<std::complex<double> >(&space);
     double err_est_rel = adaptivity->calc_err_est(&sln, &ref_sln) * 100;
+    std::cout << (std::string)"Relative error: " << err_est_rel << std::endl;
 
     // Add entry to DOF and CPU convergence graphs.
     graph_dof.add_values(space.get_num_dofs(), err_est_rel);
@@ -157,6 +165,7 @@ int main(int argc, char* argv[])
     if(err_est_rel < ERR_STOP) done = true;
     else
     {
+      std::cout << (std::string)"Adapting..." << std::endl << std::endl;
       done = adaptivity->adapt(&selector, THRESHOLD, STRATEGY, MESH_REGULARITY);
     }
     if(space.get_num_dofs() >= NDOF_STOP) done = true;
@@ -174,7 +183,10 @@ int main(int argc, char* argv[])
   sview.set_title("Fine mesh solution");
 
   RealFilter real_filter(&ref_sln);
-  sview.show(&real_filter);
+  sview.show(&real_filter, &real_filter);
+
+  m.tick();
+  std::cout << m.accumulated();
 
   // Wait for all views to be closed.
   Views::View::wait();

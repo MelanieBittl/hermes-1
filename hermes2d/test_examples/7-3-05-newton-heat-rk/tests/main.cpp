@@ -79,12 +79,13 @@ int main(int argc, char* argv[])
   // Initialize Runge-Kutta time stepping.
   RungeKutta<double> runge_kutta(&wf, &space, &bt);
 
+  bool freeze_jacobian = true;
+  runge_kutta.set_verbose_output(false);
+    
   // Time stepping loop:
   do
   {
     // Perform one Runge-Kutta time step according to the selected Butcher's table.
-    bool freeze_jacobian = true;
-    runge_kutta.set_verbose_output(false);
     try
     {
       runge_kutta.rk_time_step_newton(current_time, time_step, sln_time_prev,

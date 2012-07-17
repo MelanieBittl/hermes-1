@@ -182,6 +182,8 @@ namespace Hermes
       double get_element_error_squared(int component, int id) const;
     protected:
 
+      Exceptions::Exception* caughtException;
+
       /// A reference to an element.
       struct ElementReference {
         int id; ///< An element ID. Invalid if below 0.
@@ -292,7 +294,7 @@ namespace Hermes
       *  If a special order of elements is requested, this method has to be overridden.
       *  /param[in] meshes An array of pointers to meshes of a (coarse) solution. An index into the array is an index of a component.
       *  /param[in] meshes An array of pointers to meshes of a reference solution. An index into the array is an index of a component. */
-      virtual void fill_regular_queue(Mesh** meshes);
+      virtual void fill_regular_queue(const Mesh** meshes);
 
     private:
       /// A functor that compares elements accoring to their error. Used by std::sort().

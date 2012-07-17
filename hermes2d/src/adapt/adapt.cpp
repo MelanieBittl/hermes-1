@@ -156,6 +156,10 @@ namespace Hermes
     bool Adapt<Scalar>::adapt(Hermes::vector<RefinementSelectors::Selector<Scalar> *> refinement_selectors, double thr, int strat,
       int regularize, double to_be_processed)
     {
+      this->tick();
+      // Important, sets the current caughtException to NULL.
+      this->caughtException = NULL;
+
       if(!have_errors)
         throw Exceptions::Exception("element errors have to be calculated first, call Adapt<Scalar>::calc_err_est().");
 
@@ -187,9 +191,7 @@ namespace Hermes
       Element* e;
       for (int i = 0; i < this->num; i++)
         for_all_active_elements(e, this->spaces[i]->get_mesh())
-      {
-        this->spaces[i]->edata[e->id].changed_in_last_adaptation = false;
-      }
+          this->spaces[i]->edata[e->id].changed_in_last_adaptation = false;
 
       for(int j = 0; j < max_id; j++)
         for(int l = 0; l < this->num; l++)
@@ -330,29 +332,39 @@ namespace Hermes
 #pragma omp for schedule(dynamic, CHUNKSIZE)
         for(id_to_refine = 0; id_to_refine < ids.size(); id_to_refine++)
         {
-          current_refinement_selectors = global_refinement_selectors[omp_get_thread_num()];
-          current_rslns = rslns[omp_get_thread_num()];
-
-          Mesh* mesh = meshes[components[id_to_refine]];
-          Element* e = mesh->get_element(ids[id_to_refine]);
-
-          // Get refinement suggestion
-          ElementToRefine elem_ref(ids[id_to_refine], components[id_to_refine]);
-
-          // rsln[comp] may be unset if refinement_selectors[comp] == HOnlySelector or POnlySelector
-          bool refined = current_refinement_selectors[components[id_to_refine]]->select_refinement(e, current_orders[id_to_refine], current_rslns[components[id_to_refine]], elem_ref);
-
-          //add to a list of elements that are going to be refined
-#pragma omp critical (elem_inx_to_proc)
+          try
           {
-            idx[ids[id_to_refine]][components[id_to_refine]] = (int)elem_inx_to_proc.size();
-            elem_inx_to_proc.push_back(elem_ref);
+            current_refinement_selectors = global_refinement_selectors[omp_get_thread_num()];
+            current_rslns = rslns[omp_get_thread_num()];
+
+            // Get refinement suggestion
+            ElementToRefine elem_ref(ids[id_to_refine], components[id_to_refine]);
+
+            // rsln[comp] may be unset if refinement_selectors[comp] == HOnlySelector or POnlySelector
+            bool refined = current_refinement_selectors[components[id_to_refine]]->select_refinement(meshes[components[id_to_refine]]->get_element(ids[id_to_refine]), current_orders[id_to_refine], current_rslns[components[id_to_refine]], elem_ref);
+
+            //add to a list of elements that are going to be refined
+  #pragma omp critical (elem_inx_to_proc)
+            {
+              idx[ids[id_to_refine]][components[id_to_refine]] = (int)elem_inx_to_proc.size();
+              elem_inx_to_proc.push_back(elem_ref);
+            }
+          }
+          catch(Hermes::Exceptions::Exception& e)
+          {
+            if(this->caughtException == NULL)
+              this->caughtException = e.clone();
+          }
+          catch(std::exception& e)
+          {
+            if(this->caughtException == NULL)
+              this->caughtException = new Hermes::Exceptions::Exception(e.what());
           }
         }
       }
 
-      //fix refinement if multimesh is used
-      fix_shared_mesh_refinements(meshes, elem_inx_to_proc, idx, global_refinement_selectors);
+      if(this->caughtException == NULL)
+        fix_shared_mesh_refinements(meshes, elem_inx_to_proc, idx, global_refinement_selectors);
 
       for(unsigned int i = 0; i < omp_get_num_threads(); i++)
       {
@@ -378,6 +390,9 @@ namespace Hermes
         delete [] idx[i];
       delete [] idx;
 
+      if(this->caughtException != NULL)
+        throw *(this->caughtException);
+      
       //apply refinements
       apply_refinements(elem_inx_to_proc);
 
@@ -764,9 +779,9 @@ namespace Hermes
     void Adapt<Scalar>::set_error_form(int i, int j, typename Adapt<Scalar>::MatrixFormVolError* form)
     {
       if(form->i < 0 || form->i >= this->num)
-        throw new Exceptions::ValueException("component number", form->i, 0, this->num);
+        throw Exceptions::ValueException("component number", form->i, 0, this->num);
       if(form->j < 0 || form->j >= this->num)
-        throw new Exceptions::ValueException("component number", form->j, 0, this->num);
+        throw Exceptions::ValueException("component number", form->j, 0, this->num);
 
       // FIXME: Memory leak - always for i == j (see the constructor), may happen for i != j
       //        if user does not delete previously set error forms by himself.
@@ -787,9 +802,9 @@ namespace Hermes
     void Adapt<Scalar>::set_norm_form(int i, int j, typename Adapt<Scalar>::MatrixFormVolError* form)
     {
       if(form->i < 0 || form->i >= this->num)
-        throw new Exceptions::ValueException("component number", form->i, 0, this->num);
+        throw Exceptions::ValueException("component number", form->i, 0, this->num);
       if(form->j < 0 || form->j >= this->num)
-        throw new Exceptions::ValueException("component number", form->j, 0, this->num);
+        throw Exceptions::ValueException("component number", form->j, 0, this->num);
 
       norm_form[i][j] = form;
     }
@@ -931,7 +946,7 @@ namespace Hermes
       int i, j;
 
       if(slns.size() != this->num)
-        throw new Exceptions::LengthException(0, slns.size(), this->num);
+        throw Exceptions::LengthException(0, slns.size(), this->num);
 
       Solution<Scalar>* rslns_original[H2D_MAX_COMPONENTS];
       Solution<Scalar>* slns_original[H2D_MAX_COMPONENTS];
@@ -953,7 +968,7 @@ namespace Hermes
       have_reference_solutions = true;
 
       // Prepare multi-mesh traversal and error arrays.
-      Mesh **meshes = new Mesh *[2 * num];
+      const Mesh **meshes = new const Mesh *[2 * num];
       Transformable **tr = new Transformable *[2 * num];
       Traverse trav(true);
       num_act_elems = 0;
@@ -1108,7 +1123,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void Adapt<Scalar>::fill_regular_queue(Mesh** meshes)
+    void Adapt<Scalar>::fill_regular_queue(const Mesh** meshes)
     {
       //prepare space for queue (it is assumed that it will only grow since we can just split)
       regular_queue.clear();

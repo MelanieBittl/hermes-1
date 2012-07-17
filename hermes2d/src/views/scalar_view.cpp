@@ -334,7 +334,7 @@ namespace Hermes
         return a.x < b.x;
       }
 
-      void ScalarView::init_vertex_nodes(Mesh* mesh)
+      void ScalarView::init_vertex_nodes(const Mesh* mesh)
       {
         //clear all selections
         pointed_vertex_node = NULL;
@@ -543,7 +543,7 @@ namespace Hermes
         }
       }
 
-      void ScalarView::init_element_info(Mesh* mesh)
+      void ScalarView::init_element_info(const Mesh* mesh)
       {
         //cleanup
         element_infos.clear();
@@ -665,7 +665,7 @@ namespace Hermes
       void ScalarView::show_contours(double step, double orig)
       {
         if(step == 0.0)
-          throw new Exceptions::ValueException("step", step, 0.0);
+          throw Exceptions::ValueException("step", step, 0.0);
         contours = true;
         cont_orig = orig;
         cont_step = step;

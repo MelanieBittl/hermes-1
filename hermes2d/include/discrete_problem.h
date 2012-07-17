@@ -32,6 +32,7 @@ namespace Hermes
   {
     class PrecalcShapeset;
 
+    /// @ingroup inner
     /// Multimesh neighbors traversal class.
     class NeighborNode
     {
@@ -52,12 +53,13 @@ namespace Hermes
       template<typename Scalar> friend class KellyTypeAdapt;
     };
 
+    /// @ingroup inner
     /// Discrete problem class.
     ///
     /// This class does assembling into external matrix / vector structures.
     ///
     template<typename Scalar>
-    class HERMES_API DiscreteProblem : public DiscreteProblemInterface<Scalar>
+    class HERMES_API DiscreteProblem : public DiscreteProblemInterface<Scalar>, public Hermes::Mixins::TimeMeasurable
     {
     public:
       /// Constructor for multiple components / equations.
@@ -104,6 +106,10 @@ namespace Hermes
 
       /// Set this problem to Finite Volume.
       void set_fvm();
+
+      /// Sets new spaces for the instance.
+      void set_spaces(Hermes::vector<const Space<Scalar>*> spaces);
+      void set_space(const Space<Scalar>* space);
 
     protected:
 
@@ -170,11 +176,17 @@ namespace Hermes
       /// Matrix volumetric forms - assemble the form.
       virtual void assemble_matrix_form(MatrixForm<Scalar>* form, int order, Func<double>** base_fns, Func<double>** test_fns, RefMap** current_refmaps, Solution<Scalar>** current_u_ext, AsmList<Scalar>** current_als, Traverse::State* current_state);
 
+      virtual void assemble_matrix_form(MatrixForm<Scalar>* form, int order, Func<double>** base_fns, Func<double>** test_fns, Solution<Scalar>** current_u_ext, 
+      AsmList<Scalar>* current_als_i, AsmList<Scalar>* current_als_j, Traverse::State* current_state, int n_quadrature_points, Geom<double>* geometry, double* jacobian_x_weights);
+
       /// Vector volumetric forms - calculate the integration order.
       int calc_order_vector_form(VectorForm<Scalar>* mfv, RefMap** current_refmaps, Solution<Scalar>** current_u_ext, Traverse::State* current_state);
 
       /// Vector volumetric forms - assemble the form.
       void assemble_vector_form(VectorForm<Scalar>* form, int order, Func<double>** test_fns, RefMap** current_refmaps, Solution<Scalar>** current_u_ext, AsmList<Scalar>** current_als, Traverse::State* current_state);
+
+      void assemble_vector_form(VectorForm<Scalar>* form, int order, Func<double>** test_fns, Solution<Scalar>** current_u_ext, 
+      AsmList<Scalar>* current_als, Traverse::State* current_state, int n_quadrature_points, Geom<double>* geometry, double* jacobian_x_weights);
 
       /// \ingroup Helper methods inside {calc_order_*, assemble_*}
       /// Init geometry, jacobian * weights, return the number of integration points.
@@ -209,6 +221,7 @@ namespace Hermes
 
       /// Space instances for all equations in the system.
       Hermes::vector<const Space<Scalar>*> spaces;
+
       Hermes::vector<unsigned int> spaces_first_dofs;
 
       /// Seq numbers of Space instances in spaces.
@@ -248,6 +261,44 @@ namespace Hermes
       Vector<Scalar>* current_rhs;
       bool current_force_diagonal_blocks;
       Table* current_block_weights;
+
+      /// Caching.
+      class CacheRecordPerElement
+      {
+      public:
+        void clear(Traverse::State* current_state);
+        int asmlistCnt;
+        int* asmlistIdx;
+        int order;
+      };
+
+      class CacheRecordPerSubIdx
+      {
+      public:
+        void clear(CacheRecordPerElement* elementCacheInfo, Traverse::State* current_state);
+        Func<double>** fns;
+        Func<double>*** fnsSurface;
+        Geom<double>* geometry;
+        Geom<double>** geometrySurface;
+        double* jacobian_x_weights;
+        double** jacobian_x_weightsSurface;
+        int n_quadrature_points;
+        int* n_quadrature_pointsSurface;
+        int* orderSurface;
+        int* asmlistSurfaceCnt;
+      };
+
+      std::map<uint64_t, CacheRecordPerSubIdx*>*** cache_records_sub_idx;
+      CacheRecordPerElement*** cache_records_element;
+      bool** cache_element_stored;
+      int cache_size;
+      bool doNotUseCache;
+
+      /// Exception caught in a parallel region.
+      Hermes::Exceptions::Exception* caughtException;
+    public:
+      inline void setDoNotUseCache() { this->doNotUseCache = true; }
+    protected:
 
       ///* DG *///
 

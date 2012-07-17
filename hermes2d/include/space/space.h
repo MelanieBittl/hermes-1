@@ -40,6 +40,9 @@ namespace Hermes
     };
     class Shapeset;
 
+    /// @defgroup spaces FEM Spaces handling
+
+    /// @ingroup spaces
     /// \brief Represents a finite element space over a domain.
     ///
     /// The Space class represents a finite element space over a domain defined by 'mesh', spanned
@@ -361,6 +364,7 @@ namespace Hermes
       void load(const char *filename, EssentialBCs<Scalar>* essential_bcs = NULL);
 
       template<typename T> friend class OGProjection;
+      template<typename T> friend class NewtonSolver;
       template<typename T> friend class OGProjectionNOX;
       template<typename T> friend class LocalProjection;
       template<typename T> friend class Solution;

@@ -224,7 +224,6 @@ namespace Hermes
       Mesh();
       ~Mesh() {
         free();
-        dump_hash_stat();
       }
 
       /// Rescales the mesh.

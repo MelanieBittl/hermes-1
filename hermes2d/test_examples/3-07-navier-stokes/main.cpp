@@ -43,7 +43,7 @@ using namespace Hermes::Hermes2D;
 // tutorial for comparisons.
 const bool STOKES = false;
 
-const bool HERMES_VISUALIZATION = false;
+const bool HERMES_VISUALIZATION = true;
 
 #define PRESSURE_IN_L2
 
@@ -91,6 +91,7 @@ double current_time = 0;
 
 int main(int argc, char* argv[])
 {
+  Hermes::Hermes2D::Hermes2DApi.setParamValue(Hermes::Hermes2D::numThreads, 8);
   // Load the mesh.
   Mesh mesh;
   MeshReaderH2D mloader;
@@ -166,6 +167,7 @@ if(HERMES_VISUALIZATION)
   int num_time_steps = T_FINAL / TAU;
   for (int ts = 1; ts <= num_time_steps; ts++)
   {
+    std::cout << ts << std::endl;
     current_time += TAU;
 
     // Update time-dependent essential BCs.
@@ -175,7 +177,6 @@ if(HERMES_VISUALIZATION)
     }
 
     // Perform Newton's iteration and translate the resulting coefficient vector into previous time level solutions.
-    newton.set_verbose_output(false);
     try{
       newton.solve(coeff_vec, NEWTON_TOL, NEWTON_MAX_ITER);
     }
@@ -191,7 +192,7 @@ if(HERMES_VISUALIZATION)
     {
       sprintf(title, "Velocity, time %g", current_time);
       vview.set_title(title);
-      vview.show(&xvel_prev_time, &yvel_prev_time, Views::HERMES_EPS_LOW);
+      vview.show(&xvel_prev_time, &yvel_prev_time);
       sprintf(title, "Pressure, time %g", current_time);
       pview.set_title(title);
       pview.show(&p_prev_time);
