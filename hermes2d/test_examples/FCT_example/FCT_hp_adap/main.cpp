@@ -17,7 +17,7 @@ using namespace Hermes::Hermes2D::Views;
 
 const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const int P_MAX = 2; 
+const int P_MAX = 5; 
 const double h_max = 0.1;                       
 const double time_step = 1e-3;                           // Time step.
 
@@ -472,7 +472,6 @@ sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_tim
 
 
 	}while(ps<3);
-		
 
 			 // Visualize the solution.
 //sprintf(title, "End: Time %3.2f, timestep=%i", current_time,ts);
@@ -515,6 +514,7 @@ if(ts==5000){
 }
 while (current_time < T_FINAL);
 
+/*
 CustomInitialCondition exact_solution(ref_space->get_mesh());
 	Adapt<double>* error_estimation = new Adapt<double>(ref_space, HERMES_L2_NORM);	
 double err_est = error_estimation->calc_err_est(&exact_solution,&u_prev_time,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
@@ -526,14 +526,12 @@ FILE * pFile;
 pFile = fopen ("error.txt","w");
      fprintf (pFile, "err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
 fclose (pFile);
-
+*/
 
 
  
 lin.save_solution_vtk(&u_prev_time, "end_hpadap.vtk", "solution", mode_3D);
-
-
-	//	ord.save_orders_vtk(ref_space, "mesh_end.vtk");
+		ord.save_orders_vtk(ref_space, "mesh_end.vtk");
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 

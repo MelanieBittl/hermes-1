@@ -58,12 +58,15 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 			int i = 1;	
 			if(elem_error[e->id] <EPS_h){ 
 										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
-					while((elem_error[e->id]< (EPS_h/i*1000))&&(i<3)){
+					while((elem_error[e->id]< (EPS_h/i*1000))&&(i<4)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
 			}else if(smooth_elem[e->id]==1){
 					if(elem_error[e->id] >tol_p){
 										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
+					while((elem_error[e->id]> (tol_p+i*std_dev_p))&&(i<3)){
+					 													no_of_refinement_steps[e->id]++; i++;
+					}
 					}else if(elem_error[e->id] >EPS_h){
 									//refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
 									refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 

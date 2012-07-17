@@ -91,8 +91,9 @@ bool HPAdapt::adapt(int* elements_to_refine,int* no_of_refinement_steps, int max
 					v_ord += no_of_refinement_steps[e->id]; if(v_ord>max_p) v_ord =max_p;
 					order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);
 					ref =  no_of_refinement_steps[e->id];
-					if(ref>1) refine_elem_order(space,e, (ref-1), order,h_min);
-					else space->set_element_order_internal(e->id, order);
+					//if(ref>1) refine_elem_order(space,e, (ref-1), order,h_min);
+					//else 
+						space->set_element_order_internal(e->id, order);
 					changed = true;
 					}								
 		}else if(elements_to_refine[e->id] == 3) {				//p decrease 	

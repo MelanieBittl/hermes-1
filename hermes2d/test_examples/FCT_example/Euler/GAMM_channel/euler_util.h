@@ -75,6 +75,30 @@ protected:
 	int coord; // x=1 or y=2
 };
 
+class RadiusVelocityFilter : public Hermes::Hermes2D::SimpleFilter<double>
+{
+public: 
+  RadiusVelocityFilter(Hermes::vector<MeshFunction<double>*> solutions) : SimpleFilter<double>(solutions) {};
+  ~RadiusVelocityFilter() 
+  {
+    for(int i = 0; i < this->num; i++)
+      delete this->sln[i];
+  };
+
+  MeshFunction<double>* clone()
+  {
+    Hermes::vector<MeshFunction<double>*> slns;
+    for(int i = 0; i < this->num; i++)
+      slns.push_back(this->sln[i]->clone());
+    RadiusVelocityFilter* filter = new RadiusVelocityFilter(slns);
+    return filter;
+  }
+protected:
+  virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
+
+};
+
+
 
 class PressureFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {

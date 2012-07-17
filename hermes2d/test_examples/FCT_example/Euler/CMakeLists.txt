@@ -1,10 +1,5 @@
-project(Euler)
-
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp euler_util.cpp initial_condition.cpp boundary_condition.cpp)
-#include (${hermes2d_SOURCE_DIR}/CMake.common)
-#set_common_target_properties(${PROJECT_NAME})
-
-
-set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS ${FLAGS})
-
-target_link_libraries(${PROJECT_NAME} ${HERMES2D})
+add_subdirectory(shock_tube)
+add_subdirectory(radially_symmetric)
+add_subdirectory(double_mach_reflection)
+add_subdirectory(GAMM_channel)
+add_subdirectory(blast_wave)
