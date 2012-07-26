@@ -120,6 +120,94 @@ namespace Hermes
     {
       return m->size;
     }
+    
+template<>
+ bool AztecOOSolver<double>::solve(double* x_0)
+    {
+      _F_;
+      assert(m != NULL);
+      assert(rhs != NULL);
+      assert(m->size == rhs->size);
+
+      Hermes::TimePeriod tmr;
+
+      // no output
+      aztec.SetAztecOption(AZ_output, AZ_none);	// AZ_all | AZ_warnings | AZ_last | AZ_summary
+
+      // setup the problem
+      aztec.SetUserMatrix(m->mat);
+      aztec.SetRHS(rhs->vec);
+      Epetra_Vector x(*rhs->std_map);	     
+      
+      for(int i=0;i<rhs->size;i++) x[i] = x_0[i];
+      
+      aztec.SetLHS(&x);
+
+      if (pc != NULL)
+      {
+        Epetra_Operator *op = pc->get_obj();
+        assert(op != NULL);		// can work only with Epetra_Operators
+        aztec.SetPrecOperator(op);
+      }
+
+      // solve it
+      aztec.Iterate(this->max_iters, this->tolerance);
+
+      tmr.tick();
+      this->time = tmr.accumulated();
+
+      delete [] this->sln;
+      this->sln = new double[m->size];
+      MEM_CHECK(this->sln);
+      memset(this->sln, 0, m->size * sizeof(double));
+
+      // copy the solution into sln vector
+      for (unsigned int i = 0; i < m->size; i++) this->sln[i] = x[i];
+      return true;
+    }
+
+  template<>
+    bool AztecOOSolver<std::complex<double> >::solve(double* x_0)
+    {
+      _F_;
+      assert(m != NULL);
+      assert(rhs != NULL);
+      assert(m->size == rhs->size);
+
+      Hermes::TimePeriod tmr;
+
+      // no output
+      aztec.SetAztecOption(AZ_output, AZ_none);	// AZ_all | AZ_warnings | AZ_last | AZ_summary
+
+      double c0r = 1.0, c0i = 0.0;
+      double c1r = 0.0, c1i = 1.0;
+
+      Epetra_Vector xr(*rhs->std_map);
+      Epetra_Vector xi(*rhs->std_map);
+      
+      for(int i=0;i<rhs->size;i++) xr[i] = x_0[i];
+      for(int i=0;i<rhs->size;i++) xi[i] = x_0[i];
+
+      Komplex_LinearProblem kp(c0r, c0i, *m->mat, c1r, c1i, *m->mat_im, xr, xi, *rhs->vec, *rhs->vec_im);
+      Epetra_LinearProblem *lp = kp.KomplexProblem();
+      aztec.SetProblem(*lp,true);
+
+      // solve it
+      aztec.Iterate(this->max_iters, this->tolerance);
+
+      kp.ExtractSolution(xr, xi);
+
+      delete [] this->sln;
+      this->sln = new std::complex<double>[m->size];
+      MEM_CHECK(this->sln);
+      memset(this->sln, 0, m->size * sizeof(std::complex<double>));
+
+      // copy the solution into sln vector
+      for (unsigned int i = 0; i < m->size; i++) this->sln[i] = std::complex<double>(xr[i], xi[i]);
+      return true;
+    }
+
+
 
     template<>
     bool AztecOOSolver<double>::solve()

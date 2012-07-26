@@ -15,11 +15,12 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 5; 
 const double h_max = 0.1;                       
 const double time_step = 1e-3;                           // Time step.
+
 
 const double T_FINAL = 2*PI;                       // Time interval length.
 
@@ -146,6 +147,15 @@ bool mode_3D = true;
 	DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, ref_space);
 	HPAdapt * adapting = new HPAdapt(ref_space, HERMES_L2_NORM);
 
+//for smoothness-indicator
+	GradientReconstruction_1* grad_1 = new GradientReconstruction_1(&low_sln);
+	GradientReconstruction_2* grad_2 = new GradientReconstruction_2(&low_sln);
+
+	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, ref_space);
+	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, ref_space);
+
+
+
 	double* Ax_mass;
 	int* Ai_mass;
 	int* Ap_mass ;
@@ -178,7 +188,8 @@ do
 {	 info(" Time step %d, time %3.5f", ts, current_time); 
 	
 	mesh.copy(&basemesh);
-	ref_space->set_mesh(&mesh);	ref_space->set_uniform_order(1); ref_space->assign_dofs(); //mview.show(ref_space);
+	ref_space->set_mesh(&mesh);	ref_space->set_uniform_order(1); 
+ //mview.show(ref_space);
 
 	ps=1; 
 
@@ -188,6 +199,8 @@ do
 			ref_ndof = ref_space->get_num_dofs();
 			dp_mass->set_spaces(ref_space);
 			dp_convection->set_spaces(ref_space);
+			dp_1->set_spaces(ref_space);
+			dp_2->set_spaces(ref_space);
 
 			info(" adap- step %d, timestep %d,ndof = %d ", ps, ts, ref_ndof); 
 
@@ -196,7 +209,7 @@ do
 
 			double* P_plus = new double[ref_ndof]; double* P_minus = new double[ref_ndof];
 			double* Q_plus = new double[ref_ndof]; double* Q_minus = new double[ref_ndof];
-			double* Q_plus_old = new double[ref_ndof]; double* Q_minus_old = new double[ref_ndof];			
+			//double* Q_plus_old = new double[ref_ndof]; double* Q_minus_old = new double[ref_ndof];			
 			double* R_plus = new double[ref_ndof]; double* R_minus = new double[ref_ndof];
 
 		int* smooth_elem = new int[ref_space->get_mesh()->get_max_element_id()];
@@ -204,9 +217,11 @@ do
 
 			double* lumped_double = new double[ref_ndof];
 
+	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ref_ndof);
+	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ref_ndof);
 
 		if(ps==1){
-			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;}
+			//for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;}
 					//coord_dof(ref_space, al, P_plus,&u_prev_time);
 
 
@@ -234,10 +249,10 @@ do
 			//------------------ Project the initial condition on the FE space->coeff_vec	--------------
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix_uni);
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
-	smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,true);
+	smoothness_indicator(ref_space,&low_sln,mass_matrix_uni,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,true,dp_1,dp_2, rhs_1,rhs_2);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
 			lumped_flux_limiter(mass_matrix_uni, lumped_matrix_uni, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus,smooth_dof);
 
 
 		//	Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
@@ -268,7 +283,7 @@ do
 					Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &low_sln);	
 
 
-			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
+			smoothness_indicator(ref_space,&low_sln,mass_matrix_uni,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true,dp_1,dp_2, rhs_1,rhs_2);
 			changed = h_p_adap(ref_space, &low_sln,&R_h_1,&R_h_2, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);		
 	
 		/*	sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
@@ -286,7 +301,10 @@ do
 					bool* fct = new bool[ref_ndof]; 
 		UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
 			double* coeff_vec_3 = new double[ref_ndof];
-			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.; fct[i]=false;}
+			for(int i=0; i<ref_ndof;i++){
+							//Q_plus_old[i]=0.;Q_minus_old[i]=0.;
+								P_plus[i]=0.; fct[i]=false;
+				}
 					// p1_list(ref_space, fct, al,P_plus,&u_prev_time,h_start);		
 					p1_list(ref_space, fct, al,h_start);		
 
@@ -356,10 +374,10 @@ do
 			//info("projection");
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
 						Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
-		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,true);
+		smoothness_indicator(ref_space,&low_sln,mass_matrix,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,true,dp_1,dp_2, rhs_1,rhs_2);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
 			lumped_flux_limiter(fct,mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus,  R_plus, R_minus,smooth_dof);
 
 
 
@@ -410,9 +428,9 @@ do
 			 hview.show(&high_sln);*/
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------		
-			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true);
+			smoothness_indicator(ref_space,&low_sln,mass_matrix,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,true,dp_1,dp_2, rhs_1,rhs_2);
 			 antidiffusiveFlux(fct,mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, coeff_vec_3, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus,smooth_dof);
 
 
 	
@@ -425,12 +443,10 @@ do
 
 
 			 // Visualize the solution.	
-/*	
 sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
-					sview.show(&u_new);*/
-				
-				//mview.show(ref_space);
+					sview.show(&u_new);				
+				mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
 
@@ -463,12 +479,15 @@ sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_tim
 			delete [] P_minus;
 			delete [] Q_plus;
 			delete [] Q_minus;
-			delete [] Q_plus_old;
-			delete [] Q_minus_old;
+			//delete [] Q_plus_old;
+			//delete [] Q_minus_old;
 			delete [] R_plus;
 			delete [] R_minus;
 			delete[] coeff_vec_2;
 			delete [] coeff_vec; 
+
+	delete rhs_1;
+	delete rhs_2;
 
 
 	}while(ps<3);
@@ -485,31 +504,31 @@ sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_tim
 
   // Increase time step counter
   ts++;
-/*
-if(ts==1000){
+
+/*if(ts==1000){
 			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_1000.vtk", "solution", mode_3D);
-			//ord.save_orders_vtk(ref_space, "mesh_1000.vtk");
+			ord.save_orders_vtk(ref_space, "mesh_1000.vtk");
 }
 
 if(ts==2000){
 			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_2000.vtk", "solution", mode_3D);
-		//ord.save_orders_vtk(ref_space, "mesh_2000.vtk");
-}
+		ord.save_orders_vtk(ref_space, "mesh_2000.vtk");
+}*/
 if(ts==3000){
 	lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_3000.vtk", "solution", mode_3D);
-		//ord.save_orders_vtk(ref_space, "mesh_3000.vtk");
+		ord.save_orders_vtk(ref_space, "mesh_3000.vtk");
 }
 
 if(ts==4000){
 		lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_4000.vtk", "solution", mode_3D);
-		//ord.save_orders_vtk(ref_space, "mesh_4000.vtk");
+		ord.save_orders_vtk(ref_space, "mesh_4000.vtk");
 }
 
 if(ts==5000){
 			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_5000.vtk", "solution", mode_3D);
-		//ord.save_orders_vtk(ref_space, "mesh_5000.vtk");
+		ord.save_orders_vtk(ref_space, "mesh_5000.vtk");
 	}
-*/
+
 
 }
 while (current_time < T_FINAL);
@@ -557,9 +576,12 @@ lin.save_solution_vtk(&u_prev_time, "end_hpadap.vtk", "solution", mode_3D);
 	delete lowmat_rhs;
 	delete high_matrix;
 	delete high_rhs;
+	delete al;
 
-delete al;
-
+delete grad_1;
+	delete grad_2;
+	delete dp_1;
+	delete dp_2;
 
   // Wait for the view to be closed.
   View::wait();

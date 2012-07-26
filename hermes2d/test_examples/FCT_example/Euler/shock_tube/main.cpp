@@ -14,18 +14,14 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-3;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 1.;
 
-// Equation parameters.  
-// Exterior pressure (dimensionless).
-const double P_EXT = 0.1;         
-// Inlet density (dimensionless).   
-const double RHO_EXT = 0.125;       
+// Equation parameters.   
 // Inlet x-velocity (dimensionless).
 const double V1_EXT = 0.0;        
 // Inlet y-velocity (dimensionless).
@@ -50,6 +46,12 @@ const unsigned int EVERY_NTH_STEP = 1;
 
 int main(int argc, char* argv[])
 {
+
+  // Time measurement.
+  TimePeriod cpu_time;
+  cpu_time.tick();
+
+
    // Load the mesh.
   Mesh mesh, basemesh;
   MeshReaderH2D mloader;
@@ -145,7 +147,7 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 
   // Initialize the FE problem.
   DiscreteProblem<double> dp_mass(&wf_mass, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
-  DiscreteProblem<double> dp_surf(&wf_surf, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
+
   DiscreteProblem<double> dp_boundary(&wf_boundary, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
   DiscreteProblem<double> dp_boundary_low(&wf_boundary_low, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
 
@@ -155,17 +157,14 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 
   // Set up the solver, matrix, and rhs according to the solver selection.
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   
-	UMFPackMatrix<double> * matrix_K = new UMFPackMatrix<double> ;
-	UMFPackMatrix<double> * matrix_K_low = new UMFPackMatrix<double> ;  
-	UMFPackMatrix<double> * matrix_L = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * matrix_L_low = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double> ;  
 	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double> ; 
-	UMFPackMatrix<double> * matrix_S = new UMFPackMatrix<double> ; 
+
 	UMFPackMatrix<double> * matrix_dS = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * matrix_dS_low = new UMFPackMatrix<double> ; 
-	UMFPackVector<double> * rhs_surf = new UMFPackVector<double> (ndof);  
-	UMFPackVector<double> * rhs_surf_low = new UMFPackVector<double> (ndof);  
+
+
 
 			double* coeff_vec = new double[ndof];
 			double* coeff_vec_2 = new double[ndof];
@@ -217,40 +216,44 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 do
 {	 info(" Time step %d, time %3.5f", ts, current_time); 
 
-//dp_boundary.assemble(matrix_dS,rhs_surf);
-dp_boundary.assemble(matrix_dS);
+// Time measurement.
+  cpu_time.tick(HERMES_SKIP);
 
-		//dp_surf.assemble(matrix_S);
-    dp_K.assemble(matrix_K);
-
+		dp_boundary.assemble(matrix_dS);
+    dp_K.assemble(lowmat_rhs);
+    
+      // CPU time 
+//  double time1 = cpu_time.tick().last();
+   //Time measurement.
+ // cpu_time.tick(HERMES_SKIP);
 
 					//------------------------artificial DIFFUSION D---------------------------------------		
-			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_K);
-
-		lumped_matrix->multiply_with_Scalar(1./time_step); //M_L/tau
-
-			lowmat_rhs->create(matrix_K->get_size(),matrix_K->get_nnz(), matrix_K->get_Ap(), matrix_K->get_Ai(),matrix_K->get_Ax());
-			lowmat_rhs->add_matrix(diffusion); //L(U)
-		//	lowmat_rhs->add_matrix(matrix_S); //L(U)+dS(U) 
+			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
+			
+			  // CPU time 
+ // double time2 = cpu_time.tick().last();
+   //Time measurement.
+  //cpu_time.tick(HERMES_SKIP);
+			
+				lowmat_rhs->add_matrix(diffusion); //L(U)
 			lowmat_rhs->add_matrix(matrix_dS); //L(U)+dS(U) 
-			matrix_L->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
 
 //matrix_L = K+D+dS
 			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
-			low_matrix->multiply_with_Scalar(-theta);  //-theta L(U)
+			low_matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
 			low_matrix->add_matrix(lumped_matrix); 				//M_L/t - theta L(U)
-
-			lowmat_rhs->multiply_with_Scalar((1.0-theta));  //(1-theta)L(U)
+			lowmat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
 			lowmat_rhs->add_matrix(lumped_matrix);  //M_L/t+(1-theta)L(U)
-
-		lumped_matrix->multiply_with_Scalar(time_step); //M_L
-
 
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(L) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
-		//vec_rhs->add_vector(rhs_surf);
+
+  // CPU time 
+  //double time3 = cpu_time.tick().last();
+   //Time measurement.
+  //cpu_time.tick(HERMES_SKIP);
 
 	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
 			UMFPackLinearSolver<double> * lowOrd = new UMFPackLinearSolver<double> (low_matrix,vec_rhs);	
@@ -265,37 +268,38 @@ dp_boundary.assemble(matrix_dS);
 		/*	s1_n.show(&low_rho);
 			s2_n.show(&vel_x_low);
 			s3_n.show(&vel_y_low);
-			s4_n.show(&pressure_low);	*/
+			s4_n.show(&pressure_low);	
 	
-	//View::wait(HERMES_WAIT_KEYPRESS);	
-	//dp_boundary_low.assemble(rhs_surf_low);	
+	View::wait(HERMES_WAIT_KEYPRESS);	*/
+
 
 	dp_boundary_low.assemble(matrix_dS_low);	
-    dp_K_low.assemble(matrix_K_low);
-			UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_K_low);
-			matrix_L_low->create(matrix_K_low->get_size(),matrix_K_low->get_nnz(), matrix_K_low->get_Ap(), matrix_K_low->get_Ai(),matrix_K_low->get_Ax());
-			matrix_L_low->add_matrix(diffusion_low); //L(U)
-			//matrix_L_low->add_matrix(matrix_S);
+    dp_K_low.assemble(matrix_L_low);
+			UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
+			matrix_L_low->add_matrix(diffusion_low); //L(U)	
 			matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
 
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
-		antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low,rhs_surf_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
+		antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 				for(int i=0; i<ndof;i++){
 								 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);		
 				}
 
 				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e));	
 
-
+  // Measure the solver time.
+  double time4 = cpu_time.tick().last();
+  info("CPU_Time:  %g ", time4);
+//info("CPU_Time:  %g -------%g------- %g---------%g", time1,time2, time3, time4);
 
 			 // Visualize the solution.
-		 /* sprintf(title, "pressure: ts=%i",ts);
+		  sprintf(title, "pressure: ts=%i",ts);
 			 pressure_view.set_title(title);
 			s1.show(&prev_rho);
 			s2.show(&vel_x);
 			s3.show(&vel_y);
-  		pressure_view.show(&pressure);*/
+  		pressure_view.show(&pressure);
 
 
 //	View::wait(HERMES_WAIT_KEYPRESS);
@@ -324,9 +328,6 @@ dp_boundary.assemble(matrix_dS);
 		delete lowOrd;
 		delete diffusion;
 		delete diffusion_low;
-		matrix_L_low->free();
-		matrix_L->free();
-		lowmat_rhs->free();
 		low_matrix->free();
 
 
@@ -352,10 +353,6 @@ while (current_time < T_FINAL);
 
 		//Cleanup
 			delete mass_matrix;
-			delete matrix_K;
-			delete matrix_K_low;
-			delete matrix_S;
-			delete matrix_L;
 			delete matrix_L_low;
 			delete matrix_dS;			
 			delete matrix_dS_low;	
@@ -372,8 +369,7 @@ while (current_time < T_FINAL);
 			delete [] R_minus;
 			delete[] coeff_vec_2;
 			delete [] coeff_vec; 
-			delete rhs_surf;
-			delete rhs_surf_low;
+
 
 
   // Wait for the view to be closed.

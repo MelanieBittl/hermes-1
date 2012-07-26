@@ -318,6 +318,13 @@ for(int k = 0;k<4;k++){
 	  }
 	}
 
+delete [] coeff_rho;
+delete [] coeff_vel_x;
+delete [] coeff_vel_y;
+delete [] coeff_energy;
+delete c_matrix_1;
+delete c_matrix_2;
+
 
 	return diffusion;
 

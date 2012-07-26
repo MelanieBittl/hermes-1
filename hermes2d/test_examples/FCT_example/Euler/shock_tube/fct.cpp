@@ -1,6 +1,6 @@
 
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* diffusion,UMFPackMatrix<double>* matrix_L_low,	UMFPackVector<double> * rhs_surf,double* u_L, double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus, double* R_plus, double* R_minus, int dof_rho, int dof_v_x, int dof_v_y, int dof_e )
+void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* diffusion,UMFPackMatrix<double>* matrix_L_low,	double* u_L, double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus, double* R_plus, double* R_minus, int dof_rho, int dof_v_x, int dof_v_y, int dof_e )
 { 
 
 	int ndof = diffusion->get_size();
@@ -21,7 +21,6 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 
 	matrix_L_low->multiply_with_vector(u_L, dt_u_L);
 	for(int i=0; i<ndof;i++){
-					//dt_u_L[i] +=rhs_surf->get(i);
 						dt_u_L[i] *=1./lumped_matrix->get(i,i);	
  						P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.; flux_scalar[i]=0.;
 		}

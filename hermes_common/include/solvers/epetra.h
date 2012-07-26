@@ -65,19 +65,24 @@ namespace Hermes
       virtual void free();
       virtual Scalar get(unsigned int m, unsigned int n);
       virtual int get_num_row_entries(unsigned int row);
-      virtual void extract_row_copy(unsigned int row, unsigned int len, unsigned int &n_entries, double *vals, unsigned int *idxs);
+      virtual void extract_row_copy(int row, int len, int &n_entries, double *vals, int *idxs);
       virtual void zero();
       virtual void add(unsigned int m, unsigned int n, Scalar v);
       virtual void add_to_diagonal(Scalar v);
       virtual void add_to_diagonal_blocks(int num_stages, EpetraMatrix<Scalar>* mat);
       virtual void add_sparse_to_diagonal_blocks(int num_stages, SparseMatrix<Scalar>* mat);
-      virtual void multiply_with_vector(Scalar* vector_in, Scalar* vector_out);
+      virtual void multiply_with_vector(Scalar* vector_in, Scalar* vector_out);      
       virtual void add_as_block(unsigned int i, unsigned int j, EpetraMatrix<Scalar>* mat);
       virtual void add(unsigned int m, unsigned int n, Scalar **mat, int *rows, int *cols);
       virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE);
       virtual unsigned int get_matrix_size() const;
       virtual unsigned int get_nnz() const;
       virtual double get_fill_in() const;
+      
+       // Multiplies matrix with a double.
+      void multiply_with_Scalar(double value);
+      void add_matrix(EpetraMatrix<Scalar>* mat_add);
+
 
     protected:
       Epetra_BlockMap *std_map;

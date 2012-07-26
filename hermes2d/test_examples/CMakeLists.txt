@@ -16,6 +16,6 @@ add_subdirectory("FCT_example")
 #add_subdirectory("8-01-eigenvalue")
 
 # Still in the old forms.
-IF(WITH_TRILINOS)
-  add_subdirectory("9-02-trilinos-nonlinear")
-ENDIF(WITH_TRILINOS)
+#IF(WITH_TRILINOS)
+ # add_subdirectory("9-02-trilinos-nonlinear")
+#ENDIF(WITH_TRILINOS)

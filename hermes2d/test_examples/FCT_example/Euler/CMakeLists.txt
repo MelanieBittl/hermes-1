@@ -1,4 +1,5 @@
 add_subdirectory(shock_tube)
+add_subdirectory(shock_tube_azteco)
 add_subdirectory(radially_symmetric)
 add_subdirectory(double_mach_reflection)
 add_subdirectory(GAMM_channel)

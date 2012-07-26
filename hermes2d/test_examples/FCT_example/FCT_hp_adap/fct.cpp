@@ -1,5 +1,5 @@
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
+void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,  double* R_plus, double* R_minus, int* smooth_dof=NULL, double* Q_plus_old =NULL, double* Q_minus_old=NULL  )
 { 
 	int ndof = conv_matrix->get_size();
 	double alpha,f, plus, minus,mass, diff;
@@ -7,7 +7,10 @@ void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>*
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
-	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i];Q_minus[i]=Q_minus_old[i];flux_scalar[i]=0.0;}
+	if(Q_plus_old!=NULL)
+		for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i];Q_minus[i]=Q_minus_old[i];flux_scalar[i]=0.0;}
+	else
+		for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.;flux_scalar[i]=0.0;}
 
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
@@ -83,7 +86,7 @@ void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>*
 
 //FCT for lumped projection
 template<typename Scalar>
-void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* Q_plus_old, Scalar* Q_minus_old,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL)
+void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL,Scalar* Q_plus_old=NULL, Scalar* Q_minus_old=NULL)
 {	int ndof = mass_matrix->get_size();
 	Scalar* rhs = new Scalar[ndof];	
 	Scalar alpha,f, plus, minus,mass;
@@ -92,7 +95,10 @@ void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
-	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i]*time_step;Q_minus[i]=Q_minus_old[i]*time_step;rhs[i]=0.;}
+	if(Q_plus_old!=NULL)
+		for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i]*time_step;Q_minus[i]=Q_minus_old[i]*time_step;rhs[i]=0.;}
+	else 
+			for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.;rhs[i]=0.;}
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
 				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
@@ -164,15 +170,17 @@ void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar
 
 
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(bool* fct,UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
+void antidiffusiveFlux(bool* fct,UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,  double* R_plus, double* R_minus, int* smooth_dof=NULL,double* Q_plus_old=NULL, double* Q_minus_old=NULL  )
 { 
 	int ndof = conv_matrix->get_size();
 	double alpha,f, plus, minus,mass, diff;
 	double* Ax_mass = mass_matrix->get_Ax();
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
-
+if(Q_plus_old!=NULL)
 	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i];Q_minus[i]=Q_minus_old[i];flux_scalar[i]=0.0;}
+else
+		for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.;flux_scalar[i]=0.0;}
 
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
@@ -253,7 +261,7 @@ void antidiffusiveFlux(bool* fct,UMFPackMatrix<double>* mass_matrix,UMFPackMatri
 
 //FCT for lumped projection
 template<typename Scalar>
-void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* Q_plus_old, Scalar* Q_minus_old,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL)
+void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus, Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL,Scalar* Q_plus_old=NULL, Scalar* Q_minus_old=NULL)
 {	
 	int ndof = mass_matrix->get_size();
 	Scalar* rhs = new Scalar[ndof];
@@ -265,7 +273,10 @@ void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMat
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
+if(Q_plus_old!=NULL)
 	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i]*time_step;Q_minus[i]=Q_minus_old[i]*time_step;}
+else
+	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.;}
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
 				if(fct[j]== false) continue;

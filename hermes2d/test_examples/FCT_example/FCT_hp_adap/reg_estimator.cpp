@@ -42,23 +42,24 @@ return u_h_hat;
 }
 
 
-void smoothness_indicator(Space<double>* space,Solution<double>* sln,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al,bool proj){
+void smoothness_indicator(Space<double>* space,Solution<double>* sln,	UMFPackMatrix<double> * mass_matrix,Solution<double>* R_h_1,Solution<double>* R_h_2, int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al,bool proj,DiscreteProblem<double> * dp_1,DiscreteProblem<double> * dp_2,UMFPackVector<double> * rhs_1,UMFPackVector<double> * rhs_2){
 
 	if(sln==NULL) error("smoothness_indicator: sln=NULL");
 	if(space==NULL) error("smoothness_indicator: space=NULL");
 
-	int ndof = space->get_num_dofs();
+	int ndof = space->get_num_dofs(); 
 
 
-	GradientReconstruction_1* grad_1 = new GradientReconstruction_1(sln);
+	/*GradientReconstruction_1* grad_1 = new GradientReconstruction_1(sln);
 	GradientReconstruction_2* grad_2 = new GradientReconstruction_2(sln);
 
 	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, space);
 	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, space);
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ; 
+
 	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ndof);
-	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
-	dp_1->assemble(mass_matrix,rhs_1); 
+	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);*/
+
+	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearSolver<double> * solver_1 = new UMFPackLinearSolver<double> (mass_matrix,rhs_1);
 	if(solver_1->solve()){ 				
@@ -187,13 +188,13 @@ for(int i =0; i<ndof;i++){
 
 
   //Clean-up
-	delete grad_1;
+	/*delete grad_1;
 	delete grad_2;
 	delete dp_1;
-	delete dp_2;
-	delete mass_matrix;
-	delete rhs_1;
-	delete rhs_2;
+	delete dp_2;*/
+
+	/*delete rhs_1;
+	delete rhs_2;*/
 	delete solver_1;
 	delete solver_2;
 	delete [] u_c;

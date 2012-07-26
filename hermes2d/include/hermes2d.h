@@ -91,7 +91,7 @@
 #include "neighbor.h"
 #include "projections/localprojection.h"
 #include "projections/ogprojection.h"
-#include "projections/ogprojection_nox.h"
+//#include "projections/ogprojection_nox.h"
 
 #include "runge_kutta.h"
 #include "spline.h"

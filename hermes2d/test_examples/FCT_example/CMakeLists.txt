@@ -8,4 +8,5 @@ add_subdirectory(FCT_stationary_Galerkin)
 add_subdirectory(FCT)
 add_subdirectory(FCT_2)
 add_subdirectory(Euler)
+add_subdirectory(Euler_adap)
 

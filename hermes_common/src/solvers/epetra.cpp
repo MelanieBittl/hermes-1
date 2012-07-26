@@ -168,15 +168,10 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void EpetraMatrix<Scalar>::extract_row_copy(unsigned int row, unsigned int len, unsigned int &n_entries, double *vals, unsigned int *idxs)
+    void EpetraMatrix<Scalar>::extract_row_copy(int row, int len, int &n_entries, double *vals,  int *idxs)
     {
       _F_;
-      int* idxs_to_pass = new int[len];
-      for(unsigned int i = 0; i < len; i++)
-        idxs_to_pass[i] = idxs[i];
-      int n_entries_to_pass = n_entries;
-      mat->ExtractGlobalRowCopy(row, len, n_entries_to_pass, vals, idxs_to_pass);
-      delete [] idxs_to_pass;
+      mat->ExtractGlobalRowCopy(row, len, n_entries, vals, idxs);   
     }
 
     template<>
@@ -193,6 +188,9 @@ namespace Hermes
       mat->PutScalar(0.0);
       mat_im->PutScalar(0.0);
     }
+    
+
+
 
     template<>
     void EpetraMatrix<double>::add(unsigned int m, unsigned int n, double v)
@@ -270,16 +268,25 @@ namespace Hermes
 
     template<typename Scalar>
     void EpetraMatrix<Scalar>::multiply_with_vector(Scalar* vector_in, Scalar* vector_out)
-    {
-      for (unsigned int i = 0;i<this->size;i++) //probably can be optimized by use native vectors
-      {
-        vector_out[i] = 0;
-        for (unsigned int j = 0;j<this->size;j++)
-        {
-          vector_out[i] +=vector_in[j]*get(i, j);
-        }
-      }
+    {  
+          _F_;           
+      		 double* vals = new double[this->size];
+           int* idxs = new int[this->size];
+      		int out_entries;      
+       for(unsigned int m=0;m<this->size;m++){
+     			  this->extract_row_copy(m,this->size, out_entries, vals, idxs);
+     			  vector_out[m] = 0;
+     			   for (unsigned int j = 0;j<out_entries;j++)
+     					 {
+          		vector_out[m] +=vector_in[idxs[j]]*vals[j];
+        			}       	
+				}    
+		 delete [] vals;
+      delete [] idxs;
     }
+    
+    
+    
 
     template<typename Scalar>
     void EpetraMatrix<Scalar>::add(unsigned int m, unsigned int n, Scalar **mat, int *rows, int *cols)
@@ -318,6 +325,43 @@ namespace Hermes
       _F_;
       return mat->NumGlobalNonzeros();
     }
+
+
+     template<>
+      void EpetraMatrix<double>::multiply_with_Scalar(double value)
+      {      
+            _F_;
+      mat->Scale(value);
+      
+      }
+
+     template<>
+      void EpetraMatrix<std::complex<double> >::multiply_with_Scalar(double value)
+      {
+      
+            _F_;
+      mat->Scale(value);
+      mat_im->Scale(value);
+      
+      }
+
+    template<typename Scalar>
+    void EpetraMatrix<Scalar>::add_matrix(EpetraMatrix<Scalar>* mat_add)
+    {
+      _F_;           
+      		 double* vals = new double[this->size];
+           int* idxs = new int[this->size];
+      		int out_entries;
+      for(unsigned int m=0;m<this->size;m++){
+     			  mat_add->extract_row_copy(m, this->size, out_entries, vals, idxs);
+						int ierr = mat->SumIntoGlobalValues(m, out_entries, vals, idxs);
+       			 if (ierr != 0) error("Failed to insert into Epetra matrix");
+			}
+			       delete [] vals;
+       			 delete [] idxs;
+
+    }
+
 
     template<typename Scalar>
     EpetraVector<Scalar>::EpetraVector()
