@@ -46,7 +46,7 @@ namespace Hermes
     void Exception::printMsg() const
     {
       if(message)
-        printf("%s\n", message);
+        printf("Exception: %s\n", message);
       else
         printf("Default exception\n");
       if(Hermes::HermesCommonApi.getParamValue(Hermes::exceptionsPrintCallstack) == 1)
@@ -272,7 +272,7 @@ namespace Hermes
 
     MeshLoadFailureException::MeshLoadFailureException(const char * reason, ...) : Exception()
     {
-      char text[1024];
+      char * text = new char[strlen(reason)+1];
 
       // print the message
       va_list arglist;
@@ -297,7 +297,7 @@ namespace Hermes
 
     SpaceLoadFailureException::SpaceLoadFailureException(const char * reason, ...) : Exception()
     {
-      char text[1024];
+      char * text = new char[strlen(reason)+1];
 
       // print the message
       va_list arglist;
@@ -322,7 +322,7 @@ namespace Hermes
 
     SolutionSaveFailureException::SolutionSaveFailureException(const char * reason, ...) : Exception()
     {
-      char text[1024];
+      char * text = new char[strlen(reason)+1];
 
       // print the message
       va_list arglist;
@@ -347,7 +347,7 @@ namespace Hermes
 
     SolutionLoadFailureException::SolutionLoadFailureException(const char * reason, ...) : Exception()
     {
-      char text[1024];
+      char * text = new char[strlen(reason)+1];
 
       // print the message
       va_list arglist;

@@ -25,6 +25,7 @@
 #include "neighbor.h"
 #include "refinement_selectors/selector.h"
 #include "exceptions.h"
+#include "mixins2d.h"
 
 namespace Hermes
 {
@@ -59,7 +60,7 @@ namespace Hermes
     /// This class does assembling into external matrix / vector structures.
     ///
     template<typename Scalar>
-    class HERMES_API DiscreteProblem : public DiscreteProblemInterface<Scalar>, public Hermes::Mixins::TimeMeasurable
+    class HERMES_API DiscreteProblem : public DiscreteProblemInterface<Scalar>, public Hermes::Mixins::TimeMeasurable, public Hermes::Hermes2D::Mixins::SettableSpaces<Scalar>
     {
     public:
       /// Constructor for multiple components / equations.
@@ -67,13 +68,43 @@ namespace Hermes
 
       /// Constructor for one equation.
       DiscreteProblem(const WeakForm<Scalar>* wf, const Space<Scalar>* space);
+      
+      /// Set this problem to Finite Volume (no integration order calculation).
+      void set_fvm();
 
-      /// Non-parameterized constructor (currently used only in KellyTypeAdapt to gain access to NeighborSearch methods).
+      /// Sets new spaces for the instance.
+      virtual void set_spaces(Hermes::vector<const Space<Scalar>*> spaces);
+      virtual void set_space(const Space<Scalar>* space);
+      
+      /// Non-parameterized constructor.
       DiscreteProblem();
 
       /// Destuctor.
       virtual ~DiscreteProblem();
 
+      /// If the cache should not be used for any reason.
+      inline void setDoNotUseCache() { this->doNotUseCache = true; }
+
+      // GET functions.
+      /// Get the weak forms.
+      const WeakForm<Scalar>* get_weak_formulation() const;
+
+      /// Get all spaces as a Hermes::vector.
+      virtual Hermes::vector<const Space<Scalar>*> get_spaces() const;
+
+       /// Get the number of unknowns.
+      int get_num_dofs() const;
+
+      /// Get info about presence of a matrix.
+      bool is_matrix_free() const;
+      
+      /// set time information for time-dependent problems.
+      virtual void setTime(double time);
+      virtual void setTimeStep(double timeStep);
+
+      void delete_cache();
+
+    protected:
       /// Assembling.
       /// General assembling procedure for nonlinear problems. coeff_vec is the
       /// previous Newton vector. If force_diagonal_block == true, then (zero) matrix
@@ -102,17 +133,6 @@ namespace Hermes
       void assemble(Vector<Scalar>* rhs = NULL, bool force_diagonal_blocks = false,
         Table* block_weights = NULL);
 
-      void invalidate_matrix();
-
-      /// Set this problem to Finite Volume.
-      void set_fvm();
-
-      /// Sets new spaces for the instance.
-      void set_spaces(Hermes::vector<const Space<Scalar>*> spaces);
-      void set_space(const Space<Scalar>* space);
-
-    protected:
-
       void init_assembling(Scalar* coeff_vec, PrecalcShapeset*** pss , PrecalcShapeset*** spss, RefMap*** refmaps, Solution<Scalar>*** u_ext, AsmList<Scalar>*** als, Hermes::vector<MeshFunction<Scalar>*>& ext_functions, MeshFunction<Scalar>*** ext,
           Hermes::vector<MatrixFormVol<Scalar>*>* mfvol, Hermes::vector<MatrixFormSurf<Scalar>*>* mfsurf, Hermes::vector<VectorFormVol<Scalar>*>* vfvol, Hermes::vector<VectorFormSurf<Scalar>*>* vfsurf);
 
@@ -128,23 +148,7 @@ namespace Hermes
       bool form_to_be_assembled(VectorFormSurf<Scalar>* form, Traverse::State* current_state);
 
       // Return scaling coefficient.
-      double block_scaling_coeff(MatrixForm<Scalar>* form);
-
-      /// Get the number of unknowns.
-      int get_num_dofs();
-
-      /// Get info about presence of a matrix.
-      bool is_matrix_free();
-
-      // GET functions.
-      /// Get pointer to n-th space.
-      const Space<Scalar>* get_space(int n);
-
-      /// Get the weak forms.
-      const WeakForm<Scalar>* get_weak_formulation();
-
-      /// Get all spaces as a Hermes::vector.
-      Hermes::vector<const Space<Scalar>*> get_spaces();
+      double block_scaling_coeff(MatrixForm<Scalar>* form) const;
 
       /// Preassembling.
       /// Precalculate matrix sparse structure.
@@ -211,7 +215,7 @@ namespace Hermes
       void init();
 
       /// Matrix structure as well as spaces and weak formulation is up-to-date.
-      bool is_up_to_date();
+      bool is_up_to_date() const;
 
       /// Weak formulation.
       const WeakForm<Scalar>* wf;
@@ -266,7 +270,7 @@ namespace Hermes
       class CacheRecordPerElement
       {
       public:
-        void clear(Traverse::State* current_state);
+        void clear();
         int asmlistCnt;
         int* asmlistIdx;
         int order;
@@ -275,7 +279,7 @@ namespace Hermes
       class CacheRecordPerSubIdx
       {
       public:
-        void clear(CacheRecordPerElement* elementCacheInfo, Traverse::State* current_state);
+        void clear(CacheRecordPerElement* elementCacheInfo, int nvert);
         Func<double>** fns;
         Func<double>*** fnsSurface;
         Geom<double>* geometry;
@@ -296,10 +300,8 @@ namespace Hermes
 
       /// Exception caught in a parallel region.
       Hermes::Exceptions::Exception* caughtException;
-    public:
-      inline void setDoNotUseCache() { this->doNotUseCache = true; }
-    protected:
-
+    
+      
       ///* DG *///
 
       /// Assemble DG forms.
