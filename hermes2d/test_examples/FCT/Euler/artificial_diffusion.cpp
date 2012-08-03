@@ -234,8 +234,6 @@ for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
 	 int nnz = c_matrix_1->get_nnz();
 	 UMFPackMatrix<double>* diffusion = new UMFPackMatrix<double>;  
 	diffusion->create(size, nnz, c_matrix_1->get_Ap(), c_matrix_1->get_Ai(),c_matrix_1->get_Ax());
-//double D[4][4]; 
-//diffusion->create(matrix_K->get_size(), matrix_K->get_nnz(), matrix_K->get_Ap(), matrix_K->get_Ai(),matrix_K->get_Ax());
 	diffusion->zero();  //matrix = 0
 
 	if(size!=ndof) printf("dof != size");
@@ -270,13 +268,8 @@ for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
 					d_ij = fabs( (c_ji_x-c_ij_x)*coeff_vel_x[j]/(2.*coeff_rho[j])+ (c_ji_y-c_ij_y)*coeff_vel_y[j]/(2.*coeff_rho[j]))+ e_ij*c_j;
 					d_ji = fabs( (c_ij_x-c_ji_x)*coeff_vel_x[i]/(2.*coeff_rho[i])+ (c_ij_y-c_ji_y)*coeff_vel_y[i]/(2.*coeff_rho[i]))+ e_ji*c_i;
 
-//paper_failsafe
-/*
-abs_c_ij = Hermes::sqrt(c_ij_x*c_ij_x + c_ij_y*c_ij_y);
-abs_c_ji = Hermes::sqrt(c_ji_x*c_ji_x + c_ji_y*c_ji_y);
-d_ij = fabs(c_ij_x*coeff_vel_x[j]/coeff_rho[j] + c_ij_y*coeff_vel_y[j]/coeff_rho[j])+ abs_c_ij*c_j;
-d_ji = fabs(c_ji_x*coeff_vel_x[i]/coeff_rho[i] + c_ji_y*coeff_vel_y[i]/coeff_rho[i])+ abs_c_ji*c_i;
-*/
+
+
 					for(int k = 0;k<4;k++){
 							int next = k*dof_rho;
 						if((i+next>size)||(j+next>size)) printf("groesser als size");
@@ -293,26 +286,6 @@ d_ji = fabs(c_ji_x*coeff_vel_x[i]/coeff_rho[i] + c_ji_y*coeff_vel_y[i]/coeff_rho
 					 }
 					}
 
-//Gurris, Moeller, Book (43)
-//Diffusion-matrix auf matrix_K setzen!
-/*
-calculate_D(coeff_rho[i], coeff_vel_x[i] , coeff_vel_y[i],  coeff_energy[i] , 0.5*(c_ij_x-c_ji_x), 0.5*(c_ij_y-c_ji_y), 
-					coeff_rho[j], coeff_vel_x[j] , coeff_vel_y[j],  coeff_energy[j], kappa, D);
-
-for(int k = 0;k<4;k++){
-		for(int l=k; l<4;l++){
-							int next_k = k*dof_rho;
-							int next_l = l*dof_rho;
-						if((i+next_k>size)||(j+next_l>size)) printf("groesser als size");			
-						if(D[k][l]!=0.0){
-							diffusion->add(i+next_k,j+next_l,D[k][l]);
-							diffusion->add(j+next_l,i+next_k,D[k][l]);	
-							diffusion->add(j+next_l,j+next_l,-D[k][l]);
-							diffusion->add(i+next_k,i+next_k,-D[k][l]);
-						}					 
-					}
-}
-*/
 
 				}
 	  }

@@ -149,8 +149,7 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * matrix_dS = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * matrix_dS_low = new UMFPackMatrix<double> ; 
-	UMFPackVector<double> * rhs_surf = new UMFPackVector<double> (ndof);  
-	UMFPackVector<double> * rhs_surf_low = new UMFPackVector<double> (ndof); 
+
 
 			double* coeff_vec = new double[ndof];
 			double* coeff_vec_2 = new double[ndof];
@@ -197,6 +196,7 @@ Solution<double>::vector_to_solutions(coeff_vec_2, Hermes::vector<const Space<do
 	char title[100];
 
 
+std::cout << "test";
 
 
 //Timestep loop
@@ -208,7 +208,7 @@ do
 					//------------------------artificial DIFFUSION D---------------------------------------		
 			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
 
-		//lumped_matrix->multiply_with_Scalar(1./time_step); //M_L/tau
+
 			lowmat_rhs->add_matrix(diffusion); //L(U)=K+D
 			lowmat_rhs->add_matrix(matrix_dS); //L(U)+dS(U) 
 
@@ -218,8 +218,6 @@ do
 
 			lowmat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
 			lowmat_rhs->add_matrix(lumped_matrix);  //M_L/t+(1-theta)L(U)
-
-	//	lumped_matrix->multiply_with_Scalar(time_step); //M_L
 
 
 
@@ -335,8 +333,7 @@ while (current_time < T_FINAL);
 			delete [] R_minus;
 			delete[] coeff_vec_2;
 			delete [] coeff_vec; 
-			delete rhs_surf;
-			delete rhs_surf_low;
+
 
 
   // Wait for the view to be closed.
