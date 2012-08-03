@@ -105,7 +105,7 @@ Linearizer lin;
 bool mode_3D = true;
 //lin.save_solution_vtk(&u_prev_time, "init_hpadap_neu.vtk", "u", mode_3D);
 Orderizer ord;
-
+//ord.save_mesh_vtk(&space, "init_mesh.vtk");
 		  // Initialize
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
 	UMFPackMatrix<double> * conv_matrix = new UMFPackMatrix<double> ;   //K
@@ -560,6 +560,7 @@ while (current_time < T_FINAL);
 
 
 lin.save_solution_vtk(&u_prev, "end_hpadap_smooth.vtk", "solution", mode_3D);
+ord.save_mesh_vtk(ref_space, "end_mesh");
 //ord.save_orders_vtk(ref_space, "mesh_end.vtk");
 //sview.show(&u_new);
 		mview.show(ref_space);
