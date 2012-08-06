@@ -21,10 +21,10 @@ const int P_MAX =1;
 const double h_max = 0.1;
 const int NDOF_STOP = 10000000;
 const double EPS = 1e-8;
-const double time_step = 1e-3;
+const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
-const double theta = 1.;
+const double theta = 0.5;
 
 // Equation parameters.   
 // Inlet x-velocity (dimensionless).
@@ -276,9 +276,9 @@ do
 
 		for_all_active_elements(e, space_rho.get_mesh()){	elements_to_refine[e->id] = 2; no_of_refinement_steps[e->id]=0;	}
 		calc_elem_error(&space_rho, &low_rho,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-		calc_elem_error(&space_rho_v_x, &low_rho_v_x,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		//calc_elem_error(&space_rho_v_x, &low_rho_v_x,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
 	//	calc_elem_error(&space_rho_v_y, &low_rho_v_y,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-	//	calc_elem_error(&space_e, &low_rho_e,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		//calc_elem_error(&space_e, &low_rho_e,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
 
 
 		adapting->adapt(elements_to_refine,no_of_refinement_steps,P_MAX, h_min,h_max,NDOF_STOP);
@@ -306,7 +306,7 @@ do
 					matrix_L_low->add_matrix(diffusion_low); //L(U)
 					matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
 
-					bool* fct = new bool[ndof]; 
+				//	bool* fct = new bool[ndof]; 
 //p1_list(&space_rho, fct,al);
 				//---------------------------------------antidiffusive fluxes-----------------------------------	
 					antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
@@ -331,7 +331,7 @@ do
 		delete diffusion_low;
 		delete dp_boundary_low;
 		delete dp_K_low;
-				delete [] fct;
+			//	delete [] fct;
 	
 	}
 //	View::wait(HERMES_WAIT_KEYPRESS);

@@ -56,7 +56,7 @@ int old_steps;
 
 		for_all_active_elements(e, space->get_mesh()){				
 			int i = 1;
-			//old_steps = no_of_refinement_steps[e->id];
+			old_steps = no_of_refinement_steps[e->id];
 			if(elem_error[e->id] >tol_h){ 
 										elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; // i++;
 					while((elem_error[e->id]> (tol_h+i*std_dev_h))&&(i<3)){

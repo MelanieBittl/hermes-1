@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-6;
 const double T_FINAL = 0.038;                       // Time interval length. 
@@ -42,6 +42,9 @@ const unsigned int EVERY_NTH_STEP = 1500;
 
 int main(int argc, char* argv[])
 {
+  // Time measurement.
+  TimePeriod cpu_time;
+  cpu_time.tick();
    // Load the mesh.
   Mesh mesh, basemesh;
   MeshReaderH2D mloader;
@@ -199,7 +202,8 @@ Solution<double>::vector_to_solutions(coeff_vec_2, Hermes::vector<const Space<do
 //Timestep loop
 do
 {	 info(" Time step %d, time %3.5f", ts, current_time); 
-
+// Time measurement.
+  cpu_time.tick(HERMES_SKIP);
 		dp_boundary.assemble(matrix_dS);
     dp_K.assemble(lowmat_rhs);
 
@@ -246,7 +250,10 @@ do
 
 				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e));	
 
-
+  // Measure the solver time.
+  double time4 = cpu_time.tick().last();
+//info("CPU_Time:  %g -------%g------- %g----------%g", time1,time2, time3, time4);
+info("CPU_Time:  %g ", time4);
 
 			 // Visualize the solution.
 		/*	  sprintf(title, "pressure: ts=%i",ts);
