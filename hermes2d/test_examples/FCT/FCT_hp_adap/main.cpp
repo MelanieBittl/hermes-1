@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 	CustomWeakFormMassmatrix  massmatrix(time_step, &u_prev_time);
 	CustomWeakFormConvection  convection(&u_prev_time);
 
-		ConvectionForm  wf(time_step, &u_prev_time);
+
 
 
 

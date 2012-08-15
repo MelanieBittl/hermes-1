@@ -775,6 +775,76 @@ namespace Hermes
       }
     }
 
+
+    template<typename Scalar>
+    void Adapt<Scalar>::unrefine(double thr)
+    {
+      if (!have_errors)
+              throw Exceptions::Exception("element errors have to be calculated first, call Adapt<Scalar>::calc_err_est().");
+
+      if (this->num > 1)  throw Exceptions::Exception("Unrefine implemented for one space only.");
+
+			 	int k = 0;
+		 if (this->num ==1)
+		 {
+			 Mesh* mesh = this->spaces[0]->get_mesh();
+			 	Element* e;
+
+						for_all_inactive_elements(e, mesh)
+						{
+						  bool found = true;
+						  for (int i = 0; i < 4; i++)
+						    if (e->sons[i] != NULL && ((!e->sons[i]->active) || (e->sons[i]->is_curved())))
+						    { found = false;  break; }
+
+						    if (found)
+						    {
+						      double sum1_squared = 0.0;
+						      int max1 = 0;
+						      for (int i = 0; i < H2D_MAX_ELEMENT_SONS; i++)
+						        if (e->sons[i] != NULL)
+						        {
+						          sum1_squared += errors[0][e->sons[i]->id];
+						          int oo = this->spaces[0]->get_element_order(e->sons[i]->id);
+						          if (oo > max1) max1 = oo;
+						        }
+						        //regular_queue[0] has largest error! (regular_queue sorted!)
+						        if (sum1_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id])
+						        {
+						    		 this->spaces[0]->set_element_order_internal(e->id, max1);
+						          mesh->unrefine_element_id(e->id);
+						          errors[0][e->id] = sum1_squared;
+						          k++; // number of unrefined elements
+						        }
+						    }
+						}
+						for_all_active_elements(e, mesh)
+						{					
+						    if (errors[0][e->id] < thr/4 * errors[regular_queue[0].comp][regular_queue[0].id])
+						    {
+						      int oo = H2D_GET_H_ORDER(this->spaces[0]->get_element_order(e->id));
+						      if(oo>1)
+						      {
+						     	 this->spaces[0]->set_element_order_internal(e->id, std::max(oo - 1, 1));
+						      	k++;
+						      }
+						    }
+						}
+		 
+		 
+		 }
+
+    
+      have_errors = false;
+      
+        // since space changed, assign dofs:
+      for(unsigned int i = 0; i < this->spaces.size(); i++)
+        this->spaces[i]->assign_dofs();
+      
+      
+      
+    }
+
     template<typename Scalar>
     void Adapt<Scalar>::set_error_form(int i, int j, typename Adapt<Scalar>::MatrixFormVolError* form)
     {

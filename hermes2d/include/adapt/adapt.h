@@ -175,6 +175,12 @@ namespace Hermes
       bool adapt(RefinementSelectors::Selector<Scalar>* refinement_selector, double thr, int strat = 0,
         int regularize = -1, double to_be_processed = 0.0);
 
+      /// Unrefines the elements with the smallest error.
+      /** \note This method is provided just for backward compatibility reasons. Currently, it is not used by the library.
+      *  \param[in] thr A stop condition relative error threshold. */
+      void unrefine(double thr);
+
+
       /// Returns a squared error of an element.
       /** \param[in] A component index.
       *  \param[in] An element index.
