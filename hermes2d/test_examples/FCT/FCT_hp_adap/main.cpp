@@ -90,13 +90,13 @@ int main(int argc, char* argv[])
 
 
   // Initialize views.
-	ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
+	//ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
 	//Lowview.show(&u_prev_time, HERMES_EPS_HIGH);
-	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
-ScalarView hview("Solution", new WinGeom(0, 500, 500, 400));
+	//ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
+//ScalarView hview("Solution", new WinGeom(0, 500, 500, 400));
 	//sview.show(&u_prev_time, HERMES_EPS_HIGH); 
-	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
-	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
+	//ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
+//	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 
 
 
@@ -308,9 +308,11 @@ printf("norm_high=%f",Global<double>::calc_norm(&high_sln ,HERMES_L2_NORM));
 				//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
 smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
 			changed = h_p_adap(ref_space,&u_prev_time, &low_sln,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,ps,smooth_elem, h_start);	
+			
+	/*		
 sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
-				mview.show(ref_space);
+				mview.show(ref_space);*/
 
 
 
@@ -466,9 +468,9 @@ sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 
 
 			 // Visualize the solution.		 
-			sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
+		/*	sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
-					sview.show(&u_new);
+					sview.show(&u_new);*/
 				
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
@@ -561,10 +563,12 @@ while (current_time < T_FINAL);
 
 lin.save_solution_vtk(&u_prev, "end_hpadap_smooth.vtk", "solution", mode_3D);
 ord.save_mesh_vtk(ref_space, "end_mesh");
-//ord.save_orders_vtk(ref_space, "mesh_end.vtk");
+ord.save_orders_vtk(ref_space, "end_order.vtk");
+
+
 //sview.show(&u_new);
-		mview.show(ref_space);
-mview.save_numbered_screenshot("solution.bmp", true);
+	//	mview.show(ref_space);
+//mview.save_numbered_screenshot("solution.bmp", true);
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 

@@ -157,8 +157,7 @@ project(hermes)
   ENDIF (APPLE)
   # end ADDED BY COLMAN
 
-  # Allow to override the default values in CMake.vars:
-  include(CMake.vars OPTIONAL)
+
   
   # Determine the number of cores.
   if(WIN32)
@@ -170,6 +169,9 @@ project(hermes)
     list(LENGTH procs NUM_THREADS)
     endif()
   endif(WIN32)
+  
+    # Allow to override the default values in CMake.vars:
+  include(CMake.vars OPTIONAL)
   
   MESSAGE(STATUS "Hermes will by default be using ${NUM_THREADS} threads for calculation.")
 
