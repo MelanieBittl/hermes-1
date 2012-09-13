@@ -716,24 +716,24 @@ namespace Hermes
             trfs[i][2] = fns[i][2];
         }
 
-        Traverse trav_master(true);
-        unsigned int num_states = trav_master.get_num_states(meshes);
+        Traverse trav_masterMax(true);
+        unsigned int num_states = trav_masterMax.get_num_states(meshes);
 
-        trav_master.begin(meshes.size(), &(meshes.front()));
+        trav_masterMax.begin(meshes.size(), &(meshes.front()));
 
         Traverse* trav = new Traverse[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
 
         for(unsigned int i = 0; i < Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads); i++)
         {
           trav[i].begin(meshes.size(), &(meshes.front()), trfs[i]);
-          trav[i].stack = trav_master.stack;
+          trav[i].stack = trav_masterMax.stack;
         }
 
         int state_i;
 
 #define CHUNKSIZE 1
         int num_threads_used = Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads);
-#pragma omp parallel shared(trav_master) private(state_i) num_threads(num_threads_used)
+#pragma omp parallel shared(trav_masterMax) private(state_i) num_threads(num_threads_used)
         {
 #pragma omp for schedule(dynamic, CHUNKSIZE)
           for(state_i = 0; state_i < num_states; state_i++)
@@ -742,7 +742,7 @@ namespace Hermes
             {
               Traverse::State current_state;
 #pragma omp critical(get_next_state)
-              current_state = trav[omp_get_thread_num()].get_next_state(&trav_master.top, &trav_master.id);
+              current_state = trav[omp_get_thread_num()].get_next_state(&trav_masterMax.top, &trav_masterMax.id);
 
               fns[omp_get_thread_num()][0]->set_quad_order(0, this->item);
               double* val = fns[omp_get_thread_num()][0]->get_values(component, value_type);
@@ -773,9 +773,23 @@ namespace Hermes
           }
         }
         
-        trav_master.finish();
+        trav_masterMax.finish();
         for(unsigned int i = 0; i < Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads); i++)
           trav[i].finish();
+        delete [] trav;
+
+        Traverse trav_master(true);
+        num_states = trav_master.get_num_states(meshes);
+
+        trav_master.begin(meshes.size(), &(meshes.front()));
+
+        trav = new Traverse[Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads)];
+
+        for(unsigned int i = 0; i < Hermes2DApi.getParamValue(Hermes::Hermes2D::numThreads); i++)
+        {
+          trav[i].begin(meshes.size(), &(meshes.front()), trfs[i]);
+          trav[i].stack = trav_master.stack;
+        }
 
         trav_master.begin(meshes.size(), &(meshes.front()));
 
@@ -931,20 +945,24 @@ namespace Hermes
         // search for an existing vertex
         if(p1 > p2) std::swap(p1, p2);
         int index = this->hash(p1, p2);
-        int i = this->hash_table[index];
-        while (i >= 0)
+        int i = 0;
+        if(index < this->vertex_count)
         {
-          if(
-            this->info[i][0] == p1 && this->info[i][1] == p2 &&
-            (value == verts[i][2] || fabs(value - verts[i][2]) < this->max*1e-8) &&
-            (fabs(x - verts[i][0]) < 1e-8) &&
-            (fabs(y - verts[i][1]) < 1e-8)
-            )
-            return i;
-          // note that we won't return a vertex with a different value than the required one;
-          // this takes care for discontinuities in the solution, where more vertices
-          // with different values will be created
-          i = info[i][2];
+          i = this->hash_table[index];
+          while (i >= 0 && i < this->vertex_count)
+          {
+            if(
+              this->info[i][0] == p1 && this->info[i][1] == p2 &&
+              (value == verts[i][2] || fabs(value - verts[i][2]) < this->max*1e-8) &&
+              (fabs(x - verts[i][0]) < 1e-8) &&
+              (fabs(y - verts[i][1]) < 1e-8)
+              )
+              return i;
+            // note that we won't return a vertex with a different value than the required one;
+            // this takes care for discontinuities in the solution, where more vertices
+            // with different values will be created
+            i = info[i][2];
+          }
         }
 
         // if not found, create a new one

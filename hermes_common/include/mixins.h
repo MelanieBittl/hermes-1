@@ -59,15 +59,18 @@ namespace Hermes
       public:
         static void info(const char* msg, ...);
         static void warn(const char* msg, ...);
+        static void error(const char* msg, ...);
       };
     protected:
       Loggable(bool verbose_output = false, callbackFn verbose_callback = NULL);
 
-      void warn(const char* msg, ...) const;
-      void warn_if(bool cond, const char* msg, ...) const;
       void info(const char* msg, ...) const;
       void info_if(bool cond, const char* msg, ...) const;
-
+      void warn(const char* msg, ...) const;
+      void warn_if(bool cond, const char* msg, ...) const;
+      void error(const char* msg, ...) const;
+      void error_if(bool cond, const char* msg, ...) const;
+      
       /* file operations */
       void hermes_fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream) const;
       void hermes_fread(void* ptr, size_t size, size_t nitems, FILE* stream) const;
@@ -149,14 +152,12 @@ namespace Hermes
     public:
       TimeMeasurable(const char *name = NULL); ///< Constructs internal structures and starts measuring.
 
-    private:
       /// Tick type. Used by the class Hermes::TimePeriod.
       enum TimerPeriodTickType
       {
         HERMES_ACCUMULATE, ///< Accumulate a period between ticks.
         HERMES_SKIP ///< Skip period between ticks, i.e., do not accumulate it.
       };
-    public:
 
       const TimeMeasurable& reset(); ///< Resets accumulated time.
       const TimeMeasurable& tick_reset(); ///< Starts a new period and resets accumulated time.

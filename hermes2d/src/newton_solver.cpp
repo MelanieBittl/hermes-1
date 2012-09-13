@@ -24,21 +24,40 @@ namespace Hermes
   namespace Hermes2D
   {
     template<typename Scalar>
-    NewtonSolver<Scalar>::NewtonSolver(DiscreteProblem<Scalar>* dp) : NonlinearSolver<Scalar>(dp), kept_jacobian(NULL), newton_tol(1e-8), newton_max_iter(20), residual_as_function(false), max_allowed_residual_norm(1E9), min_allowed_damping_coeff(1E-2), currentDampingCofficient(1.0), own_dp(false)
+    NewtonSolver<Scalar>::NewtonSolver(DiscreteProblem<Scalar>* dp) : NonlinearSolver<Scalar>(dp), own_dp(false), kept_jacobian(NULL)
     {
+      init_attributes();
       init_linear_solver();
     }
 
     template<typename Scalar>
-    NewtonSolver<Scalar>::NewtonSolver(const WeakForm<Scalar>* wf, const Space<Scalar>* space) : NonlinearSolver<Scalar>(new DiscreteProblem<Scalar>(wf, space)), kept_jacobian(NULL), newton_tol(1e-8), newton_max_iter(20), residual_as_function(false), max_allowed_residual_norm(1E9), min_allowed_damping_coeff(1E-2), currentDampingCofficient(1.0), own_dp(true)
+    NewtonSolver<Scalar>::NewtonSolver(const WeakForm<Scalar>* wf, const Space<Scalar>* space) : NonlinearSolver<Scalar>(new DiscreteProblem<Scalar>(wf, space)), own_dp(true), kept_jacobian(NULL)
     {
+      init_attributes();
       init_linear_solver();
     }
 
     template<typename Scalar>
-    NewtonSolver<Scalar>::NewtonSolver(const WeakForm<Scalar>* wf, Hermes::vector<const Space<Scalar> *> spaces) : NonlinearSolver<Scalar>(new DiscreteProblem<Scalar>(wf, spaces)), kept_jacobian(NULL), newton_tol(1e-8), newton_max_iter(20), residual_as_function(false), max_allowed_residual_norm(1E9), min_allowed_damping_coeff(1E-2), currentDampingCofficient(1.0), own_dp(true)
+    NewtonSolver<Scalar>::NewtonSolver(const WeakForm<Scalar>* wf, Hermes::vector<const Space<Scalar> *> spaces) : NonlinearSolver<Scalar>(new DiscreteProblem<Scalar>(wf, spaces)), own_dp(true), kept_jacobian(NULL)
     {
+      init_attributes();
       init_linear_solver();
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::init_attributes()
+    {
+      this->newton_tol = 1e-8;
+      this->newton_max_iter = 15;
+      this->residual_as_function = false;
+      this->max_allowed_residual_norm = 1E9;
+      this->min_allowed_damping_coeff = 1E-4;
+      this->currentDampingCofficient = 1.0;
+      this->manualDamping = false;
+      this->autoDampingRatio = 2.0;
+      this->initialAutoDampingRatio = 1.0;
+      this->sufficientImprovementFactor = 0.95;
+      this->necessarySuccessfulStepsToIncrease = 1;
     }
 
     template<typename Scalar>
@@ -50,18 +69,24 @@ namespace Hermes
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_newton_max_iter(int newton_max_iter)
     {
+      if(newton_max_iter < 1)
+        throw Exceptions::ValueException("newton_max_iter", newton_max_iter, 1);
       this->newton_max_iter = newton_max_iter;
     }
 
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_max_allowed_residual_norm(double max_allowed_residual_norm_to_set)
     {
+      if(max_allowed_residual_norm_to_set <= 0.0)
+        throw Exceptions::ValueException("max_allowed_residual_norm_to_set", max_allowed_residual_norm_to_set, 0.0);
       this->max_allowed_residual_norm = max_allowed_residual_norm_to_set;
     }
 
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_min_allowed_damping_coeff(double min_allowed_damping_coeff_to_set)
     {
+      if(min_allowed_damping_coeff_to_set <= 0.0)
+        throw Exceptions::ValueException("min_allowed_damping_coeff_to_set", min_allowed_damping_coeff_to_set, 0.0);
       this->min_allowed_damping_coeff = min_allowed_damping_coeff_to_set;
     }
 
@@ -92,12 +117,18 @@ namespace Hermes
     void NewtonSolver<Scalar>::set_spaces(Hermes::vector<const Space<Scalar>*> spaces)
     {
       static_cast<DiscreteProblem<Scalar>*>(this->dp)->set_spaces(spaces);
+      if(kept_jacobian != NULL)
+        delete kept_jacobian;
+      kept_jacobian = NULL;
     }
 
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_space(const Space<Scalar>* space)
     {
       static_cast<DiscreteProblem<Scalar>*>(this->dp)->set_space(space);
+      if(kept_jacobian != NULL)
+        delete kept_jacobian;
+      kept_jacobian = NULL;
     }
     
     template<typename Scalar>
@@ -123,11 +154,72 @@ namespace Hermes
       delete jacobian;
       delete residual;
       delete linear_solver;
+      if(own_dp)
+        delete this->dp;
+      else
+        static_cast<DiscreteProblem<Scalar>*>(this->dp)->have_matrix = false;
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::setManualDampingCoeff(bool onOff, double coeff)
+    {
+      if(coeff <= 0.0 || coeff > 1.0)
+        throw Exceptions::ValueException("coeff", coeff, 0.0, 1.0);
+      if(onOff)
+      {
+        this->manualDamping = true;
+        this->currentDampingCofficient = coeff;
+      }
+      else
+        this->manualDamping = false;
+    }
+      
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::setInitialAutoDampingCoeff(double coeff)
+    {
+      if(coeff <= 0.0 || coeff > 1.0)
+        throw Exceptions::ValueException("coeff", coeff, 0.0, 1.0);
+      if(this->manualDamping)
+        this->warn("Manual damping is turned on and you called setInitialAutoDampingCoeff(), turn off manual damping first by setManualDampingCoeff(false);");
+      else
+        this->currentDampingCofficient = coeff;
+    }
+      
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::setAutoDampingRatio(double ratio)
+    {
+      if(ratio <= 0.0)
+        throw Exceptions::ValueException("ratio", ratio, 0.0);
+      if(this->manualDamping)
+        this->warn("Manual damping is turned on and you called setInitialAutoDampingCoeff(), turn off manual damping first by setManualDampingCoeff(false);");
+        this->autoDampingRatio = ratio;
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::setSufficientImprovementFactor(double ratio)
+    {
+      if(ratio <= 0.0)
+        throw Exceptions::ValueException("ratio", ratio, 0.0);
+      if(this->manualDamping)
+        this->warn("Manual damping is turned on and you called setInitialAutoDampingCoeff(), turn off manual damping first by setManualDampingCoeff(false);");
+      this->sufficientImprovementFactor = ratio;
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::setNecessarySuccessfulStepsToIncrease(unsigned int steps)
+    {
+      if(steps < 1)
+        throw Exceptions::ValueException("steps", steps, 0.0);
+      if(this->manualDamping)
+        this->warn("Manual damping is turned on and you called setInitialAutoDampingCoeff(), turn off manual damping first by setManualDampingCoeff(false);");
+      this->necessarySuccessfulStepsToIncrease = steps;
     }
 
     template<typename Scalar>
     void NewtonSolver<Scalar>::solve(Scalar* coeff_vec)
     {
+      this->tick();
+
       // Obtain the number of degrees of freedom.
       int ndof = this->dp->get_num_dofs();
 
@@ -155,6 +247,7 @@ namespace Hermes
       double residual_norm;
       double last_residual_norm;
       int it = 1;
+      int successfulSteps = 0;
 
       this->onInitialization();
 
@@ -164,6 +257,17 @@ namespace Hermes
 
         // Assemble just the residual vector.
         this->dp->assemble(coeff_vec, residual);
+        if(this->outputRhsOn && (this->outputRhsIterations == -1 || this->outputRhsIterations >= it))
+        {
+          char* fileName = new char[this->RhsFilename.length() + 5];
+          if(this->RhsFormat == Hermes::Algebra::DF_MATLAB_SPARSE)
+            sprintf(fileName, "%s%i.m", this->RhsFilename.c_str(), it);
+          else
+            sprintf(fileName, "%s%i", this->RhsFilename.c_str(), it);
+          FILE* rhs_file = fopen(fileName, "w+");
+          residual->dump(rhs_file, this->RhsVarname.c_str(), this->RhsFormat);
+          fclose(rhs_file);
+        }
         
         Element* e;
         for(unsigned int i = 0; i < static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_spaces().size(); i++)
@@ -205,30 +309,33 @@ namespace Hermes
 
         // Info for the user.
         if(it == 1)
-          this->info("---- Newton initial residual norm: %g", residual_norm);
+          this->info("Newton: initial residual norm: %g", residual_norm);
         else
         {
-          this->info("---- Newton iteration %d, residual norm: %g", it - 1, residual_norm);
-          if(residual_norm < last_residual_norm * (1. + 1. / newton_max_iter))
+          this->info("Newton: iteration %d, residual norm: %g", it - 1, residual_norm);
+          if(!this->manualDamping && !((residual_norm > max_allowed_residual_norm) || (residual_norm < newton_tol && it > 1)))
           {
-            this->currentDampingCofficient = std::min(1.0, 2 * this->currentDampingCofficient);
-            if(residual_norm < last_residual_norm)
-              this->info("\t\tNewton: results improved, calculation continues with damping coefficient: %g.", this->currentDampingCofficient);
-            else
-              this->warn("\t\tNewton: results changed negligibly, calculation continues with damping coefficient: %g.", this->currentDampingCofficient);
-          }
-          else
-          {
-            if(this->currentDampingCofficient < min_allowed_damping_coeff)
+            if(residual_norm < last_residual_norm * this->sufficientImprovementFactor)
             {
-              this->warn("\t\tNewton: results NOT improved, current damping coefficient is at the minimum possible level: %g.", min_allowed_damping_coeff);
-              this->info("\t\t\tIf you want to decrease the minimum level, use the method set_min_allowed_damping_coeff()");
-              throw Exceptions::Exception("Newton NOT converged because of damping coefficient could not be decreased anymore to possibly handle non-converging process.");
+              if(++successfulSteps >= this->necessarySuccessfulStepsToIncrease)
+                this->currentDampingCofficient = std::min(this->initialAutoDampingRatio, 2 * this->currentDampingCofficient);
+              if(residual_norm < last_residual_norm)
+                this->info(" Newton: step successful, calculation continues with damping coefficient: %g.", this->currentDampingCofficient);
             }
             else
             {
-              this->currentDampingCofficient = 0.5 * this->currentDampingCofficient;
-              this->warn("\t\tNewton: results NOT improved, step restarted with damping coefficient: %g.", this->currentDampingCofficient);
+              successfulSteps = 0;
+              if(this->currentDampingCofficient < this->min_allowed_damping_coeff)
+              {
+                this->warn(" Newton: results NOT improved, current damping coefficient is at the minimum possible level: %g.", min_allowed_damping_coeff);
+                this->info("  If you want to decrease the minimum level, use the method set_min_allowed_damping_coeff()");
+                throw Exceptions::Exception("Newton NOT converged because of damping coefficient could not be decreased anymore to possibly handle non-converging process.");
+              }
+              else
+              {
+                this->currentDampingCofficient = (1 / this->autoDampingRatio) * this->currentDampingCofficient;
+                this->warn(" Newton: results NOT improved, step restarted with damping coefficient: %g.", this->currentDampingCofficient);
+              }
             }
           }
         }
@@ -236,6 +343,9 @@ namespace Hermes
         // If maximum allowed residual norm is exceeded, fail.
         if(residual_norm > max_allowed_residual_norm)
         {
+          this->tick();
+          this->info("Newton: solution duration: %f s.\n", this->last());
+          this->onFinish();
           throw Exceptions::ValueException("residual norm", residual_norm, max_allowed_residual_norm);
         }
 
@@ -254,11 +364,27 @@ namespace Hermes
             coeff_vec = NULL;
           }
           this->onFinish();
+
+          this->tick();
+          this->info("Newton: solution duration: %f s.\n", this->last());
+
           return;
         }
 
         // Assemble just the jacobian.
         this->dp->assemble(coeff_vec, jacobian);
+        if(this->outputMatrixOn && (this->outputMatrixIterations == -1 || this->outputMatrixIterations >= it))
+        {
+          char* fileName = new char[this->matrixFilename.length() + 5];
+          if(this->matrixFormat == Hermes::Algebra::DF_MATLAB_SPARSE)
+            sprintf(fileName, "%s%i.m", this->matrixFilename.c_str(), it);
+          else
+            sprintf(fileName, "%s%i", this->matrixFilename.c_str(), it);
+          FILE* matrix_file = fopen(fileName, "w+");
+
+          jacobian->dump(matrix_file, this->matrixVarname.c_str(), this->matrixFormat);
+          fclose(matrix_file);
+        }
 
         this->onStepEnd();
 
@@ -272,10 +398,10 @@ namespace Hermes
 
         // Add \deltaY^{n + 1} to Y^n.
         // The good case.
-        if(residual_norm < last_residual_norm * (1. + 1. / newton_max_iter))
+        if(residual_norm < last_residual_norm * this->sufficientImprovementFactor || this->manualDamping || it == 1)
         {
           memcpy(coeff_vec_back, coeff_vec, sizeof(Scalar)*ndof);
-        for (int i = 0; i < ndof; i++)
+          for (int i = 0; i < ndof; i++)
             coeff_vec[i] += currentDampingCofficient * linear_solver->get_sln_vector()[i];
         }
         else
@@ -298,6 +424,10 @@ namespace Hermes
             coeff_vec = NULL;
           }
 
+          this->tick();
+          this->info("Newton: solution duration: %f s.\n", this->last());
+
+          this->onFinish();
           throw Exceptions::ValueException("iterations", it, newton_max_iter);
         }
       }
@@ -306,6 +436,8 @@ namespace Hermes
     template<typename Scalar>
     void NewtonSolver<Scalar>::solve_keep_jacobian(Scalar* coeff_vec)
     {
+      this->tick();
+
       // Obtain the number of degrees of freedom.
       int ndof = this->dp->get_num_dofs();
 
@@ -318,13 +450,36 @@ namespace Hermes
         delete_coeff_vec = true;
       }
 
+      // Vector for restarting steps.
+      Scalar* coeff_vec_back = new Scalar[ndof];
+      memset(coeff_vec_back, 0, ndof*sizeof(Scalar));
+
+      
       // The Newton's loop.
       double residual_norm;
+      double last_residual_norm;
       int it = 1;
+      int successfulSteps = 0;
+
+      this->onInitialization();
+
       while (true)
       {
+        this->onStepBegin();
+
         // Assemble the residual vector.
         this->dp->assemble(coeff_vec, residual);
+        if(this->outputRhsOn && (this->outputRhsIterations == -1 || this->outputRhsIterations >= it))
+        {
+          char* fileName = new char[this->RhsFilename.length() + 5];
+          if(this->RhsFormat == Hermes::Algebra::DF_MATLAB_SPARSE)
+            sprintf(fileName, "%s%i.m", this->RhsFilename.c_str(), it);
+          else
+            sprintf(fileName, "%s%i", this->RhsFilename.c_str(), it);
+          FILE* rhs_file = fopen(fileName, "w+");
+          residual->dump(rhs_file, this->RhsVarname.c_str(), this->RhsFormat);
+          fclose(rhs_file);
+        }
 
         Element* e;
         for(unsigned int i = 0; i < static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_spaces().size(); i++)
@@ -354,22 +509,63 @@ namespace Hermes
         else
         {
           // Calculate the l2-norm of residual vector, this is the traditional way.
-          residual_norm = Global<Scalar>::get_l2_norm(residual);
+          if(it == 1)
+            last_residual_norm = residual_norm = Global<Scalar>::get_l2_norm(residual);
+          else
+          {
+            last_residual_norm = residual_norm;
+            residual_norm = Global<Scalar>::get_l2_norm(residual);
+          }
         }
 
         // Info for the user.
         if(it == 1)
-          this->info("---- Newton initial residual norm: %g", residual_norm);
+          this->info("Newton: initial residual norm: %g", residual_norm);
         else
-          this->info("---- Newton iter %d, residual norm: %g", it - 1, residual_norm);
+        {
+          this->info("Newton: iteration %d, residual norm: %g", it - 1, residual_norm);
+          if(!this->manualDamping && !((residual_norm > max_allowed_residual_norm) || (residual_norm < newton_tol && it > 1)))
+          {
+            if(residual_norm < last_residual_norm * this->sufficientImprovementFactor)
+            {
+              if(++successfulSteps >= this->necessarySuccessfulStepsToIncrease)
+                this->currentDampingCofficient = std::min(this->initialAutoDampingRatio, 2 * this->currentDampingCofficient);
+              if(residual_norm < last_residual_norm)
+                this->info(" Newton: step successful, calculation continues with damping coefficient: %g.", this->currentDampingCofficient);
+            }
+            else
+            {
+              successfulSteps = 0;
+              if(this->currentDampingCofficient < this->min_allowed_damping_coeff)
+              {
+                this->warn(" Newton: results NOT improved, current damping coefficient is at the minimum possible level: %g.", min_allowed_damping_coeff);
+                this->info("  If you want to decrease the minimum level, use the method set_min_allowed_damping_coeff()");
+                throw Exceptions::Exception("Newton NOT converged because of damping coefficient could not be decreased anymore to possibly handle non-converging process.");
+              }
+              else
+              {
+                this->currentDampingCofficient = (1 / this->autoDampingRatio) * this->currentDampingCofficient;
+                this->warn(" Newton: results NOT improved, step restarted with damping coefficient: %g.", this->currentDampingCofficient);
+              }
+            }
+          }
+        }
 
         // If maximum allowed residual norm is exceeded, fail.
         if(residual_norm > max_allowed_residual_norm)
+        {
+          this->tick();
+          this->info("Newton: solution duration: %f s.", this->last());
+
+          this->onFinish();
+
           throw Exceptions::ValueException("residual norm", residual_norm, max_allowed_residual_norm);
+        }
 
         // If residual norm is within tolerance, return 'true'.
         // This is the only correct way of ending.
-        if(residual_norm < newton_tol && it > 1) {
+        if(residual_norm < newton_tol && it > 1) 
+        {
           // We want to return the solution in a different structure.
           this->sln_vector = new Scalar[ndof];
           for (int i = 0; i < ndof; i++)
@@ -381,6 +577,10 @@ namespace Hermes
             coeff_vec = NULL;
           }
 
+          this->tick();
+          this->info("Newton: solution duration: %f s.", this->last());
+
+          this->onFinish();
           return;
         }
 
@@ -398,25 +598,57 @@ namespace Hermes
           linear_solver = create_linear_solver<Scalar>(kept_jacobian, residual);
 
           this->dp->assemble(coeff_vec, kept_jacobian);
+
+          if(this->outputMatrixOn && (this->outputMatrixIterations == -1 || this->outputMatrixIterations >= it))
+          {
+            char* fileName = new char[this->matrixFilename.length() + 5];
+            if(this->matrixFormat == Hermes::Algebra::DF_MATLAB_SPARSE)
+              sprintf(fileName, "%s%i.m", this->matrixFilename.c_str(), it);
+            else
+              sprintf(fileName, "%s%i", this->matrixFilename.c_str(), it);
+            FILE* matrix_file = fopen(fileName, "w+");
+
+            kept_jacobian->dump(matrix_file, this->matrixVarname.c_str(), this->matrixFormat);
+            fclose(matrix_file);
+          }
+
           linear_solver->set_factorization_scheme(HERMES_REUSE_FACTORIZATION_COMPLETELY);
         }
+
+        this->onStepEnd();
 
         // Multiply the residual vector with -1 since the matrix
         // equation reads J(Y^n) \deltaY^{n + 1} = -F(Y^n).
         residual->change_sign();
 
         // Solve the linear system.
-        if(!linear_solver->solve()) {
+        if(!linear_solver->solve()) 
+        {
           throw Exceptions::LinearMatrixSolverException();
         }
 
-        // Add \deltaY^{n + 1} to Y^n.
-        for (int i = 0; i < ndof; i++)
-          coeff_vec[i] += linear_solver->get_sln_vector()[i];
+         // Add \deltaY^{n + 1} to Y^n.
+        // The good case.
+        if(residual_norm < last_residual_norm * this->sufficientImprovementFactor || this->manualDamping || it == 1)
+        {
+          memcpy(coeff_vec_back, coeff_vec, sizeof(Scalar)*ndof);
+          for (int i = 0; i < ndof; i++)
+            coeff_vec[i] += currentDampingCofficient * linear_solver->get_sln_vector()[i];
+        }
+        else
+        {
+          for (int i = 0; i < ndof; i++)
+            coeff_vec[i] = coeff_vec_back[i] + currentDampingCofficient * (coeff_vec[i] - coeff_vec_back[i]);
+        }
 
         // Increase the number of iterations and test if we are still under the limit.
         if(it++ >= newton_max_iter)
         {
+          this->tick();
+          this->info("Newton: solution duration: %f s.\n", this->last());
+
+          this->onFinish();
+
           throw Exceptions::ValueException("newton iterations", it, newton_max_iter);
         }
       }

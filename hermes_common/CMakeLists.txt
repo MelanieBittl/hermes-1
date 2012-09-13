@@ -50,6 +50,7 @@ project(hermes_common)
     include/common.h
     include/matrix.h
     include/api.h
+    include/array.h
     include/tables.h
     include/qsort.h
     include/c99_functions.h
@@ -74,11 +75,13 @@ project(hermes_common)
   
   #
   # Subdirectories with CMakeLists.txt
-  #
+
+IF(EXISTS tests)
   if(HERMES_COMMON_WITH_TESTS)
     enable_testing()
     add_subdirectory(tests)
   endif(HERMES_COMMON_WITH_TESTS)
+ENDIF(EXISTS tests)
 
   # Create file with preprocessor definitions exposing the build settings to the source code.
   configure_file(

@@ -93,7 +93,8 @@ namespace Hermes
         int i; ///< Component.
         std::string area; ///< Geometric region where this estimator is applied.
         Hermes::vector<MeshFunction<Scalar>*> ext; ///< Additional functions required by the estimator.
-
+        /// Set this error form to be an interface one.
+        void setAsInterface();
         /// Constructor.
         ErrorEstimatorForm(int i, std::string area = HERMES_ANY,
                            Hermes::vector<MeshFunction<Scalar>*> ext = Hermes::vector<MeshFunction<Scalar>*>())
@@ -315,9 +316,7 @@ namespace Hermes
       {
       public:
         /// Constructor.
-        ErrorEstimatorFormKelly(int i = 0, double const_by_laplacian = 1.0)
-          : KellyTypeAdapt<Scalar>::ErrorEstimatorForm(i, H2D_DG_INNER_EDGE), const_by_laplacian(const_by_laplacian)
-        {}
+        ErrorEstimatorFormKelly(int i = 0, double const_by_laplacian = 1.0);
 
         virtual Scalar value(int n, double *wt, Func<Scalar> *u_ext[],
                              Func<Scalar> *u, Geom<double> *e,

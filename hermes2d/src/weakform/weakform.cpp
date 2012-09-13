@@ -18,12 +18,17 @@
 #include "matrix.h"
 #include "forms.h"
 #include "space.h"
-
 using namespace Hermes::Algebra::DenseMatrixOperations;
 namespace Hermes
 {
   namespace Hermes2D
   {
+
+    /// This is to be used by weak forms specifying numerical flux through interior edges.
+    /// Forms with this identifier will receive DiscontinuousFunc representations of shape
+    /// and ext. functions, which they may query for values on either side of given interface.
+    static const std::string H2D_DG_INNER_EDGE = "-1234567";
+
     template<typename Scalar>
     WeakForm<Scalar>::WeakForm(unsigned int neq, bool mat_free)
     {
@@ -43,25 +48,16 @@ namespace Hermes
     {
       mfvol.clear();
       mfsurf.clear();
+      mfDG.clear();
       vfvol.clear();
       vfsurf.clear();
+      vfDG.clear();
     };
 
     template<typename Scalar>
-    Form<Scalar>::Form(std::string area, Hermes::vector<MeshFunction<Scalar>*> ext,
-      double scaling_factor, int u_ext_offset) :
-    ext(ext), scaling_factor(scaling_factor), u_ext_offset(u_ext_offset)
+    Form<Scalar>::Form() : scaling_factor(1.0), u_ext_offset(0)
     {
-      areas.push_back(area);
-      stage_time = 0.0;
-    }
-
-    template<typename Scalar>
-    Form<Scalar>::Form(Hermes::vector<std::string> areas, Hermes::vector<MeshFunction<Scalar>*> ext,
-      double scaling_factor, int u_ext_offset) :
-    ext(ext), scaling_factor(scaling_factor), u_ext_offset(u_ext_offset)
-    {
-      this->areas = areas;
+      areas.push_back(HERMES_ANY);
       stage_time = 0.0;
     }
 
@@ -78,22 +74,59 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    MatrixForm<Scalar>::MatrixForm(unsigned int i, unsigned int j,
-      std::string area, Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    Form<Scalar>(area, ext, scaling_factor, u_ext_offset), sym(0)
+    void Form<Scalar>::setArea(std::string area)
     {
-      this->i = i;
-      this->j = j;
+      areas.clear();
+      areas.push_back(area);
+    }
+    template<typename Scalar>
+      void Form<Scalar>::setAreas(Hermes::vector<std::string> areas)
+    {
+      this->areas = areas;
+    }
+    
+    template<typename Scalar>
+      Hermes::vector<std::string> Form<Scalar>::getAreas()
+    {
+      return this->areas;
+    }
+    
+    template<typename Scalar>
+      void Form<Scalar>::setExt(MeshFunction<Scalar>* ext)
+    {
+      this->ext.clear();
+      this->ext.push_back(ext);
     }
 
     template<typename Scalar>
-    MatrixForm<Scalar>::MatrixForm(unsigned int i, unsigned int j,
-      Hermes::vector<std::string> areas, Hermes::vector<MeshFunction<Scalar>*> ext,
-      double scaling_factor, int u_ext_offset) :
-    Form<Scalar>(areas, ext, scaling_factor, u_ext_offset), sym(0)
+      void Form<Scalar>::setExt(Hermes::vector<MeshFunction<Scalar>*> ext)
     {
-      this->i = i;
-      this->j = j;
+      this->ext = ext;
+    }
+    
+    template<typename Scalar>
+      Hermes::vector<MeshFunction<Scalar>*> Form<Scalar>::getExt()
+    {
+      return this->ext;
+    }
+    
+    template<typename Scalar>
+      void Form<Scalar>::setScalingFactor(double scalingFactor)
+    {
+      this->scaling_factor = scalingFactor;
+    }
+    
+    template<typename Scalar>
+      void Form<Scalar>::set_uExtOffset(int u_ext_offset)
+    {
+      this->u_ext_offset = u_ext_offset;
+    }
+    
+
+    template<typename Scalar>
+    MatrixForm<Scalar>::MatrixForm(unsigned int i, unsigned int j) :
+    Form<Scalar>(), sym(HERMES_NONSYM), i(i), j(j)
+    {
     }
 
     template<typename Scalar>
@@ -113,20 +146,21 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    MatrixFormVol<Scalar>::MatrixFormVol(unsigned int i, unsigned int j,
-      std::string area, SymFlag sym, Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    MatrixForm<Scalar>(i, j, area, ext, scaling_factor, u_ext_offset)
+    MatrixFormVol<Scalar>::MatrixFormVol(unsigned int i, unsigned int j) :
+    MatrixForm<Scalar>(i, j)
+    {
+    }
+    
+    template<typename Scalar>
+    void MatrixFormVol<Scalar>::setSymFlag(SymFlag sym)
     {
       this->sym = sym;
     }
-
+    
     template<typename Scalar>
-    MatrixFormVol<Scalar>::MatrixFormVol(unsigned int i, unsigned int j,
-      Hermes::vector<std::string> areas, SymFlag sym, Hermes::vector<MeshFunction<Scalar>*> ext,
-      double scaling_factor, int u_ext_offset) :
-    MatrixForm<Scalar>(i, j, areas, ext, scaling_factor, u_ext_offset)
+    SymFlag MatrixFormVol<Scalar>::getSymFlag()
     {
-      this->sym = sym;
+      return this->sym;
     }
 
     template<typename Scalar>
@@ -137,16 +171,8 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    MatrixFormSurf<Scalar>::MatrixFormSurf(unsigned int i, unsigned int j, std::string area,
-      Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    MatrixForm<Scalar>(i, j, area, ext, scaling_factor, u_ext_offset)
-    {
-    }
-
-    template<typename Scalar>
-    MatrixFormSurf<Scalar>::MatrixFormSurf(unsigned int i, unsigned int j, Hermes::vector<std::string> areas,
-      Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    MatrixForm<Scalar>(i, j, areas, ext, scaling_factor, u_ext_offset)
+    MatrixFormSurf<Scalar>::MatrixFormSurf(unsigned int i, unsigned int j) :
+    MatrixForm<Scalar>(i, j)
     {
     }
 
@@ -158,32 +184,28 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    VectorForm<Scalar>::VectorForm(unsigned int i, std::string area,
-      Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    Form<Scalar>(area, ext, scaling_factor, u_ext_offset)
+    MatrixFormDG<Scalar>::MatrixFormDG(unsigned int i, unsigned int j) :
+    MatrixForm<Scalar>(i, j)
     {
-      this->i = i;
+      this->setArea(H2D_DG_INNER_EDGE);
     }
 
     template<typename Scalar>
-    VectorForm<Scalar>::VectorForm(unsigned int i, Hermes::vector<std::string> areas,
-      Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    Form<Scalar>(areas, ext, scaling_factor, u_ext_offset)
+    MatrixFormDG<Scalar>* MatrixFormDG<Scalar>::clone()
     {
-      this->i = i;
+      throw Hermes::Exceptions::FunctionNotOverridenException("MatrixFormDG<Scalar>::clone()");
+      return NULL;
     }
 
     template<typename Scalar>
-    VectorFormVol<Scalar>::VectorFormVol(unsigned int i, std::string area,
-      Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    VectorForm<Scalar>(i, area, ext, scaling_factor, u_ext_offset)
+    VectorForm<Scalar>::VectorForm(unsigned int i) :
+    Form<Scalar>(), i(i)
     {
     }
 
     template<typename Scalar>
-    VectorFormVol<Scalar>::VectorFormVol(unsigned int i, Hermes::vector<std::string> areas,
-      Hermes::vector<MeshFunction<Scalar>*> ext, double scaling_factor, int u_ext_offset) :
-    VectorForm<Scalar>(i, areas, ext, scaling_factor, u_ext_offset)
+    VectorFormVol<Scalar>::VectorFormVol(unsigned int i) :
+    VectorForm<Scalar>(i)
     {
     }
 
@@ -211,17 +233,8 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    VectorFormSurf<Scalar>::VectorFormSurf(unsigned int i, std::string area,
-      Hermes::vector<MeshFunction<Scalar>*> ext,
-      double scaling_factor, int u_ext_offset) :
-    VectorForm<Scalar>(i, area, ext, scaling_factor, u_ext_offset)
-    {
-    }
-    template<typename Scalar>
-    VectorFormSurf<Scalar>::VectorFormSurf(unsigned int i, Hermes::vector<std::string> areas,
-      Hermes::vector<MeshFunction<Scalar>*> ext,
-      double scaling_factor, int u_ext_offset) :
-    VectorForm<Scalar>(i, areas, ext, scaling_factor, u_ext_offset)
+    VectorFormSurf<Scalar>::VectorFormSurf(unsigned int i) :
+    VectorForm<Scalar>(i)
     {
     }
 
@@ -229,6 +242,20 @@ namespace Hermes
     VectorFormSurf<Scalar>* VectorFormSurf<Scalar>::clone()
     {
       throw Hermes::Exceptions::FunctionNotOverridenException("VectorFormSurf<Scalar>::clone()");
+      return NULL;
+    }
+
+    template<typename Scalar>
+    VectorFormDG<Scalar>::VectorFormDG(unsigned int i) :
+    VectorForm<Scalar>(i)
+    {
+      this->setArea(H2D_DG_INNER_EDGE);
+    }
+
+    template<typename Scalar>
+    VectorFormDG<Scalar>* VectorFormDG<Scalar>::clone()
+    {
+      throw Hermes::Exceptions::FunctionNotOverridenException("VectorFormDG<Scalar>::clone()");
       return NULL;
     }
 
@@ -263,6 +290,17 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    void WeakForm<Scalar>::add_matrix_form_DG(MatrixFormDG<Scalar>* form)
+    {
+      if(form->i >= neq || form->j >= neq)
+        throw Hermes::Exceptions::Exception("Invalid equation number.");
+
+      form->set_weakform(this);
+      mfDG.push_back(form);
+      seq++;
+    }
+
+    template<typename Scalar>
     void WeakForm<Scalar>::add_vector_form(VectorFormVol<Scalar>* form)
     {
       if(form->i >= neq)
@@ -284,6 +322,17 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    void WeakForm<Scalar>::add_vector_form_DG(VectorFormDG<Scalar>* form)
+    {
+      if(form->i >= neq)
+        throw Hermes::Exceptions::Exception("Invalid equation number.");
+
+      form->set_weakform(this);
+      vfDG.push_back(form);
+      seq++;
+    }
+
+    template<typename Scalar>
     Hermes::vector<MatrixFormVol<Scalar> *> WeakForm<Scalar>::get_mfvol()
     {
       return mfvol;
@@ -294,6 +343,11 @@ namespace Hermes
       return mfsurf;
     }
     template<typename Scalar>
+    Hermes::vector<MatrixFormDG<Scalar> *> WeakForm<Scalar>::get_mfDG()
+    {
+      return mfDG;
+    }
+    template<typename Scalar>
       Hermes::vector<VectorFormVol<Scalar> *> WeakForm<Scalar>::get_vfvol()
     {
       return vfvol;
@@ -302,6 +356,11 @@ namespace Hermes
       Hermes::vector<VectorFormSurf<Scalar> *> WeakForm<Scalar>::get_vfsurf()
     {
       return vfsurf;
+    }
+    template<typename Scalar>
+    Hermes::vector<VectorFormDG<Scalar> *> WeakForm<Scalar>::get_vfDG()
+    {
+      return vfDG;
     }
 
     template<typename Scalar>
@@ -364,9 +423,13 @@ namespace Hermes
     template class HERMES_API MatrixFormVol<std::complex<double> >;
     template class HERMES_API MatrixFormSurf<double>;
     template class HERMES_API MatrixFormSurf<std::complex<double> >;
+    template class HERMES_API MatrixFormDG<double>;
+    template class HERMES_API MatrixFormDG<std::complex<double> >;
     template class HERMES_API VectorFormVol<double>;
     template class HERMES_API VectorFormVol<std::complex<double> >;
     template class HERMES_API VectorFormSurf<double>;
     template class HERMES_API VectorFormSurf<std::complex<double> >;
+    template class HERMES_API VectorFormDG<double>;
+    template class HERMES_API VectorFormDG<std::complex<double> >;
   }
 }
