@@ -58,9 +58,9 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scala
 			int i = 1;	
 			if(elem_error[e->id] <EPS){ 
 										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
-					while((elem_error[e->id]< (EPS/i*1000))&&(i<3)){
+				/*	while((elem_error[e->id]< (EPS/i*1000))&&(i<3)){
 					 													no_of_refinement_steps[e->id]++; i++;
-					}
+					}*/
 			}else if(smooth_elem[e->id]==1){
 					if(elem_error[e->id] >tol_p){
 										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
@@ -73,7 +73,7 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scala
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
 			}else{
-						//refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+					//	refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
 
 			}
 		}
@@ -82,7 +82,7 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scala
 
 delete [] elem_error;
 
-
+/*
 
 Element* elem_neigh=NULL;Element* elem_neigh_2=NULL; int id_2;
 	bool p2_neighbor = false;
@@ -116,7 +116,7 @@ Element* elem_neigh=NULL;Element* elem_neigh_2=NULL; int id_2;
 			}
 					else p2_neighbor = false;			
 				}
-	}
+	}*/
 
 	if(refine==true) refine = adapt->adapt(elements_to_refine,no_of_refinement_steps,P_MAX, h_min,h_max,NDOF_STOP);
 

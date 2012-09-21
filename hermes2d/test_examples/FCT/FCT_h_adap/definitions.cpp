@@ -3,8 +3,8 @@
  CustomWeakFormMassmatrix::CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time) : WeakForm<double>(1) {
 		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0, time_step);	
 		add_matrix_form(mass_form);
-		VectorFormVolMass* vector_form = new VectorFormVolMass(0, time_step);
-		vector_form->ext.push_back(sln_prev_time);
+		VectorFormVolMass* vector_form = new VectorFormVolMass(0, time_step);		
+		vector_form->set_ext(sln_prev_time);
 		add_vector_form(vector_form);
   }
  CustomWeakFormMassmatrix::~CustomWeakFormMassmatrix(){
@@ -66,7 +66,7 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone()
   CustomWeakFormConvection::CustomWeakFormConvection(Solution<double>* sln_prev_time) : WeakForm<double>(1) {
     add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
    VectorFormVolConvection* vector_form = new VectorFormVolConvection(0);
-    vector_form->ext.push_back(sln_prev_time);
+   		vector_form->set_ext(sln_prev_time);
     add_vector_form(vector_form);
   };
 	CustomWeakFormConvection::~CustomWeakFormConvection(){
@@ -134,7 +134,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
   ConvectionForm::ConvectionForm( double time_step, Solution<double>* sln_prev_time) : WeakForm<double>(1) {
     add_matrix_form(new ConvectionMatForm(0, 0,  time_step));
     VectorConvection* vector_form = new VectorConvection(0,  time_step);
-    vector_form->ext.push_back(sln_prev_time);
+    		vector_form->set_ext(sln_prev_time);
     add_vector_form(vector_form);
   }
  ConvectionForm::~ConvectionForm(){
@@ -202,8 +202,11 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
  ResidualForm::ResidualForm( double time_step, Solution<double>* sln_prev_time, Solution<double>* ref) : WeakForm<double>(1) {
     add_matrix_form(new ResidualMatForm(0, 0,  time_step));
     VectorResidual* vector_form = new VectorResidual(0,  time_step);
-    vector_form->ext.push_back(sln_prev_time);
-		vector_form->ext.push_back(ref);
+     Hermes::vector<MeshFunction<double> *> ext_fct;
+      ext_fct.push_back(sln_prev_time);
+      ext_fct.push_back(ref);
+      vector_form->set_ext(ext_fct);
+
     add_vector_form(vector_form);
   };
 
@@ -270,7 +273,7 @@ Ord ResidualMatForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Fu
  GradientReconstruction_1::GradientReconstruction_1( Solution<double>* sln) : WeakForm<double>(1) {
     add_matrix_form(new GradientReconstructionMatForm_1(0, 0));
     GradientReconstructionVectorForm_1* vector_form = new GradientReconstructionVectorForm_1(0);
-    vector_form->ext.push_back(sln);
+    		vector_form->set_ext(sln);
     add_vector_form(vector_form);
   };
 
@@ -331,7 +334,7 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
  GradientReconstruction_2::GradientReconstruction_2( Solution<double>* sln) : WeakForm<double>(1) {
     add_matrix_form(new GradientReconstructionMatForm_2(0, 0));
     GradientReconstructionVectorForm_2* vector_form = new GradientReconstructionVectorForm_2(0);
-    vector_form->ext.push_back(sln);
+    		vector_form->set_ext(sln);
     add_vector_form(vector_form);
   };
 

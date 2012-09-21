@@ -1,5 +1,5 @@
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
+void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
 { 
 	int ndof = conv_matrix->get_size();
 	double alpha,f, plus, minus,mass, diff;
@@ -7,7 +7,7 @@ void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>*
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
-	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i];Q_minus[i]=Q_minus_old[i];flux_scalar[i]=0.0;}
+	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.0;Q_minus[i]=0.0;flux_scalar[i]=0.0;}
 
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
@@ -83,7 +83,7 @@ void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>*
 
 //FCT for lumped projection
 template<typename Scalar>
-void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* Q_plus_old, Scalar* Q_minus_old,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL)
+void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus, Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL)
 {	int ndof = mass_matrix->get_size();
 	Scalar* rhs = new Scalar[ndof];	
 	Scalar alpha,f, plus, minus,mass;
@@ -92,7 +92,7 @@ void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
-	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i]*time_step;Q_minus[i]=Q_minus_old[i]*time_step;rhs[i]=0.;}
+	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.0;Q_minus[i]=0.0;rhs[i]=0.;}
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
 				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
@@ -164,7 +164,7 @@ void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar
 
 
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(bool* fct,UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
+void antidiffusiveFlux(bool* fct,UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* conv_matrix,UMFPackMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
 { 
 	int ndof = conv_matrix->get_size();
 	double alpha,f, plus, minus,mass, diff;
@@ -172,7 +172,7 @@ void antidiffusiveFlux(bool* fct,UMFPackMatrix<double>* mass_matrix,UMFPackMatri
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
-	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i];Q_minus[i]=Q_minus_old[i];flux_scalar[i]=0.0;}
+	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.;flux_scalar[i]=0.0;}
 
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
@@ -253,7 +253,7 @@ void antidiffusiveFlux(bool* fct,UMFPackMatrix<double>* mass_matrix,UMFPackMatri
 
 //FCT for lumped projection
 template<typename Scalar>
-void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* Q_plus_old, Scalar* Q_minus_old,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL)
+void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL)
 {	
 	int ndof = mass_matrix->get_size();
 	Scalar* rhs = new Scalar[ndof];
@@ -265,7 +265,7 @@ void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMat
 	int* Ai_mass = mass_matrix->get_Ai();
 	int* Ap_mass = mass_matrix->get_Ap();
 
-	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i]*time_step;Q_minus[i]=Q_minus_old[i]*time_step;}
+	for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.;}
 		//Berechnung von P&Q
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
 				if(fct[j]== false) continue;
@@ -357,199 +357,3 @@ void lumped_flux_limiter(bool* fct,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMat
 
 
 
-
-
-
-
-/*
-
-
-//MIT DOF_LISTE:
-
-
-
-//Assemble antidiffusive fluxes & Limiter
-//f_ij und alpha_ij werden nicht explizit berechnet!! da scalar** flux = new_matrix<scalar>(ndof,ndof); zuviel Speicher braucht
-template<typename Scalar>
-void antidiffusiveFlux(AsmList<Scalar>* al,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix,UMFPackMatrix<Scalar>* conv_matrix,UMFPackMatrix<Scalar>* diffusion,Scalar* u_high, Scalar* u_L, Scalar* u_old,Scalar* flux_scalar, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* Q_plus_old, Scalar* Q_minus_old,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL  )
-{ //al==NULL =>flux=0,   mass_matrix = mass_matrix/time_step
-	int ndof = conv_matrix->get_size();
-	Scalar alpha,f, plus, minus,mass;
-
-	if(al!=NULL){
-			//Berechnung von P&Q
-			for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i];Q_minus[i]=Q_minus_old[i];flux_scalar[i]=0.0;}
-			for(unsigned int i = 0; i < al->get_cnt(); i ++){
-			 	for(unsigned int j = (i+1); j < al->get_cnt(); j ++){
-					if((al->get_dof()[i]!=al->get_dof()[j])&&((mass=mass_matrix->get(al->get_dof()[i],al->get_dof()[j]))!=0.0)){		
-					f = (mass/time_step+ diffusion->get(al->get_dof()[i],al->get_dof()[j])/2.)*
-																																			(u_high[al->get_dof()[i]]- u_high[al->get_dof()[j]])
-									-(mass/time_step- diffusion->get(al->get_dof()[i],al->get_dof()[j])/2.) *
-															(u_old[al->get_dof()[i]]- u_old[al->get_dof()[j]]);	
-						if( (f*(u_L[al->get_dof()[j]]- u_L[al->get_dof()[i]])) > 0.0) f = 0.0; //prelimiting step
-						if(f>0.0)	{ 
-							P_plus[al->get_dof()[i]]+=f;
-							P_minus[al->get_dof()[j]]-=f;
-						}else if (f<0.0){
-						 	P_minus[al->get_dof()[i]]+=f;
-							P_plus[al->get_dof()[j]]-=f;
-						}
-						f = lumped_matrix->get(al->get_dof()[i],al->get_dof()[i])*(u_L[al->get_dof()[j]]-u_L[al->get_dof()[i]])/time_step; 
-						if(f>Q_plus[al->get_dof()[i]]) Q_plus[al->get_dof()[i]] = f;				
-						if(f<Q_minus[al->get_dof()[i]]) Q_minus[al->get_dof()[i]] = f;			
-						f= lumped_matrix->get(al->get_dof()[j],al->get_dof()[j])*(u_L[al->get_dof()[i]]-u_L[al->get_dof()[j]])/time_step; 
-						if(f>Q_plus[al->get_dof()[j]]) Q_plus[al->get_dof()[j]] = f;	
-						if(f<Q_minus[al->get_dof()[j]]) Q_minus[al->get_dof()[j]] = f;
-					}
-				}
-			}
-
-			
-
-
-
-			//Berechnung von R	
-			for(unsigned int i = 0; i < al->get_cnt(); i ++){
-				plus = 1.0; minus = 1.0;		
-				if(P_plus[al->get_dof()[i]]!=0.0)  plus = Q_plus[al->get_dof()[i]]/P_plus[al->get_dof()[i]];		
-				if(P_minus[al->get_dof()[i]]!=0.0) minus = Q_minus[al->get_dof()[i]]/P_minus[al->get_dof()[i]];			
-				if(plus>=1.0) R_plus[al->get_dof()[i]]= 1.0;
-				else 	     R_plus[al->get_dof()[i]]= plus;
-				if(minus>=1.0) R_minus[al->get_dof()[i]]= 1.0;
-				else 	     R_minus[al->get_dof()[i]]= minus;
-
-				if(smooth_dof!=NULL){
-						if(smooth_dof[al->get_dof()[i]]==1){ R_plus[al->get_dof()[i]]= 1.0;R_minus[al->get_dof()[i]]= 1.0;}
-				}	
-			}
-
-
-
-	
-			//Berechnung von alpha & f_i
-			alpha = 1.0;
-			for(unsigned int i = 0; i < al->get_cnt(); i ++){
-			 	for(unsigned int j = (i+1); j < al->get_cnt(); j ++){	
-					if((al->get_dof()[i]!=al->get_dof()[j])&&((mass=mass_matrix->get(al->get_dof()[i],al->get_dof()[j]))!=0.0)){			
-						f = (mass/time_step+ diffusion->get(al->get_dof()[i],al->get_dof()[j])/2.)*
-																																			(u_high[al->get_dof()[i]]- u_high[al->get_dof()[j]])
-									-(mass/time_step- diffusion->get(al->get_dof()[i],al->get_dof()[j])/2.) *
-															(u_old[al->get_dof()[i]]- u_old[al->get_dof()[j]]);		
-					if( (f*(u_L[al->get_dof()[j]]- u_L[al->get_dof()[i]])) > 0.0) f = 0.0; //prelimiting step
-					if(f>0.0){					
-						if(R_plus[al->get_dof()[i]]>R_minus[al->get_dof()[j]]) alpha = R_minus[al->get_dof()[j]];
-						else 	alpha = R_plus[al->get_dof()[i]];
-					}else if (f<0.0){
-						if(R_minus[al->get_dof()[i]]>R_plus[al->get_dof()[j]]) alpha = R_plus[al->get_dof()[j]];
-						else 	alpha = R_minus[al->get_dof()[i]]; 
-					}
-//alpha=1;
-					flux_scalar[al->get_dof()[i]] += alpha*f;
-					flux_scalar[al->get_dof()[j]] -= alpha*f;
-					}				
-				}
-			}
-
-
-	}	
-
-}
-
-
-//FCT for lumped projection
-template<typename Scalar>
-void lumped_flux_limiter(AsmList<Scalar>* al,UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* Q_plus_old, Scalar* Q_minus_old,  Scalar* R_plus, Scalar* R_minus, int* smooth_dof=NULL)
-{
-	int ndof = mass_matrix->get_size();
-	UMFPackVector<Scalar>* vec_rhs = new UMFPackVector<Scalar>(ndof);	
-	vec_rhs->zero(); 
-	Scalar* rhs = new Scalar[ndof];
-	lumped_matrix->multiply_with_vector(u_L, rhs); 
-
-	Scalar alpha,f, plus, minus,mass;
-	if(al!=NULL){
-		//Berechnung von P&Q
-		for(int i=0; i<ndof;i++){ P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=Q_plus_old[i]*time_step;Q_minus[i]=Q_minus_old[i]*time_step;}
-		for(unsigned int i = 0; i < al->get_cnt(); i ++){
-		 	for(unsigned int j = (i+1); j < al->get_cnt(); j ++){
-				//if(al->get_dof()[i]!=al->get_dof()[j]){
-				if((al->get_dof()[i]!=al->get_dof()[j])&&((mass=mass_matrix->get(al->get_dof()[i],al->get_dof()[j]))!=0.0)){		
-					f = mass*(u_H[al->get_dof()[i]]- u_H[al->get_dof()[j]]);								
-					if( (f*(u_H[al->get_dof()[j]]- u_H[al->get_dof()[i]])) > 0.0) f = 0.0; //prelimiting step
-					if(f>0.0)	{ 
-						P_plus[al->get_dof()[i]]+=f;
-						P_minus[al->get_dof()[j]]-=f;
-					}else if (f<0.0){
-					 	P_minus[al->get_dof()[i]]+=f;
-						P_plus[al->get_dof()[j]]-=f;
-					}				
-					f = lumped_matrix->get(al->get_dof()[i],al->get_dof()[i])*(u_L[al->get_dof()[j]]-u_L[al->get_dof()[i]]); 
-					if(f>Q_plus[al->get_dof()[i]]) Q_plus[al->get_dof()[i]] = f;				
-					if(f<Q_minus[al->get_dof()[i]]) Q_minus[al->get_dof()[i]] = f;
-					f= lumped_matrix->get(al->get_dof()[j],al->get_dof()[j])*(u_L[al->get_dof()[i]]-u_L[al->get_dof()[j]]);
-					if(f>Q_plus[al->get_dof()[j]]) Q_plus[al->get_dof()[j]] = f;	
-					if(f<Q_minus[al->get_dof()[j]]) Q_minus[al->get_dof()[j]] = f;
-				}
-			}
-		}
-
-
-
-		//Berechnung von R
-	for(unsigned int i = 0; i < al->get_cnt(); i ++){
-		plus = 1.0; minus = 1.0;		
-		if(P_plus[al->get_dof()[i]]!=0.0)  plus = Q_plus[al->get_dof()[i]]/P_plus[al->get_dof()[i]];		
-		if(P_minus[al->get_dof()[i]]!=0.0) minus = Q_minus[al->get_dof()[i]]/P_minus[al->get_dof()[i]];			
-		if(plus>=1.0) R_plus[al->get_dof()[i]]= 1.0;
-		else 	     R_plus[al->get_dof()[i]]= plus;
-		if(minus>=1.0) R_minus[al->get_dof()[i]]= 1.0;
-		else 	     R_minus[al->get_dof()[i]]= minus;	
-					if(smooth_dof!=NULL){
-						if(smooth_dof[al->get_dof()[i]]==1){ R_plus[al->get_dof()[i]]= 1.0;R_minus[al->get_dof()[i]]= 1.0;}
-				}	
-	}	
-
-
-		//Berechnung von alpha & f_i
-		alpha = 1.0;
-		for(unsigned int i = 0; i < al->get_cnt(); i ++){
-		 	for(unsigned int j = (i+1); j < al->get_cnt(); j ++){	
-			//	if(al->get_dof()[i]!=al->get_dof()[j]){
-			 if((al->get_dof()[i]!=al->get_dof()[j])&&((mass=mass_matrix->get(al->get_dof()[i],al->get_dof()[j]))!=0.0)){			
-				f= mass*(u_H[al->get_dof()[i]]- u_H[al->get_dof()[j]]) ;	
-				if( (f*(u_H[al->get_dof()[j]]- u_H[al->get_dof()[i]])) > 0.0) f = 0.0; //prelimiting step				
-				if(f>0.0){					
-					if(R_plus[al->get_dof()[i]]>R_minus[al->get_dof()[j]]) alpha = R_minus[al->get_dof()[j]];
-					else 	alpha = R_plus[al->get_dof()[i]];
-				}else{
-					if(R_minus[al->get_dof()[i]]>R_plus[al->get_dof()[j]]) alpha = R_plus[al->get_dof()[j]];
-					else 	alpha = R_minus[al->get_dof()[i]]; 
-				}
-//alpha =1;
-					rhs[al->get_dof()[i]]+= alpha*f;
-					rhs[al->get_dof()[j]]-= alpha*f;
-			  }				
-			}
-		}
-
-
-
-
-	vec_rhs->add_vector(rhs);
-	Scalar* sol =NULL;
-	UMFPackLinearMatrixSolver<Scalar>* lowOrd = new UMFPackLinearMatrixSolver<Scalar>(lumped_matrix,vec_rhs);
-	if(lowOrd->solve()){ 
-		sol = lowOrd->get_sln_vector();  			
-	}else error ("Matrix in lumped_flux solver failed.\n");
-	for(int i=0; i<ndof;i++) u_L[i] =sol[i];
-
-	delete lowOrd;
-		
-	}
-
-	
-	delete vec_rhs;
-	delete [] rhs;
-
-}
-*/

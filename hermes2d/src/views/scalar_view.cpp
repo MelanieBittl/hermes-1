@@ -46,6 +46,7 @@ namespace Hermes
 
       void ScalarView::init()
       {
+        lin = new Linearizer;
         pmode = mode3d = false;
         normals = NULL;
         panning = false;
@@ -70,7 +71,7 @@ namespace Hermes
 #ifndef _MSC_VER
 
       ScalarView::ScalarView(const char* title, WinGeom* wg) :
-      View(title, wg), lin(NULL),
+      View(title, wg),
         vertex_nodes(0),
         pointed_vertex_node(NULL),
         allow_node_selection(false),
@@ -88,7 +89,7 @@ namespace Hermes
       }
 #else
       ScalarView::ScalarView(WinGeom* wg) :
-      View("ScalarView", wg), lin(NULL),
+      View("ScalarView", wg),
         vertex_nodes(0),
         pointed_vertex_node(NULL),
         allow_node_selection(false),
@@ -107,7 +108,7 @@ namespace Hermes
 #endif
 
       ScalarView::ScalarView(char* title, WinGeom* wg) :
-      View(title, wg), lin(NULL),
+      View(title, wg),
         vertex_nodes(0),
         pointed_vertex_node(NULL),
         allow_node_selection(false),
@@ -128,8 +129,7 @@ namespace Hermes
       {
         delete [] normals;
         vertex_nodes.clear();
-        if(lin != NULL)
-          delete lin;
+        delete lin;
 
 # ifdef ENABLE_VIEWER_GUI
         if(tw_wnd_id != TW_WND_ID_NONE)
@@ -242,9 +242,6 @@ namespace Hermes
       {
         // For preservation of the sln's active element. Will be set back after the visualization.
         Element* active_element = sln->get_active_element();
-
-        if(lin == NULL)
-          lin = new Linearizer;
 
         if(!range_auto)
           lin->set_max_absolute_value(std::max(fabs(range_min), fabs(range_max)));
@@ -577,7 +574,7 @@ namespace Hermes
           double max_x, max_y, min_x, min_y;
           max_x = min_x = element->vn[0]->x;
           max_y = min_y = element->vn[0]->y;
-          for(unsigned int i = 0; i < element->get_num_surf(); i++)
+          for(unsigned int i = 0; i < element->get_nvert(); i++)
           {
             sum_x += element->vn[i]->x;
             sum_y += element->vn[i]->y;
@@ -592,9 +589,14 @@ namespace Hermes
               min_y = element->vn[i]->y;
           }
           element_infos.push_back(ElementInfo(element->id,
-            (float)(sum_x / element->get_num_surf()), (float)(sum_y / element->get_num_surf()),
+            (float)(sum_x / element->get_nvert()), (float)(sum_y / element->get_nvert()),
             (float)(max_x - min_x), (float)(max_y - min_y)));
         }
+      }
+        
+      Linearizer* ScalarView::get_linearizer()
+      {
+        return this->lin;
       }
 
       void ScalarView::draw_element_infos_2d()

@@ -18,7 +18,7 @@ class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>
   public:
     // This weak form is custom since it contains a nonlinearity in the diffusion term.
     CustomMatrixFormVolMassmatrix(int i, int j, double time_step) 
-      : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM), time_step(time_step) { };
+      : MatrixFormVol<double>(i, j), time_step(time_step) { };
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -69,7 +69,7 @@ class CustomMatrixFormVolConvection : public MatrixFormVol<double>
 public:
   
   CustomMatrixFormVolConvection(int i, int j) 
-    : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM) { }
+    : MatrixFormVol<double>(i, j) { }
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -116,7 +116,7 @@ public:
   {
   public:
     // This weak form is custom since it contains a nonlinearity in the diffusion term.
-    ConvectionMatForm(int i, int j, double time_step) : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM), time_step(time_step) { }
+    ConvectionMatForm(int i, int j, double time_step) : MatrixFormVol<double>(i, j), time_step(time_step) { }
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -171,7 +171,7 @@ class ResidualMatForm : public MatrixFormVol<double>
 {
 public:
   ResidualMatForm(int i, int j, double time_step) 
-    : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM), time_step(time_step) { }
+    : MatrixFormVol<double>(i, j), time_step(time_step) { }
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -222,7 +222,7 @@ class GradientReconstructionMatForm_1 : public MatrixFormVol<double>
 {
 public:
   GradientReconstructionMatForm_1(int i, int j) 
-    : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM){ }
+    : MatrixFormVol<double>(i, j){ }
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -268,7 +268,7 @@ class GradientReconstructionMatForm_2 : public MatrixFormVol<double>
 {
 public:
   GradientReconstructionMatForm_2(int i, int j) 
-    : MatrixFormVol<double>(i, j, HERMES_ANY, HERMES_NONSYM){ }
+    : MatrixFormVol<double>(i, j){ }
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 

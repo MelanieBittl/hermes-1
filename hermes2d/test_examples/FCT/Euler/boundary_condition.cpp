@@ -138,7 +138,11 @@ for(int i =0;i<4;i++) A_n[i]=0.;
 
     for(unsigned int vector_form_i = 0;vector_form_i < this->vfsurf.size();vector_form_i++) 
     {
-      vfsurf.at(vector_form_i)->ext.push_back(prev_density);
+    
+     vfsurf.at(vector_form_i)->set_ext(Hermes::vector<MeshFunction<double>*>(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));
+
+
+    /*  vfsurf.at(vector_form_i)->ext.push_back(prev_density);
       vfsurf.at(vector_form_i)->ext.push_back(prev_density_vel_x);
       vfsurf.at(vector_form_i)->ext.push_back(prev_density_vel_y);
       vfsurf.at(vector_form_i)->ext.push_back(prev_energy);
@@ -146,13 +150,14 @@ for(int i =0;i<4;i++) A_n[i]=0.;
       vfsurf.at(vector_form_i)->ext.push_back(rho_ext);
       vfsurf.at(vector_form_i)->ext.push_back(v1_ext);
       vfsurf.at(vector_form_i)->ext.push_back(v2_ext);
-      vfsurf.at(vector_form_i)->ext.push_back(energy_ext);
+      vfsurf.at(vector_form_i)->ext.push_back(energy_ext);*/
     }
 
 
     for(unsigned int matrix_form_i = 0;matrix_form_i < this->mfsurf.size();matrix_form_i++) 
     {
-      mfsurf.at(matrix_form_i)->ext.push_back(prev_density);
+         mfsurf.at(matrix_form_i)->set_ext(Hermes::vector<MeshFunction<double>*>(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));
+   /*   mfsurf.at(matrix_form_i)->ext.push_back(prev_density);
       mfsurf.at(matrix_form_i)->ext.push_back(prev_density_vel_x);
       mfsurf.at(matrix_form_i)->ext.push_back(prev_density_vel_y);
       mfsurf.at(matrix_form_i)->ext.push_back(prev_energy);
@@ -160,7 +165,7 @@ for(int i =0;i<4;i++) A_n[i]=0.;
       mfsurf.at(matrix_form_i)->ext.push_back(rho_ext);
       mfsurf.at(matrix_form_i)->ext.push_back(v1_ext);
       mfsurf.at(matrix_form_i)->ext.push_back(v2_ext);
-      mfsurf.at(matrix_form_i)->ext.push_back(energy_ext);
+      mfsurf.at(matrix_form_i)->ext.push_back(energy_ext);*/
     }
 
 	};

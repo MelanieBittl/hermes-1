@@ -11,7 +11,6 @@ project(hermes)
   # The values below are sane defaults to produce a build on all platforms,
   # if you want to override them, set them in CMake.vars
 
-
   # Global
     # Optional stacktrace
     set(WITH_STACKTRACE NO)
@@ -40,8 +39,7 @@ project(hermes)
     set(REPORT_TO_FILE          YES)  #reports will be mirrored to a file
     set(REPORT_ALL              NO)   #do not report all events, just selected ones
     set(REPORT_WARNING          YES)  #warnings will be reported
-    set(REPORT_INFO             YES)  #info will be reported
-    
+    set(REPORT_INFO             YES)  #info will be reported    
 
   # Installation path:
     set(TARGET_ROOT             /usr/local) #default installation path for the library will be /usr/local/lib,
@@ -157,6 +155,8 @@ project(hermes)
   ENDIF (APPLE)
   # end ADDED BY COLMAN
 
+    # Allow to override the default values in CMake.vars:
+  include(CMake.vars OPTIONAL)
 
   
   # Determine the number of cores.
@@ -169,10 +169,7 @@ project(hermes)
     list(LENGTH procs NUM_THREADS)
     endif()
   endif(WIN32)
-  
-    # Allow to override the default values in CMake.vars:
-  include(CMake.vars OPTIONAL)
-  
+    
   MESSAGE(STATUS "Hermes will by default be using ${NUM_THREADS} threads for calculation.")
 
   macro (DETERMINE_HERMES_COMMON_RELEASE_DEBUG HXD)

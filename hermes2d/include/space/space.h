@@ -139,11 +139,6 @@ namespace Hermes
       /// Sets the shapeset.
       virtual void set_shapeset(Shapeset* shapeset) = 0;
 
-      /// Copies element orders from another space. 'inc' is an optional order
-      /// increase. If the source space has a coarser mesh, the orders are distributed
-      /// recursively. This is useful for reference solution spaces.
-      void copy_orders(const Space<Scalar>* space, int inc = 0);
-
       /// \brief Returns the number of basis functions contained in the space.
       int get_num_dofs() const;
 
@@ -195,12 +190,18 @@ namespace Hermes
       /// \brief Assings the degrees of freedom to all Spaces in the Hermes::vector.
       static int assign_dofs(Hermes::vector<Space<Scalar>*> spaces);
 
+      /// Typedef for function pointer being passed to methods duplicating spaces, or creating reference spaces.
+      typedef bool (*reference_space_p_callback_function)(int);
+
       /// Creates a copy of the space, increases order of all elements by
       /// "order_increase".
-      virtual Space<Scalar>* dup(Mesh* mesh, int order_increase = 0) const = 0;
+      virtual Space<Scalar>* duplicate(Mesh* mesh, int order_increase = 0, reference_space_p_callback_function p_callback = NULL) const = 0;
 
-      /// Sets polynomial orders to elements created by Mesh::regularize() using "parents".
-      void distribute_orders(Mesh* mesh, int* parents);
+
+      /// Copies element orders from another space. 'inc' is an optional order
+      /// increase. If the source space has a coarser mesh, the orders are distributed
+      /// recursively. This is useful for reference solution spaces.
+      void copy_orders(const Space<Scalar>* space, int order_increase = 0, reference_space_p_callback_function p_callback = NULL);
 
     protected:
       static Node* get_mid_edge_vertex_node(Element* e, int i, int j);
@@ -339,17 +340,25 @@ namespace Hermes
       int get_seq() const;
 
     public:
+
       /// Internal. Return type of this space (H1 = HERMES_H1_SPACE, Hcurl = HERMES_HCURL_SPACE,
       /// Hdiv = HERMES_HDIV_SPACE, L2 = HERMES_L2_SPACE)
       virtual SpaceType get_type() const = 0;
 
-      /// Create globally refined space.
-      static Hermes::vector<Space<Scalar>*>* construct_refined_spaces(Hermes::vector<Space<Scalar>*> coarse,
-                                                                      int order_increase = 1,
-                                                                      int refinement_type = 0);
+      /// Create globally refined spaces.
+      /// It will always uniformly refined every element in the mesh, dividing both quads and triangles
+      /// into 4 smaller element in the natural way.
+      /// \param[in] coarse The coarse spaces out of which the refined ones are created and returned by this method.
+      /// \param[in] order_increase The 'uniform' increase in polynomial order. Default = 1.
+      /// \param[in] p_callback An instance of function pointer determining whether or not to increase the polynomial order
+      /// by order_increase. The function passed takes the element id and return boolean (to refine / not to refine).
+      static Hermes::vector<Space<Scalar>*>* construct_refined_spaces(Hermes::vector<Space<Scalar>*> coarse, int order_increase = 1, 
+        reference_space_p_callback_function p_callback = NULL);
 
-      static Space<Scalar>* construct_refined_space(Space<Scalar>* coarse, int order_increase = 1,
-                                                    int refinement_type = 0);
+      /// Create globally refined space.
+      /// See construct_refined_spaces() for details.
+      static Space<Scalar>* construct_refined_space(Space<Scalar>* coarse, int order_increase = 1, 
+        reference_space_p_callback_function p_callback = NULL);
 
       static void update_essential_bc_values(Hermes::vector<Space<Scalar>*> spaces, double time);
 

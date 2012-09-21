@@ -96,10 +96,13 @@
 
     for(unsigned int vector_form_i = 0;vector_form_i < this->mfvol.size();vector_form_i++) 
     {
+    
+     mfvol.at(vector_form_i)->set_ext(Hermes::vector<MeshFunction<double>*>(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy));
+/*    
       mfvol.at(vector_form_i)->ext.push_back(prev_density);
       mfvol.at(vector_form_i)->ext.push_back(prev_density_vel_x);
       mfvol.at(vector_form_i)->ext.push_back(prev_density_vel_y);
-      mfvol.at(vector_form_i)->ext.push_back(prev_energy);
+      mfvol.at(vector_form_i)->ext.push_back(prev_energy);*/
     }
 	};
 
