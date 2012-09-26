@@ -38,6 +38,8 @@ namespace Hermes
       virtual ~H1Space();
 
       virtual void set_shapeset(Shapeset* shapeset);
+            /// Typedef for function pointer being passed to methods duplicating spaces, or creating reference spaces.
+      typedef bool (*reference_space_p_callback_function)(int);
 
       /// Removes the degree of freedom from a vertex node with the given id (i.e., its number
       /// in the mesh file) and makes it part of the Dirichlet lift with the given value.

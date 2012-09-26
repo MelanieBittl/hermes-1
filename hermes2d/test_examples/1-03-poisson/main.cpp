@@ -119,9 +119,9 @@ int main(int argc, char* argv[])
       viewS.save_screenshot("002-contours2.bmp");
       viewS.show_contours(5.0);
       viewS.save_screenshot("003-contours3.bmp");
-      viewS.set_3d_mode(true);
+      //viewS.set_3d_mode(true);
       viewS.save_screenshot("004-3D.bmp");
-      viewS.set_3d_mode(false);
+      //viewS.set_3d_mode(false);
       viewS.save_screenshot("005-backTo2D.bmp");
       viewS.hide_contours();
       viewS.save_screenshot("006-noContours.bmp");

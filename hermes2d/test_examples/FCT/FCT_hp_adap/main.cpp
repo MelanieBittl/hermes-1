@@ -153,31 +153,27 @@ do
 {	 
 
 		Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
-	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads, 2);
+	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads, 2);  
 	  
 	  
-	  
-	  
-if(ts>1){
-		mesh.copy(&basemesh);
-		ref_space->set_mesh(&mesh);
-		ref_space->set_uniform_order(P_INIT); //ref_space->assign_dofs(); //mview.show(ref_space);
-		}
+	if(ts>1){
+			mesh.copy(&basemesh);
+			ref_space->set_mesh(&mesh);
+			ref_space->set_uniform_order(P_INIT); //ref_space->assign_dofs(); //mview.show(ref_space);
+	}
 	
 
 	as=1; 
-sprintf(title, "Mesh, as=%i, ts=%i", as,ts);
-			mview.set_title(title);
-				mview.show(ref_space);
+
 
 	do
 	{	
 			int ref_ndof = ref_space->get_num_dofs(); 
 			Hermes::Mixins::Loggable::Static::info(" adap- step %d, timestep %d,ndof = %d ", as, ts, ref_ndof);
 
-	DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, ref_space);
-	DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, ref_space);
-	HPAdapt * adapting = new HPAdapt(ref_space, HERMES_L2_NORM);
+		DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, ref_space);
+		DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, ref_space);
+		HPAdapt * adapting = new HPAdapt(ref_space, HERMES_L2_NORM);
 
 			double* coeff_vec = new double[ref_ndof];
 			double* coeff_vec_2 = new double[ref_ndof];
@@ -255,7 +251,7 @@ sprintf(title, "Mesh, as=%i, ts=%i", as,ts);
 					Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &low_sln);	
 
 				//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
-smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
+			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
 			changed = h_p_adap(ref_space,&u_prev_time, &low_sln,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,as,smooth_elem, h_start);	
 			
 		
@@ -317,20 +313,19 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 
 			// Project the initial condition on the FE space->coeff_vec	
-					//	Hermes::Mixins::Loggable::Static::info(" Projection of initial condition ");
 			if(ts==1) {
 				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,  matrix_solver, lumped_matrix);
-    ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
+   		  ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
 
 			}else{
 				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  matrix_solver, lumped_matrix);
-    ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
+    		 ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
 			}
-		//	Hermes::Mixins::Loggable::Static::info(" FCT for Projection");
-						Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
-		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,mass_matrix,true);
-			lumped_flux_limiter(fct,mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus,smooth_dof);
+
+			Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
+			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,mass_matrix,true);
+				lumped_flux_limiter(fct,mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
+										P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus,smooth_dof);
 
 
 		/*	Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
@@ -384,9 +379,9 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 
 
 			 // Visualize the solution.		 
-			sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
+		/*	sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
 				 sview.set_title(title);
-					sview.show(&u_new);
+					sview.show(&u_new);*/
 				
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
@@ -454,11 +449,11 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 while (current_time < T_FINAL);
 Hermes::Mixins::Loggable::Static::info(" END");
 
-/*
+
 lin.save_solution_vtk(&u_prev, "end_hpadap_smooth.vtk", "solution", mode_3D);
 ord.save_mesh_vtk(ref_space, "end_mesh");
 ord.save_orders_vtk(ref_space, "end_order.vtk");
-*/
+
 
 
 	delete ref_space; 

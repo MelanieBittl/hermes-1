@@ -36,6 +36,8 @@ namespace Hermes
         Shapeset* shapeset = NULL);
 
       virtual ~HdivSpace();
+            /// Typedef for function pointer being passed to methods duplicating spaces, or creating reference spaces.
+      typedef bool (*reference_space_p_callback_function)(int);
 
       virtual Space<Scalar>* duplicate(Mesh* mesh, int order_increase = 0, reference_space_p_callback_function p_callback = NULL) const;
 

@@ -202,12 +202,14 @@ namespace Hermes
       /// increase. If the source space has a coarser mesh, the orders are distributed
       /// recursively. This is useful for reference solution spaces.
       void copy_orders(const Space<Scalar>* space, int order_increase = 0, reference_space_p_callback_function p_callback = NULL);
+      
+            /// Sets polynomial orders to elements created by Mesh::regularize() using "parents".
+      void distribute_orders(Mesh* mesh, int* parents);
 
     protected:
       static Node* get_mid_edge_vertex_node(Element* e, int i, int j);
 
-      /// Sets polynomial orders to elements created by Mesh::regularize() using "parents".
-     // void distribute_orders(Mesh* mesh, int* parents);
+
 
       /// Internal. Obtains the order of an edge, according to the minimum rule.
       virtual int get_edge_order(Element* e, int edge) const;
