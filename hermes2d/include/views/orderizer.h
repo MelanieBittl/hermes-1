@@ -41,6 +41,10 @@ namespace Hermes
         /// Saves a MeshFunction (Solution, Filter) in VTK format.
         template<typename Scalar>
         void save_orders_vtk(const Space<Scalar>* space, const char* file_name);
+        
+        template<typename Scalar>
+        void save_mesh_vtk(const Space<Scalar>* space, const char* file_name);
+        
 
         /// Return string with a MeshFunction (Solution, Filter) in VTK format.
         template<typename Scalar>

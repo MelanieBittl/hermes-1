@@ -65,7 +65,7 @@ bool h_p_adap(Space<Scalar>* space,UMFPackMatrix<double> * mass_matrix,Solution<
 					}
 			}else	if(elem_error[e->id] <EPS){ 
 										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
-					while((elem_error[e->id]< (EPS/i*100))&&(i<2)){
+					while((elem_error[e->id]< (EPS/i*100))&&(i<4)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
 			}else {

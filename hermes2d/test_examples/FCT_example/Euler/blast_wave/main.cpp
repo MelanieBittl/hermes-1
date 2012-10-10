@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =7;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-6;
 const double T_FINAL = 0.038;                       // Time interval length. 
@@ -38,7 +38,7 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
      
 
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1500;
+const unsigned int EVERY_NTH_STEP = 1000;
 
 int main(int argc, char* argv[])
 {
@@ -102,7 +102,7 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
   PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
   VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
   VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
-  ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
+ /* ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
   ScalarView s1("rho", new WinGeom(0, 0, 600, 300));
   ScalarView s2("v_x", new WinGeom(700, 0, 600, 300));
   ScalarView s3("v_y", new WinGeom(0, 400, 600, 300));
@@ -126,6 +126,15 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
       s2_n.set_min_max_range(0., 1.);
       s3_n.set_min_max_range(0., 1.);
       s4_n.set_min_max_range(0., 1.);*/
+      		Linearizer lin_rho;
+		Linearizer lin_p;
+		Linearizer lin_v_y;
+		Linearizer lin_v_x;
+    /*  			lin_p.save_solution_vtk(&pressure, "p_init.vtk", "pressure", true);
+			lin_v_x.save_solution_vtk(&vel_x, "vx_init.vtk", "velocity_x", true);   
+			lin_v_y.save_solution_vtk(&vel_y, "vy_init.vtk", "velocity_y",true);      
+			lin_rho.save_solution_vtk(&prev_rho, "rho_init.vtk", "density", true);*/
+            char filename[40];  
 //------------
 
   EulerEquationsWeakForm_Mass wf_mass(time_step, &prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e);
@@ -194,16 +203,13 @@ Solution<double>::vector_to_solutions(coeff_vec_2, Hermes::vector<const Space<do
 
 
 
-		Linearizer lin_rho;
-		Linearizer lin_p;
-		Linearizer lin_v_y;
-		Linearizer lin_v_x;
+
 
 //Timestep loop
 do
 {	 info(" Time step %d, time %3.5f", ts, current_time); 
 // Time measurement.
-  cpu_time.tick(HERMES_SKIP);
+ // cpu_time.tick(HERMES_SKIP);
 		dp_boundary.assemble(matrix_dS);
     dp_K.assemble(lowmat_rhs);
 
@@ -251,12 +257,12 @@ do
 				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e));	
 
   // Measure the solver time.
-  double time4 = cpu_time.tick().last();
+ // double time4 = cpu_time.tick().last();
 //info("CPU_Time:  %g -------%g------- %g----------%g", time1,time2, time3, time4);
-info("CPU_Time:  %g ", time4);
+//info("CPU_Time:  %g ", time4);
 
 			 // Visualize the solution.
-		/*	  sprintf(title, "pressure: ts=%i",ts);
+		/*  sprintf(title, "pressure: ts=%i",ts);
 			 pressure_view.set_title(title);
 			s1.show(&prev_rho);
 			s2.show(&vel_x);
@@ -273,7 +279,6 @@ info("CPU_Time:  %g ", time4);
     {
       // Output solution in VTK format.
        // pressure.reinit();
-        char filename[40];
         //sprintf(filename, "pressure-%i.vtk", ts - 1);
         //lin_p.save_solution_vtk(&pressure, filename, "Pressure", true);
         sprintf(filename, "rho-%i.vtk", ts - 1);
@@ -281,7 +286,10 @@ info("CPU_Time:  %g ", time4);
       
     }
 
-
+		if(current_time+time_step >T_FINAL){
+				    sprintf(filename, "rho-%i.vtk", ts - 1);
+					lin_rho.save_solution_vtk(&prev_rho, filename,  "density", true);
+		}
 
 
 		delete lowOrd;
@@ -301,10 +309,11 @@ info("CPU_Time:  %g ", time4);
 }
 while (current_time < T_FINAL);
 
-			lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
-			lin_v_x.save_solution_vtk(&vel_x, "vx_end.vtk", "velocity_x", true);   
-			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);      
+  
 			lin_rho.save_solution_vtk(&prev_rho, "rho_end.vtk", "density", true);
+						lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
+			lin_v_x.save_solution_vtk(&vel_x, "vx_end.vtk", "velocity_x", true);   
+			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);    
 
 
 		//Cleanup

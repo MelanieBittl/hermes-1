@@ -96,7 +96,7 @@ for(int i =0;i<4;i++) A_n[i]=0.;
 
 	//double result =0.;
 
-	for(int i =0;i<4;i++)
+
 			for(int j=0;j<4;j++){
 					A_n[0] +=R[entry_i][j]*L[j][0]*lambda[j];
 					A_n[1] +=R[entry_i][j]*L[j][1]*lambda[j];

@@ -8,7 +8,7 @@
 };
 
  double CustomInitialCondition_rho::value(double x, double y) const {       
-			if(x< (1./6.+y/std::sqrt(3))) return 8.0;
+			if(x< (1./6.+y/std::sqrt(3.))) return 8.0;
 			else			return 1.4;
 
 };
@@ -23,7 +23,7 @@
 };
 
  double CustomInitialCondition_v_x::value(double x, double y) const {       
-			if(x< (1./6.+y/std::sqrt(3))) return 8.25*std::sqrt(3)*0.5;
+			if(x< (1./6.+y/std::sqrt(3.))) return 8.25*std::cos(M_PI/6.)*8.0;
 			else			return 0.0;
 
 };
@@ -37,7 +37,7 @@
 };
 
  double CustomInitialCondition_v_y::value(double x, double y) const {       
-			if(x< (1./6.+y/std::sqrt(3))) return -8.25*0.5;
+			if(x< (1./6.+y/std::sqrt(3.))) return -8.25*std::sin(M_PI/6.)*8.0;
 			else			return 0.0;
 
 };
@@ -54,7 +54,7 @@
 };
 
  double CustomInitialCondition_e::value(double x, double y) const {       
-			if(x< (1./6.+y/std::sqrt(3))) return QuantityCalculator::calc_energy(8.0, 8.25*std::sqrt(3)*0.5 ,-8.25*0.5, 116.5, kappa);
+			if(x< (1./6.+y/std::sqrt(3.))) return QuantityCalculator::calc_energy(8.0, 8.25*std::cos(M_PI/6.)*8.0 ,-8.25*std::sin(M_PI/6.)*8.0, 116.5, kappa);
 			else			return QuantityCalculator::calc_energy(1.4, 0.0 ,0.0, 1.0, kappa);
 };
 
@@ -63,19 +63,6 @@
 };
 
 
- void CustomInitialCondition_p::derivatives(double x, double y, double& dx, double& dy) const {      
-		dx = 0.0;
-		dy = 0.0;
-};
-
- double CustomInitialCondition_p::value(double x, double y) const {       
-			if(x< (1./6.+y/std::sqrt(3))) 116.5;
-			else			1.0;
-};
-
- Ord CustomInitialCondition_p::ord(Ord x, Ord y) const {
-      return Ord(2);
-};
 
 //Boundary-Condition
 
@@ -86,7 +73,7 @@
 };
 
  double CustomBoundaryCondition_rho::value(double x, double y) const {       
-			if(x< (1./6.+(1+20*time)/std::sqrt(3))) return 8.0;
+			if(x< (1./6.+(1+20*time)/std::sqrt(3.))) return 8.0;
 			else			return 1.4;
 
 
@@ -103,7 +90,7 @@
 };
 
  double CustomBoundaryCondition_v_x::value(double x, double y) const {       
-			if(x< (1./6.+(1+20*time)/std::sqrt(3))) return 8.25*std::sqrt(3)*0.5;
+			if(x< (1./6.+(1+20*time)/std::sqrt(3.))) return 8.25*std::cos(M_PI/6.)*8.0;
 			else			return 0.0;
 
 };
@@ -117,7 +104,7 @@
 };
 
  double CustomBoundaryCondition_v_y::value(double x, double y) const {       
-			if(x< (1./6.+(1+20*time)/std::sqrt(3))) return -8.25*0.5;
+			if(x< (1./6.+(1+20*time)/std::sqrt(3.))) return -8.25*std::sin(M_PI/6.)*8.0;
 			else			return 0.0;
 
 };
@@ -134,7 +121,7 @@
 };
 
  double CustomBoundaryCondition_e::value(double x, double y) const {       
-			if(x< (1./6.+(1+20*time)/std::sqrt(3))) return QuantityCalculator::calc_energy(8.0, 8.25*std::sqrt(3)*0.5 ,-8.25*0.5, 116.5, kappa);
+			if(x< (1./6.+(1+20*time)/std::sqrt(3.))) return QuantityCalculator::calc_energy(8.0, 8.25*std::cos(M_PI/6.)*8.0 ,-8.25*std::sin(M_PI/6.)*8.0, 116.5, kappa);
 			else			return QuantityCalculator::calc_energy(1.4, 0.0 ,0.0, 1.0, kappa);
 };
 

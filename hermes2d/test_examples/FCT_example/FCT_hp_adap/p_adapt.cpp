@@ -50,8 +50,11 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 		std_dev_p = std::sqrt(std_dev_p);
 		double tol_z = mean_value_z;
 		double tol_p = mean_value_p;
-
-
+/*
+for_all_active_elements(e, space->get_mesh()){
+		no_of_refinement_steps[e->id]=0;	elements_to_refine[e->id] = 0;
+		if(smooth_elem[e->id]==1){refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;}
+		}*/
 
 	for_all_active_elements(e, space->get_mesh()){
 		no_of_refinement_steps[e->id]=0;	elements_to_refine[e->id] = 0;
@@ -64,19 +67,24 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1
 			}else if(smooth_elem[e->id]==1){
 					if(elem_error[e->id] >tol_p){
 										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
-					while((elem_error[e->id]> (tol_p+i*std_dev_p))&&(i<3)){
-					 													no_of_refinement_steps[e->id]++; i++;
-					}
-					}else if(elem_error[e->id] >EPS_h){
+						while((elem_error[e->id]> (tol_p+i*std_dev_p))&&(i<(P_MAX-1))){
+						 													no_of_refinement_steps[e->id]++; i++;
+						}
+				}
+				/*/else if(elem_error[e->id] >EPS_h){
+				else if(elem_error[e->id] >tol_z){
 									refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
-					}
+														while((elem_error[e->id]> (tol_z+i*std_dev_z))&&(i<2)){
+					 													no_of_refinement_steps[e->id]++; i++;
+														}
+					}*/
 			}else if(elem_error[e->id] >tol_z){ 
 										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]> (tol_z+i*std_dev_z))&&(i<2)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
 			}else{
-					refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+				//refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
 			}
 		}
 		
@@ -106,8 +114,8 @@ Element* elem_neigh=NULL;
 					}	else p2_neighbor = false;			
 				}
 	}
+*/
 
-/*
 Element* elem_neigh=NULL;Element* elem_neigh_2=NULL; int id_2;
 	bool p2_neighbor = false;
 		for_all_active_elements(e, space->get_mesh()){
@@ -140,7 +148,7 @@ Element* elem_neigh=NULL;Element* elem_neigh_2=NULL; int id_2;
 			}
 					else p2_neighbor = false;			
 				}
-	}*/
+	}
 
 	if(refine==true) refine = adapt->adapt(elements_to_refine,no_of_refinement_steps,P_MAX, h_min,h_max,NDOF_STOP);
 

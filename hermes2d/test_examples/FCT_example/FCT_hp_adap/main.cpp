@@ -15,7 +15,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 5; 
 const double h_max = 0.1;                       
@@ -23,9 +23,9 @@ const double time_step = 1e-3;                           // Time step.
 
 
 const double T_FINAL = 2*PI;                       // Time interval length.
-
  
-const double EPS_smooth = 1e-10;
+
+const double EPS_smooth = 1e-14;
 const double EPS_h = 1e-10;
 
 const int NDOF_STOP = 20000;   
@@ -181,7 +181,8 @@ int ref_ndof = ref_space->get_num_dofs();
 
 			lumped_matrix_uni->multiply_with_Scalar(time_step);  // M_L
 			mass_matrix_uni->multiply_with_Scalar(time_step);  // massmatrix = M_C
-
+			
+ int dof_max= ref_ndof; int dof_min= ref_ndof; 
 
 //Timestep loop
 do
@@ -204,12 +205,12 @@ do
 
 			info(" adap- step %d, timestep %d,ndof = %d ", ps, ts, ref_ndof); 
 
+
 			double* coeff_vec = new double[ref_ndof];
 			double* coeff_vec_2 = new double[ref_ndof];
 
 			double* P_plus = new double[ref_ndof]; double* P_minus = new double[ref_ndof];
-			double* Q_plus = new double[ref_ndof]; double* Q_minus = new double[ref_ndof];
-			//double* Q_plus_old = new double[ref_ndof]; double* Q_minus_old = new double[ref_ndof];			
+			double* Q_plus = new double[ref_ndof]; double* Q_minus = new double[ref_ndof];		
 			double* R_plus = new double[ref_ndof]; double* R_minus = new double[ref_ndof];
 
 		int* smooth_elem = new int[ref_space->get_mesh()->get_max_element_id()];
@@ -221,41 +222,16 @@ do
 	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ref_ndof);
 
 		if(ps==1){
-			//for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;}
-					//coord_dof(ref_space, al, P_plus,&u_prev_time);
-
-
-			//Initialisierung von Q_plus_old,Q_minus_old
-/*	 Ax_mass = mass_matrix_uni->get_Ax();
-	Ai_mass = mass_matrix_uni->get_Ai();
-	Ap_mass = mass_matrix_uni->get_Ap();
-
-		for(int j = 0; j<ref_ndof; j++){ //Spalten durchlaufen
-				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
-							int i = Ai_mass[indx];	
-							if((Ax_mass[indx]!=0.)&&(j<i)){
-						f = lumped_matrix_uni->get_Ax()[i]*(P_plus[j]- P_plus[i]); 
-						if(f>Q_plus_old[i]) Q_plus_old[i] = f;				
-						if(f<Q_minus_old[i]) Q_minus_old[i] = f;			
-						f= lumped_matrix_uni->get_Ax()[j]*(P_plus[i]- P_plus[j]); 
-						if(f>Q_plus_old[j]) Q_plus_old[j] = f;	
-						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
-					}
-				}
-			}*/
-
-
 
 			//------------------ Project the initial condition on the FE space->coeff_vec	--------------
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix_uni);
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
 	smoothness_indicator(ref_space,&low_sln,mass_matrix_uni,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,true,dp_1,dp_2, rhs_1,rhs_2);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
-			lumped_flux_limiter(mass_matrix_uni, lumped_matrix_uni, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus,smooth_dof);
+			lumped_flux_limiter(mass_matrix_uni, lumped_matrix_uni, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus,smooth_dof);
 
 
-		//	Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
+	//	Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		//	Solution<double>::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
 		/*	sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
@@ -288,24 +264,21 @@ do
 	
 		/*	sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			mview.set_title(title);
-				mview.show(ref_space);*/
-
-			
-
-	
+				mview.show(ref_space);	*/
 
 
 			}else{
+			if(ts==1) dof_min = ref_ndof;
+			if(ref_ndof > dof_max) dof_max = ref_ndof;
+			if(ref_ndof< dof_min) dof_min = ref_ndof;
 
 //P=2 -----------------------------( nicht uniformes Gitter!!!!!!)
 					bool* fct = new bool[ref_ndof]; 
 		UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
 			double* coeff_vec_3 = new double[ref_ndof];
-			for(int i=0; i<ref_ndof;i++){
-							//Q_plus_old[i]=0.;Q_minus_old[i]=0.;
-								P_plus[i]=0.; fct[i]=false;
-				}
-					// p1_list(ref_space, fct, al,P_plus,&u_prev_time,h_start);		
+			for(int i=0; i<ref_ndof;i++)
+							 fct[i]=false;
+
 					p1_list(ref_space, fct, al,h_start);		
 
 
@@ -344,34 +317,12 @@ do
 			high_rhs->multiply_with_Scalar((1.0-theta));
 			high_rhs->add_matrix(mass_matrix); 
 
-
-		//Initialisierung von Q_plus_old,Q_minus_old
-/*	Ax_mass = mass_matrix->get_Ax();
-	 Ai_mass = mass_matrix->get_Ai();
-	 Ap_mass = mass_matrix->get_Ap();
-		for(int j = 0; j<ref_ndof; j++){ //Spalten durchlaufen
-				if(fct[j]== false) continue;
-				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
-							int i = Ai_mass[indx];	
-						if(fct[i]== false) continue;
-							if((Ax_mass[indx]!=0.)&&(j<i)){
-						f = lumped_matrix->get(i,i)*(P_plus[j]- P_plus[i]); 
-						if(f>Q_plus_old[i]) Q_plus_old[i] = f;				
-						if(f<Q_minus_old[i]) Q_minus_old[i] = f;			
-						f= lumped_matrix->get(j,j)*(P_plus[i]- P_plus[j]); 
-						if(f>Q_plus_old[j]) Q_plus_old[j] = f;	
-						if(f<Q_minus_old[j]) Q_minus_old[j] = f;
-					}
-				}
-			}*/	
-
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 
 
 
 			// Project the initial condition on the FE space->coeff_vec	
-			//info("projection");
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
 						Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
 		smoothness_indicator(ref_space,&low_sln,mass_matrix,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al,true,dp_1,dp_2, rhs_1,rhs_2);
@@ -443,10 +394,10 @@ do
 
 
 			 // Visualize the solution.	
-sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
+		/*sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
 					sview.show(&u_new);				
-				mview.show(ref_space);
+				mview.show(ref_space);*/
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
 
@@ -479,8 +430,6 @@ sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_tim
 			delete [] P_minus;
 			delete [] Q_plus;
 			delete [] Q_minus;
-			//delete [] Q_plus_old;
-			//delete [] Q_minus_old;
 			delete [] R_plus;
 			delete [] R_minus;
 			delete[] coeff_vec_2;
@@ -504,36 +453,28 @@ sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_tim
 
   // Increase time step counter
   ts++;
+  
+/*
+  // Visualization.
+    if((ts - 1) % 1000 == 0) 
+    {
+      // Output solution in VTK format.
 
-/*if(ts==1000){
-			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_1000.vtk", "solution", mode_3D);
-			ord.save_orders_vtk(ref_space, "mesh_1000.vtk");
-}
+        char filename[40];
+        sprintf(filename, "solution-%i.vtk", ts );
+        lin.save_solution_vtk(&u_prev_time, filename, "solution", mode_3D);  
+        sprintf(filename, "order-%i.vtk", ts - 1);
+				ord.save_orders_vtk(ref_space, filename);
+			    sprintf(filename, "mesh-%i.vtk", ts );
+					ord.save_mesh_vtk(ref_space, filename);       
+    }*/
 
-if(ts==2000){
-			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_2000.vtk", "solution", mode_3D);
-		ord.save_orders_vtk(ref_space, "mesh_2000.vtk");
-}*/
-if(ts==3000){
-	lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_3000.vtk", "solution", mode_3D);
-		ord.save_orders_vtk(ref_space, "mesh_3000.vtk");
-}
-
-if(ts==4000){
-		lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_4000.vtk", "solution", mode_3D);
-		ord.save_orders_vtk(ref_space, "mesh_4000.vtk");
-}
-
-if(ts==5000){
-			lin.save_solution_vtk(&u_prev_time, "hpadap_smooth_5000.vtk", "solution", mode_3D);
-		ord.save_orders_vtk(ref_space, "mesh_5000.vtk");
-	}
 
 
 }
 while (current_time < T_FINAL);
 
-/*
+
 CustomInitialCondition exact_solution(ref_space->get_mesh());
 	Adapt<double>* error_estimation = new Adapt<double>(ref_space, HERMES_L2_NORM);	
 double err_est = error_estimation->calc_err_est(&exact_solution,&u_prev_time,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
@@ -543,14 +484,15 @@ printf("err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
 
 FILE * pFile;
 pFile = fopen ("error.txt","w");
-     fprintf (pFile, "err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
+    fprintf (pFile, "err_est = %f, err_est_2 =%f,  ndof = %d, max=%d, min=%d", err_est,err_est_2, ref_ndof, dof_max, dof_min);
 fclose (pFile);
-*/
+
 
 
  
 lin.save_solution_vtk(&u_prev_time, "end_hpadap.vtk", "solution", mode_3D);
-		ord.save_orders_vtk(ref_space, "mesh_end.vtk");
+ord.save_orders_vtk(ref_space, "order_end.vtk");
+ord.save_mesh_vtk(ref_space, "mesh_end.vtk");
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 

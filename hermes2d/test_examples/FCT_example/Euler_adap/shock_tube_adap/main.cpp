@@ -87,7 +87,7 @@ H1Space<double> space_rho(&mesh,P_INIT);
 	CustomInitialCondition_rho prev_rho(&mesh);
   ConstantSolution<double> prev_rho_v_x(&mesh,  V1_EXT);
   ConstantSolution<double> prev_rho_v_y(&mesh, V2_EXT);
-CustomInitialCondition_e prev_e(&mesh, KAPPA);
+	CustomInitialCondition_e prev_e(&mesh, KAPPA);
 
  Solution<double>  new_rho,new_rho_v_x,new_rho_v_y,new_e;
  Solution<double> high_rho,high_rho_v_x,high_rho_v_y,high_rho_e;
@@ -96,20 +96,20 @@ CustomInitialCondition_e prev_e(&mesh, KAPPA);
 	CustomInitialCondition_rho low_rho(&mesh);
   ConstantSolution<double> low_rho_v_x(&mesh,  V1_EXT);
   ConstantSolution<double> low_rho_v_y(&mesh, V2_EXT);
-CustomInitialCondition_e low_rho_e(&mesh, KAPPA);
+	CustomInitialCondition_e low_rho_e(&mesh, KAPPA);
 
 	CustomInitialCondition_rho boundary_rho(&mesh);
   ConstantSolution<double> boundary_v_x(&mesh,  V1_EXT);
   ConstantSolution<double> boundary_v_y(&mesh, V2_EXT);
-CustomInitialCondition_e boundary_e(&mesh,KAPPA);
+	CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 
 		Solution<double> R_h_1, R_h_2;
 
  //--------- Filters for visualization of pressure & velocity
-  PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
+ PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
   VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
   VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
-  ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
+  /* ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
   ScalarView s1("rho", new WinGeom(0, 0, 600, 300));
   ScalarView s2("v_x", new WinGeom(700, 0, 600, 300));
   ScalarView s3("v_y", new WinGeom(0, 400, 600, 300));
@@ -129,7 +129,7 @@ OrderView mview_e("mesh", new WinGeom(0, 0, 500, 400));
 			s2.show(&vel_x);
 			s3.show(&vel_y);
   		pressure_view.show(&pressure);*/
-	PressureFilter pressure_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), KAPPA);
+/*	PressureFilter pressure_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), KAPPA);
 	VelocityFilter vel_x_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), 1);
 	VelocityFilter vel_y_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), 2);
 		ScalarView s1_n("low_rho", new WinGeom(0, 0, 600, 300));
@@ -139,7 +139,7 @@ OrderView mview_e("mesh", new WinGeom(0, 0, 500, 400));
      s1_n.set_min_max_range(0., 1.);
       s2_n.set_min_max_range(0., 1.);
       s3_n.set_min_max_range(0., 1.);
-      s4_n.set_min_max_range(0., 1.);
+      s4_n.set_min_max_range(0., 1.);*/
 //------------
 
   EulerEquationsWeakForm_Mass wf_mass(time_step, &prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e);
@@ -276,9 +276,9 @@ do
 
 		for_all_active_elements(e, space_rho.get_mesh()){	elements_to_refine[e->id] = 2; no_of_refinement_steps[e->id]=0;	}
 		calc_elem_error(&space_rho, &low_rho,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-		//calc_elem_error(&space_rho_v_x, &low_rho_v_x,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-	//	calc_elem_error(&space_rho_v_y, &low_rho_v_y,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-		//calc_elem_error(&space_e, &low_rho_e,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		calc_elem_error(&space_rho_v_x, &low_rho_v_x,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		//calc_elem_error(&space_rho_v_y, &low_rho_v_y,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		calc_elem_error(&space_e, &low_rho_e,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
 
 
 		adapting->adapt(elements_to_refine,no_of_refinement_steps,P_MAX, h_min,h_max,NDOF_STOP);
@@ -321,12 +321,12 @@ do
 			prev_rho_v_y.copy(&new_rho_v_y); 
 			prev_e.copy(&new_e); 
 			 // Visualize the solution.
-		  sprintf(title, "pressure: ts=%i",ts);
+		/*  sprintf(title, "pressure: ts=%i",ts);
 			 pressure_view.set_title(title);
 			s1.show(&prev_rho);
 			s2.show(&vel_x);
-			s3.show(&vel_y);
-  		pressure_view.show(&pressure);
+			//s3.show(&vel_y);
+  		pressure_view.show(&pressure);*/
 
 		delete diffusion_low;
 		delete dp_boundary_low;

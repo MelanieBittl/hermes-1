@@ -44,7 +44,7 @@ MatrixSolverType matrix_solver = SOLVER_AZTECOO;
      
 
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 20;
 
 int main(int argc, char* argv[])
 {
@@ -125,7 +125,7 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 		/*	s1.show(&prev_rho);
 			s2.show(&vel_x);
 			s3.show(&vel_y);
-  		pressure_view.show(&pressure);*/
+  		pressure_view.show(&pressure);
 	PressureFilter pressure_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), KAPPA);
 	VelocityFilter vel_x_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), 1);
 	VelocityFilter vel_y_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), 2);
@@ -136,7 +136,11 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
      s1_n.set_min_max_range(0., 1.);
       s2_n.set_min_max_range(0., 1.);
       s3_n.set_min_max_range(0., 1.);
-      s4_n.set_min_max_range(0., 1.);
+      s4_n.set_min_max_range(0., 1.);*/
+              Linearizer lin_p;
+         Linearizer lin_v_x;
+                 Linearizer lin_v_y;
+                         Linearizer lin_rho;
 //------------
 
   EulerEquationsWeakForm_Mass wf_mass(time_step, &prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e);
@@ -309,38 +313,35 @@ low_matrix->finish();
 				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e));	
 
   // Measure the solver time.
-  double time4 = cpu_time.tick().last();
+//  double time4 = cpu_time.tick().last();
 //info("CPU_Time:  %g -------%g------- %g----------%g", time1,time2, time3, time4);
-info("CPU_Time:  %g ", time4);
+//info("CPU_Time:  %g ", time4);
 
 			 // Visualize the solution.
-		  sprintf(title, "pressure: ts=%i",ts);
+		 /* sprintf(title, "pressure: ts=%i",ts);
 			 pressure_view.set_title(title);
 			s1.show(&prev_rho);
 			s2.show(&vel_x);
 			s3.show(&vel_y);
-  		pressure_view.show(&pressure);
+  		pressure_view.show(&pressure);*/
 
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
 
 
- /* // Visualization.
-    if((iteration - 1) % EVERY_NTH_STEP == 0) 
+ // Visualization.
+  if((ts - 1) % EVERY_NTH_STEP == 0) 
     {
       // Output solution in VTK format.
-      if(VTK_VISUALIZATION) 
-      {
-        pressure.reinit();
-        Mach_number.reinit();
-        Linearizer lin_pressure;
+       // pressure.reinit();
         char filename[40];
-        sprintf(filename, "pressure-3D-%i.vtk", iteration - 1);
-        lin_pressure.save_solution_vtk(&pressure, filename, "Pressure", true);
-
-      }
-    }*/
+        sprintf(filename, "pressure-%i.vtk", ts - 1);
+        lin_p.save_solution_vtk(&pressure, filename, "Pressure", true);
+        sprintf(filename, "rho-%i.vtk", ts - 1);
+			lin_rho.save_solution_vtk(&prev_rho, filename,  "density", true);
+      
+    }
 
 
 
@@ -361,13 +362,10 @@ info("CPU_Time:  %g ", time4);
 
 }
 while (current_time < T_FINAL);
-        Linearizer lin_p;
-			lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
-        Linearizer lin_v_x;
+
+			lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);       
 			lin_v_x.save_solution_vtk(&vel_x, "vx_end.vtk", "velocity_x", true);
-        Linearizer lin_v_y;
 			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);
-        Linearizer lin_rho;
 			lin_rho.save_solution_vtk(&prev_rho, "rho_end.vtk", "density", true);
 
 

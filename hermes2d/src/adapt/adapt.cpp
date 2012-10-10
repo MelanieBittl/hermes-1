@@ -715,114 +715,172 @@ namespace Hermes
         error("Element errors have to be calculated first, see Adapt<Scalar>::calc_err_est().");
       if (this->num > 2) error("Unrefine implemented for two spaces only.");
 
-      Mesh* mesh[2];
-      mesh[0] = this->spaces[0]->get_mesh();
-      mesh[1] = this->spaces[1]->get_mesh();
+		 if (this->num ==1)
+		 {
+			 Mesh* mesh = this->spaces[0]->get_mesh();
+			 	Element* e;
+			 	int k = 0;
+						for_all_inactive_elements(e, mesh)
+						{
+						  bool found = true;
+						  for (int i = 0; i < 4; i++)
+						    if (e->sons[i] != NULL && ((!e->sons[i]->active) || (e->sons[i]->is_curved())))
+						    { found = false;  break; }
+
+						    if (found)
+						    {
+						      double sum1_squared = 0.0;
+						      int max1 = 0;
+						      for (int i = 0; i < H2D_MAX_ELEMENT_SONS; i++)
+						        if (e->sons[i] != NULL)
+						        {
+						          sum1_squared += errors[0][e->sons[i]->id];
+						          int oo = this->spaces[0]->get_element_order(e->sons[i]->id);
+						          if (oo > max1) max1 = oo;
+						        }
+						        //regular_queue[0] has largest error! (regular_queue sorted!)
+						        if (sum1_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id])
+						        {
+						    		 this->spaces[0]->set_element_order_internal(e->id, max1);
+						          mesh->unrefine_element_id(e->id);
+						          errors[0][e->id] = sum1_squared;
+						          k++; // number of unrefined elements
+						        }
+						    }
+						}
+						for_all_active_elements(e, mesh)
+						{					
+						    if (errors[0][e->id] < thr/4 * errors[regular_queue[0].comp][regular_queue[0].id])
+						    {
+						      int oo = H2D_GET_H_ORDER(this->spaces[0]->get_element_order(e->id));
+						      if(oo>1)
+						      {
+						     	 this->spaces[0]->set_element_order_internal(e->id, std::max(oo - 1, 1));
+						      	k++;
+						      }
+						    }
+						}
+		 
+		 
+		 }else{
+
+							Mesh* mesh[2];
+							mesh[0] = this->spaces[0]->get_mesh();
+							mesh[1] = this->spaces[1]->get_mesh();
 
 
-      int k = 0;
-      if (mesh[0] == mesh[1]) // single mesh
-      {
-        Element* e;
-        for_all_inactive_elements(e, mesh[0])
-        {
-          bool found = true;
-          for (int i = 0; i < 4; i++)
-            if (e->sons[i] != NULL && ((!e->sons[i]->active) || (e->sons[i]->is_curved())))
-            { found = false;  break; }
+							int k = 0;
+							if (mesh[0] == mesh[1]) // single mesh
+							{
+								Element* e;
+								for_all_inactive_elements(e, mesh[0])
+								{
+								  bool found = true;
+								  for (int i = 0; i < 4; i++)
+								    if (e->sons[i] != NULL && ((!e->sons[i]->active) || (e->sons[i]->is_curved())))
+								    { found = false;  break; }
 
-            if (found)
-            {
-              double sum1_squared = 0.0, sum2_squared = 0.0;
-              int max1 = 0, max2 = 0;
-              for (int i = 0; i < H2D_MAX_ELEMENT_SONS; i++)
-                if (e->sons[i] != NULL)
-                {
-                  sum1_squared += errors[0][e->sons[i]->id];
-                  sum2_squared += errors[1][e->sons[i]->id];
-                  int oo = this->spaces[0]->get_element_order(e->sons[i]->id);
-                  if (oo > max1) max1 = oo;
-                  oo = this->spaces[1]->get_element_order(e->sons[i]->id);
-                  if (oo > max2) max2 = oo;
-                }
-                if ((sum1_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id]) &&
-                  (sum2_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id]))
-                {
-                  mesh[0]->unrefine_element_id(e->id);
-                  mesh[1]->unrefine_element_id(e->id);
-                  errors[0][e->id] = sum1_squared;
-                  errors[1][e->id] = sum2_squared;
-                  this->spaces[0]->set_element_order_internal(e->id, max1);
-                  this->spaces[1]->set_element_order_internal(e->id, max2);
-                  k++; // number of unrefined elements
-                }
-            }
-        }
-        for_all_active_elements(e, mesh[0])
-        {
-          for (int i = 0; i < 2; i++)
-            if (errors[i][e->id] < thr/4 * errors[regular_queue[0].comp][regular_queue[0].id])
-            {
-              int oo = H2D_GET_H_ORDER(this->spaces[i]->get_element_order(e->id));
-              this->spaces[i]->set_element_order_internal(e->id, std::max(oo - 1, 1));
-              k++;
-            }
-        }
-      }
-      else // multimesh
-      {
-        for (int m = 0; m < 2; m++)
-        {
-          Element* e;
-          for_all_inactive_elements(e, mesh[m])
-          {
-            bool found = true;
-            for (int i = 0; i < H2D_MAX_ELEMENT_SONS; i++)
-            {
-              if (e->sons[i] != NULL && ((!e->sons[i]->active) || (e->sons[i]->is_curved())))
-              {
-                found = false;
-                break;
-              }
-            }
+								    if (found)
+								    {
+								    info("k=%i",k);
+								      double sum1_squared = 0.0, sum2_squared = 0.0;
+								      int max1 = 0, max2 = 0;
+								      for (int i = 0; i < H2D_MAX_ELEMENT_SONS; i++)
+								        if (e->sons[i] != NULL)
+								        {
+								          sum1_squared += errors[0][e->sons[i]->id];
+								          sum2_squared += errors[1][e->sons[i]->id];
+								          int oo = this->spaces[0]->get_element_order(e->sons[i]->id);
+								          if (oo > max1) max1 = oo;
+								          oo = this->spaces[1]->get_element_order(e->sons[i]->id);
+								          if (oo > max2) max2 = oo;
+								        }
+								        if ((sum1_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id]) &&
+								          (sum2_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id]))
+								        {
+								          mesh[0]->unrefine_element_id(e->id);
+								          mesh[1]->unrefine_element_id(e->id);
+								          errors[0][e->id] = sum1_squared;
+								          errors[1][e->id] = sum2_squared;
+								          this->spaces[0]->set_element_order_internal(e->id, max1);
+								          this->spaces[1]->set_element_order_internal(e->id, max2);
+								          k++; // number of unrefined elements
+								        }
+								    }
+								}
+								for_all_active_elements(e, mesh[0])
+								{
+								  for (int i = 0; i < 2; i++)
+								    if (errors[i][e->id] < thr/4 * errors[regular_queue[0].comp][regular_queue[0].id])
+								    {
+								      int oo = H2D_GET_H_ORDER(this->spaces[i]->get_element_order(e->id));
+								      this->spaces[i]->set_element_order_internal(e->id, std::max(oo - 1, 1));
+								      k++;
+								    }
+								}
+							}
+							else // multimesh
+							{
+								for (int m = 0; m < 2; m++)
+								{
+								  Element* e;
+								  for_all_inactive_elements(e, mesh[m])
+								  {
+								    bool found = true;
+								    for (int i = 0; i < H2D_MAX_ELEMENT_SONS; i++)
+								    {
+								      if (e->sons[i] != NULL && ((!e->sons[i]->active) || (e->sons[i]->is_curved())))
+								      {
+								        found = false;
+								        break;
+								      }
+								    }
 
-            if (found)
-            {
-              double sum_squared = 0.0;
-              int max = 0;
-              for (int i = 0; i < 4; i++)
-              {
-                if (e->sons[i] != NULL)
-                {
-                  sum_squared += errors[m][e->sons[i]->id];
-                  int oo = this->spaces[m]->get_element_order(e->sons[i]->id);
-                  if (oo > max) max = oo;
-                }
-              }
+								    if (found)
+								    {
+								      double sum_squared = 0.0;
+								      int max = 0;
+								      for (int i = 0; i < 4; i++)
+								      {
+								        if (e->sons[i] != NULL)
+								        {
+								          sum_squared += errors[m][e->sons[i]->id];
+								          int oo = this->spaces[m]->get_element_order(e->sons[i]->id);
+								          if (oo > max) max = oo;
+								        }
+								      }
 
-              if ((sum_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id]))
-                //if ((sum < 0.1 * thr))
-              {
-                mesh[m]->unrefine_element_id(e->id);
-                errors[m][e->id] = sum_squared;
-                this->spaces[m]->set_element_order_internal(e->id, max);
-                k++; // number of unrefined elements
-              }
-            }
-          }
-          for_all_active_elements(e, mesh[m])
-          {
-            if (errors[m][e->id] < thr/4 * errors[regular_queue[0].comp][regular_queue[0].id])
-            {
-              int oo = H2D_GET_H_ORDER(this->spaces[m]->get_element_order(e->id));
-              this->spaces[m]->set_element_order_internal(e->id, std::max(oo - 1, 1));
-              k++;
-            }
-          }
-        }
+								      if ((sum_squared < thr * errors[regular_queue[0].comp][regular_queue[0].id]))
+								        //if ((sum < 0.1 * thr))
+								      {
+								        mesh[m]->unrefine_element_id(e->id);
+								        errors[m][e->id] = sum_squared;
+								        this->spaces[m]->set_element_order_internal(e->id, max);
+								        k++; // number of unrefined elements
+								      }
+								    }
+								  }
+								  for_all_active_elements(e, mesh[m])
+								  {
+								    if (errors[m][e->id] < thr/4 * errors[regular_queue[0].comp][regular_queue[0].id])
+								    {
+								      int oo = H2D_GET_H_ORDER(this->spaces[m]->get_element_order(e->id));
+								      this->spaces[m]->set_element_order_internal(e->id, std::max(oo - 1, 1));
+								      k++;
+								    }
+								  }
+								}
+							}
       }
       verbose("Unrefined %d elements.", k);
       have_errors = false;
+      
+        // since space changed, assign dofs:
+      for(unsigned int i = 0; i < this->spaces.size(); i++)
+        this->spaces[i]->assign_dofs();
+      
+      
+      
     }
 
     template<typename Scalar>

@@ -15,7 +15,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 1; 
 const double h_max = 0.1;                       
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
   // Time measurement.
  // TimePeriod cpu_time;
  // cpu_time.tick();
-
+ 
    // Load the mesh.
   Mesh mesh, basemesh;
   MeshReaderH2D mloader;
@@ -101,6 +101,7 @@ int main(int argc, char* argv[])
 
   // Output solution in VTK format.
 Linearizer lin;
+Orderizer ord;
 bool mode_3D = true;
 //lin.save_solution_vtk(&u_prev_time, "init_h_adap_neu.vtk", "u", mode_3D);
 
@@ -147,7 +148,7 @@ bool mode_3D = true;
 	int* Ap_mass;
 	int ref_ndof;
 
-
+ int dof_max= space.get_num_dofs(); int dof_min= space.get_num_dofs(); 
 
 				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
 			dp_mass->assemble(mass_matrix_uni); 	
@@ -237,8 +238,8 @@ if(ps==1){
 			//info("projection");
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix_uni);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
-			//	Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
-	//	smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
+				Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
+		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
 			lumped_flux_limiter(mass_matrix_uni, lumped_matrix_uni, coeff_vec, coeff_vec_2,
 									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
 
@@ -278,6 +279,10 @@ if(ps==1){
 
 
 }else{
+
+if(ts==1) dof_min = ref_ndof;
+if(ref_ndof > dof_max) dof_max = ref_ndof;
+if(ref_ndof< dof_min) dof_min = ref_ndof;
 			UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
 			double* coeff_vec_3 = new double[ref_ndof]; 
 			for(int i=0; i<ref_ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.;}
@@ -341,9 +346,9 @@ if(ps==1){
 			Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec, matrix_solver, lumped_matrix);
 			OGProjection<double>::project_global(ref_space,&u_prev_time, coeff_vec_2, matrix_solver, HERMES_L2_NORM);
 				Solution<double> ::vector_to_solution(coeff_vec, ref_space, &low_sln);
-		smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
+		//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2,smooth_elem,smooth_dof,al);
 			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
 
 			//Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		//Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &high_sln);
@@ -394,9 +399,9 @@ if(ps==1){
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 			//	info("assemble fluxes");	
-			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
+			//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
 			 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec_2,coeff_vec, coeff_vec_3, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
 		//coeff_vec = u_old, coeff_vec_2 = u_L,coeff_vec_3= flux
 
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
@@ -471,11 +476,12 @@ double err_est_2 = error_estimation->calc_err_est(&u_prev_time,&exact_solution,t
 printf("err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
 FILE * pFile;
 pFile = fopen ("error.txt","w");
-     fprintf (pFile, "err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
+     fprintf (pFile, "err_est = %f, err_est_2 =%f,  ndof = %d, max=%d, min=%d", err_est,err_est_2, ref_ndof, dof_max, dof_min);
 fclose (pFile);
 
 lin.save_solution_vtk(&u_prev_time, "end_non_smooth_h_adap.vtk", "solution", mode_3D);
-
+//ord.save_orders_vtk(ref_space, "order_end.vtk");
+ord.save_mesh_vtk(ref_space, "mesh_end.vtk");
 
 //sview.show(&u_new);
 //mview.show(ref_space);

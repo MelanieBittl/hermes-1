@@ -63,19 +63,6 @@ public:
 };
 
 
-class CustomInitialCondition_p : public ExactSolutionScalar<double>
-{
-public:
-  CustomInitialCondition_p(Mesh* mesh) : ExactSolutionScalar<double>(mesh) {};
-   ~CustomInitialCondition_p(){};
-
-  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
-
-  virtual double value (double x, double y) const;
-
- virtual Ord ord(Ord x, Ord y) const ;
-	double kappa;
-};
 
 
 //------------Boundary condition 

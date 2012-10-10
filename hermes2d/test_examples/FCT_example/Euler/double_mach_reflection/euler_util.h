@@ -75,30 +75,6 @@ protected:
 	int coord; // x=1 or y=2
 };
 
-class RadiusVelocityFilter : public Hermes::Hermes2D::SimpleFilter<double>
-{
-public: 
-  RadiusVelocityFilter(Hermes::vector<MeshFunction<double>*> solutions) : SimpleFilter<double>(solutions) {};
-  ~RadiusVelocityFilter() 
-  {
-    for(int i = 0; i < this->num; i++)
-      delete this->sln[i];
-  };
-
-  MeshFunction<double>* clone()
-  {
-    Hermes::vector<MeshFunction<double>*> slns;
-    for(int i = 0; i < this->num; i++)
-      slns.push_back(this->sln[i]->clone());
-    RadiusVelocityFilter* filter = new RadiusVelocityFilter(slns);
-    return filter;
-  }
-protected:
-  virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
-
-};
-
-
 
 class PressureFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
@@ -178,11 +154,18 @@ public:
 					double* new_variables, 
 					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, int& boundary, bool solid );
 
+	int get_bdry_info(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
+					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, double* ghost_state, bool solid);
+
+	void get_du_du(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
+					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, int bdry, int entry_j, double* dudu);
+
 protected:
 	double kappa;
 
 };
-
+ 
+ 
 
 //--------------------Euler-Fluxes-------------------------
 class EulerFluxes

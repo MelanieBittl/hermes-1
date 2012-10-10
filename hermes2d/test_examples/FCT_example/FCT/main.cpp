@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =7;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 1; 
 const double h_max = 0.1;                       
@@ -215,13 +215,8 @@ double f;
 			//View::wait(HERMES_WAIT_KEYPRESS);	
 		/*	sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
-			pview.show(&u_new);
-	/*sprintf(title, "proj. lumped_Loesung, ps=%i, ts=%i", ps,ts);
-			Lowview.set_title(title);
-			Lowview.show(&low_sln);
-	sprintf(title, "proj. high_Loesung, ps=%i, ts=%i", ps,ts);
-			hview.set_title(title);
-			hview.show(&high_sln);*/
+			pview.show(&u_new);*/
+
 
 //lin.save_solution_vtk(&u_new, "FCT_proj_smooth_wQold.vtk", "u", mode_3D);
 	//lin.save_solution_vtk(&low_sln, "lumped_proj.vtk", "u", mode_3D);
@@ -257,9 +252,9 @@ do
 			 Lowview.show(&high_sln);*/ 
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
-			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
+			//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al);
 		 antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, flux_double, 
-									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus,smooth_dof);
+									P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old,  R_plus, R_minus);
 		
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 			vec_rhs->add_vector(flux_double);
@@ -322,8 +317,13 @@ CustomInitialCondition exact_solution(ref_space->get_mesh());
 double err_est = error_estimation->calc_err_est(&exact_solution,&u_new,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
 double err_est_2 = error_estimation->calc_err_est(&u_new,&exact_solution,true,HERMES_TOTAL_ERROR_ABS|HERMES_ELEMENT_ERROR_ABS);
 printf("err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
+FILE * pFile;
+pFile = fopen ("error.txt","w");
+     fprintf (pFile, "err_est = %f, err_est_2 =%f,  ndof = %d", err_est,err_est_2, ref_ndof);
+fclose (pFile);
 
-lin.save_solution_vtk(&u_new, "end_smooth_uniform.vtk", "solution", mode_3D);
+
+lin.save_solution_vtk(&u_new, "end_uniform.vtk", "solution", mode_3D);
 /*sprintf(title, "low_Ord Time %3.2f", current_time);
 			  Lowview.set_title(title);
 			 Lowview.show(&low_sln);	 
