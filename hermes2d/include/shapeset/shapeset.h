@@ -117,6 +117,7 @@ namespace Hermes
       /// shapesets with non-symmetric edge functions).
       int get_edge_index(int edge, int ori, int order, ElementMode2D mode) const;
 
+    protected:
       /// Returns a complete set of indices of bubble functions for an element of the given order.
       int* get_bubble_indices(int order, ElementMode2D mode) const;
 

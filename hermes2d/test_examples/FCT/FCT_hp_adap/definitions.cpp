@@ -1,10 +1,10 @@
 #include "definitions.h"
 //---------------Massematrix-----------
  CustomWeakFormMassmatrix::CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time) : WeakForm<double>(1) {
+ this->set_ext(sln_prev_time);
 		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0, time_step);	
 		add_matrix_form(mass_form);
 		VectorFormVolMass* vector_form = new VectorFormVolMass(0, time_step);		
-		vector_form->set_ext(sln_prev_time);
 		add_vector_form(vector_form);
   }
  CustomWeakFormMassmatrix::~CustomWeakFormMassmatrix(){
@@ -17,7 +17,7 @@
 
     template<typename Real, typename Scalar>
     Scalar CustomMatrixFormVolMassmatrix::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 		     Scalar result = Scalar(0); 
 	  for (int i = 0; i < n; i++)
 		result += wt[i] * (u->val[i] * v->val[i])/time_step;
@@ -26,12 +26,12 @@
     };
 
    double CustomMatrixFormVolMassmatrix::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     };
 
     Ord CustomMatrixFormVolMassmatrix::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const {
+            Geom<Ord> *e, Func<Ord> **ext) const {
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
@@ -41,20 +41,20 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone()
 }
 
     template<typename Real, typename Scalar>
-    Scalar VectorFormVolMass::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+    Scalar VectorFormVolMass::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 	  Scalar result = Scalar(0);
-	  Func<Scalar>* u_prev_time = ext->fn[0];
+	  Func<Scalar>* u_prev_time = ext[0];
 	  for (int i = 0; i < n; i++)
 		result += wt[i] *  u_prev_time->val[i] * v->val[i]/time_step;
 	  return result;
 
     };
 
-   double VectorFormVolMass::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+   double VectorFormVolMass::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return vector_form<double, double>(n, wt, u_ext, v, e, ext);
     };
 
-    Ord VectorFormVolMass::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
+    Ord VectorFormVolMass::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
    VectorFormVol<double>* VectorFormVolMass::clone(){
@@ -64,9 +64,9 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone()
 //---------------Konvektion-----------
 
   CustomWeakFormConvection::CustomWeakFormConvection(Solution<double>* sln_prev_time) : WeakForm<double>(1) {
+   this->set_ext(sln_prev_time);
     add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
    VectorFormVolConvection* vector_form = new VectorFormVolConvection(0);
-   		vector_form->set_ext(sln_prev_time);
     add_vector_form(vector_form);
   };
 	CustomWeakFormConvection::~CustomWeakFormConvection(){
@@ -80,7 +80,7 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone()
 
     template<typename Real, typename Scalar>
     Scalar CustomMatrixFormVolConvection::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
@@ -90,12 +90,12 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone()
     };
 
 double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     };
 
    Ord CustomMatrixFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const {
+            Geom<Ord> *e, Func<Ord> **ext) const {
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
@@ -108,18 +108,18 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 
 
     template<typename Real, typename Scalar>
-    Scalar VectorFormVolConvection::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+    Scalar VectorFormVolConvection::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
   Scalar result = Scalar(0); 
-  Func<Scalar>* u_prev_time = ext->fn[0];
+  Func<Scalar>* u_prev_time = ext[0];
   for (int i = 0; i < n; i++)
     result += -wt[i] * ( v->val[i] * (u_prev_time->dx[i] * (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5)));
   return result;
     };
-     double VectorFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+     double VectorFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return vector_form<double, double>(n, wt, u_ext, v, e, ext);
     };
 
-     Ord VectorFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
+     Ord VectorFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
 
@@ -128,152 +128,13 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 
 		}
 
-//------Matrix & Vektorform for higher Order solution----------------
-
-
-  ConvectionForm::ConvectionForm( double time_step, Solution<double>* sln_prev_time) : WeakForm<double>(1) {
-    add_matrix_form(new ConvectionMatForm(0, 0,  time_step));
-    VectorConvection* vector_form = new VectorConvection(0,  time_step);
-    		vector_form->set_ext(sln_prev_time);
-    add_vector_form(vector_form);
-  }
- ConvectionForm::~ConvectionForm(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-	};
-
-
- template<typename Real, typename Scalar>
-    Scalar ConvectionMatForm::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
-         Scalar result = Scalar(0); 
-				for (int i = 0; i < n; i++) 
-					result += wt[i] * (u->val[i] * v->val[i] / time_step + 0.5*v->val[i] *(u->dx[i] * (0.5- e->y[i]) + u->dy[i] * (e->x[i]-0.5) ));	
-				return result;
-
-    }
-
-   double ConvectionMatForm::value(int n, double *wt, Func<double>  *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double>  *ext) const {
-      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
-    }
-
-   Ord ConvectionMatForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const {
-      return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
-    }
-
-   MatrixFormVol<double>* ConvectionMatForm::clone()
-{
-  return new ConvectionMatForm(*this);
-}
-
-    template<typename Real, typename Scalar>
-    Scalar VectorConvection::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
-  Scalar result = Scalar(0);
-  //Func<Scalar>* u_prev_newton = u_ext[0];
-  Func<Scalar>* u_prev_time = ext->fn[0];
-  for (int i = 0; i < n; i++) 
-		result += wt[i] * (u_prev_time->val[i] * v->val[i] / time_step -
-                      0.5*v->val[i] * (u_prev_time->dx[i] *  (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5)));
-    /*result += wt[i] * ((u_prev_newton->val[i] - u_prev_time->val[i]) * v->val[i] / time_step +
-                      0.5*v->val[i] * (u_prev_newton->dx[i] * (0.5- e->y[i]) + u_prev_newton->dy[i] *  (e->x[i]-0.5) +
-			u_prev_time->dx[i] *  (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5)));*/
-	
-  return result;
-
-    }
-
-    double VectorConvection::value(int n, double *wt, Func<double > *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
-      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    }
-
-     Ord VectorConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
-      return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
-    }
-   VectorFormVol<double>* VectorConvection::clone(){
- 			 return new VectorConvection(*this);
-
-		}
-
-//-----------------Residual for error estimator--------------------------------
-
- ResidualForm::ResidualForm( double time_step, Solution<double>* sln_prev_time, Solution<double>* ref) : WeakForm<double>(1) {
-    add_matrix_form(new ResidualMatForm(0, 0,  time_step));
-    VectorResidual* vector_form = new VectorResidual(0,  time_step);
-     Hermes::vector<MeshFunction<double> *> ext_fct;
-      ext_fct.push_back(sln_prev_time);
-      ext_fct.push_back(ref);
-      vector_form->set_ext(ext_fct);
-
-    add_vector_form(vector_form);
-  };
-
-	ResidualForm::~ResidualForm(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-	};
-
-    template<typename Real, typename Scalar>
-    Scalar ResidualMatForm::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
-
-		       Scalar result = Scalar(0); 
-		for (int i = 0; i < n; i++) 
-		  result += wt[i] * (u->val[i] * v->val[i] / time_step + 0.5*v->val[i] *(u->dx[i] * (0.5- e->y[i]) + u->dy[i] * (e->x[i]-0.5) ));	
-		return result;
-
-    };
-
-double ResidualMatForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
-      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
-    };
-Ord ResidualMatForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const {
-      return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
-    };
-
-   MatrixFormVol<double>* ResidualMatForm::clone()
-{
-  return new ResidualMatForm(*this);
-}
-
-    template<typename Real, typename Scalar>
-    Scalar VectorResidual::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
-			Scalar result = Scalar(0);
-			Func<Scalar>* u_prev_time = ext->fn[0];
-			Func<Scalar>* u_h = ext->fn[1];
-			for (int i = 0; i < n; i++) 	
-				result += wt[i]*(u_prev_time->val[i] * v->val[i] / time_step -
-						0.5*v->val[i]*(	u_prev_time->dx[i] *  (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5))-						
-								u_h->val[i] * v->val[i] / time_step - 
-							(0.5*v->val[i]*(u_h->dx[i] * (0.5- e->y[i]) + u_h->dy[i] * (e->x[i]-0.5))));							
-	
-			return result;
-
-    };
-
-  double VectorResidual::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
-      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    };
-
-    Ord VectorResidual::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
-      return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
-    };
-   VectorFormVol<double>* VectorResidual::clone(){
- 			 return new VectorResidual(*this);
-
-		}
 
 //---------Gradient Reconstruction---------------
 //R_H^1
  GradientReconstruction_1::GradientReconstruction_1( Solution<double>* sln) : WeakForm<double>(1) {
+  this->set_ext(sln);
     add_matrix_form(new GradientReconstructionMatForm_1(0, 0));
     GradientReconstructionVectorForm_1* vector_form = new GradientReconstructionVectorForm_1(0);
-    		vector_form->set_ext(sln);
     add_vector_form(vector_form);
   };
 
@@ -285,7 +146,7 @@ Ord ResidualMatForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Fu
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_1 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 
 		       Scalar result = Scalar(0); 
 		for (int i = 0; i < n; i++) 
@@ -295,11 +156,11 @@ Ord ResidualMatForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Fu
     };
 
 double GradientReconstructionMatForm_1 ::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     };
 Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const {
+            Geom<Ord> *e, Func<Ord> **ext) const {
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
@@ -309,20 +170,20 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 }
 
     template<typename Real, typename Scalar>
-    Scalar GradientReconstructionVectorForm_1::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+    Scalar GradientReconstructionVectorForm_1::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 			Scalar result = Scalar(0);
-			Func<Scalar>* u_h = ext->fn[0];
+			Func<Scalar>* u_h = ext[0];
 			for (int i = 0; i < n; i++) 	
 				result += wt[i]*(v->val[i]*u_h->dx[i]);	
 			return result;
 
     };
 
-  double GradientReconstructionVectorForm_1::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+  double GradientReconstructionVectorForm_1::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return vector_form<double, double>(n, wt, u_ext, v, e, ext);
     };
 
-    Ord GradientReconstructionVectorForm_1::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
+    Ord GradientReconstructionVectorForm_1::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
    VectorFormVol<double>* GradientReconstructionVectorForm_1::clone(){
@@ -332,9 +193,9 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 //R_H^2
 
  GradientReconstruction_2::GradientReconstruction_2( Solution<double>* sln) : WeakForm<double>(1) {
+   this->set_ext(sln);
     add_matrix_form(new GradientReconstructionMatForm_2(0, 0));
     GradientReconstructionVectorForm_2* vector_form = new GradientReconstructionVectorForm_2(0);
-    		vector_form->set_ext(sln);
     add_vector_form(vector_form);
   };
 
@@ -346,7 +207,7 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_2 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 
 		       Scalar result = Scalar(0); 
 		for (int i = 0; i < n; i++) 
@@ -356,11 +217,11 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
     };
 
 double GradientReconstructionMatForm_2 ::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     };
 Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const {
+            Geom<Ord> *e, Func<Ord> **ext) const {
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
@@ -370,20 +231,20 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 }
 
     template<typename Real, typename Scalar>
-    Scalar GradientReconstructionVectorForm_2::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const {
+    Scalar GradientReconstructionVectorForm_2::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 			Scalar result = Scalar(0);
-			Func<Scalar>* u_h = ext->fn[0];
+			Func<Scalar>* u_h = ext[0];
 			for (int i = 0; i < n; i++) 	
 				result += wt[i]*(v->val[i]*u_h->dy[i]);	
 			return result;
 
     };
 
-  double GradientReconstructionVectorForm_2::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const {
+  double GradientReconstructionVectorForm_2::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const {
       return vector_form<double, double>(n, wt, u_ext, v, e, ext);
     };
 
-    Ord GradientReconstructionVectorForm_2::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const {
+    Ord GradientReconstructionVectorForm_2::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
 

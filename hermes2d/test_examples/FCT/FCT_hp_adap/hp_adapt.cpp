@@ -171,29 +171,6 @@ bool HPAdapt::adapt(int* elements_to_refine,int* no_of_refinement_steps, int max
 	if(changed==false){ info("nothing to refine/coarse");return false;}
 
 
-  // in singlemesh case, impose same orders across meshes
- homogenize_shared_mesh_orders(meshes);
-
-	  // mesh regularization
-	
-  if (regularize >= 0)
-  {
-    if (regularize == 0)
-    {
-      regularize = 1;
-      warn("Total mesh regularization is not supported in adaptivity. 1-irregular mesh is used instead.");
-    }
-    for (int i = 0; i < this->num; i++)
-    {
-      int* parents;
-      parents = meshes[i]->regularize(regularize);
-      this->spaces[i]->distribute_orders(meshes[i], parents);
-      ::free(parents);
-    }
-  }
-
-
-
    // since space changed, assign dofs:
       for(unsigned int i = 0; i < this->spaces.size(); i++)
         this->spaces[i]->assign_dofs();

@@ -1,19 +1,10 @@
 #include "lumped_projection.h"
 
 
-
-#include "discrete_problem.h"
-
-
-
-////template<typename double>
-void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<double>* wf, double* target_vec,
-                               MatrixSolverType matrix_solver, UMFPackMatrix<double>*  mat)
+void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<double>* wf, double* target_vec, UMFPackMatrix<double>*  mat)
 {
 
-      // Sanity check.
-    if(space == NULL) printf("this->space == NULL in project_internal().");
-
+    if(space == NULL) printf("this->space == NULL in Lumped_Projection::project_internal().");
       // Get dimension of the space.
       int ndof = space->get_num_dofs();
 
@@ -24,42 +15,57 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
     	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double>;	
   	UMFPackVector<double>* rhs = new UMFPackVector<double>(ndof);
 	double* coeff_vec =NULL; 
-	if(mat==NULL) { 
+	if(mat==NULL) 		//=> masslumping	
+	{ 
 		UMFPackMatrix<double>* lumped_matrix = new UMFPackMatrix<double>;   //M_L 
-		dp->assemble(matrix, rhs);  
-			//Masslumping		 
-		 int size = matrix->get_size();
-		 double diag[size];
-		 int nnz = matrix->get_nnz();
-		 int row[size]; 
+		dp->assemble(matrix, rhs);  		 
+		int size = matrix->get_size();
+		double diag[size];
+		int nnz = matrix->get_nnz();
+		int row[size]; 
 		int col[size+1];
-		 for(int i = 0; i<size; i++){    
+		 for(int i = 0; i<size; i++)
+		 {    
 		    diag[i] = 0;
 		    row[i]= i;
 		    col[i]=i;
 		 }
-		col[size]=size;// letzter Eintrag bezieht sich auf nichts(Ende der Matrix)= Anzahl der Eintraege!
+		col[size]=size;
 	
-		 for(int i = 0; i<nnz; i++){    
+		 for(int i = 0; i<nnz; i++)    
 		    diag[matrix->get_Ai()[i]] += matrix->get_Ax()[i]; 
-		 }
-
-		 lumped_matrix->create(size, size, col, row, diag);  //lumped Matrix aufstellen
+		lumped_matrix->create(size, size, col, row, diag);  
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(lumped_matrix,rhs);		
-		if(solver->solve()){ 
-			coeff_vec = solver->get_sln_vector();		
+		try{
+			solver->solve();
 		}
-	  	else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
-		 if (target_vec != NULL)
+		catch(Hermes::Exceptions::Exception e)
+		{
+			 e.print_msg();
+		}
+		coeff_vec = solver->get_sln_vector();	
+
+		if (target_vec != NULL)
     		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
 		delete solver;
 		delete lumped_matrix;
-	}else{ 
+	}
+	else
+	{ 
 		dp->assemble(rhs);
-		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(mat,rhs);		
-		if(solver->solve()) 
+		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(mat,rhs);	
+		
+		 try
+      {
+        solver->solve();
+      }
+      catch(Hermes::Exceptions::Exception e)
+      {
+        e.print_msg();
+      }
+
 			coeff_vec = solver->get_sln_vector();			
-	 	 else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 		 if (target_vec != NULL)
     		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
 		delete solver;
@@ -74,25 +80,21 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 }
 
 void Lumped_Projection::project_lumped( const  Space<double>* space, MeshFunction<double>* source_meshfn,
-                             double* target_vec, MatrixSolverType matrix_solver ,UMFPackMatrix<double>*  mat )
+                             double* target_vec, UMFPackMatrix<double>*  mat )
 {
-	
-
       // Sanity checks.
       if (target_vec == NULL) throw Exceptions::NullException(3);
-
       // Define temporary projection weak form.
       WeakForm<double>* proj_wf = new WeakForm<double>(1);
-
+      proj_wf->set_ext(source_meshfn);
+      
 			ProjectionLumpedMatrixFormVol* matrix_form =	new ProjectionLumpedMatrixFormVol(0, 0);
-			ProjectionLumpedVectorFormVol* vector_form = new ProjectionLumpedVectorFormVol(0, source_meshfn);
-      // Add Jacobian.
+			ProjectionLumpedVectorFormVol* vector_form = new ProjectionLumpedVectorFormVol(0);  
+			//ProjectionLumpedVectorFormVol* vector_form = new ProjectionLumpedVectorFormVol(0, source_meshfn);  
       proj_wf->add_matrix_form(matrix_form);
-      // Add Residual.
       proj_wf->add_vector_form(vector_form);
-
       // Call main function.
-      project_internal(space, proj_wf, target_vec, matrix_solver, mat);
+      project_internal(space, proj_wf, target_vec, mat);
 
       // Clean up.
       delete proj_wf;

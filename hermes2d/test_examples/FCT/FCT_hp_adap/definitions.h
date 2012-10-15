@@ -22,13 +22,13 @@ class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
     virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
     virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const;
+            Geom<Ord> *e, Func<Ord> **ext) const;
 
     MatrixFormVol<double>* clone();
 
@@ -43,11 +43,11 @@ public:
 	VectorFormVolMass(int i, double  time_step) : VectorFormVol<double>(i), time_step(time_step) { };
 
 	template<typename Real, typename Scalar>
-	Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+	Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
-	virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+	virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
-	virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+	virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
 
    VectorFormVol<double>* clone();
 
@@ -73,13 +73,13 @@ public:
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                     Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+                     Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
   virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-               Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+               Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
   virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-          Geom<Ord> *e, ExtData<Ord> *ext) const;  
+          Geom<Ord> *e, Func<Ord> **ext) const;  
 
     MatrixFormVol<double>* clone();
 
@@ -92,11 +92,11 @@ public:
   VectorFormVolConvection(int i) : VectorFormVol<double>(i){ }
 
   template<typename Real, typename Scalar>
-  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
-  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
-  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
 
    VectorFormVol<double>* clone();
 };
@@ -110,112 +110,6 @@ public:
 };
 
 
-//------Matrix & Vektorform for higher Order solution----------------
-
- class ConvectionMatForm : public MatrixFormVol<double>
-  {
-  public:
-    // This weak form is custom since it contains a nonlinearity in the diffusion term.
-    ConvectionMatForm(int i, int j, double time_step) : MatrixFormVol<double>(i, j), time_step(time_step) { }
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const ;
-
-    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, ExtData<double> *ext) const ;
-    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, ExtData<Ord> *ext) const;
-
-    MatrixFormVol<double>* clone();
-
-    // Members.
-  
-    double time_step;
-  };
-
-  // This form (residual) is custom since it contains a nonlinear term.
- class VectorConvection : public VectorFormVol<double>
-  {
-  public:
-    VectorConvection(int i,double time_step) : VectorFormVol<double>(i), time_step(time_step) { }
-
-    template<typename Real, typename Scalar>
-    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
-
-    virtual double value(int n, double *wt, Func<double>  *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
-
-    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
-
-   VectorFormVol<double>* clone();
-
-    // Members.
-    
-    double time_step;
-  };
-
-class ConvectionForm : public WeakForm<double> 
-{
-public:
-  ConvectionForm( double time_step, Solution<double>* sln_prev_time) ;
-	~ConvectionForm();
-  };
-
-
-
-
-
-
-//-----------------Residual for error estimator--------------------------------
-class ResidualMatForm : public MatrixFormVol<double>
-{
-public:
-  ResidualMatForm(int i, int j, double time_step) 
-    : MatrixFormVol<double>(i, j), time_step(time_step) { }
-
-  template<typename Real, typename Scalar>
-  Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                     Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
-  
-
-  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-               Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
-
-  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-          Geom<Ord> *e, ExtData<Ord> *ext) const;    
-
-    MatrixFormVol<double>* clone();
-
-  // Members.  
-  double time_step;
-};
-
-
-class VectorResidual : public VectorFormVol<double>
-{
-public:
-  VectorResidual(int i,double time_step) : VectorFormVol<double>(i), time_step(time_step) { }
-
-  template<typename Real, typename Scalar>
-  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const ;
- 
-
-  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
-
-  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
-
-   VectorFormVol<double>* clone();
-
-  // Members.    
-  double time_step;
-};
-class ResidualForm : public WeakForm<double>
-{
-public:
-  ResidualForm( double time_step, Solution<double>* sln_prev_time, Solution<double>* ref);
-	~ResidualForm();
-};
-
 //---------Gradient Reconstruction---------------
 
 class GradientReconstructionMatForm_1 : public MatrixFormVol<double>
@@ -226,14 +120,14 @@ public:
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                     Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+                     Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
   
 
   virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-               Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+               Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
   virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-          Geom<Ord> *e, ExtData<Ord> *ext) const;  
+          Geom<Ord> *e, Func<Ord> **ext) const;  
   
     MatrixFormVol<double>* clone();
 
@@ -246,12 +140,12 @@ public:
   GradientReconstructionVectorForm_1(int i) : VectorFormVol<double>(i) { }
 
   template<typename Real, typename Scalar>
-  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const ;
+  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const ;
  
 
-  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
-  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
 
    VectorFormVol<double>* clone();
 
@@ -272,14 +166,14 @@ public:
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                     Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+                     Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
   
 
   virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-               Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+               Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
   virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-          Geom<Ord> *e, ExtData<Ord> *ext) const;    
+          Geom<Ord> *e, Func<Ord> **ext) const;    
 
     MatrixFormVol<double>* clone();
 };
@@ -291,12 +185,12 @@ public:
   GradientReconstructionVectorForm_2(int i) : VectorFormVol<double>(i) { }
 
   template<typename Real, typename Scalar>
-  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const ;
+  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const ;
  
 
-  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
-  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
 
    VectorFormVol<double>* clone();
 

@@ -77,7 +77,6 @@ int main(int argc, char* argv[])
 	CustomWeakFormMassmatrix  massmatrix(time_step, &u_prev_time);
 	CustomWeakFormConvection  convection(&u_prev_time);
 
-	ConvectionForm  wf(time_step, &u_prev_time);
 
 
   // Initialize views.
@@ -228,10 +227,10 @@ if(ps==1){
 
 	//--------Project the initial condition on the FE space->coeff_vec	---------------
 			if(ts==1) {
-				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,  matrix_solver, lumped_matrix_uni);
+				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,   lumped_matrix_uni);
     ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
 			}else{
-				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  matrix_solver, lumped_matrix_uni);
+				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  lumped_matrix_uni);
     ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
 
 			}
@@ -325,10 +324,10 @@ if(ps==1){
 
 	//--------Project the initial condition on the FE space->coeff_vec	---------------
 			if(ts==1) {
-				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,  matrix_solver, lumped_matrix);
+				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,lumped_matrix);
     		ogProjection.project_global(ref_space,&u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
 			}else{
-				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,  matrix_solver, lumped_matrix);
+				 Lumped_Projection::project_lumped(ref_space, &u_prev, coeff_vec,lumped_matrix);
 		    ogProjection.project_global(ref_space,&u_prev, coeff_vec_2,  HERMES_L2_NORM);
 			}
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &low_sln);
