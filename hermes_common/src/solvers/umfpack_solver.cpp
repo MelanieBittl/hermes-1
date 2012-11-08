@@ -340,7 +340,7 @@ namespace Hermes
     }
 
     template<>
-    bool CSCMatrix<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt)
+    bool CSCMatrix<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
     {
       switch (fmt)
       {
@@ -351,7 +351,7 @@ namespace Hermes
           for (int i = Ap[j]; i < Ap[j + 1]; i++)
           {
             fprintf(file, "%d %d ", Ai[i] + 1, j + 1);
-            Hermes::Helpers::fprint_num(file, Ax[i]);
+            Hermes::Helpers::fprint_num(file, Ax[i], number_format);
             fprintf(file, "\n");
           }
           fprintf(file, "];\n%s = spconvert(temp);\n", var_name);
@@ -374,7 +374,7 @@ namespace Hermes
               if((int)j <= Ai[i])
               {
                 fprintf(file, "%d %d ", Ai[i] + 1, (int)j + 1);
-                Hermes::Helpers::fprint_num(file, Ax[i]);
+                Hermes::Helpers::fprint_num(file, Ax[i], number_format);
                 fprintf(file, "\n");
               }
 
@@ -445,7 +445,7 @@ namespace Hermes
     }
 
     template<>
-    bool CSCMatrix<std::complex<double> >::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt)
+    bool CSCMatrix<std::complex<double> >::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
     {
       switch (fmt)
       {
@@ -456,7 +456,7 @@ namespace Hermes
           for (int i = Ap[j]; i < Ap[j + 1]; i++)
           {
             fprintf(file, "%d %d ", Ai[i] + 1, j + 1);
-            Hermes::Helpers::fprint_num(file, Ax[i]);
+            Hermes::Helpers::fprint_num(file, Ax[i], number_format);
             fprintf(file, "\n");
           }
           fprintf(file, "];\n%s = spconvert(temp);\n", var_name);
@@ -479,7 +479,7 @@ namespace Hermes
               if((int)j <= Ai[i])
               {
                 fprintf(file, "%d %d ", Ai[i] + 1, (int)j + 1);
-                Hermes::Helpers::fprint_num(file, Ax[i]);
+                Hermes::Helpers::fprint_num(file, Ax[i], number_format);
                 fprintf(file, "\n");
               }
 
@@ -712,7 +712,7 @@ namespace Hermes
     }
 
     template<>
-    bool UMFPackVector<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt)
+    bool UMFPackVector<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
     {
       switch (fmt)
       {
@@ -720,7 +720,7 @@ namespace Hermes
         fprintf(file, "%% Size: %dx1\n%s =[\n", this->size, var_name);
         for (unsigned int i = 0; i < this->size; i++)
         {
-          Hermes::Helpers::fprint_num(file, v[i]);
+          Hermes::Helpers::fprint_num(file, v[i], number_format);
           fprintf(file, "\n");
         }
         fprintf(file, " ];\n");
@@ -741,7 +741,7 @@ namespace Hermes
           fprintf(file, "\n");
           for (unsigned int i = 0; i < size; i++)
           {
-            Hermes::Helpers::fprint_num(file, v[i]);
+            Hermes::Helpers::fprint_num(file, v[i], number_format);
             fprintf(file, "\n");
           }
 
@@ -754,7 +754,7 @@ namespace Hermes
     }
 
     template<>
-    bool UMFPackVector<std::complex<double> >::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt)
+    bool UMFPackVector<std::complex<double> >::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
     {
       switch (fmt)
       {
@@ -762,7 +762,7 @@ namespace Hermes
         fprintf(file, "%% Size: %dx1\n%s =[\n", this->size, var_name);
         for (unsigned int i = 0; i < this->size; i++)
         {
-          Hermes::Helpers::fprint_num(file, v[i]);
+          Hermes::Helpers::fprint_num(file, v[i], number_format);
           fprintf(file, "\n");
         }
         fprintf(file, " ];\n");

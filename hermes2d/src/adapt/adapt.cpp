@@ -23,7 +23,7 @@
 #include "refmap.h"
 #include "quad_all.h"
 #include "traverse.h"
-#include "refinement_selectors/selector.h"
+#include "refinement_selectors/optimum_selector.h"
 #include "matrix.h"
 
 namespace Hermes
@@ -189,10 +189,6 @@ namespace Hermes
         idx[i] = new int[num];
 
       Element* e;
-      for (int i = 0; i < this->num; i++)
-        for_all_active_elements(e, this->spaces[i]->get_mesh())
-          this->spaces[i]->edata[e->id].changed_in_last_adaptation = false;
-
       for(int j = 0; j < max_id; j++)
         for(int l = 0; l < this->num; l++)
           idx[j][l] = -1; // element not refined
@@ -297,15 +293,20 @@ namespace Hermes
         global_refinement_selectors[i] = new RefinementSelectors::Selector<Scalar>*[refinement_selectors.size()];
         for (unsigned int j = 0; j < refinement_selectors.size(); j++)
         {
-          global_refinement_selectors[i][j] = refinement_selectors[j]->clone();
-          if(dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j]) != NULL)
+          if(i == 0)
+            global_refinement_selectors[i][j] = refinement_selectors[j];
+          else
           {
-            dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j])->cached_shape_vals_valid = dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(refinement_selectors[j])->cached_shape_vals_valid;
-            dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j])->cached_shape_ortho_vals = dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(refinement_selectors[j])->cached_shape_ortho_vals;
-            dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j])->cached_shape_vals = dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(refinement_selectors[j])->cached_shape_vals;
+            global_refinement_selectors[i][j] = refinement_selectors[j]->clone();
+            if(dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j]) != NULL)
+            {
+              dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j])->cached_shape_vals_valid = dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(refinement_selectors[j])->cached_shape_vals_valid;
+              dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j])->cached_shape_ortho_vals = dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(refinement_selectors[j])->cached_shape_ortho_vals;
+              dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(global_refinement_selectors[i][j])->cached_shape_vals = dynamic_cast<RefinementSelectors::ProjBasedSelector<Scalar>*>(refinement_selectors[j])->cached_shape_vals;
+            }
+            if(dynamic_cast<RefinementSelectors::OptimumSelector<Scalar>*>(global_refinement_selectors[i][j]) != NULL)
+              dynamic_cast<RefinementSelectors::OptimumSelector<Scalar>*>(global_refinement_selectors[i][j])->num_shapes = dynamic_cast<RefinementSelectors::OptimumSelector<Scalar>*>(refinement_selectors[j])->num_shapes;
           }
-          if(dynamic_cast<RefinementSelectors::OptimumSelector<Scalar>*>(global_refinement_selectors[i][j]) != NULL)
-            dynamic_cast<RefinementSelectors::OptimumSelector<Scalar>*>(global_refinement_selectors[i][j])->num_shapes = dynamic_cast<RefinementSelectors::OptimumSelector<Scalar>*>(refinement_selectors[j])->num_shapes;
         }
       }
 
@@ -322,6 +323,14 @@ namespace Hermes
         }
       }
 
+      this->tick();
+      this->info("Adaptivity: data preparation duration: %f s.", this->last());
+
+      // For statistics.
+      Hermes::vector<int> numberOfCandidates;
+
+
+      // The loop
       RefinementSelectors::Selector<Scalar>** current_refinement_selectors;
       Solution<Scalar>** current_rslns;
       int id_to_refine;
@@ -342,6 +351,8 @@ namespace Hermes
 
             // rsln[comp] may be unset if refinement_selectors[comp] == HOnlySelector or POnlySelector
             bool refined = current_refinement_selectors[components[id_to_refine]]->select_refinement(meshes[components[id_to_refine]]->get_element(ids[id_to_refine]), current_orders[id_to_refine], current_rslns[components[id_to_refine]], elem_ref);
+            if(dynamic_cast<Hermes::Hermes2D::RefinementSelectors::OptimumSelector<Scalar>*>(current_refinement_selectors[components[id_to_refine]]) != NULL)
+              numberOfCandidates.push_back(dynamic_cast<Hermes::Hermes2D::RefinementSelectors::OptimumSelector<Scalar>*>(current_refinement_selectors[components[id_to_refine]])->get_candidates().size());
 
             //add to a list of elements that are going to be refined
   #pragma omp critical (elem_inx_to_proc)
@@ -363,10 +374,21 @@ namespace Hermes
         }
       }
 
+      int averageNumberOfCandidates = 0;
+      for(int i = 0; i < numberOfCandidates.size(); i++)
+        averageNumberOfCandidates += numberOfCandidates[i];
+      averageNumberOfCandidates = averageNumberOfCandidates / numberOfCandidates.size();
+
+      this->info("Adaptivity: total number of refined Elements: %i.", ids.size());
+      this->info("Adaptivity: average number of candidates per refined Element: %i.", averageNumberOfCandidates);
+
+      this->tick();
+      this->info("Adaptivity: refinement selection duration: %f s.", this->last());
+
       if(this->caughtException == NULL)
         fix_shared_mesh_refinements(meshes, elem_inx_to_proc, idx, global_refinement_selectors);
 
-      for(unsigned int i = 0; i < Hermes::Hermes2D::Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 1; i < Hermes::Hermes2D::Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned int j = 0; j < refinement_selectors.size(); j++)
           delete global_refinement_selectors[i][j];
@@ -431,6 +453,15 @@ namespace Hermes
       for(unsigned int i = 0; i < this->spaces.size(); i++)
         this->spaces[i]->assign_dofs();
 
+      for (int i = 0; i < this->num; i++)
+      {
+        for_all_active_elements(e, this->spaces[i]->get_mesh())
+          this->spaces[i]->edata[e->id].changed_in_last_adaptation = false;
+        for(id_to_refine = 0; id_to_refine < ids.size(); id_to_refine++)
+          this->spaces[i]->edata[ids[id_to_refine]].changed_in_last_adaptation = false;
+      }
+
+      std::cout << std::endl;
       return false;
     }
 
@@ -561,9 +592,13 @@ namespace Hermes
     double Adapt<Scalar>::calc_err_est(Solution<Scalar>*sln, Solution<Scalar>*rsln, bool solutions_for_adapt,
       unsigned int error_flags)
     {
+      this->tick();
       if(num != 1)
         throw Exceptions::LengthException(1, 1, num);
-      return calc_err_internal(sln, rsln, NULL, solutions_for_adapt, error_flags);
+      double result = calc_err_internal(sln, rsln, NULL, solutions_for_adapt, error_flags);
+      this->tick();
+      this->info("Adaptivity: error estimate calculation duration: %f s.", this->last());
+      return result;
     }
 
     template<typename Scalar>
@@ -571,20 +606,37 @@ namespace Hermes
       Hermes::vector<double>* component_errors, bool solutions_for_adapt,
       unsigned int error_flags)
     {
+      this->tick();
       if(slns.size() != num)
         throw Exceptions::LengthException(1, slns.size(), num);
       if(rslns.size() != num)
         throw Exceptions::LengthException(2, rslns.size(), num);
-      return calc_err_internal(slns, rslns, component_errors, solutions_for_adapt, error_flags);
+      double result = calc_err_internal(slns, rslns, component_errors, solutions_for_adapt, error_flags);
+      this->tick();
+      this->info("Adaptivity: error estimate calculation duration: %f s.", this->last());
+      return result;
     }
 
     template<typename Scalar>
     double Adapt<Scalar>::calc_err_exact(Solution<Scalar>*sln, Solution<Scalar>*rsln, bool solutions_for_adapt,
       unsigned int error_flags)
     {
+      this->tick();
       if(num != 1)
         throw Exceptions::LengthException(1, 1, num);
-      return calc_err_internal(sln, rsln, NULL, solutions_for_adapt, error_flags);
+      OGProjection<Scalar> ogProjection;
+      typename Mesh::ReferenceMeshCreator ref_mesh_creator(this->spaces[0]->get_mesh());
+      Mesh* ref_mesh = ref_mesh_creator.create_ref_mesh();
+      typename Space<Scalar>::ReferenceSpaceCreator ref_space_creator(this->spaces[0], ref_mesh, 0);
+      Space<Scalar>* ref_space = ref_space_creator.create_ref_space();
+      Solution<Scalar> ref_sln_local;
+      ogProjection.project_global(ref_space, rsln, &ref_sln_local);
+      double result = calc_err_internal(sln, &ref_sln_local, NULL, solutions_for_adapt, error_flags);
+      delete ref_space;
+      delete ref_mesh;
+      this->tick();
+      this->info("Adaptivity: exact error calculation duration: %f s.", this->last());
+      return result;
     }
 
     template<typename Scalar>
@@ -592,11 +644,35 @@ namespace Hermes
       Hermes::vector<double>* component_errors, bool solutions_for_adapt,
       unsigned int error_flags)
     {
+      this->tick();
       if(slns.size() != num)
         throw Exceptions::LengthException(1, slns.size(), num);
       if(rslns.size() != num)
         throw Exceptions::LengthException(2, rslns.size(), num);
-      return calc_err_internal(slns, rslns, component_errors, solutions_for_adapt, error_flags);
+      Mesh** ref_meshes = new Mesh*[num];
+      Space<Scalar>** ref_spaces = new Space<Scalar>*[num];
+      Hermes::vector<Solution<Scalar>*> ref_slns_local;
+      for(unsigned int i = 0; i < num; i++)
+      {
+        OGProjection<Scalar> ogProjection;
+        typename Mesh::ReferenceMeshCreator ref_mesh_creator(this->spaces[i]->get_mesh());
+        ref_meshes[i] = ref_mesh_creator.create_ref_mesh();
+        typename Space<Scalar>::ReferenceSpaceCreator ref_space_creator(this->spaces[i], ref_mesh_creator.create_ref_mesh(), 0);
+        ref_spaces[i] = ref_space_creator.create_ref_space();
+        ref_slns_local.push_back(new Solution<Scalar>);
+        ogProjection.project_global(ref_space_creator.create_ref_space(), rslns[i], ref_slns_local.back());
+      }
+      double result = calc_err_internal(slns, ref_slns_local, component_errors, solutions_for_adapt, error_flags);
+      for(unsigned int i = 0; i < num; i++)
+      {
+        delete ref_spaces[i];
+        delete ref_meshes[i];
+      }
+      delete [] ref_meshes;
+      delete [] ref_spaces;
+      this->tick();
+      this->info("Adaptivity: exact error calculation duration: %f s.", this->last());
+      return result;
     }
 
     template<typename Scalar>

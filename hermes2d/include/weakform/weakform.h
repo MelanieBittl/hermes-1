@@ -45,6 +45,7 @@ namespace Hermes
     template<typename T> class Geom;
 
     template<typename Scalar> class Form;
+    template<typename Scalar> class OGProjection;
     template<typename Scalar> class MatrixFormVol;
     template<typename Scalar> class VectorFormVol;
     template<typename Scalar> class MatrixFormSurf;
@@ -112,6 +113,8 @@ namespace Hermes
       virtual double get_current_time() const;
       virtual double get_current_time_step() const;
 
+      Hermes::vector<Form<Scalar> *> get_forms() const;
+
       Hermes::vector<MatrixFormVol<Scalar> *> get_mfvol() const;
       Hermes::vector<MatrixFormSurf<Scalar> *> get_mfsurf() const;
       Hermes::vector<MatrixFormDG<Scalar> *> get_mfDG() const;
@@ -145,6 +148,9 @@ namespace Hermes
 
       bool is_matfree;
 
+      /// Holds all forms.
+      Hermes::vector<Form<Scalar> *> forms;
+
       /// Holds volumetric matrix forms.
       Hermes::vector<MatrixFormVol<Scalar> *> mfvol;
 
@@ -168,6 +174,7 @@ namespace Hermes
       friend class DiscreteProblem<Scalar>;
       friend class DiscreteProblemLinear<Scalar>;
       friend class RungeKutta<Scalar>;
+      friend class OGProjection<Scalar>;
       friend class Hermes::Preconditioners::Precond<Scalar>;
 
       bool warned_nonOverride;
@@ -190,6 +197,13 @@ namespace Hermes
       void set_areas(Hermes::vector<std::string> areas);
       Hermes::vector<std::string> getAreas() const;
 
+      /// external functions - dual functionality with the overall WeakForm.
+      /// For Agros, this approach is better in some way, for e.g. Euler equations,
+      /// the other one (for the whole WeakForm) is faster.
+      void set_ext(MeshFunction<Scalar>* ext);
+      void set_ext(Hermes::vector<MeshFunction<Scalar>*> ext);
+      Hermes::vector<MeshFunction<Scalar>*> get_ext() const;
+      
     protected:
       /// Set pointer to a WeakForm.
       inline void set_weakform(WeakForm<Scalar>* wf) { this->wf = wf; }
@@ -203,6 +217,9 @@ namespace Hermes
       /// external coefficient vector.
       int u_ext_offset;
       
+      /// External solutions.
+      Hermes::vector<MeshFunction<Scalar>*> ext;
+
       /// For time-dependent right-hand side functions.
       /// E.g. for Runge-Kutta methods. Otherwise the one time for the whole WeakForm can be used.
       void set_current_stage_time(double time);
