@@ -18,6 +18,12 @@ public:
 		}
 		WeakForm<double>::delete_all();
 	}
+	
+		WeakForm<double>* clone() const
+    {
+      const_cast<ConvectionOperator_x*>(this)->warned_nonOverride = false;
+      return new ConvectionOperator_x(*this);
+    }
 protected:
  class Convection_1 : public MatrixFormVol<double>
   {
@@ -26,7 +32,7 @@ protected:
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const 
+      Geom<Real> *e, Func<Scalar>  **ext) const 
     {
 	  Scalar result = Scalar(0);
 	  for (int i = 0; i < n; i++)
@@ -37,18 +43,18 @@ protected:
     }
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const 
+      Geom<double> *e, Func<double>  **ext) const 
     {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const 
+      Func<Ord>  **ext) const 
     {
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     }
 
-    MatrixFormVol<double>* clone() { return new  Convection_1(this->i); }
+    MatrixFormVol<double>* clone() const { return new  Convection_1(this->i); }
   };
 
 };
@@ -70,6 +76,13 @@ public:
 		}
 		WeakForm<double>::delete_all();
 	}
+	
+	WeakForm<double>* clone() const
+    {
+      const_cast<ConvectionOperator_y*>(this)->warned_nonOverride = false;
+      return new ConvectionOperator_y(*this);
+    }
+	
 protected:
  class Convection_2 : public MatrixFormVol<double>
   {
@@ -78,7 +91,7 @@ protected:
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const 
+      Geom<Real> *e, Func<Scalar>  **ext) const 
     {
 	  Scalar result = Scalar(0);
 	  for (int i = 0; i < n; i++)
@@ -89,18 +102,18 @@ protected:
     }
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const 
+      Geom<double> *e, Func<double>  **ext) const 
     {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const 
+      Func<Ord>  **ext) const 
     {
         return Ord(20);
     }
 
-    MatrixFormVol<double>* clone() { return new  Convection_2(this->i); }
+    MatrixFormVol<double>* clone() const { return new  Convection_2(this->i); }
 
   };
 

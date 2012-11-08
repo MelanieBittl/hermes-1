@@ -21,7 +21,7 @@ public:
   virtual double value (double x, double y) const;
 
  virtual Ord ord(Ord x, Ord y) const ;
-  virtual MeshFunction<double>* clone();
+  virtual MeshFunction<double>* clone() const;
 };
 
 class CustomInitialCondition_e : public ExactSolutionScalar<double>
@@ -35,7 +35,7 @@ public:
   virtual double value (double x, double y) const;
 
  virtual Ord ord(Ord x, Ord y) const ;
-  virtual MeshFunction<double>* clone();
+  virtual MeshFunction<double>* clone() const;
 	double kappa;
 };
 

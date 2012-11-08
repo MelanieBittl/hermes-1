@@ -27,7 +27,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 3; 										//Maximal polynomial degree.
 
@@ -78,7 +78,7 @@ const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
 
 
 //Visualization
-const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const int VTK_FREQ = 1000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 

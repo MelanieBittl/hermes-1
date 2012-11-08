@@ -35,7 +35,7 @@
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
-MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone()
+MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
 {
   return new CustomMatrixFormVolMassmatrix(*this);
 }
@@ -57,7 +57,7 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone()
     Ord VectorFormVolMass::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
-   VectorFormVol<double>* VectorFormVolMass::clone(){
+   VectorFormVol<double>* VectorFormVolMass::clone() const{
  			 return new VectorFormVolMass(*this);
 
 		}
@@ -99,7 +99,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
-   MatrixFormVol<double>* CustomMatrixFormVolConvection::clone()
+   MatrixFormVol<double>* CustomMatrixFormVolConvection::clone() const
 {
   return new CustomMatrixFormVolConvection(*this);
 }
@@ -123,7 +123,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
 
-   VectorFormVol<double>* VectorFormVolConvection::clone(){
+   VectorFormVol<double>* VectorFormVolConvection::clone() const{
  			 return new VectorFormVolConvection(*this);
 
 		}
@@ -164,7 +164,7 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
-   MatrixFormVol<double>* GradientReconstructionMatForm_1::clone()
+   MatrixFormVol<double>* GradientReconstructionMatForm_1::clone() const
 {
   return new GradientReconstructionMatForm_1(*this);
 }
@@ -186,7 +186,7 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
     Ord GradientReconstructionVectorForm_1::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
-   VectorFormVol<double>* GradientReconstructionVectorForm_1::clone(){
+   VectorFormVol<double>* GradientReconstructionVectorForm_1::clone() const{
  			 return new GradientReconstructionVectorForm_1(*this);
 
 		}
@@ -225,7 +225,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     };
 
-   MatrixFormVol<double>* GradientReconstructionMatForm_2::clone()
+   MatrixFormVol<double>* GradientReconstructionMatForm_2::clone() const
 {
   return new GradientReconstructionMatForm_2(*this);
 }
@@ -248,7 +248,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
       return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
     };
 
-   VectorFormVol<double>* GradientReconstructionVectorForm_2::clone(){
+   VectorFormVol<double>* GradientReconstructionVectorForm_2::clone() const{
  			 return new GradientReconstructionVectorForm_2(*this);
 
 		}
@@ -316,7 +316,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
       return Ord(10);
 };
 
- MeshFunction<double>* CustomInitialCondition::clone()
+ MeshFunction<double>* CustomInitialCondition::clone() const
     {
 return new CustomInitialCondition(this->mesh);
 

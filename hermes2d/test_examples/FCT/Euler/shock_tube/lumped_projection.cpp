@@ -104,9 +104,10 @@ void Lumped_Projection::project_lumped( const  Space<double>* space, MeshFunctio
 
       // Define temporary projection weak form.
       WeakForm<double>* proj_wf = new WeakForm<double>(1);
+      proj_wf->set_ext(source_meshfn);
 
 			ProjectionLumpedMatrixFormVol* matrix_form =	new ProjectionLumpedMatrixFormVol(0, 0);
-			ProjectionLumpedVectorFormVol* vector_form = new ProjectionLumpedVectorFormVol(0, source_meshfn);
+			ProjectionLumpedVectorFormVol* vector_form = new ProjectionLumpedVectorFormVol(0);
       // Add Jacobian.
       proj_wf->add_matrix_form(matrix_form);
       // Add Residual.

@@ -21,41 +21,21 @@ using namespace Hermes::Hermes2D;
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;
+      Geom<Real> *e, Func<Scalar>  **ext) const ;
 
     virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const ;
+      Geom<double> *e, Func<double>  **ext) const ;
 
    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const ;
+      Func<Ord>  **ext) const ;
 
-    MatrixFormVol<double>* clone();
+    MatrixFormVol<double>* clone() const;
     // Member.
     int component_i;
   };
 
 
-  class EulerEquationsLinearFormTime : public VectorFormVol<double>
-  {
-  public:
-    EulerEquationsLinearFormTime(int i) 
-      : VectorFormVol<double>(i), component_i(i) {}
 
-    template<typename Real, typename Scalar>
-    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;
-
-    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const ;
-
-
-    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, 
-      Geom<Ord> *e, ExtData<Ord> *ext) const ;
-
-    VectorFormVol<double>* clone() ;
-    // Member.
-    int component_i;
-  };
 
 //----------------Bilinearform for K
 
@@ -66,17 +46,17 @@ using namespace Hermes::Hermes2D;
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    MatrixFormVol<double>* clone();
+    MatrixFormVol<double>* clone() const;
 		int j;
 	};
 
@@ -88,17 +68,17 @@ using namespace Hermes::Hermes2D;
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;
+      Geom<Real> *e, Func<Scalar>  **ext) const ;
 
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const ;
+      Geom<double> *e, Func<double>  **ext) const ;
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const ;
+      Func<Ord>  **ext) const ;
 
-   MatrixFormVol<double>* clone();
+   MatrixFormVol<double>* clone() const;
 
     double kappa;
 		int j;
@@ -112,16 +92,16 @@ using namespace Hermes::Hermes2D;
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u,Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;
+      Geom<Real> *e, Func<Scalar>  **ext) const ;
    
 
     double value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    MatrixFormVol<double>* clone();
+    MatrixFormVol<double>* clone() const;
 
     double kappa;
 		int j;
@@ -136,16 +116,16 @@ using namespace Hermes::Hermes2D;
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[],Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;
+      Geom<Real> *e, Func<Scalar>  **ext) const ;
 
 
     double value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const ;
+      Geom<double> *e, Func<double>  **ext) const ;
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[],Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const;
+      Func<Ord>  **ext) const;
 
-   MatrixFormVol<double>* clone();
+   MatrixFormVol<double>* clone() const;
 
     double kappa;
 		int j;
@@ -159,10 +139,9 @@ using namespace Hermes::Hermes2D;
 class EulerEquationsWeakForm_Mass : public WeakForm<double>
 {
 public:
-  EulerEquationsWeakForm_Mass(double time_step, Solution<double>* prev_density, Solution<double>* prev_density_vel_x, 
-    Solution<double>* prev_density_vel_y, Solution<double>* prev_energy, int num_of_equations = 4);
+  EulerEquationsWeakForm_Mass(double time_step, int num_of_equations = 4);
 	~EulerEquationsWeakForm_Mass();
-
+    WeakForm<double>* clone() const;
 };
 
 class EulerEquationsWeakForm_K : public WeakForm<double>
@@ -171,6 +150,7 @@ public:
   EulerEquationsWeakForm_K(double kappa,double time_step, Solution<double>* prev_density, Solution<double>* prev_density_vel_x, 
     Solution<double>* prev_density_vel_y, Solution<double>* prev_energy, int num_of_equations = 4);
 	~EulerEquationsWeakForm_K();
+    WeakForm<double>* clone() const;
 
   // Members.
   EulerFluxes* euler_fluxes;

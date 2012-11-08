@@ -16,17 +16,17 @@
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    MatrixFormSurf<double>* clone();
+    MatrixFormSurf<double>* clone() const;
 
 		double kappa;
 	int j;
@@ -39,17 +39,17 @@
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    MatrixFormSurf<double>* clone();
+    MatrixFormSurf<double>* clone() const;
 
 		double kappa;
 		int j;
@@ -62,17 +62,17 @@
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    MatrixFormSurf<double>* clone();
+    MatrixFormSurf<double>* clone() const;
 
 		double kappa;
 		int j;
@@ -84,17 +84,17 @@
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    MatrixFormSurf<double>* clone();
+    MatrixFormSurf<double>* clone() const;
 
 		double kappa;
 		int j;
@@ -108,17 +108,17 @@
 
     template<typename Real, typename Scalar>
     Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    VectorFormSurf<double>* clone();
+    VectorFormSurf<double>* clone() const;
 
 		double kappa;
 	};
@@ -130,17 +130,17 @@
 
     template<typename Real, typename Scalar>
     Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    VectorFormSurf<double>* clone();
+    VectorFormSurf<double>* clone() const;
 
 		double kappa;
 	};
@@ -151,17 +151,17 @@
 
     template<typename Real, typename Scalar>
     Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    VectorFormSurf<double>* clone();
+    VectorFormSurf<double>* clone() const;
 
 		double kappa;
 	};
@@ -173,17 +173,17 @@
 
     template<typename Real, typename Scalar>
     Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, ExtData<Scalar> *ext) const ;    
+      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, ExtData<double> *ext) const; 
+      Geom<double> *e, Func<double>  **ext) const; 
 
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      ExtData<Ord> *ext) const; 
+      Func<Ord>  **ext) const; 
 
-    VectorFormSurf<double>* clone();
+    VectorFormSurf<double>* clone() const;
 
 		double kappa;
 	};
@@ -200,6 +200,9 @@ Solution<double>* prev_density, Solution<double>* prev_density_vel_x,  Solution<
 bool mirror_condition= true , int num_of_equations = 4);
 
 	~EulerBoundary();
+
+    WeakForm<double>* clone() const;
+
 
   // Members.
   EulerFluxes* euler_fluxes;

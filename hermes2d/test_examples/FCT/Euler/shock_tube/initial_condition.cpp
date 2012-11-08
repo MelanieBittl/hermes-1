@@ -17,7 +17,7 @@
       return Ord(2);
 };
 
- MeshFunction<double>* CustomInitialCondition_rho::clone() {     
+ MeshFunction<double>* CustomInitialCondition_rho::clone() const {     
 			return new CustomInitialCondition_rho(this->mesh);
  };
 
@@ -35,7 +35,7 @@
       return Ord(2);
 };
 
- MeshFunction<double>* CustomInitialCondition_e::clone()
+ MeshFunction<double>* CustomInitialCondition_e::clone() const
     {
 return new CustomInitialCondition_e(this->mesh,kappa);
 
