@@ -188,7 +188,8 @@ for(int k=0;k<4;k++)
 
 
 //artificial Diffusion
-UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,H1Space<double>* space_rho,H1Space<double>* space_rho_v_x, H1Space<double>* space_rho_v_y,H1Space<double>* space_e,int dof_rho, int dof_vel_x, int dof_vel_y, int dof_energy,UMFPackMatrix<double>* matrix_K){
+UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,H1Space<double>* space_rho,H1Space<double>* space_rho_v_x, H1Space<double>* space_rho_v_y,H1Space<double>* space_e, int dof_rho, int dof_vel_x, int dof_vel_y, int dof_energy, UMFPackMatrix<double>* matrix_K)
+{
 
  	ConvectionOperator_x conv_1;
 	ConvectionOperator_y conv_2;
@@ -199,35 +200,34 @@ UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,H1Space<do
   DiscreteProblem<double> dp_1(&conv_1, Hermes::vector<const Space<double>*>(space_rho, space_rho_v_x, space_rho_v_y, space_e));
   DiscreteProblem<double> dp_2(&conv_2, Hermes::vector<const Space<double>*>(space_rho, space_rho_v_x, space_rho_v_y, space_e));
   dp_1.assemble(c_matrix_1,NULL,true);
-	dp_2.assemble(c_matrix_2);
+  dp_2.assemble(c_matrix_2);
+
+	int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(space_rho, space_rho_v_x, space_rho_v_y, space_e));
+
+	double* coeff_rho = new double[dof_rho];
+	double* coeff_vel_x = new double[dof_rho];
+	double* coeff_vel_y = new double[dof_rho];
+	double* coeff_energy = new double[dof_rho];
 
 
-		int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(space_rho, space_rho_v_x, space_rho_v_y, space_e));
-
-		double* coeff_rho = new double[dof_rho];
-		double* coeff_vel_x = new double[dof_rho];
-		double* coeff_vel_y = new double[dof_rho];
-		double* coeff_energy = new double[dof_rho];
-
-
-for(int i =0;i<dof_rho; i++){
-		coeff_rho[i]=coeff[i];
-}
-	int k = 0;
-for(int i = dof_rho; i<(dof_rho+dof_vel_x);i++){
-		coeff_vel_x[k] =coeff[i];
-		k++;
-}
-k = 0;
-for(int i = (dof_rho+dof_vel_x); i<(dof_rho+dof_vel_x+dof_vel_y);i++){
-		coeff_vel_y[k] =coeff[i];
-		k++;
-}
-k = 0;
-for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
-		coeff_energy[k] =coeff[i];
-		k++;
-}
+	for(int i =0;i<dof_rho; i++){
+			coeff_rho[i]=coeff[i];
+	}
+		int k = 0;
+	for(int i = dof_rho; i<(dof_rho+dof_vel_x);i++){
+			coeff_vel_x[k] =coeff[i];
+			k++;
+	}
+	k = 0;
+	for(int i = (dof_rho+dof_vel_x); i<(dof_rho+dof_vel_x+dof_vel_y);i++){
+			coeff_vel_y[k] =coeff[i];
+			k++;
+	}
+	k = 0;
+	for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
+			coeff_energy[k] =coeff[i];
+			k++;
+	}
 
 
 	 int size = c_matrix_1->get_size();

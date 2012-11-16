@@ -22,7 +22,7 @@ int i;
 
 //Mass lumping an den Stellen von fct, sonst standard Massmatrix
 template<typename Scalar>
-UMFPackMatrix<Scalar>* massLumping(bool* fct, UMFPackMatrix<Scalar>* mass_matrix)
+UMFPackMatrix<Scalar>* massLumping(UMFPackMatrix<Scalar>* mass_matrix,bool* fct)
 {  //al=NULL=>lumped=mass
 	 UMFPackMatrix<Scalar>* lumped_matrix = new UMFPackMatrix<Scalar>;   //M_L
 	int size = mass_matrix->get_size();
@@ -55,7 +55,7 @@ UMFPackMatrix<Scalar>* massLumping(bool* fct, UMFPackMatrix<Scalar>* mass_matrix
 
 
 template<typename Scalar>
-void p1_list(Space<Scalar>* space, bool* fct, AsmList<Scalar>* al)
+void p1_list(Space<Scalar>* space, bool* fct, AsmList<Scalar>* al,int dof_rho, int dof_v_x, int dof_v_y,int dof_e)
 {
 	Element* e =NULL;
 Element* elem_neigh=NULL;
@@ -67,25 +67,26 @@ Element* elem_neigh=NULL;
 		if((space->get_element_order(e->id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(e->id)==1)){
 				elem_diag=e->get_diameter();
 				elem_id= e->id;
-				//if(elem_diag>h_start){	p2_neighbor =true;
-				//}else{
-					for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
-					 	elem_neigh = e->get_neighbor(iv);
-						if(elem_neigh!=NULL){ 
-							 id = elem_neigh->id;	
-							if((space->get_element_order(id)== H2D_MAKE_QUAD_ORDER(2, 2))||(space->get_element_order(id)==2)){
-								p2_neighbor =true; 
-								break;
-							}else if(elem_diag != elem_neigh->get_diameter()){//Nachbar ist kleiner=> haengender Knoten, kein FCT ueber haengendne Knoten 
-								p2_neighbor =true; 
-								break;
-							}
-						}
-						if(e->vn[iv]->is_constrained_vertex() ==true)	{	p2_neighbor =true; 
-										break;
+				for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
+				 	elem_neigh = e->get_neighbor(iv);
+					if(elem_neigh!=NULL)
+					{ 
+						 id = elem_neigh->id;	
+						if((space->get_element_order(id)== H2D_MAKE_QUAD_ORDER(2, 2))||(space->get_element_order(id)==2)){
+							p2_neighbor =true; 
+							break;
+						}else if(elem_diag != elem_neigh->get_diameter()){//Nachbar ist kleiner=> haengender Knoten, kein FCT ueber haengendne Knoten 
+							p2_neighbor =true; 
+							break;
 						}
 					}
-				//}
+					if(e->vn[iv]->is_constrained_vertex() ==true)	
+					{			
+							p2_neighbor =true; 
+							break;
+					}
+				}
+
 				if(p2_neighbor==false){
 							space->get_element_assembly_list(e, al);
 						for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
@@ -95,8 +96,12 @@ Element* elem_neigh=NULL;
 								if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
 									for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
 											if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
+													if(al->get_dof()[j]>dof_rho) error("p1_List!\n");
 													if(fct[al->get_dof()[j]]==false){
 																		fct[al->get_dof()[j]]=true;
+																		fct[al->get_dof()[j]+dof_rho]=true;
+																		fct[al->get_dof()[j]+dof_rho+dof_v_x]=true;
+																		fct[al->get_dof()[j]+dof_rho+dof_v_x+dof_v_y]=true;
 													}
 											}
 									}

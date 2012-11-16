@@ -16,7 +16,7 @@ using namespace Hermes::Hermes2D::Views;
 
 const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const double time_step = 1e-3;
+const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 0.5;
@@ -40,9 +40,11 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 
      
-
-// Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 10;
+//Visualization
+const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool HERMES_VISUALIZATION_LOW = false;           // Set to "false" to suppress Hermes OpenGL visualization for low_order.
+const bool VTK_VISUALIZATION = true;              // Set to "true" to enable VTK output.
+const int VTK_FREQ = 500;													//Every VTK_FREQth time step the solution is saved as VTK output. 
 
 int main(int argc, char* argv[])
 {
@@ -120,10 +122,12 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
       s2.set_min_max_range(0., 1.);
       s3.set_min_max_range(0., 1.);
 			pressure_view.set_min_max_range(0.,1.);
-		/*	s1.show(&prev_rho);
+  if(HERMES_VISUALIZATION){  
+			s1.show(&prev_rho);
 			s2.show(&vel_x);
 			s3.show(&vel_y);
-  		pressure_view.show(&pressure);*/
+			pressure_view.show(&pressure);
+	}
 	PressureFilter pressure_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), KAPPA);
 	VelocityFilter vel_x_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), 1);
 	VelocityFilter vel_y_low(Hermes::vector<MeshFunction<double>*>(&low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e), 2);
@@ -137,16 +141,9 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
       s4_n.set_min_max_range(0., 1.);
       
       
-			Linearizer lin_p;
-			Linearizer lin_v_x;
-			Linearizer lin_v_y;
-			Linearizer lin_rho;
+       Linearizer lin_p, lin_v_x, lin_v_y, lin_rho; 	Orderizer ord_p;	
 
-		//	lin_p.save_solution_vtk(&pressure, "pressure-0.vtk", "pressure", true);
-		//	lin_v_x.save_solution_vtk(&vel_x, "v_x-0.vtk", "velocity_x", true);
-			//lin_v_y.save_solution_vtk(&vel_y, "v_y-0.vtk", "velocity_y",true);
-		//	lin_rho.save_solution_vtk(&prev_rho, "rho-0.vtk", "density", true);
-      
+     
       
 //------------
 
@@ -177,16 +174,13 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 	UMFPackMatrix<double> * matrix_dS = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * matrix_dS_low = new UMFPackMatrix<double> ; 
 
-
-
-			double* coeff_vec = new double[ndof];
-			double* coeff_vec_2 = new double[ndof];
-			UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ndof);
-				double* u_L = NULL; 
-			double* P_plus = new double[ndof]; double* P_minus = new double[ndof];
-			double* Q_plus = new double[ndof]; double* Q_minus = new double[ndof];	
-			double* Q_plus_old = new double[ndof]; double* Q_minus_old = new double[ndof];	
-			double* R_plus = new double[ndof]; double* R_minus = new double[ndof];	
+	double* coeff_vec = new double[ndof];
+	double* coeff_vec_2 = new double[ndof];
+	UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ndof);
+	double* u_L = NULL; 
+	double* P_plus = new double[ndof]; double* P_minus = new double[ndof];
+	double* Q_plus = new double[ndof]; double* Q_minus = new double[ndof];
+	double* R_plus = new double[ndof]; double* R_minus = new double[ndof];	
 
 
 
@@ -198,29 +192,26 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 //Projection of the initial condition
 			Lumped_Projection::project_lumped(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec, matrix_solver);
 
-			OGProjection<double>::project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec_2, matrix_solver, HERMES_L2_NORM);
-
-			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
-
-/*			Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&low_rho,&low_rho_v_x,&low_rho_v_y,&low_rho_e));	
-
+	if(HERMES_VISUALIZATION_LOW)
+		{
+			Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&low_rho,&low_rho_v_x,&low_rho_v_y,&low_rho_e));	
 			s1_n.show(&low_rho);
 			s2_n.show(&vel_x_low);
 			s3_n.show(&vel_y_low);
 			s4_n.show(&pressure_low);
+		}
 
-		/*Solution<double>::vector_to_solutions(coeff_vec_2, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&high_rho,&high_rho_v_x,&high_rho_v_y,&high_rho_e));	
-			s1_n.show(&high_rho);
-			s2_n.show(&high_rho_v_x);
-			s3_n.show(&high_rho_v_y);
-			s4_n.show(&high_rho_e);*/
 
-	//View::wait(HERMES_WAIT_KEYPRESS);
+			OGProjection<double>::project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec_2, matrix_solver, HERMES_L2_NORM);
+
+			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus);
+
+
 
 // Time stepping loop:
 	double current_time = 0.0; 
 	int ts = 1;
-	char title[100];
+	char title[100];char filename[40];
 
 
 
@@ -278,12 +269,12 @@ do
 
 
 
-		/*	s1_n.show(&low_rho);
-			s2_n.show(&vel_x_low);
-			s3_n.show(&vel_y_low);
-			s4_n.show(&pressure_low);	
-	
-	View::wait(HERMES_WAIT_KEYPRESS);	*/
+		if(HERMES_VISUALIZATION_LOW){
+				s1_n.show(&low_rho);
+				s2_n.show(&vel_x_low);
+				s3_n.show(&vel_y_low);
+				s4_n.show(&pressure_low);
+			}
 
 
 	dp_boundary_low.assemble(matrix_dS_low);	
@@ -307,32 +298,26 @@ do
 //info("CPU_Time:  %g -------%g------- %g---------%g", time1,time2, time3, time4);
 
 			 // Visualize the solution.
-		/* sprintf(title, "pressure: ts=%i",ts);
-			 pressure_view.set_title(title);
-			s1.show(&prev_rho);
-			s2.show(&vel_x);
-			s3.show(&vel_y);
-  		pressure_view.show(&pressure);*/
-
-
-//	View::wait(HERMES_WAIT_KEYPRESS);
-
-
-
-  // Visualization.
-    if((ts - 1) % EVERY_NTH_STEP == 0) 
+			if(HERMES_VISUALIZATION){
+				sprintf(title, "pressure: ts=%i",ts);
+				pressure_view.set_title(title);
+				s1.show(&prev_rho);
+				s2.show(&vel_x);
+				s3.show(&vel_y);
+				pressure_view.show(&pressure);
+  		}
+  		
+  		      // Output solution in VTK format.
+    if((VTK_VISUALIZATION)&&(ts  % VTK_FREQ == 0)) 
     {
-      // Output solution in VTK format.
-
-        char filename[40];
-        sprintf(filename, "pressure-%i.vtk", ts );
-        lin_p.save_solution_vtk(&pressure, filename, "Pressure", true);
-        sprintf(filename, "rho-%i.vtk", ts - 1);
-			lin_rho.save_solution_vtk(&prev_rho, filename,  "density", true);
-			        sprintf(filename, "v_x-%i.vtk", ts );
-			lin_v_x.save_solution_vtk(&vel_x, filename,  "velocity", true);   
-
-      
+      sprintf(filename, "pressure-%i.vtk", ts);
+      lin_p.save_solution_vtk(&pressure, filename, "Pressure", true);  
+      sprintf(filename, "density-%i.vtk", ts);
+      lin_rho.save_solution_vtk(&prev_rho, filename, "density", true); 
+      sprintf(filename, "mesh-%i.vtk", ts); 
+     	ord_p.save_mesh_vtk(&space_rho, filename);  
+         sprintf(filename, "vel_x-%i.vtk", ts); 	
+     		lin_v_x.save_solution_vtk(&vel_x,filename, "velocity_x", true);
     }
 
 
@@ -355,10 +340,15 @@ do
 }
 while (current_time < T_FINAL);
 
-			lin_p.save_solution_vtk(&pressure, "pressure-231.vtk", "pressure", true);
-			lin_v_x.save_solution_vtk(&vel_x, "v_x-231.vtk", "velocity_x", true);
-			//lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);
-			lin_rho.save_solution_vtk(&prev_rho, "rho-231.vtk", "density", true);
+     if(VTK_VISUALIZATION)
+     {
+			lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
+			lin_v_x.save_solution_vtk(&vel_x, "vx_end.vtk", "velocity_x", true);
+			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);
+			lin_rho.save_solution_vtk(&prev_rho, "rho_end.vtk", "density", true);
+			     ord_p.save_mesh_vtk(&space_rho, "mesh_end.vtk");  
+		}
+
 
 
 		//Cleanup

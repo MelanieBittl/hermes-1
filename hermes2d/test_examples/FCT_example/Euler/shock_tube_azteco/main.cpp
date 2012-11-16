@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-3;
 const double T_FINAL = 0.231;                       // Time interval length. 
@@ -318,12 +318,12 @@ low_matrix->finish();
 //info("CPU_Time:  %g ", time4);
 
 			 // Visualize the solution.
-		 /* sprintf(title, "pressure: ts=%i",ts);
+		 sprintf(title, "pressure: ts=%i",ts);
 			 pressure_view.set_title(title);
 			s1.show(&prev_rho);
 			s2.show(&vel_x);
 			s3.show(&vel_y);
-  		pressure_view.show(&pressure);*/
+  		pressure_view.show(&pressure);
 
 
 	//View::wait(HERMES_WAIT_KEYPRESS);

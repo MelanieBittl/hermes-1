@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =7;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-6;
 const double T_FINAL = 0.038;                       // Time interval length. 
@@ -178,7 +178,7 @@ CustomInitialCondition_e boundary_e(&mesh,KAPPA);
 
 			OGProjection<double>::project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec_2, matrix_solver, HERMES_L2_NORM);
 
-			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
+			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus);
 
 /*			Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&low_rho,&low_rho_v_x,&low_rho_v_y,&low_rho_e));	
 
@@ -289,6 +289,8 @@ do
 		if(current_time+time_step >T_FINAL){
 				    sprintf(filename, "rho-%i.vtk", ts - 1);
 					lin_rho.save_solution_vtk(&prev_rho, filename,  "density", true);
+					sprintf(filename, "pressure-%i.vtk", ts - 1);
+        			lin_p.save_solution_vtk(&pressure, filename, "Pressure", true);
 		}
 
 
@@ -311,7 +313,7 @@ while (current_time < T_FINAL);
 
   
 			lin_rho.save_solution_vtk(&prev_rho, "rho_end.vtk", "density", true);
-						lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
+			lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
 			lin_v_x.save_solution_vtk(&vel_x, "vx_end.vtk", "velocity_x", true);   
 			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);    
 

@@ -202,13 +202,11 @@ do
 			dp_convection->set_spaces(ref_space);
 			dp_1->set_spaces(ref_space);
 			dp_2->set_spaces(ref_space);
-
 			info(" adap- step %d, timestep %d,ndof = %d ", ps, ts, ref_ndof); 
 
 
 			double* coeff_vec = new double[ref_ndof];
 			double* coeff_vec_2 = new double[ref_ndof];
-
 			double* P_plus = new double[ref_ndof]; double* P_minus = new double[ref_ndof];
 			double* Q_plus = new double[ref_ndof]; double* Q_minus = new double[ref_ndof];		
 			double* R_plus = new double[ref_ndof]; double* R_minus = new double[ref_ndof];

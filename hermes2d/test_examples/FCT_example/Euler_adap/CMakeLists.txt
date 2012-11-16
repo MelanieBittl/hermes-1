@@ -1,2 +1,4 @@
 add_subdirectory(shock_tube_adap)
-
+add_subdirectory(shock_tube_adap_ref)
+add_subdirectory(shock_tube_hp)
+add_subdirectory(shock_tube_azteco_hp)
