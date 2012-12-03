@@ -62,11 +62,11 @@ void calc_elem_error(Space<Scalar>* space, Solution<Scalar>* sln,Solution<Scalar
 					while((elem_error[e->id]> (tol_h+i*std_dev_h))&&(i<5)){
 					 													no_of_refinement_steps[e->id]++; i++;
 					}
-			}else	if((elem_error[e->id] <EPS)&&(elements_to_refine[e->id] >1)){ 
+			/*}else	if((elem_error[e->id] <EPS)&&(elements_to_refine[e->id] >1)){ 
 										elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]< (EPS/i*100))&&(i<2)){
 					 													no_of_refinement_steps[e->id]++; i++;
-					}
+					}*/
 			}else {
 				if(elements_to_refine[e->id] != 1)	elements_to_refine[e->id] = 0;
 			}
@@ -76,116 +76,118 @@ void calc_elem_error(Space<Scalar>* space, Solution<Scalar>* sln,Solution<Scalar
 			if((elements_to_refine[e->id] == 4)&&(old_steps<no_of_refinement_steps[e->id])&&(old_steps>0)) no_of_refinement_steps[e->id]= old_steps;
 			
 		}	
-
+		
+		
 	int max_id =space->get_mesh()->get_max_element_id();
-	bool* visited = new bool[max_id];
-	for(int i=0;i<max_id; i++) visited[i] =false;
-	int start_id,steps, e_1, e_2,id;
-	Element* elem_start_1, *elem_start_2;		
+		bool visited[max_id];
+		for(int i=0;i<max_id; i++) visited[i] =false;
+		int start_id,steps, e_1, e_2,id;
+		Element* elem_start_1, *elem_start_2;		
 
-	for_all_active_elements(e, space->get_mesh()) {
-	if((elements_to_refine[e->id]==1)&&(visited[e->id]==false)){ 
-			elem_start_1 = e; start_id = e->id; 
-			elem_start_2 = e;
-			steps = no_of_refinement_steps[elem_start_1->id];
+	//Refine all Elements in y-direction
+		for_all_active_elements(e, space->get_mesh()) 
+		{
+			if((elements_to_refine[e->id]==1)&&(visited[e->id]==false))
+			{ 
+					elem_start_1 = e; start_id = e->id; 
+					elem_start_2 = e;
+					steps = no_of_refinement_steps[elem_start_1->id];
 
-			if(elem_start_1->vn[0]->y == elem_start_1->vn[1]->y){ 
-						e_1 = 0;
-						if(elem_start_1->vn[2]->y == elem_start_1->vn[3]->y)
-							 e_2 =2;
-						else throw Hermes::Exceptions::Exception("calc_elem_error:falsche y-Koord");
-			}						
-			if(elem_start_1->vn[1]->y == elem_start_1->vn[2]->y){
-							 e_1 =1;
-							if(elem_start_1->vn[3]->y == elem_start_1->vn[0]->y)
-								 e_2 =3;
-							else throw Hermes::Exceptions::Exception("calc_elem_error:falsche y-Koord");						 
-			}
+					if(elem_start_1->vn[0]->y == elem_start_1->vn[1]->y){ 
+								e_1 = 0;
+								if(elem_start_1->vn[2]->y == elem_start_1->vn[3]->y)
+									 e_2 =2;
+								else Hermes::Exceptions::Exception("calc_elem_error:falsche y-Koord");
+					}else if(elem_start_1->vn[1]->y == elem_start_1->vn[2]->y){
+									 e_1 =1;
+									if(elem_start_1->vn[3]->y == elem_start_1->vn[0]->y)
+										 e_2 =3;
+									else Hermes::Exceptions::Exception("calc_elem_error:falsche y-Koord");						 
+					}else Hermes::Exceptions::Exception("calc_elem_error:keine zweit knoten selbe y-Koord.");
 			
-if( elem_start_1->get_neighbor(e_1)!=NULL) 
-		if(no_of_refinement_steps[elem_start_1->get_neighbor(e_1)->id]>steps){ 
-					steps = no_of_refinement_steps[elem_start_1->get_neighbor(e_1)->id];
-					no_of_refinement_steps[start_id]= steps;
+					if( elem_start_1->get_neighbor(e_1)!=NULL) 
+					if(no_of_refinement_steps[elem_start_1->get_neighbor(e_1)->id]>steps){ 
+								steps = no_of_refinement_steps[elem_start_1->get_neighbor(e_1)->id];
+								no_of_refinement_steps[start_id]= steps;
 					}
-if( elem_start_2->get_neighbor(e_2)!=NULL) 
-		if(no_of_refinement_steps[elem_start_2->get_neighbor(e_2)->id]>steps){ 
-					steps = no_of_refinement_steps[elem_start_2->get_neighbor(e_2)->id];
-					no_of_refinement_steps[start_id]= steps;
-					}
+					if( elem_start_2->get_neighbor(e_2)!=NULL) 
+					if(no_of_refinement_steps[elem_start_2->get_neighbor(e_2)->id]>steps){ 
+							steps = no_of_refinement_steps[elem_start_2->get_neighbor(e_2)->id];
+							no_of_refinement_steps[start_id]= steps;
+							}
 
-			while((elem_start_1 = elem_start_1->get_neighbor(e_1))!=NULL){
-						id = elem_start_1->id;	
-						if(visited[id]==false){
-							elements_to_refine[id]=1;
-							no_of_refinement_steps[id] = steps;
-							visited[id] =true;				
-						}				
-				}
-			while((elem_start_2 = elem_start_2->get_neighbor(e_2))!=NULL){ 
-						id = elem_start_2->id;	
-						if(visited[id]==false){
-							elements_to_refine[id]=1;
-							no_of_refinement_steps[id] = steps;
-							visited[id] =true;				
-						}				
+					while((elem_start_1 = elem_start_1->get_neighbor(e_1))!=NULL){
+								id = elem_start_1->id;	
+								if(visited[id]==false){
+									elements_to_refine[id]=1;
+									no_of_refinement_steps[id] = steps;
+									visited[id] =true;				
+								}				
+						}
+					while((elem_start_2 = elem_start_2->get_neighbor(e_2))!=NULL){ 
+								id = elem_start_2->id;	
+								if(visited[id]==false){
+									elements_to_refine[id]=1;
+									no_of_refinement_steps[id] = steps;
+									visited[id] =true;				
+								}				
+					}
 			}
 		}
-	}
-		
-
-		
-		
-		
-
-
-
-
-
-
+	
+	//coarse all elements in y-direction		
 /*
-	Element* elem_neigh=NULL;
-	int no_ref_neighbor = 0;
-	int steps = 0; int id;
-		for_all_active_elements(e, space->get_mesh()){
-			if((elements_to_refine[e->id]==0)||(elements_to_refine[e->id]==1)){
-					no_ref_neighbor = 0; steps = 0;
-					for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
-					 	elem_neigh = e->get_neighbor(iv);
-						if(elem_neigh!=NULL){ 
-								id = elem_neigh->id;	
-								if(elements_to_refine[id]==1){
-									no_ref_neighbor++;
-									if(steps< no_of_refinement_steps[id]) steps = no_of_refinement_steps[id];
-								}
-							}
+		for_all_active_elements(e, space->get_mesh()) 
+		{
+			if((elements_to_refine[e->id]==4)&&(visited[e->id]==false))
+			{ 
+					elem_start_1 = e; start_id = e->id; 
+					elem_start_2 = e;
+					steps = no_of_refinement_steps[elem_start_1->id];
+
+					if(elem_start_1->vn[0]->y == elem_start_1->vn[1]->y){ 
+								e_1 = 0;
+								if(elem_start_1->vn[2]->y == elem_start_1->vn[3]->y)
+									 e_2 =2;
+								else Hermes::Exceptions::Exception("calc_elem_error:falsche y-Koord");
+					}else if(elem_start_1->vn[1]->y == elem_start_1->vn[2]->y){
+									 e_1 =1;
+									if(elem_start_1->vn[3]->y == elem_start_1->vn[0]->y)
+										 e_2 =3;
+									else Hermes::Exceptions::Exception("calc_elem_error:falsche y-Koord");						 
+					}else Hermes::Exceptions::Exception("calc_elem_error:keine zweit knoten selbe y-Koord.");
+			
+					if( elem_start_1->get_neighbor(e_1)!=NULL) 
+					if(no_of_refinement_steps[elem_start_1->get_neighbor(e_1)->id]<steps){ 
+								steps = no_of_refinement_steps[elem_start_1->get_neighbor(e_1)->id];
+								no_of_refinement_steps[start_id]= steps;
 					}
-					if(no_ref_neighbor>1){
-									elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]=steps;
-					} 
-		
+					if( elem_start_2->get_neighbor(e_2)!=NULL) 
+					if(no_of_refinement_steps[elem_start_2->get_neighbor(e_2)->id]<steps){ 
+							steps = no_of_refinement_steps[elem_start_2->get_neighbor(e_2)->id];
+							no_of_refinement_steps[start_id]= steps;
+							}
+
+					while((elem_start_1 = elem_start_1->get_neighbor(e_1))!=NULL){
+								id = elem_start_1->id;	
+								if(visited[id]==false){
+									elements_to_refine[id]=4;
+									no_of_refinement_steps[id] = steps;
+									visited[id] =true;				
+								}				
+						}
+					while((elem_start_2 = elem_start_2->get_neighbor(e_2))!=NULL){ 
+								id = elem_start_2->id;	
+								if(visited[id]==false){
+									elements_to_refine[id]=4;
+									no_of_refinement_steps[id] = steps;
+									visited[id] =true;				
+								}				
+					}
 			}
 		}
-		for_all_active_elements(e, space->get_mesh()){
-			if((elements_to_refine[e->id]==0)||(elements_to_refine[e->id]==1)){
-					no_ref_neighbor = 0; steps = 0;
-					for (unsigned int iv = 0; iv < e->get_nvert(); iv++){  
-					 	elem_neigh = e->get_neighbor(iv);
-						if(elem_neigh!=NULL){ 
-								id = elem_neigh->id;	
-								if(elements_to_refine[id]==1){
-									no_ref_neighbor++;
-									if(steps< no_of_refinement_steps[id]) steps = no_of_refinement_steps[id];
-								}
-							}
-					}
-					if(no_ref_neighbor>1){
-									elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]=steps;
-					} 
+	*/	
 		
-			}
-		}*/
-
-
 
 	delete grad_1;
 	delete grad_2;

@@ -16,15 +16,15 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const double time_step = 1e-3;
+const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 const double EPS = 1e-8;
 const double theta = 1.;
 
 const double h_max = 0.1;
-const int NDOF_STOP = 600000000;
+const int NDOF_STOP = 6000000;
  
 // Inlet x-velocity (dimensionless).
 const double V1_EXT = 0.0;        
@@ -44,10 +44,13 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 #include "h_adapt.cpp"
 #include "z_z.cpp"
 
-  //Visualization
+//Visualization
 const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
-const bool VTK_VISUALIZATION = true;              // Set to "true" to enable VTK output.
-const int VTK_FREQ = 1000;													//Every VTK_FREQth time step the solution is saved as VTK output.    
+const bool VTK_VISUALIZATION =false;              // Set to "true" to enable VTK output.
+const int VTK_FREQ = 500;													//Every VTK_FREQth time step the solution is saved as VTK output. 
+     
+const int UNREF_FREQ = 5;                         // Every UNREF_FREQth time step the mesh is derefined.
+const int  UNREF_METHOD =1; 
 
 
 
@@ -79,7 +82,7 @@ int main(int argc, char* argv[])
 
 
   int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
-  printf("ndof: %d \n", ndof);
+ // printf("ndof: %d \n", ndof);
 
   // Initialize solutions, set initial conditions.
 	CustomInitialCondition_rho init_rho(&mesh);
@@ -108,7 +111,7 @@ int main(int argc, char* argv[])
       s1.set_min_max_range(0, 1.);
       s2.set_min_max_range(0., 1.);
       s3.set_min_max_range(0., 1.);
-			pressure_view.set_min_max_range(0.,1.);
+		pressure_view.set_min_max_range(0.,1.);
 
 //------------
 
@@ -147,20 +150,44 @@ int main(int argc, char* argv[])
 //Timestep loop
 do
 {	 
-  	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
- 	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,1);  
+ // 	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
+ 	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,2);  
 
-		mesh.copy(&basemesh);
-		space_rho.set_mesh(&mesh);			space_rho.set_uniform_order(1); 
-		space_rho_v_x.set_mesh(&mesh);	space_rho_v_x.set_uniform_order(1);  
-		space_rho_v_y.set_mesh(&mesh);	space_rho_v_y.set_uniform_order(1);  
-		space_e.set_mesh(&mesh);				space_e.set_uniform_order(1);   
+	if ((ts > 1 && ts % UNREF_FREQ == 0)||(space_rho.get_num_dofs() >= NDOF_STOP)) 
+    { 
+    	Hermes::Mixins::Loggable::Static::info("Global mesh derefinement.");
+      switch (UNREF_METHOD) {
+        case 1: mesh.copy(&basemesh);
+								space_rho.set_mesh(&mesh);			space_rho.set_uniform_order(P_INIT); 
+								space_rho_v_x.set_mesh(&mesh);	space_rho_v_x.set_uniform_order(P_INIT);  
+								space_rho_v_y.set_mesh(&mesh);	space_rho_v_y.set_uniform_order(P_INIT);  
+								space_e.set_mesh(&mesh);	space_e.set_uniform_order(P_INIT);   
+                break;
+        case 2: mesh.unrefine_all_elements();
+								space_rho.set_mesh(&mesh);			space_rho.set_uniform_order(P_INIT); 
+								space_rho_v_x.set_mesh(&mesh);	space_rho_v_x.set_uniform_order(P_INIT);  
+								space_rho_v_y.set_mesh(&mesh);	space_rho_v_y.set_uniform_order(P_INIT);  
+								space_e.set_mesh(&mesh);	space_e.set_uniform_order(P_INIT);   
+                break;
+        case 3: mesh.unrefine_all_elements();
+								space_rho.set_mesh(&mesh);			space_rho.set_uniform_order(P_INIT); 
+								space_rho_v_x.set_mesh(&mesh);	space_rho_v_x.set_uniform_order(P_INIT);  
+								space_rho_v_y.set_mesh(&mesh);	space_rho_v_y.set_uniform_order(P_INIT);  
+								space_e.set_mesh(&mesh);	space_e.set_uniform_order(P_INIT);   
+                break;
+        default: Exceptions::Exception("Wrong global derefinement method.");
+      }
+       	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,1); //sonst Segfault
+       	  //numThreads>1 kommt anscheinend nicht mit Gittern zurecht die groeber sind als im vorherigen Schritt? 
+       	       
+    }
+    
 		as=1;
 
 	//Adaptivity loop
 	do{
 	  	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f, adap: %i", ts, current_time,as);
-			ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
+		ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
 		dof_rho = space_rho.get_num_dofs();
 		dof_v_x = space_rho_v_x.get_num_dofs();
 		dof_v_y = space_rho_v_y.get_num_dofs();
@@ -192,11 +219,12 @@ do
     dp_mass->assemble(mass_matrix);
 
 	//----------------------MassLumping M_L--------------------------------------------------------------------
-						  	Hermes::Mixins::Loggable::Static::info("mass-lumping");
+						// 	Hermes::Mixins::Loggable::Static::info("mass-lumping");
 		UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
 
 //Projection of previous timestep solution / initial data
-						  	Hermes::Mixins::Loggable::Static::info("projection of previous time step solution");
+					 // 	Hermes::Mixins::Loggable::Static::info("projection of previous time step solution");
+					//if(ts>1)  	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,1); 
 if(ts==1){
 	lumpedProjection.project_lumped(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&init_rho, &init_rho_v_x, &init_rho_v_y, &init_e), coeff_vec, matrix_solver);
    ogProjection.project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&init_rho, &init_rho_v_x, &init_rho_v_y, &init_e), coeff_vec_2,  HERMES_L2_NORM);
@@ -205,13 +233,16 @@ if(ts==1){
    ogProjection.project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec_2,  HERMES_L2_NORM);   
    }
 
+
 		lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 
 			dp_boundary->assemble(matrix_dS);
 		  dp_K->assemble(lowmat_rhs);
+		  
+		 //  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,2); 
 
 					//------------------------artificial DIFFUSION D---------------------------------------		
-					  	Hermes::Mixins::Loggable::Static::info("artificial Diffusion");
+					// 	Hermes::Mixins::Loggable::Static::info("artificial Diffusion");
 			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
 
 			lowmat_rhs->add_matrix(diffusion); //L(U)=K+D
@@ -223,15 +254,13 @@ if(ts==1){
 			lowmat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
 			lowmat_rhs->add_matrix(lumped_matrix);  //M_L/t+(1-theta)L(U)
 
-
-
 	//-------------rhs lower Order M_L/tau+ (1-theta)(L) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
 
 
 	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
-						  	Hermes::Mixins::Loggable::Static::info("Solution low order ");
+						//  	Hermes::Mixins::Loggable::Static::info("Solution low order ");
 			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
 			if(lowOrd->solve()){ 
 				u_L = lowOrd->get_sln_vector();  
@@ -241,19 +270,19 @@ if(ts==1){
 	
 	
 	
-		if(as==1){
-								  	Hermes::Mixins::Loggable::Static::info("Adapt-step 1");
+	if(as==1){
+								//  	Hermes::Mixins::Loggable::Static::info("Adapt-step 1");
 		HPAdapt * adapting = new HPAdapt(Hermes::vector<Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
 		int* elements_to_refine = new int[space_rho.get_mesh()->get_max_element_id()]; 
 		int* no_of_refinement_steps = new int[space_rho.get_mesh()->get_max_element_id()];	
 		double* elem_error = new double[space_rho.get_mesh()->get_max_element_id()];
-						  	Hermes::Mixins::Loggable::Static::info("calc error");
+						 // 	Hermes::Mixins::Loggable::Static::info("calc error");
 		for_all_active_elements(e, space_rho.get_mesh()){	elements_to_refine[e->id] = 2; no_of_refinement_steps[e->id]=0;	}
 		calc_elem_error(&space_rho, &low_rho,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
 		//calc_elem_error(&space_rho_v_x, &low_rho_v_x,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
 		//calc_elem_error(&space_rho_v_y, &low_rho_v_y,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
 		//calc_elem_error(&space_e, &low_rho_e,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-						  	Hermes::Mixins::Loggable::Static::info("adapt mesh");
+						  //	Hermes::Mixins::Loggable::Static::info("adapt mesh");
 		adapting->adapt(elements_to_refine,no_of_refinement_steps, h_min,h_max,NDOF_STOP);
 
 			delete adapting;
@@ -261,63 +290,73 @@ if(ts==1){
 			delete [] no_of_refinement_steps;
 			delete [] elem_error;			
 
-			}else{
-									  	Hermes::Mixins::Loggable::Static::info("Adapt-step 2");
-		 	 DiscreteProblem<double>* dp_boundary_low = new DiscreteProblem<double>(&wf_boundary_low, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
-			DiscreteProblem<double>* dp_K_low = new DiscreteProblem<double>(&wf_K_low, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));	
+	}else{
+
+ //	Hermes::Mixins::Loggable::Static::info("Adapt-step 2");
+			 	 DiscreteProblem<double>* dp_boundary_low = new DiscreteProblem<double>(&wf_boundary_low, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
+				DiscreteProblem<double>* dp_K_low = new DiscreteProblem<double>(&wf_K_low, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));	
 	
-			dp_boundary_low->assemble(matrix_dS_low);	
-    	dp_K_low->assemble(matrix_L_low);
-			UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
-			matrix_L_low->add_matrix(diffusion_low); //L(U)
-			matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
+				dp_boundary_low->assemble(matrix_dS_low);	
+		 	dp_K_low->assemble(matrix_L_low);
+				UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
+				matrix_L_low->add_matrix(diffusion_low); //L(U)
+				matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
 
-		//---------------------------------------antidiffusive fluxes-----------------------------------	
-		Hermes::Mixins::Loggable::Static::info("antidiffusive fluxes ");
-		antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
+			//---------------------------------------antidiffusive fluxes-----------------------------------	
+	//Hermes::Mixins::Loggable::Static::info("antidiffusive fluxes ");
+			antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 
-		for(int i=0; i<ndof;i++)
-						 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);					
+			for(int i=0; i<ndof;i++)
+							 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);					
 
-				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&new_rho, &new_rho_v_x, &new_rho_v_y, &new_e));	
+					Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&new_rho, &new_rho_v_x, &new_rho_v_y, &new_e));	
 
-			 prev_rho.copy(&new_rho); 
-			 prev_rho.set_own_mesh(new_rho.get_mesh());
-			 prev_rho_v_x.copy(&new_rho_v_x); 
-			 prev_rho_v_x.set_own_mesh(new_rho_v_x.get_mesh());
-			 prev_rho_v_y.copy(&new_rho_v_y); 
-			 prev_rho_v_y.set_own_mesh(new_rho_v_y.get_mesh());
-			 prev_e.copy(&new_e); 
-			 prev_e.set_own_mesh(new_e.get_mesh()); 
-			 
+				 prev_rho.copy(&new_rho); 
+				 prev_rho.set_own_mesh(new_rho.get_mesh());
+				 prev_rho_v_x.copy(&new_rho_v_x); 
+				 prev_rho_v_x.set_own_mesh(new_rho_v_x.get_mesh());
+				 prev_rho_v_y.copy(&new_rho_v_y); 
+				 prev_rho_v_y.set_own_mesh(new_rho_v_y.get_mesh());
+				 prev_e.copy(&new_e); 
+				 prev_e.set_own_mesh(new_e.get_mesh()); 
+				 
 
-			if(HERMES_VISUALIZATION){
-	/*		PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
-VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
-  VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);*/
-				sprintf(title, "pressure: ts=%i",ts);
-				pressure_view.set_title(title);
-				s1.show(&prev_rho);
-			/*	s2.show(&vel_x);
-				s3.show(&vel_y);
-				pressure_view.show(&pressure);*/
-  		}
+				if(HERMES_VISUALIZATION){
+		PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
+	VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
+	  VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
 
-		  		      // Output solution in VTK format.
-    if((VTK_VISUALIZATION)&&(ts  % VTK_FREQ == 0)) 
-    {
-    	Linearizer lin_rho; Orderizer ord_p;		
+					sprintf(title, "pressure: ts=%i",ts);
+					pressure_view.set_title(title);
+					s1.show(&prev_rho);
+				s2.show(&vel_x);
+					s3.show(&vel_y);
+					pressure_view.show(&pressure);
+
+	  		}
+
+			  		      // Output solution in VTK format.
+		 if((VTK_VISUALIZATION)&&(ts  % VTK_FREQ == 0)) 
+		 {
+		 		PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
+	VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
+    	Linearizer lin_p,lin_rho,lin_v_x; 	Orderizer ord_p;		
+      sprintf(filename, "pressure-%i.vtk", ts);
+      lin_p.save_solution_vtk(&pressure, filename, "Pressure", true);  
       sprintf(filename, "density-%i.vtk", ts);
       lin_rho.save_solution_vtk(&prev_rho, filename, "density", true); 
       sprintf(filename, "mesh-%i.vtk", ts); 
      	ord_p.save_mesh_vtk(&space_rho, filename);  
-    }
+         sprintf(filename, "vel_x-%i.vtk", ts); 	
+     		lin_v_x.save_solution_vtk(&vel_x,filename, "velocity_x", true);
+
+		 }
 		
 
-				delete diffusion_low;
-				delete dp_boundary_low;
-				delete dp_K_low;	
-			}
+					delete diffusion_low;
+					delete dp_boundary_low;
+					delete dp_K_low;	
+	}
 
 
 			  // Clean up.
@@ -358,17 +397,17 @@ while (current_time < T_FINAL);
 
      if(VTK_VISUALIZATION)
      {
-      /* PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
+       PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
   VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
   VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
         Linearizer lin_p, lin_v_x, lin_v_y, lin_rho; 	Orderizer ord_p;		
 			lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
 			lin_v_x.save_solution_vtk(&vel_x, "vx_end.vtk", "velocity_x", true);
-			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);*/
+			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);
 			
-			Linearizer lin_rho; 	Orderizer ord_p;	
+		/*	Linearizer lin_rho; 	Orderizer ord_p;	
 			lin_rho.save_solution_vtk(&prev_rho, "rho_end.vtk", "density", true);
-			     ord_p.save_mesh_vtk(&space_rho, "mesh_end.vtk");  
+			     ord_p.save_mesh_vtk(&space_rho, "mesh_end.vtk"); */ 
 		}
 
 

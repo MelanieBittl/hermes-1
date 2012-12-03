@@ -31,11 +31,7 @@ public:
   MachNumberFilter(Hermes::vector<MeshFunction<double>*> solutions, double kappa) : SimpleFilter<double>(solutions), kappa(kappa) {};
   ~MachNumberFilter() 
   {
-      if(this->deleteSolutions)
-      {
-        for(int i = 0; i < this->num; i++)
-          delete this->sln[i];
-      }
+
   };
 
   MeshFunction<double>* clone() const
@@ -61,11 +57,6 @@ public:
   VelocityFilter(Hermes::vector<MeshFunction<double>*> solutions, int coord) : SimpleFilter<double>(solutions), coord(coord) {};
   ~VelocityFilter() 
   {
-      if(this->deleteSolutions)
-      {
-        for(int i = 0; i < this->num; i++)
-          delete this->sln[i];
-      }
   };
 
   MeshFunction<double>* clone() const
@@ -90,11 +81,7 @@ public:
   PressureFilter(Hermes::vector<MeshFunction<double>*> solutions, double kappa) : SimpleFilter<double>(solutions), kappa(kappa) {};
   ~PressureFilter() 
   {
-      if(this->deleteSolutions)
-      {
-        for(int i = 0; i < this->num; i++)
-          delete this->sln[i];
-      }
+
   };
 
   MeshFunction<double>* clone() const
@@ -122,11 +109,7 @@ public:
   EntropyFilter(Hermes::vector<MeshFunction<double>*> solutions, double kappa, double rho_ext, double p_ext) : SimpleFilter<double>(solutions), kappa(kappa), rho_ext(rho_ext), p_ext(p_ext) {};
   ~EntropyFilter() 
   {
-      if(this->deleteSolutions)
-      {
-        for(int i = 0; i < this->num; i++)
-          delete this->sln[i];
-      }
+
   };
   MeshFunction<double>* clone() const
   {

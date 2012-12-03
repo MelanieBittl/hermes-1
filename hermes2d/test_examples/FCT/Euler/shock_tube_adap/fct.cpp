@@ -46,7 +46,7 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 						if(f>Q_plus[i]) Q_plus[i] = f;				
 						if(f<Q_minus[i]) Q_minus[i] = f;	
 		//v_x
-					v_x = (u_L[i+dof_rho]/u_L[i]);
+	/*				v_x = (u_L[i+dof_rho]/u_L[i]);
 					f_x= (f_rho_x- f_rho*v_x)/u_L[i];
 							if(f_x>0.0)	{ 
 								P_plus[i+dof_rho]+=f_x;
@@ -67,7 +67,7 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 							}										
 						f = lumped*((u_L[j+dof_v_y_start]/u_L[j])-v_y)/time_step; 
 						if(f>Q_plus[i+dof_v_y_start]) Q_plus[i+dof_v_y_start] = f;				
-						if(f<Q_minus[i+dof_v_y_start]) Q_minus[i+dof_v_y_start] = f;	
+						if(f<Q_minus[i+dof_v_y_start]) Q_minus[i+dof_v_y_start] = f;	*/
 			//p
 					p_i= (KAPPA-1)*(u_L[i+dof_rhoE_start]-((v_x*v_x+v_y*v_y)*0.5*u_L[i]));
 					p_j= (KAPPA-1)*(u_L[j+dof_rhoE_start]-((u_L[j+dof_rho]*u_L[j+dof_rho]+u_L[j+dof_v_y_start]*u_L[j+dof_v_y_start])/(2*u_L[j])));
@@ -87,25 +87,29 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 		}
 
 
-			//Berechnung von R	
-	for(int i=0; i<ndof;i++){
-		plus = 1.0; minus = 1.0;		
-		if(P_plus[i]!=0.0)  plus = Q_plus[i]/P_plus[i];		
-		if(P_minus[i]!=0.0) minus = Q_minus[i]/P_minus[i];			
-		if(plus>=1.0) R_plus[i]= 1.0;
-		else 	     R_plus[i]= plus;
-		if(minus>=1.0) R_minus[i]= 1.0;
-		else 	     R_minus[i]= minus;
-
-	}	
+		//Berechnung von R	
+	for(int i=0; i<ndof;i++)
+	{
+		if((i<dof_rho)||(i>dof_rhoE_start))
+		{
+			plus = 1.0; minus = 1.0;		
+			if(P_plus[i]!=0.0)  plus = Q_plus[i]/P_plus[i];		
+			if(P_minus[i]!=0.0) minus = Q_minus[i]/P_minus[i];			
+			if(plus>=1.0) R_plus[i]= 1.0;
+			else 	     R_plus[i]= plus;
+			if(minus>=1.0) R_minus[i]= 1.0;
+			else 	     R_minus[i]= minus;
+		}
+	}
 
 	//Berechnung von alpha & f_i
 	alpha = 1.0;
 		for(int j = 0; j<dof_rho; j++){ //Spalten durchlaufen
 				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
-							int i = Ai_mass[indx];	
-							if(((mass=Ax_mass[indx])!=0.)&&(j<dof_rho)){
-										diff = diffusion->get(i,j);
+					int i = Ai_mass[indx];	
+					if(((mass=Ax_mass[indx])!=0.)&&(j<i))
+					{
+							diff = diffusion->get(i,j);
 							f_rho_ij = mass*(dt_u_L[i]- dt_u_L[j]) + diff*(u_L[i]- u_L[j]);
 							f_rho_ji = -f_rho_ij;  //antisymmetrisch
 							f_rho_x = mass*(dt_u_L[i+dof_rho]- dt_u_L[j+dof_rho]) + diff*(u_L[i+dof_rho]- u_L[j+dof_rho]);	//antisymmetrisch
@@ -117,49 +121,54 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 							v_x = (u_L[j+dof_rho]/u_L[j]);	
 							v_y = (u_L[j+dof_v_y_start]/u_L[j]);
 							f_p_ji = (KAPPA-1)*(-f_rhoE +f_rho_ji*(v_x*v_x+v_y*v_y)*0.5-(v_x*(-f_rho_x)+v_y*(-f_rho_y)));
-										if(f_rho_ij>=0.){//R_plus[i]					
-												if(f_rho_ji>=0.){//R_plus[j]	
-														if(R_plus[i]>R_plus[j]) alpha_rho = R_plus[j];
-														else alpha_rho = R_plus[i];
-												}else{//R_minus[j]
-													if(R_plus[i]>R_minus[j]) alpha_rho = R_minus[j];
-													else alpha_rho = R_plus[i];
-												}	
-										}else{//R_minus[i]
-												if(f_rho_ji>=0.){//R_plus[j]	
-														if(R_minus[i]>R_plus[j]) alpha_rho = R_plus[j];
-														else alpha_rho = R_minus[i];
-												}else{//R_minus[j]
-													if(R_minus[i]>R_minus[j]) alpha_rho = R_minus[j];
-													else alpha_rho = R_minus[i];
-												}	
-										}		
-										if(f_p_ij>=0.){//R_plus[i]					
-												if(f_p_ji>=0.){//R_plus[j]	
-														if(R_plus[i+dof_rhoE_start]>R_plus[j+dof_rhoE_start]) alpha_p = R_plus[j+dof_rhoE_start];
-														else alpha_p = R_plus[i+dof_rhoE_start];
-												}else{//R_minus[j]
-													if(R_plus[i+dof_rhoE_start]>R_minus[j+dof_rhoE_start]) alpha_p = R_minus[j+dof_rhoE_start];
-													else alpha_p = R_plus[i+dof_rhoE_start];
-												}	
-										}else{//R_minus[i]
-												if(f_p_ji>=0.){//R_plus[j]	
-														if(R_minus[i+dof_rhoE_start]>R_plus[j+dof_rhoE_start]) alpha_p = R_plus[j+dof_rhoE_start];
-														else alpha_p = R_minus[i+dof_rhoE_start];
-												}else{//R_minus[j]
-													if(R_minus[i+dof_rhoE_start]>R_minus[j+dof_rhoE_start]) alpha_p = R_minus[j+dof_rhoE_start];
-													else alpha_p = R_minus[i+dof_rhoE_start];
-												}	
-										}
-										if(alpha_p>alpha_rho) alpha = alpha_rho;
-										else alpha = alpha_p;	
-
-										flux_scalar[i] += alpha*f_rho_ij;
-										flux_scalar[i+dof_rho ] += alpha*f_rho_x;			
-										flux_scalar[i+dof_v_y_start ] += alpha*f_rho_y;	
-										flux_scalar[i+dof_rhoE_start] += alpha*f_rhoE;						
-										
+							if(f_rho_ij>=0.){//R_plus[i]					
+									if(f_rho_ji>=0.){//R_plus[j]	
+											if(R_plus[i]>R_plus[j]) alpha_rho = R_plus[j];
+											else alpha_rho = R_plus[i];
+									}else{//R_minus[j]
+										if(R_plus[i]>R_minus[j]) alpha_rho = R_minus[j];
+										else alpha_rho = R_plus[i];
+									}	
+							}else{//R_minus[i]
+									if(f_rho_ji>=0.){//R_plus[j]	
+											if(R_minus[i]>R_plus[j]) alpha_rho = R_plus[j];
+											else alpha_rho = R_minus[i];
+									}else{//R_minus[j]
+										if(R_minus[i]>R_minus[j]) alpha_rho = R_minus[j];
+										else alpha_rho = R_minus[i];
+									}	
+							}		
+							if(f_p_ij>=0.){//R_plus[i]					
+									if(f_p_ji>=0.){//R_plus[j]	
+											if(R_plus[i+dof_rhoE_start]>R_plus[j+dof_rhoE_start]) alpha_p = R_plus[j+dof_rhoE_start];
+											else alpha_p = R_plus[i+dof_rhoE_start];
+									}else{//R_minus[j]
+										if(R_plus[i+dof_rhoE_start]>R_minus[j+dof_rhoE_start]) alpha_p = R_minus[j+dof_rhoE_start];
+										else alpha_p = R_plus[i+dof_rhoE_start];
+									}	
+							}else{//R_minus[i]
+									if(f_p_ji>=0.){//R_plus[j]	
+											if(R_minus[i+dof_rhoE_start]>R_plus[j+dof_rhoE_start]) alpha_p = R_plus[j+dof_rhoE_start];
+											else alpha_p = R_minus[i+dof_rhoE_start];
+									}else{//R_minus[j]
+										if(R_minus[i+dof_rhoE_start]>R_minus[j+dof_rhoE_start]) alpha_p = R_minus[j+dof_rhoE_start];
+										else alpha_p = R_minus[i+dof_rhoE_start];
+									}	
 							}
+							if(alpha_p>alpha_rho) alpha = alpha_rho;
+							else alpha = alpha_p;	
+
+							flux_scalar[i] += alpha*f_rho_ij;
+							flux_scalar[i+dof_rho ] += alpha*f_rho_x;			
+							flux_scalar[i+dof_v_y_start ] += alpha*f_rho_y;	
+							flux_scalar[i+dof_rhoE_start] += alpha*f_rhoE;
+							//alpha_ij=alpha_ji & antisymmetric fluxes!		
+							flux_scalar[j] -= alpha*f_rho_ij;
+							flux_scalar[j+dof_rho ] -= alpha*f_rho_x;			
+							flux_scalar[j+dof_v_y_start ] -= alpha*f_rho_y;	
+							flux_scalar[j+dof_rhoE_start] -= alpha*f_rhoE;							
+										
+					}
 				}			
 		}
 
@@ -225,23 +234,22 @@ void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar
 	alpha = 1.0;
 		for(int j = 0; j<ndof; j++){ //Spalten durchlaufen
 				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
-							int i = Ai_mass[indx];	
-							if(((mass=Ax_mass[indx])!=0.)&&(j<i)){
-										f = mass*(u_H[i]- u_H[j]);
-										if((j<dof_rho)||(j>=(dof_rho+dof_v_x+dof_v_y))){			
-										if( (f*(u_L[j]- u_L[i])) > 0.0) f = 0.0; //prelimiting step										
-										if(f>0.){					
-											if(R_plus[i]>R_minus[j]) alpha = R_minus[j];
-											else 	alpha = R_plus[i];
-										}else if(f<0.){
-											if(R_minus[i]>R_plus[j]) alpha = R_plus[j];
-											else 	alpha = R_minus[i]; 
-										}					
-												rhs[i] += alpha*f;
-												rhs[j] -= alpha*f;
-										}									
-										
-							}
+					int i = Ai_mass[indx];	
+					if(((mass=Ax_mass[indx])!=0.)&&(j<i)){
+						f = mass*(u_H[i]- u_H[j]);	
+						if( (f*(u_L[j]- u_L[i])) > 0.0) f = 0.0; //prelimiting step										
+						if(f>0.){					
+							if(R_plus[i]>R_minus[j]) alpha = R_minus[j];
+							else 	alpha = R_plus[i];
+						}else if(f<0.){
+							if(R_minus[i]>R_plus[j]) alpha = R_plus[j];
+							else 	alpha = R_minus[i]; 
+						}					
+								rhs[i] += alpha*f;
+								rhs[j] -= alpha*f;
+																
+								
+					}
 				}			
 		}
 
@@ -254,8 +262,7 @@ void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar
 	}else printf ("Matrix in lumped_flux solver failed.\n");
 	for(int i=0; i<ndof;i++) u_L[i] =sol[i];
 
-	delete lowOrd;
-	
+	delete lowOrd;	
 	delete vec_rhs;
 	delete [] rhs;
 }

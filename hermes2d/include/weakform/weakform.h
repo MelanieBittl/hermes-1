@@ -132,6 +132,8 @@ namespace Hermes
       Hermes::vector<MeshFunction<Scalar>*> get_ext() const;
       
       virtual WeakForm* clone() const;
+      
+      bool warned_nonOverride;
 
     protected:
       void cloneMembers(const WeakForm<Scalar>* otherWf);
@@ -177,7 +179,7 @@ namespace Hermes
       friend class OGProjection<Scalar>;
       friend class Hermes::Preconditioners::Precond<Scalar>;
 
-      bool warned_nonOverride;
+      
     };
 
     /// By default, the form is initialized with the following natural attributes:

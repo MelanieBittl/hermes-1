@@ -47,7 +47,7 @@ double to_return= (energy+ QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v
 return to_return;
 }
 
-
+//----------  Filters------------------------
 void MachNumberFilter::filter_fn(int n, Hermes::vector<double*> values, double* result) 
 {
   for (int i = 0; i < n; i++)

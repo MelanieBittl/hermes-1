@@ -16,17 +16,17 @@ class Lumped_Projection
 {
 public:
  void project_lumped( const Space<double>* space, MeshFunction<double>* source_meshfn,
-                             double* target_vec, MatrixSolverType matrix_solver = SOLVER_UMFPACK,UMFPackMatrix<double>*  mat  = NULL);
+                             double* target_vec, MatrixSolverType matrix_solver = SOLVER_UMFPACK);
 
 
-void project_lumped(Hermes::vector<const Space<double>*> spaces, Hermes::vector<MeshFunction<double>*> source_meshfns,
-          double* target_vec, Hermes::MatrixSolverType matrix_solver = SOLVER_UMFPACK,UMFPackMatrix<double>*  mat  = NULL);
+ void project_lumped(Hermes::vector<const Space<double>*> spaces, Hermes::vector<MeshFunction<double>*> source_meshfns,
+          double* target_vec, Hermes::MatrixSolverType matrix_solver = SOLVER_UMFPACK);
 
 
 
 protected:
  void project_internal( const Space<double>* space, WeakForm<double>* wf, double* target_vec,
-                               MatrixSolverType matrix_solver, UMFPackMatrix<double>*  mat = NULL);
+                               MatrixSolverType matrix_solver);
 
 
   class ProjectionLumpedMatrixFormVol : public MatrixFormVol<double>

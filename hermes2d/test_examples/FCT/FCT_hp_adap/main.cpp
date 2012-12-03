@@ -379,9 +379,9 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 
 
 			 // Visualize the solution.		 
-		/*	sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
+			sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
 				 sview.set_title(title);
-					sview.show(&u_new);*/
+					sview.show(&u_new);
 				
 				//mview.show(ref_space);
 	//View::wait(HERMES_WAIT_KEYPRESS);
