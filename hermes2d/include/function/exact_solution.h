@@ -39,6 +39,8 @@ namespace Hermes
 
       virtual MeshFunction<Scalar>* clone() const;
 
+      inline std::string getClassName() const { return "ExactSolution"; }
+
     protected:
       /// For scaling of the solution.
       Scalar exact_multiplicator;
@@ -114,6 +116,10 @@ namespace Hermes
 
       virtual Ord ord(Ord x, Ord y) const;
       virtual MeshFunction<Scalar>* clone() const;
+
+      /// Saves the exact solution to an XML file.
+      void save(const char* filename) const;
+
     protected:
       Scalar constant;
     };
@@ -131,6 +137,9 @@ namespace Hermes
 
       virtual Ord ord(Ord x, Ord y) const;
       virtual MeshFunction<Scalar>* clone() const;
+
+      /// Saves the exact solution to an XML file.
+      void save(const char* filename) const;
     };
 
     /// @ingroup meshFunctions
@@ -146,6 +155,9 @@ namespace Hermes
 
       virtual Ord ord(Ord x, Ord y) const;
       virtual MeshFunction<Scalar>* clone() const;
+
+      /// Saves the exact solution to an XML file.
+      void save(const char* filename) const;
     protected:
       Scalar constantX;
       Scalar constantY;
@@ -164,6 +176,9 @@ namespace Hermes
 
       virtual Ord ord(Ord x, Ord y) const;
       virtual MeshFunction<Scalar>* clone() const;
+
+      /// Saves the exact solution to an XML file.
+      void save(const char* filename) const;
     };
   }
 }

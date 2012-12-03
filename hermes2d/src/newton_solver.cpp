@@ -17,12 +17,20 @@
 // along with Hermes2D; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "newton_solver.h"
+#include "projections/ogprojection.h"
 #include "hermes_common.h"
 
 namespace Hermes
 {
   namespace Hermes2D
   {
+    template<typename Scalar>
+    NewtonSolver<Scalar>::NewtonSolver() : NonlinearSolver<Scalar>(new DiscreteProblem<Scalar>()), own_dp(true), kept_jacobian(NULL)
+    {
+      init_attributes();
+      init_linear_solver();
+    }
+
     template<typename Scalar>
     NewtonSolver<Scalar>::NewtonSolver(DiscreteProblem<Scalar>* dp) : NonlinearSolver<Scalar>(dp), own_dp(false), kept_jacobian(NULL)
     {
@@ -45,6 +53,16 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    bool NewtonSolver<Scalar>::isOkay() const
+    {
+      if(static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_weak_formulation() == NULL)
+        return false;
+      if(static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_spaces().size() == 0)
+        return false;
+      return true;
+    }
+
+    template<typename Scalar>
     void NewtonSolver<Scalar>::init_attributes()
     {
       this->newton_tol = 1e-8;
@@ -64,6 +82,12 @@ namespace Hermes
     void NewtonSolver<Scalar>::set_newton_tol(double newton_tol)
     {
       this->newton_tol = newton_tol;
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::set_weak_formulation(const WeakForm<Scalar>* wf)
+    {
+      (static_cast<DiscreteProblem<Scalar>*>(this->dp))->set_weak_formulation(wf);
     }
 
     template<typename Scalar>
@@ -216,8 +240,28 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    void NewtonSolver<Scalar>::solve(Solution<Scalar>* initial_guess)
+    {
+      Hermes::vector<Solution<Scalar>*> vectorToPass;
+      vectorToPass.push_back(initial_guess);
+      this->solve(vectorToPass);
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::solve(Hermes::vector<Solution<Scalar>*> initial_guess)
+    {
+      int ndof = this->dp->get_num_dofs();
+      Scalar* coeff_vec = new Scalar[ndof];
+      OGProjection<Scalar> ogProjection;
+      ogProjection.project_global(static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_spaces(), initial_guess, coeff_vec);
+      this->solve(coeff_vec);
+    }
+
+    template<typename Scalar>
     void NewtonSolver<Scalar>::solve(Scalar* coeff_vec)
     {
+      this->check();
+
       this->tick();
 
       // Obtain the number of degrees of freedom.
@@ -443,8 +487,28 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    void NewtonSolver<Scalar>::solve_keep_jacobian(Solution<Scalar>* initial_guess)
+    {
+      Hermes::vector<Solution<Scalar>*> vectorToPass;
+      vectorToPass.push_back(initial_guess);
+      this->solve_keep_jacobian(vectorToPass);
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::solve_keep_jacobian(Hermes::vector<Solution<Scalar>*> initial_guess)
+    {
+      int ndof = this->dp->get_num_dofs();
+      Scalar* coeff_vec = new Scalar[ndof];
+      OGProjection<Scalar> ogProjection;
+      ogProjection.project_global(static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_spaces(), initial_guess, coeff_vec);
+      this->solve_keep_jacobian(coeff_vec);
+    }
+
+    template<typename Scalar>
     void NewtonSolver<Scalar>::solve_keep_jacobian(Scalar* coeff_vec)
     {
+      this->check();
+
       this->tick();
 
       // Obtain the number of degrees of freedom.
@@ -595,7 +659,11 @@ namespace Hermes
 
         // Assemble and keep the jacobian if this has not been done before.
         // Also declare that LU-factorization in case of a direct solver will be done only once and reused afterwards.
-        if(kept_jacobian == NULL) {
+        if(kept_jacobian == NULL || !(static_cast<DiscreteProblem<Scalar>*>(this->dp))->have_matrix) 
+        {
+          if(kept_jacobian != NULL)
+            delete kept_jacobian;
+
           kept_jacobian = create_matrix<Scalar>();
 
           // Give the matrix solver the correct Jacobian. NOTE: It would be cleaner if the whole decision whether to keep

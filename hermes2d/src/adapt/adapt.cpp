@@ -286,9 +286,9 @@ namespace Hermes
       }
 
       // RefinementSelectors cloning.
-      RefinementSelectors::Selector<Scalar>*** global_refinement_selectors = new RefinementSelectors::Selector<Scalar>**[Hermes::Hermes2D::Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
+      RefinementSelectors::Selector<Scalar>*** global_refinement_selectors = new RefinementSelectors::Selector<Scalar>**[Hermes::Hermes2D::Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         global_refinement_selectors[i] = new RefinementSelectors::Selector<Scalar>*[refinement_selectors.size()];
         for (unsigned int j = 0; j < refinement_selectors.size(); j++)
@@ -311,9 +311,9 @@ namespace Hermes
       }
 
       // Solution cloning.
-      Solution<Scalar>*** rslns = new Solution<Scalar>**[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
+      Solution<Scalar>*** rslns = new Solution<Scalar>**[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         rslns[i] = new Solution<Scalar>*[this->num];
         for (int j = 0; j < this->num; j++)
@@ -335,7 +335,7 @@ namespace Hermes
       Solution<Scalar>** current_rslns;
       int id_to_refine;
 #define CHUNKSIZE 1
-      int num_threads_used = Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads);
+      int num_threads_used = Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads);
 #pragma omp parallel shared(ids, components, elem_inx_to_proc, meshes, current_orders) private(current_refinement_selectors, current_rslns, id_to_refine) num_threads(num_threads_used)
       {
 #pragma omp for schedule(dynamic, CHUNKSIZE)
@@ -351,8 +351,12 @@ namespace Hermes
 
             // rsln[comp] may be unset if refinement_selectors[comp] == HOnlySelector or POnlySelector
             bool refined = current_refinement_selectors[components[id_to_refine]]->select_refinement(meshes[components[id_to_refine]]->get_element(ids[id_to_refine]), current_orders[id_to_refine], current_rslns[components[id_to_refine]], elem_ref);
-            if(dynamic_cast<Hermes::Hermes2D::RefinementSelectors::OptimumSelector<Scalar>*>(current_refinement_selectors[components[id_to_refine]]) != NULL)
-              numberOfCandidates.push_back(dynamic_cast<Hermes::Hermes2D::RefinementSelectors::OptimumSelector<Scalar>*>(current_refinement_selectors[components[id_to_refine]])->get_candidates().size());
+            
+#pragma omp critical (number_of_candidates)
+						{
+							if(dynamic_cast<Hermes::Hermes2D::RefinementSelectors::OptimumSelector<Scalar>*>(current_refinement_selectors[components[id_to_refine]]) != NULL)
+								numberOfCandidates.push_back(dynamic_cast<Hermes::Hermes2D::RefinementSelectors::OptimumSelector<Scalar>*>(current_refinement_selectors[components[id_to_refine]])->get_candidates().size());
+						}
 
             //add to a list of elements that are going to be refined
   #pragma omp critical (elem_inx_to_proc)
@@ -361,26 +365,29 @@ namespace Hermes
               elem_inx_to_proc.push_back(elem_ref);
             }
           }
-          catch(Hermes::Exceptions::Exception& e)
+          catch(Hermes::Exceptions::Exception& exception)
           {
             if(this->caughtException == NULL)
-              this->caughtException = e.clone();
+              this->caughtException = exception.clone();
           }
-          catch(std::exception& e)
+          catch(std::exception& exception)
           {
             if(this->caughtException == NULL)
-              this->caughtException = new Hermes::Exceptions::Exception(e.what());
+              this->caughtException = new Hermes::Exceptions::Exception(exception.what());
           }
         }
       }
 
-      int averageNumberOfCandidates = 0;
-      for(int i = 0; i < numberOfCandidates.size(); i++)
-        averageNumberOfCandidates += numberOfCandidates[i];
-      averageNumberOfCandidates = averageNumberOfCandidates / numberOfCandidates.size();
+      if(this->caughtException == NULL)
+      {
+        int averageNumberOfCandidates = 0;
+        for(int i = 0; i < numberOfCandidates.size(); i++)
+          averageNumberOfCandidates += numberOfCandidates[i];
+        averageNumberOfCandidates = averageNumberOfCandidates / numberOfCandidates.size();
 
-      this->info("Adaptivity: total number of refined Elements: %i.", ids.size());
-      this->info("Adaptivity: average number of candidates per refined Element: %i.", averageNumberOfCandidates);
+        this->info("Adaptivity: total number of refined Elements: %i.", ids.size());
+        this->info("Adaptivity: average number of candidates per refined Element: %i.", averageNumberOfCandidates);
+      }
 
       this->tick();
       this->info("Adaptivity: refinement selection duration: %f s.", this->last());
@@ -388,7 +395,7 @@ namespace Hermes
       if(this->caughtException == NULL)
         fix_shared_mesh_refinements(meshes, elem_inx_to_proc, idx, global_refinement_selectors);
 
-      for(unsigned int i = 1; i < Hermes::Hermes2D::Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 1; i < Hermes::Hermes2D::Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned int j = 0; j < refinement_selectors.size(); j++)
           delete global_refinement_selectors[i][j];
@@ -396,7 +403,7 @@ namespace Hermes
       }
       delete [] global_refinement_selectors;
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         if(rslns[i] != NULL)
         {
@@ -1090,6 +1097,37 @@ namespace Hermes
       Hermes::vector<double>* component_errors, bool solutions_for_adapt, unsigned int error_flags)
     {
       int i, j;
+      
+      bool compatible_meshes = true;
+      for (int space_i = 0; space_i < this->num; space_i++)
+      {
+        Element* e;
+        for_all_active_elements(e, slns[space_i]->get_mesh())
+        {
+          Element* e_ref = rslns[space_i]->get_mesh()->get_element(e->id);
+          if(e_ref == NULL)
+          {
+            compatible_meshes = false;
+            break;
+          }
+          if(!e_ref->active)
+          {
+            if(e_ref->sons[0] == NULL || e_ref->sons[2] == NULL)
+            {
+              compatible_meshes = false;
+              break;
+            }
+            if(!e_ref->sons[0]->active || !e_ref->sons[2]->active)
+            {
+              compatible_meshes = false;
+              break;
+            }
+          }
+        }
+      }
+
+      if(!compatible_meshes)
+        throw Exceptions::Exception("Reference space not created by an isotropic (p-, h-, or hp-) refinement from the coarse space.");
 
       if(slns.size() != this->num)
         throw Exceptions::LengthException(0, slns.size(), this->num);

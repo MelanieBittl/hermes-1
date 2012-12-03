@@ -1,4 +1,4 @@
-project(P04-03-complex)
+project(02-poisson-newton)
 
 add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
 

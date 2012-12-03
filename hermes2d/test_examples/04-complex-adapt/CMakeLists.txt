@@ -1,4 +1,4 @@
-project(P03-02-runge-kutta)
+project(04-complex-adapt)
 
 add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
 

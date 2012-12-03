@@ -1,6 +1,6 @@
-project(P04-04-hcurl)
+project(06-system-adapt)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS ${FLAGS})
 

@@ -1,4 +1,4 @@
-project(P09-02-trilinos-nonlinear)
+project(07-newton-heat-rk)
 
 add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
 

@@ -28,6 +28,12 @@ namespace Hermes
   namespace Hermes2D
   {
     template<typename Scalar>
+    LinearSolver<Scalar>::LinearSolver() : dp(new DiscreteProblemLinear<Scalar>()), sln_vector(NULL), own_dp(false)
+    {
+      this->init();
+    }
+
+    template<typename Scalar>
     LinearSolver<Scalar>::LinearSolver(DiscreteProblemLinear<Scalar>* dp) : dp(dp), sln_vector(NULL), own_dp(false)
     {
       this->init();
@@ -53,6 +59,16 @@ namespace Hermes
       this->matrix_solver = create_linear_solver<Scalar>(this->jacobian, this->residual);
       this->set_verbose_output(true);
     }
+
+    template<typename Scalar>
+    bool LinearSolver<Scalar>::isOkay() const
+    {
+      if(static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_weak_formulation() == NULL)
+        return false;
+      if(static_cast<DiscreteProblem<Scalar>*>(this->dp)->get_spaces().size() == 0)
+        return false;
+      return true;
+    }
     
     template<typename Scalar>
     void LinearSolver<Scalar>::set_time(double time)
@@ -64,7 +80,13 @@ namespace Hermes
       Space<Scalar>::update_essential_bc_values(spaces, time);
       const_cast<WeakForm<Scalar>*>(this->dp->wf)->set_current_time(time);
     }
-      
+
+    template<typename Scalar>
+    void LinearSolver<Scalar>::set_weak_formulation(const WeakForm<Scalar>* wf)
+    {
+      (static_cast<DiscreteProblem<Scalar>*>(this->dp))->set_weak_formulation(wf);
+    }
+
     template<typename Scalar>
     void LinearSolver<Scalar>::set_time_step(double time_step)
     {
@@ -104,6 +126,8 @@ namespace Hermes
     template<typename Scalar>
     void LinearSolver<Scalar>::solve()
     {
+      this->check();
+
       this->tick();
 
       this->on_initialization();

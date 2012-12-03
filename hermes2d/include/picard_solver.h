@@ -37,26 +37,33 @@ namespace Hermes
     /// http://hpfem.org/hermes/hermes-tutorial/doc/_build/html/src/hermes2d/B-nonlinear/01-picard.html
     /// will give an overview.
     template<typename Scalar>
-    class HERMES_API PicardSolver : public NonlinearSolver<Scalar>, public Hermes::Hermes2D::Mixins::SettableSpaces<Scalar>, public Hermes::Mixins::OutputAttachable, public Hermes::Hermes2D::Mixins::MatrixRhsOutput<Scalar>
+    class HERMES_API PicardSolver : public NonlinearSolver<Scalar>, public Hermes::Hermes2D::Mixins::SettableSpaces<Scalar>, public Hermes::Mixins::OutputAttachable, public Hermes::Hermes2D::Mixins::MatrixRhsOutput<Scalar>, public Hermes::Hermes2D::Mixins::StateQueryable
     {
     public:
+      PicardSolver();
       PicardSolver(DiscreteProblem<Scalar>* dp);
-      PicardSolver(DiscreteProblemLinear<Scalar>* dp);
       PicardSolver(const WeakForm<Scalar>* wf, const Space<Scalar>* space);
       PicardSolver(const WeakForm<Scalar>* wf, Hermes::vector<const Space<Scalar>*> spaces);
       ~PicardSolver();
 
-      /// Sets the previous Solution (for one Space).
-      void setPreviousSolution(Solution<Scalar>* sln_prev_iter);
-
-      /// Sets the previous Solution (for multiple Spaces).
-      void setPreviousSolutions(Hermes::vector<Solution<Scalar>* > slns_prev_iter);
+      /// State querying helpers.
+      virtual bool isOkay() const;
+      inline std::string getClassName() const { return "PicardSolver"; }
 
       /// Sets the attribute verbose_output for the inner Newton's loop to the paramater passed.
       void set_verbose_output_linear_solver(bool verbose_output_to_set);
 
-      /// Solve with default tolerances.
-      virtual void solve();
+      /// Solve.
+      /// \param[in] coeff_vec Ceofficient vector to start from.
+      void solve(Scalar* coeff_vec = NULL);
+
+      /// Solve.
+      /// \param[in] initial_guess Solution to start from (which is projected to obtain the initial coefficient vector.
+      void solve(Solution<Scalar>* initial_guess);
+
+      /// Solve.
+      /// \param[in] initial_guess Solutions to start from (which is projected to obtain the initial coefficient vector.
+      void solve(Hermes::vector<Solution<Scalar>*> initial_guess);
 
       /// set time information for time-dependent problems.
       virtual void set_time(double time);
@@ -80,10 +87,21 @@ namespace Hermes
       /// Set the Anderson beta coefficient. See the details about the Anderson acceleration for 
       /// explanation of this parameter.
       void set_anderson_beta(double beta);
+
+      /// Set the weak forms.
+      void set_weak_formulation(const WeakForm<Scalar>* wf);
     private:
       void init();
-      Hermes::vector<Solution<Scalar>* > slns_prev_iter;
       bool verbose_output_linear_solver;
+
+      /// Matrix.
+      SparseMatrix<Scalar>* matrix;
+
+      /// Right-hand side.
+      Vector<Scalar>* rhs;
+
+      /// Linear solver.
+      LinearMatrixSolver<Scalar>* linear_solver;
 
       /// This instance owns its DP.
       const bool own_dp;

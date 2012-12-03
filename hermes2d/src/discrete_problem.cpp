@@ -75,11 +75,53 @@ namespace Hermes
     {
       // Set all attributes for which we don't need to acces wf or spaces.
       // This is important for the destructor to properly detect what needs to be deallocated.
-      sp_seq = NULL;
-      is_fvm = false;
-      RungeKutta = false;
-      RK_original_spaces_count = 0;
-      have_matrix = false;
+			// Initialize special variable for Runge-Kutta time integration.
+			RungeKutta = false;
+			RK_original_spaces_count = 0;
+
+			this->ndof = 0;
+
+			// Internal variables settings.
+			sp_seq = NULL;
+
+			// Matrix<Scalar> related settings.
+			have_matrix = false;
+
+			// There is a special function that sets a DiscreteProblem to be FVM.
+			// Purpose is that this constructor looks cleaner and is simpler.
+			this->is_fvm = false;
+
+			this->DG_matrix_forms_present = false;
+			this->DG_vector_forms_present = false;
+
+			Geom<Hermes::Ord> *tmp = init_geom_ord();
+			geom_ord = *tmp;
+			delete tmp;
+
+			current_mat = NULL;
+			current_rhs = NULL;
+			current_block_weights = NULL;
+
+			
+			cache_element_stored = NULL;
+
+			this->do_not_use_cache = false;
+    }
+
+    template<typename Scalar>
+    bool DiscreteProblem<Scalar>::isOkay() const
+    {
+      if(this->wf == NULL)
+        return false;
+
+      if(this->spaces.size() == 0)
+        return false;
+
+      // Initial check of meshes and spaces.
+      for(unsigned int space_i = 0; space_i < this->spaces.size(); space_i++)
+        this->spaces[space_i]->check();
+
+      return true;
     }
 
     template<typename Scalar>
@@ -114,13 +156,11 @@ namespace Hermes
       this->DG_matrix_forms_present = false;
       this->DG_vector_forms_present = false;
 
-      for(unsigned int i = 0; i < this->wf->mfsurf.size(); i++)
-        if(!this->wf->mfDG.empty())
-          this->DG_matrix_forms_present = true;
+      if(!this->wf->mfDG.empty())
+        this->DG_matrix_forms_present = true;
 
-      for(unsigned int i = 0; i < this->wf->vfsurf.size(); i++)
-        if(!this->wf->vfDG.empty())
-          this->DG_vector_forms_present = true;
+      if(!this->wf->vfDG.empty())
+        this->DG_vector_forms_present = true;
 
       Geom<Hermes::Ord> *tmp = init_geom_ord();
       geom_ord = *tmp;
@@ -229,6 +269,22 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    void DiscreteProblem<Scalar>::set_weak_formulation(const WeakForm<Scalar>* wf)
+    {
+			if(wf == NULL)
+				throw Hermes::Exceptions::NullException(0);
+
+      this->wf = wf;
+      this->have_matrix = false;
+
+			if(!this->wf->mfDG.empty())
+				this->DG_matrix_forms_present = true;
+
+			if(!this->wf->vfDG.empty())
+				this->DG_vector_forms_present = true;
+    }
+
+    template<typename Scalar>
     bool DiscreteProblem<Scalar>::is_matrix_free() const
     {
       return wf->is_matrix_free();
@@ -296,15 +352,23 @@ namespace Hermes
     template<typename Scalar>
     void DiscreteProblem<Scalar>::set_spaces(Hermes::vector<const Space<Scalar>*> spacesToSet)
     {
+			for(unsigned int i = 0; i < spacesToSet.size(); i++)
+				spacesToSet[i]->check();
+
+			if(this->spaces.size() != spacesToSet.size() && this->spaces.size() > 0)
+				throw Hermes::Exceptions::LengthException(0, spacesToSet.size(), this->spaces.size());
+
+			int originalSize = this->spaces.size();
+
+			this->spaces = spacesToSet;
+
+			this->ndof = Space<Scalar>::get_num_dofs(spaces);
+
       /// \todo TEMPORARY There is something wrong with caching vector shapesets.
       for(unsigned int i = 0; i < spacesToSet.size(); i++)
         if(spacesToSet[i]->get_shapeset()->get_num_components() > 1)
           this->do_not_use_cache = true;
 
-      if(this->spaces.size() != spacesToSet.size())
-        throw Hermes::Exceptions::LengthException(0, spacesToSet.size(), this->spaces.size());
-
-      this->spaces = spacesToSet;
       have_matrix = false;
 
       unsigned int first_dof_running = 0;
@@ -315,53 +379,88 @@ namespace Hermes
         first_dof_running += spaces.at(i)->get_num_dofs();
       }
 
-      int max_size = spacesToSet[0]->get_mesh()->get_max_element_id();
-      for(unsigned int i = 1; i < spacesToSet.size(); i++)
-      {
-        int max_size_i = spacesToSet[i]->get_mesh()->get_max_element_id();
-        if(max_size_i > max_size)
-          max_size = max_size_i;
-      }
+			if(originalSize == 0)
+			{
+				// Internal variables settings.
+				sp_seq = new int[spaces.size()];
+				memset(sp_seq, -1, sizeof(int) * spaces.size());
 
-      if(max_size * 1.0 > this->cache_size + 1)
-      {
-        max_size = 1.0 * max_size;
+				// Matrix<Scalar> related settings.
+				have_matrix = false;
 
-        for(unsigned int i = 0; i < this->spaces.size(); i++)
-        {
-          this->cache_records_sub_idx[i] = (std::map<uint64_t, CacheRecordPerSubIdx*>**)realloc(this->cache_records_sub_idx[i], max_size * sizeof(std::map<uint64_t, CacheRecordPerSubIdx*>*));
-          memset(this->cache_records_sub_idx[i] + this->cache_size, NULL, (max_size - this->cache_size) * sizeof(std::map<uint64_t, CacheRecordPerSubIdx*>*));
+				cache_records_sub_idx = new std::map<uint64_t, CacheRecordPerSubIdx*>**[spaces.size()];
+				cache_records_element = new CacheRecordPerElement**[spaces.size()];
 
-          this->cache_records_element[i] = (CacheRecordPerElement**)realloc(this->cache_records_element[i], max_size * sizeof(CacheRecordPerElement*));
-          memset(this->cache_records_element[i] + this->cache_size, NULL, (max_size - this->cache_size) * sizeof(CacheRecordPerElement*));
-        }
+				this->cache_size = spaces[0]->get_mesh()->get_max_element_id() + 1;
+				for(unsigned int i = 1; i < spaces.size(); i++)
+				{
+					int cache_size_i = spaces[i]->get_mesh()->get_max_element_id() + 1;
+					if(cache_size_i > cache_size)
+						this->cache_size = cache_size_i;
+				}
 
-        this->cache_size = max_size;
-      }
+				for(unsigned int i = 0; i < spaces.size(); i++)
+				{
+					cache_records_sub_idx[i] = (std::map<uint64_t, CacheRecordPerSubIdx*>**)malloc(this->cache_size * sizeof(std::map<uint64_t, CacheRecordPerSubIdx*>*));
+					memset(cache_records_sub_idx[i], NULL, this->cache_size * sizeof(std::map<uint64_t, CacheRecordPerSubIdx*>*));
 
-      
-      for(unsigned int i = 0; i < spaces.size(); i++)
-      {
-        for(unsigned int j = 0; j < spaces[i]->get_mesh()->get_max_element_id(); j++)
-          if(spaces[i]->get_mesh()->get_element(j) == NULL || !spaces[i]->get_mesh()->get_element(j)->active || spaces[i]->get_element_order(spaces[i]->get_mesh()->get_element(j)->id) < 0)
-          {
-            if(this->cache_records_sub_idx[i][j] != NULL)
-            {
-              for(typename std::map<uint64_t, CacheRecordPerSubIdx*>::iterator it = this->cache_records_sub_idx[i][j]->begin(); it != this->cache_records_sub_idx[i][j]->end(); it++)
-                it->second->clear();
+					cache_records_element[i] = (CacheRecordPerElement**)malloc(this->cache_size * sizeof(CacheRecordPerElement*));
+					memset(cache_records_element[i], NULL, this->cache_size * sizeof(CacheRecordPerElement*));
+				}
+				cache_element_stored = NULL;
+			}
+			else
+			{
+				int max_size = spacesToSet[0]->get_mesh()->get_max_element_id();
+				for(unsigned int i = 1; i < spacesToSet.size(); i++)
+				{
+					int max_size_i = spacesToSet[i]->get_mesh()->get_max_element_id();
+					if(max_size_i > max_size)
+						max_size = max_size_i;
+					sp_seq[i] = spacesToSet[i]->get_seq();
+				}
 
-              this->cache_records_sub_idx[i][j]->clear();
-              delete this->cache_records_sub_idx[i][j];
-              this->cache_records_sub_idx[i][j] = NULL;
-            }
-            if(this->cache_records_element[i][j] != NULL)
-            {
-              this->cache_records_element[i][j]->clear();
-              delete this->cache_records_element[i][j];
-              this->cache_records_element[i][j] = NULL;
-            }
-          }
-      }
+				if(max_size * 1.0 > this->cache_size + 1)
+				{
+					max_size = 1.0 * max_size;
+
+					for(unsigned int i = 0; i < this->spaces.size(); i++)
+					{
+						this->cache_records_sub_idx[i] = (std::map<uint64_t, CacheRecordPerSubIdx*>**)realloc(this->cache_records_sub_idx[i], max_size * sizeof(std::map<uint64_t, CacheRecordPerSubIdx*>*));
+						memset(this->cache_records_sub_idx[i] + this->cache_size, NULL, (max_size - this->cache_size) * sizeof(std::map<uint64_t, CacheRecordPerSubIdx*>*));
+
+						this->cache_records_element[i] = (CacheRecordPerElement**)realloc(this->cache_records_element[i], max_size * sizeof(CacheRecordPerElement*));
+						memset(this->cache_records_element[i] + this->cache_size, NULL, (max_size - this->cache_size) * sizeof(CacheRecordPerElement*));
+					}
+
+					this->cache_size = max_size;
+				}
+
+				for(unsigned int i = 0; i < spaces.size(); i++)
+				{
+					for(unsigned int j = 0; j < spaces[i]->get_mesh()->get_max_element_id(); j++)
+					{
+						if(spaces[i]->get_mesh()->get_element(j) == NULL || !spaces[i]->get_mesh()->get_element(j)->active || spaces[i]->get_element_order(spaces[i]->get_mesh()->get_element(j)->id) < 0)
+						{
+							if(this->cache_records_sub_idx[i][j] != NULL)
+							{
+								for(typename std::map<uint64_t, CacheRecordPerSubIdx*>::iterator it = this->cache_records_sub_idx[i][j]->begin(); it != this->cache_records_sub_idx[i][j]->end(); it++)
+									it->second->clear();
+
+								this->cache_records_sub_idx[i][j]->clear();
+								delete this->cache_records_sub_idx[i][j];
+								this->cache_records_sub_idx[i][j] = NULL;
+							}
+							if(this->cache_records_element[i][j] != NULL)
+							{
+								this->cache_records_element[i][j]->clear();
+								delete this->cache_records_element[i][j];
+								this->cache_records_element[i][j] = NULL;
+							}
+						}
+					}
+				}
+			}
 
       this->ndof = Space<Scalar>::get_num_dofs(this->spaces);
     }
@@ -782,19 +881,19 @@ namespace Hermes
     template<typename Scalar>
     void DiscreteProblem<Scalar>::init_assembling(Scalar* coeff_vec, PrecalcShapeset*** pss , PrecalcShapeset*** spss, RefMap*** refmaps, Solution<Scalar>*** u_ext, AsmList<Scalar>*** als, WeakForm<Scalar>** weakforms)
     {
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         pss[i] = new PrecalcShapeset*[wf->get_neq()];
         for (unsigned int j = 0; j < wf->get_neq(); j++)
           pss[i][j] = new PrecalcShapeset(spaces[j]->shapeset);
       }
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         spss[i] = new PrecalcShapeset*[wf->get_neq()];
         for (unsigned int j = 0; j < wf->get_neq(); j++)
           spss[i][j] = new PrecalcShapeset(pss[i][j]);
       }
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         refmaps[i] = new RefMap*[wf->get_neq()];
         for (unsigned int j = 0; j < wf->get_neq(); j++)
@@ -805,7 +904,7 @@ namespace Hermes
       }
 
       // U_ext functions
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         if(coeff_vec != NULL)
         {
@@ -843,7 +942,7 @@ namespace Hermes
       }
 
       // Assembly lists
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         als[i] = new AsmList<Scalar>*[wf->get_neq()];
         for (unsigned int j = 0; j < wf->get_neq(); j++)
@@ -851,7 +950,7 @@ namespace Hermes
       }
 
       // Weakforms.
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         weakforms[i] = this->wf->clone();
         weakforms[i]->cloneMembers(this->wf);
@@ -869,7 +968,7 @@ namespace Hermes
     template<typename Scalar>
     void DiscreteProblem<Scalar>::deinit_assembling(PrecalcShapeset*** pss , PrecalcShapeset*** spss, RefMap*** refmaps, Solution<Scalar>*** u_ext, AsmList<Scalar>*** als, WeakForm<Scalar>** weakforms)
     {
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned int j = 0; j < wf->get_neq(); j++)
           delete pss[i][j];
@@ -877,7 +976,7 @@ namespace Hermes
       }
       delete [] pss;
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned int j = 0; j < wf->get_neq(); j++)
           delete spss[i][j];
@@ -885,7 +984,7 @@ namespace Hermes
       }
       delete [] spss;
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned int j = 0; j < wf->get_neq(); j++)
           delete refmaps[i][j];
@@ -893,7 +992,7 @@ namespace Hermes
       }
       delete [] refmaps;
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         if(u_ext[i] != NULL)
         {
@@ -904,7 +1003,7 @@ namespace Hermes
       }
       delete [] u_ext;
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned int j = 0; j < wf->get_neq(); j++)
           delete als[i][j];
@@ -912,7 +1011,7 @@ namespace Hermes
       }
       delete [] als;
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         weakforms[i]->free_ext();
         delete weakforms[i];
@@ -927,15 +1026,8 @@ namespace Hermes
     template<typename Scalar>
     void DiscreteProblem<Scalar>::assemble(Scalar* coeff_vec, SparseMatrix<Scalar>* mat, Vector<Scalar>* rhs, bool force_diagonal_blocks, Table* block_weights)
     {
-      // Initial check of meshes and spaces.
-      for(unsigned int space_i = 0; space_i < this->spaces.size(); space_i++)
-      {
-        if(!this->spaces[space_i]->isOkay())
-          throw Hermes::Exceptions::Exception("Space %d is not okay in assemble().", space_i);
-
-        if(!this->spaces[space_i]->get_mesh()->isOkay())
-          throw Hermes::Exceptions::Exception("Mesh %d is not okay in assemble().", space_i);
-      }
+      // Check.
+      this->check();
 
       this->tick();
 
@@ -963,12 +1055,12 @@ namespace Hermes
       }
 
       // Structures that cloning will be done into.
-      PrecalcShapeset*** pss = new PrecalcShapeset**[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
-      PrecalcShapeset*** spss = new PrecalcShapeset**[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
-      RefMap*** refmaps = new RefMap**[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
-      Solution<Scalar>*** u_ext = new Solution<Scalar>**[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
-      AsmList<Scalar>*** als = new AsmList<Scalar>**[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
-      WeakForm<Scalar>** weakforms = new WeakForm<Scalar>*[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
+      PrecalcShapeset*** pss = new PrecalcShapeset**[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
+      PrecalcShapeset*** spss = new PrecalcShapeset**[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
+      RefMap*** refmaps = new RefMap**[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
+      Solution<Scalar>*** u_ext = new Solution<Scalar>**[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
+      AsmList<Scalar>*** als = new AsmList<Scalar>**[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
+      WeakForm<Scalar>** weakforms = new WeakForm<Scalar>*[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
 
       // Fill these structures.
       init_assembling(coeff_vec, pss, spss, refmaps, u_ext, als, weakforms);
@@ -991,9 +1083,9 @@ namespace Hermes
 
       trav_master.begin(meshes.size(), &(meshes.front()));
 
-      Traverse* trav = new Traverse[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
-      Hermes::vector<Transformable *>* fns = new Hermes::vector<Transformable *>[Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads)];
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      Traverse* trav = new Traverse[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
+      Hermes::vector<Transformable *>* fns = new Hermes::vector<Transformable *>[Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads)];
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         for (unsigned j = 0; j < spaces.size(); j++)
           fns[i].push_back(pss[i][j]);
@@ -1030,7 +1122,7 @@ namespace Hermes
       WeakForm<Scalar>* current_weakform;
 
 #define CHUNKSIZE 1
-      int num_threads_used = Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads);
+      int num_threads_used = Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads);
 #pragma omp parallel shared(trav_master, mat, rhs ) private(state_i, current_pss, current_spss, current_refmaps, current_u_ext, current_als, current_weakform) num_threads(num_threads_used)
       {
 #pragma omp for schedule(dynamic, CHUNKSIZE)
@@ -1076,10 +1168,10 @@ namespace Hermes
       deinit_assembling(pss, spss, refmaps, u_ext, als, weakforms);
 
       trav_master.finish();
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
         trav[i].finish();
 
-      for(unsigned int i = 0; i < Hermes2DApi.get_param_value(Hermes::Hermes2D::numThreads); i++)
+      for(unsigned int i = 0; i < Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::numThreads); i++)
       {
         fns[i].clear();
       }
@@ -1387,7 +1479,7 @@ namespace Hermes
       Traverse::State* current_state, WeakForm<Scalar>* current_wf)
     {
       // Integration order.
-      int rep_space_i = 0;
+      int rep_space_i = -1;
 
       // Get necessary (volumetric) assembly lists.
       for(unsigned int space_i = 0; space_i < this->spaces.size(); space_i++)
@@ -1397,6 +1489,8 @@ namespace Hermes
           spaces[space_i]->get_element_assembly_list(current_state->e[space_i], current_als[space_i], spaces_first_dofs[space_i]);
         }
 
+      if(rep_space_i == -1)
+        return;
       // Do we have to recalculate the data for this state even if the cache contains the data?
       bool changedInLastAdaptation = this->do_not_use_cache ? true : this->state_needs_recalculation(current_als, current_state);
 

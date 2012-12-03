@@ -71,25 +71,6 @@ namespace Hermes
       ldata = NULL;
       lsize = 0;
     }
-    
-    template<typename Scalar>
-    void L2Space<Scalar>::load(const char *filename, Mesh* mesh, Shapeset* shapeset)
-    {
-      this->mesh = mesh;
-
-      if(shapeset == NULL)
-      {
-        this->shapeset = new L2Shapeset;
-        this->own_shapeset = true;
-      }
-      else
-        this->shapeset = shapeset;
-
-      ldata = NULL;
-      lsize = 0;
-
-      Space<Scalar>::load(filename);
-    }
 
     template<typename Scalar>
     void L2Space<Scalar>::set_shapeset(Shapeset *shapeset)
@@ -119,12 +100,14 @@ namespace Hermes
     void L2Space<Scalar>::assign_bubble_dofs()
     {
       Element* e;
+      this->bubble_functions_count = 0;
       for_all_active_elements(e, this->mesh)
       {
         typename Space<Scalar>::ElementData* ed = &this->edata[e->id];
         ed->bdof = this->next_dof;
         ed->n = this->shapeset->get_num_bubbles(ed->order, e->get_mode()); //FIXME: this function might return invalid value because retrieved bubble functions for non-uniform orders might be invalid for the given order.
         this->next_dof += ed->n * this->stride;
+          this->bubble_functions_count += ed->n;
       }
     }
 
@@ -135,7 +118,6 @@ namespace Hermes
     template<typename Scalar>
     void L2Space<Scalar>::get_element_assembly_list(Element* e, AsmList<Scalar>* al, unsigned int first_dof) const
     {
-      // some checks
       if(e->id >= this->esize || this->edata[e->id].order < 0)
         throw Hermes::Exceptions::Exception("Uninitialized element order (id = #%d).", e->id);
       if(!this->is_up_to_date())

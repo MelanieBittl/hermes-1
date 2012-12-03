@@ -17,6 +17,8 @@
 #include "forms.h"
 
 #include "solution_h2d_xml.h"
+#include "ogprojection.h"
+#include "api2d.h"
 
 #include <iostream>
 #include <algorithm>
@@ -76,7 +78,6 @@ namespace Hermes
       virtual void dummy_fn() {}
     } g_quad_2d_cheb;
 
-
     template<typename Scalar>
     void Solution<Scalar>::set_static_verbose_output(bool verbose)
     {
@@ -86,8 +87,8 @@ namespace Hermes
     template<typename Scalar>
     bool Solution<Scalar>::static_verbose_output = false;
 
-    template<typename Scalar>
-    void Solution<Scalar>::init()
+    template<>
+    void Solution<double>::init()
     {
       memset(tables, 0, sizeof(tables));
       memset(elems,  0, sizeof(elems));
@@ -99,7 +100,7 @@ namespace Hermes
 
       for(int i = 0; i < 4; i++)
         for(int j = 0; j < 4; j++)
-          tables[i][j] = new std::map<uint64_t, LightArray<struct Function<Scalar>::Node*>*>;
+          tables[i][j] = new std::map<uint64_t, LightArray<struct Function<double>::Node*>*>;
 
       mono_coeffs = NULL;
       elem_coeffs[0] = elem_coeffs[1] = NULL;
@@ -109,40 +110,109 @@ namespace Hermes
       num_dofs = -1;
 
       this->set_quad_2d(&g_quad_2d_std);
+			Hermes2DApi.realSolutionDataPointerCalculator++;
     }
 
-    template<typename Scalar>
-    Solution<Scalar>::Solution()
-        : MeshFunction<Scalar>()
+		template<>
+		void Solution<std::complex<double> >::init()
+		{
+			memset(tables, 0, sizeof(tables));
+			memset(elems,  0, sizeof(elems));
+			memset(oldest, 0, sizeof(oldest));
+			transform = true;
+			sln_type = HERMES_UNDEF;
+			this->num_components = 0;
+			e_last = NULL;
+
+			for(int i = 0; i < 4; i++)
+				for(int j = 0; j < 4; j++)
+					tables[i][j] = new std::map<uint64_t, LightArray<struct Function<std::complex<double> >::Node*>*>;
+
+			mono_coeffs = NULL;
+			elem_coeffs[0] = elem_coeffs[1] = NULL;
+			elem_orders = NULL;
+			dxdy_buffer = NULL;
+			num_coeffs = num_elems = 0;
+			num_dofs = -1;
+
+			this->set_quad_2d(&g_quad_2d_std);
+			Hermes2DApi.complexSolutionDataPointerCalculator++;
+		}
+
+    template<>
+    Solution<double>::Solution()
+        : MeshFunction<double>()
     {
       space_type = HERMES_INVALID_SPACE;
       this->init();
+      Hermes::Hermes2D::Hermes2DApi.realSolutionPointerCalculator++;
     }
 
-    template<typename Scalar>
-    Solution<Scalar>::Solution(const Mesh *mesh) : MeshFunction<Scalar>(mesh)
+    template<>
+    Solution<std::complex<double> >::Solution()
+        : MeshFunction<std::complex<double> >()
+    {
+      space_type = HERMES_INVALID_SPACE;
+      this->init();
+      Hermes::Hermes2D::Hermes2DApi.complexSolutionPointerCalculator++;
+    }
+
+    template<>
+    Solution<double>::Solution(const Mesh *mesh) : MeshFunction<double>(mesh)
     {
       space_type = HERMES_INVALID_SPACE;
       this->init();
       this->mesh = mesh;
+      Hermes::Hermes2D::Hermes2DApi.realSolutionPointerCalculator++;
     }
 
-    template<typename Scalar>
-    Solution<Scalar>::Solution(Space<Scalar>* s, Vector<Scalar>* coeff_vec) : MeshFunction<Scalar>(s->get_mesh())
+    template<>
+    Solution<std::complex<double> >::Solution(const Mesh *mesh) : MeshFunction<std::complex<double> >(mesh)
+    {
+      space_type = HERMES_INVALID_SPACE;
+      this->init();
+      this->mesh = mesh;
+      Hermes::Hermes2D::Hermes2DApi.complexSolutionPointerCalculator++;
+    }
+
+    template<>
+    Solution<double>::Solution(Space<double>* s, Vector<double>* coeff_vec) : MeshFunction<double>(s->get_mesh())
     {
       space_type = s->get_type();
       this->init();
       this->mesh = s->get_mesh();
-      Solution<Scalar>::vector_to_solution(coeff_vec, s, this);
+      Solution<double>::vector_to_solution(coeff_vec, s, this);
+      Hermes::Hermes2D::Hermes2DApi.realSolutionPointerCalculator++;
     }
 
-    template<typename Scalar>
-    Solution<Scalar>::Solution(Space<Scalar>* s, Scalar* coeff_vec) : MeshFunction<Scalar>(s->get_mesh())
+    template<>
+    Solution<std::complex<double> >::Solution(Space<std::complex<double> >* s, Vector<std::complex<double> >* coeff_vec) : MeshFunction<std::complex<double> >(s->get_mesh())
     {
       space_type = s->get_type();
       this->init();
       this->mesh = s->get_mesh();
-      Solution<Scalar>::vector_to_solution(coeff_vec, s, this);
+      Solution<std::complex<double> >::vector_to_solution(coeff_vec, s, this);
+      Hermes::Hermes2D::Hermes2DApi.complexSolutionPointerCalculator++;
+    }
+
+    template<>
+    Solution<double>::Solution(Space<double>* s, double* coeff_vec) : MeshFunction<double>(s->get_mesh())
+    {
+      space_type = s->get_type();
+      this->init();
+      this->mesh = s->get_mesh();
+      Solution<double>::vector_to_solution(coeff_vec, s, this);
+      Hermes::Hermes2D::Hermes2DApi.realSolutionPointerCalculator++;
+    }
+
+    template<>
+    Solution<std::complex<double> >::Solution(Space<std::complex<double> >* s, std::complex<double> * coeff_vec) : MeshFunction<std::complex<double> >(s->get_mesh())
+    {
+      space_type = s->get_type();
+      this->init();
+      this->mesh = s->get_mesh();
+      Solution<std::complex<double> >::vector_to_solution(coeff_vec, s, this);
+      Hermes::Hermes2D::Hermes2DApi.complexSolutionPointerCalculator++;
     }
 
     template<typename Scalar>
@@ -176,6 +246,7 @@ namespace Hermes
     {
       if(sln->sln_type == HERMES_UNDEF) throw Hermes::Exceptions::Exception("Solution being copied is uninitialized.");
 
+			this->increasePointerDataCounter();
       free();
 
       this->mesh = sln->mesh;
@@ -239,8 +310,8 @@ namespace Hermes
           }
     }
 
-    template<typename Scalar>
-    void Solution<Scalar>::free()
+    template<>
+    void Solution<double>::free()
     {
       if(mono_coeffs  != NULL) { delete [] mono_coeffs;   mono_coeffs = NULL;  }
       if(elem_orders != NULL) { delete [] elem_orders;  elem_orders = NULL; }
@@ -253,13 +324,40 @@ namespace Hermes
         e_last = NULL;
 
         free_tables();
+				Hermes2DApi.realSolutionDataPointerCalculator--;
     }
 
-    template<typename Scalar>
-    Solution<Scalar>::~Solution()
+		template<>
+		void Solution<std::complex<double> >::free()
+		{
+			if(mono_coeffs  != NULL) { delete [] mono_coeffs;   mono_coeffs = NULL;  }
+			if(elem_orders != NULL) { delete [] elem_orders;  elem_orders = NULL; }
+			if(dxdy_buffer != NULL) { delete [] dxdy_buffer;  dxdy_buffer = NULL; }
+
+			for (int i = 0; i < this->num_components; i++)
+				if(elem_coeffs[i] != NULL)
+				{ delete [] elem_coeffs[i];  elem_coeffs[i] = NULL; }
+
+				e_last = NULL;
+
+				free_tables();
+				Hermes2DApi.complexSolutionDataPointerCalculator--;
+		}
+
+		template<>
+    Solution<double>::~Solution()
     {
       free();
       space_type = HERMES_INVALID_SPACE;
+      Hermes::Hermes2D::Hermes2DApi.realSolutionPointerCalculator--;
+    }
+
+    template<>
+    Solution<std::complex<double> >::~Solution()
+    {
+      free();
+      space_type = HERMES_INVALID_SPACE;
+      Hermes::Hermes2D::Hermes2DApi.complexSolutionPointerCalculator--;
     }
 
     static struct mono_lu_init
@@ -347,6 +445,19 @@ namespace Hermes
       delete pss;
     }
 
+
+		template<>
+		void Solution<double>::increasePointerDataCounter()
+		{
+			Hermes2DApi.realSolutionDataPointerCalculator++;
+		}
+
+		template<>
+		void Solution<std::complex<double> >::increasePointerDataCounter()
+		{
+			Hermes2DApi.realSolutionDataPointerCalculator++;
+		}
+
     template<typename Scalar>
     void Solution<Scalar>::set_coeff_vector(const Space<Scalar>* space, PrecalcShapeset* pss,
         const Scalar* coeff_vec, bool add_dir_lift, int start_index)
@@ -367,6 +478,8 @@ namespace Hermes
 
       if(Solution<Scalar>::static_verbose_output)
         Hermes::Mixins::Loggable::Static::info("Solution: set_coeff_vector - solution being freed.");
+			
+			this->increasePointerDataCounter();
       free();
 
       this->space_type = space->get_type();
@@ -1132,14 +1245,12 @@ namespace Hermes
     template<>
     void Solution<double>::save(const char* filename) const
     {
-      if(sln_type == HERMES_EXACT)
-        throw Exceptions::Exception("Exact solution cannot be saved to a file.");
       if(sln_type == HERMES_UNDEF)
         throw Exceptions::Exception("Cannot save -- uninitialized solution.");
 
       try
       {
-        XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs);
+        XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs, 0, 0);
 
         for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
           xmlsolution.mono_coeffs().push_back(XMLSolution::mono_coeffs(coeffs_i, mono_coeffs[coeffs_i]));
@@ -1155,7 +1266,7 @@ namespace Hermes
             xmlsolution.component().back().elem_coeffs().push_back(XMLSolution::elem_coeffs(elems_i, elem_coeffs[component_i][elems_i]));
         }
 
-        std::string solution_schema_location(H2D_XML_SCHEMAS_DIRECTORY);
+        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
         solution_schema_location.append("/solution_h2d_xml.xsd");
         ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
 
@@ -1176,14 +1287,12 @@ namespace Hermes
     template<>
     void Solution<std::complex<double> >::save(const char* filename) const
     {
-      if(sln_type == HERMES_EXACT)
-        throw Exceptions::Exception("Exact solution cannot be saved to a file.");
       if(sln_type == HERMES_UNDEF)
         throw Exceptions::Exception("Cannot save -- uninitialized solution.");
 
       try
       {
-        XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs);
+        XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs, 0, 1);
 
         for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
         {
@@ -1202,7 +1311,7 @@ namespace Hermes
             xmlsolution.component().back().elem_coeffs().push_back(XMLSolution::elem_coeffs(elems_i, elem_coeffs[component_i][elems_i]));
         }
 
-        std::string solution_schema_location(H2D_XML_SCHEMAS_DIRECTORY);
+        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
         solution_schema_location.append("/solution_h2d_xml.xsd");
         ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
 
@@ -1221,39 +1330,75 @@ namespace Hermes
     }
 
     template<>
-    void Solution<double>::load(const char* filename, Mesh* mesh)
+    void Solution<double>::load(const char* filename, Space<double>* space)
     {
       free();
-      sln_type = HERMES_SLN;
-      this->mesh = mesh;
+      this->mesh = space->get_mesh();
+			this->space_type = space->get_type();
 
-      try
+			try
       {
         std::auto_ptr<XMLSolution::solution> parsed_xml_solution(XMLSolution::solution_(filename));
+        sln_type = parsed_xml_solution->exact() == 0 ? HERMES_SLN : HERMES_EXACT;
 
-        this->num_coeffs = parsed_xml_solution->num_coeffs();
-        this->num_elems = parsed_xml_solution->num_elems();
-        this->num_components = parsed_xml_solution->num_components();
+        if(sln_type == HERMES_EXACT)
+        {
+          switch(parsed_xml_solution->num_components())
+          {
+          case 1:
+            if(parsed_xml_solution->exactComplex() == 0)
+            {
+              double* coeff_vec = new double[space->get_num_dofs()];
+              ConstantSolution<double> sln(mesh, parsed_xml_solution->exactConstantXReal().get());
+              OGProjection<double> ogProj;
+              ogProj.project_global(space, &sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          case 2:
+            if(parsed_xml_solution->exactComplex() == 0)
+            {
+              double* coeff_vec = new double[space->get_num_dofs()];
+              ConstantSolutionVector<double> sln(mesh, parsed_xml_solution->exactConstantXReal().get(), parsed_xml_solution->exactConstantYReal().get());
+              OGProjection<double> ogProj;
+              ogProj.project_global(space, &sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          }
+        }
+        else
+        {
+          this->num_coeffs = parsed_xml_solution->num_coeffs();
+          this->num_elems = parsed_xml_solution->num_elems();
+          this->num_components = parsed_xml_solution->num_components();
 
-        this->mono_coeffs = new double[num_coeffs];
-        memset(this->mono_coeffs, 0, this->num_coeffs*sizeof(double));
+          this->mono_coeffs = new double[num_coeffs];
+          memset(this->mono_coeffs, 0, this->num_coeffs*sizeof(double));
 
-        for(unsigned int component_i = 0; component_i < num_components; component_i++)
-          elem_coeffs[component_i] = new int[num_elems];
+          for(unsigned int component_i = 0; component_i < num_components; component_i++)
+            elem_coeffs[component_i] = new int[num_elems];
 
-        this->elem_orders = new int[num_elems];
+          this->elem_orders = new int[num_elems];
 
-        for (unsigned int coeffs_i = 0; coeffs_i < num_coeffs; coeffs_i++)
-          this->mono_coeffs[parsed_xml_solution->mono_coeffs().at(coeffs_i).id()] = parsed_xml_solution->mono_coeffs().at(coeffs_i).real();
+          for (unsigned int coeffs_i = 0; coeffs_i < num_coeffs; coeffs_i++)
+            this->mono_coeffs[parsed_xml_solution->mono_coeffs().at(coeffs_i).id()] = parsed_xml_solution->mono_coeffs().at(coeffs_i).real();
 
-        for (unsigned int elems_i = 0; elems_i < num_elems; elems_i++)
-          this->elem_orders[parsed_xml_solution->elem_orders().at(elems_i).id()] = parsed_xml_solution->elem_orders().at(elems_i).order();
-
-        for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
           for (unsigned int elems_i = 0; elems_i < num_elems; elems_i++)
-            this->elem_coeffs[component_i][parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).id()] = parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).coeff();
+            this->elem_orders[parsed_xml_solution->elem_orders().at(elems_i).id()] = parsed_xml_solution->elem_orders().at(elems_i).order();
 
-        init_dxdy_buffer();
+          for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
+            for (unsigned int elems_i = 0; elems_i < num_elems; elems_i++)
+              this->elem_coeffs[component_i][parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).id()] = parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).coeff();
+        
+        }
+          init_dxdy_buffer();
       }
       catch (const xml_schema::exception& e)
       {
@@ -1263,39 +1408,78 @@ namespace Hermes
     }
 
     template<>
-    void Solution<std::complex<double> >::load(const char* filename, Mesh* mesh)
+    void Solution<std::complex<double> >::load(const char* filename, Space<std::complex<double> >* space)
     {
       free();
       sln_type = HERMES_SLN;
-      this->mesh = mesh;
+      this->mesh = space->get_mesh();
+			this->space_type = space->get_type();
 
       try
       {
         std::auto_ptr<XMLSolution::solution> parsed_xml_solution(XMLSolution::solution_(filename));
+        sln_type = parsed_xml_solution->exact() == 0 ? HERMES_SLN : HERMES_EXACT;
 
-        this->num_coeffs = parsed_xml_solution->num_coeffs();
-        this->num_elems = parsed_xml_solution->num_elems();
-        this->num_components = parsed_xml_solution->num_components();
+        if(sln_type == HERMES_EXACT)
+        {
+          switch(parsed_xml_solution->num_components())
+          {
+          case 1:
+            if(parsed_xml_solution->exactComplex() == 1)
+            {
+              std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
+              ConstantSolution<std::complex<double> > sln(mesh, std::complex<double>(parsed_xml_solution->exactConstantXReal().get(), parsed_xml_solution->exactConstantXComplex().get()));
+              OGProjection<std::complex<double> > ogProj;
+              ogProj.project_global(space, &sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          case 2:
+            if(parsed_xml_solution->exactComplex() == 1)
+            {
+              std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
+              ConstantSolutionVector<std::complex<double> > sln(mesh, std::complex<double>(parsed_xml_solution->exactConstantXReal().get(), parsed_xml_solution->exactConstantXComplex().get()), std::complex<double>(parsed_xml_solution->exactConstantYReal().get(), parsed_xml_solution->exactConstantYComplex().get()));
+              OGProjection<std::complex<double> > ogProj;
+              ogProj.project_global(space, &sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          }
+        }
+        else
+        {
+          std::auto_ptr<XMLSolution::solution> parsed_xml_solution(XMLSolution::solution_(filename));
 
-        this->mono_coeffs = new std::complex<double>[num_coeffs];
-        memset(this->mono_coeffs, 0, this->num_coeffs*sizeof(std::complex<double>));
+          this->num_coeffs = parsed_xml_solution->num_coeffs();
+          this->num_elems = parsed_xml_solution->num_elems();
+          this->num_components = parsed_xml_solution->num_components();
 
-        for(unsigned int component_i = 0; component_i < num_components; component_i++)
-          elem_coeffs[component_i] = new int[num_elems];
+          this->mono_coeffs = new std::complex<double>[num_coeffs];
+          memset(this->mono_coeffs, 0, this->num_coeffs*sizeof(std::complex<double>));
 
-        this->elem_orders = new int[num_elems];
+          for(unsigned int component_i = 0; component_i < num_components; component_i++)
+            elem_coeffs[component_i] = new int[num_elems];
 
-        for (unsigned int coeffs_i = 0; coeffs_i < num_coeffs; coeffs_i++)
-          this->mono_coeffs[parsed_xml_solution->mono_coeffs().at(coeffs_i).id()] = std::complex<double>(parsed_xml_solution->mono_coeffs().at(coeffs_i).real(), parsed_xml_solution->mono_coeffs().at(coeffs_i).imaginary().get());
+          this->elem_orders = new int[num_elems];
 
-        for (unsigned int elems_i = 0; elems_i < num_elems; elems_i++)
-          this->elem_orders[parsed_xml_solution->elem_orders().at(elems_i).id()] = parsed_xml_solution->elem_orders().at(elems_i).order();
+          for (unsigned int coeffs_i = 0; coeffs_i < num_coeffs; coeffs_i++)
+            this->mono_coeffs[parsed_xml_solution->mono_coeffs().at(coeffs_i).id()] = std::complex<double>(parsed_xml_solution->mono_coeffs().at(coeffs_i).real(), parsed_xml_solution->mono_coeffs().at(coeffs_i).imaginary().get());
 
-        for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
           for (unsigned int elems_i = 0; elems_i < num_elems; elems_i++)
-            this->elem_coeffs[component_i][parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).id()] = parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).coeff();
+            this->elem_orders[parsed_xml_solution->elem_orders().at(elems_i).id()] = parsed_xml_solution->elem_orders().at(elems_i).order();
 
-        init_dxdy_buffer();
+          for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
+            for (unsigned int elems_i = 0; elems_i < num_elems; elems_i++)
+              this->elem_coeffs[component_i][parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).id()] = parsed_xml_solution->component().at(component_i).elem_coeffs().at(elems_i).coeff();
+        }
+
+          init_dxdy_buffer();
       }
       catch (const xml_schema::exception& e)
       {

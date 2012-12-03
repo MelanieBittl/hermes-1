@@ -1,6 +1,6 @@
-project(P01-06-bc-newton)
+project(03-navier-stokes)
 
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
+add_executable(${PROJECT_NAME} main.cpp)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS ${FLAGS})
 

@@ -1,4 +1,4 @@
-project(P05-01-eigenvalue)
+project(08-eigenvalue)
 
 add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
 

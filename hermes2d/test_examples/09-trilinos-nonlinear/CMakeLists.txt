@@ -1,6 +1,6 @@
-project(P03-07-navier-stokes)
+project(09-trilinos-nonlinear)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS ${FLAGS})
 

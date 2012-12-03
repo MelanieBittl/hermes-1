@@ -78,3 +78,7 @@ Debug/
 *.tag
 *.sty
 *.dvi
+
+
+*.vtk
+
