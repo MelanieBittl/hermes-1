@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 do
 {	 
  // 	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
- 	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,2);  
+ 	    Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2);  
 
 	if ((ts > 1 && ts % UNREF_FREQ == 0)||(space_rho.get_num_dofs() >= NDOF_STOP)) 
     { 
@@ -177,7 +177,7 @@ do
                 break;
         default: Exceptions::Exception("Wrong global derefinement method.");
       }
-       	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,1); //sonst Segfault
+Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2); //sonst Segfault
        	  //numThreads>1 kommt anscheinend nicht mit Gittern zurecht die groeber sind als im vorherigen Schritt? 
        	       
     }
@@ -223,8 +223,7 @@ do
 		UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
 
 //Projection of previous timestep solution / initial data
-					 // 	Hermes::Mixins::Loggable::Static::info("projection of previous time step solution");
-					//if(ts>1)  	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,1); 
+
 if(ts==1){
 	lumpedProjection.project_lumped(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&init_rho, &init_rho_v_x, &init_rho_v_y, &init_e), coeff_vec, matrix_solver);
    ogProjection.project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&init_rho, &init_rho_v_x, &init_rho_v_y, &init_e), coeff_vec_2,  HERMES_L2_NORM);
@@ -239,7 +238,7 @@ if(ts==1){
 			dp_boundary->assemble(matrix_dS);
 		  dp_K->assemble(lowmat_rhs);
 		  
-		 //  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,2); 
+
 
 					//------------------------artificial DIFFUSION D---------------------------------------		
 					// 	Hermes::Mixins::Loggable::Static::info("artificial Diffusion");

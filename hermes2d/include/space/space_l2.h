@@ -29,8 +29,8 @@ namespace Hermes
 		{
 		public:
 			L2Space();
-			L2Space(const Mesh* mesh, int p_init = 0,
-				Shapeset* shapeset = NULL);
+			L2Space(const Mesh* mesh, int p_init = 0,	
+						Shapeset* shapeset = NULL);
 
 			virtual ~L2Space();
 

@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-3;
 const double T_FINAL = 0.231;                       // Time interval length. 
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
     OGProjection<double> ogProjection;
 		Lumped_Projection lumpedProjection;
 		
-	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,1);  
+    Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2);  
 
     dp_mass.assemble(mass_matrix);
 
@@ -177,7 +177,7 @@ do
 {	 
 
   	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
- 	  Hermes::Hermes2D::Hermes2DApi.set_param_value(Hermes::Hermes2D::numThreads,1);  
+ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2); 
  	  
  	  if(ts!=1)
  	  {

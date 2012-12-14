@@ -3,6 +3,7 @@
 #include "lumped_projection.h"
 #include "hp_adapt.h"
 #include "prev_solution.h"
+#include"l2_semi_cg_space.h"
 #include <list>
 
 
@@ -16,7 +17,7 @@ using namespace Hermes::Hermes2D::Views;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 
 const double h_max = 0.1;                       
@@ -65,11 +66,11 @@ int main(int argc, char* argv[])
 
 
   // Initialize boundary conditions.
-  DefaultEssentialBCConst<double>  bc_essential(BDY_IN, 0.0);
-  EssentialBCs<double>  bcs(&bc_essential);
+ // DefaultEssentialBCConst<double>  bc_essential(BDY_IN, 0.0);
+ // EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an H1 space with default shapeset.
-  H1Space<double> space(&mesh, &bcs, P_INIT);
+L2_SEMI_CG_Space<double> space(&mesh, P_INIT);
 
   int ndof = space.get_num_dofs();
   
@@ -86,7 +87,7 @@ int main(int argc, char* argv[])
   // Initialize the weak formulation.
 	CustomWeakFormMassmatrix  massmatrix(time_step, &u_prev_time);
 	CustomWeakFormConvection  convection(&u_prev_time);
-
+	CustomWeakForm wf_surf(time_step, theta, &u_prev_time, BDY_IN, &mesh);
 
 
 
@@ -113,6 +114,9 @@ Orderizer ord;
 	UMFPackMatrix<double> * conv_matrix = new UMFPackMatrix<double> ;   //K
 	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double> ;  
 	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double> ; 
+	
+	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; //inner and outer edge integrals
+	
 
 
 		UMFPackMatrix<double> * high_matrix = new UMFPackMatrix<double> ;  
@@ -145,7 +149,7 @@ Orderizer ord;
 
   OGProjection<double> ogProjection;
 
-	H1Space<double>* ref_space = new H1Space<double>(&mesh, &bcs, P_INIT);	
+	L2_SEMI_CG_Space<double>* ref_space = new L2_SEMI_CG_Space<double>(&mesh,P_INIT);	
 	
 
 //Timestep loop
@@ -173,6 +177,7 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 
 		DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, ref_space);
 		DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, ref_space);
+		DiscreteProblem<double> * dp_surf = new DiscreteProblem<double> (&wf_surf, ref_space);		 
 		HPAdapt * adapting = new HPAdapt(ref_space, HERMES_L2_NORM);
 
 			double* coeff_vec = new double[ref_ndof];
@@ -192,16 +197,22 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 		if(as==1){
 
 		//----------------------MassLumping M_L/tau--------------------------------------------------------------------
-			dp_mass->assemble(mass_matrix,vec_rhs); 	
+			dp_mass->assemble(mass_matrix); 	
 			UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
 
 			//------------------------artificial DIFFUSION D---------------------------------------
 			dp_convection->assemble(conv_matrix, NULL,true);
 			UMFPackMatrix<double> * diffusion = artificialDiffusion(conv_matrix);
-			//--------------------------------------------------------------------------------------------
+			//-----------------surface Integrals for DG and Boundary-------------------------------
+			dp_surf->assemble(dg_surface_matrix,NULL,true);
 
-			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
+
+//-------------------------------------------------
+			//lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
+			lowmat_rhs->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
 			lowmat_rhs->add_matrix(diffusion); 
+			lowmat_rhs->add_matrix(conv_matrix); 
+			//lowmat_rhs->add_matrix(dg_surface_matrix);
 			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
 			//(-theta)(K+D)
 			if(theta==0) low_matrix->zero();
@@ -250,7 +261,6 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 				// u_L = coeff_vec_2 
 					Solution<double> ::vector_to_solution(coeff_vec_2, ref_space, &low_sln);	
 
-				//smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
 			smoothness_indicator(ref_space,&low_sln,&R_h_1,&R_h_2, smooth_elem,smooth_dof,al,mass_matrix,true);
 			changed = h_p_adap(ref_space,&u_prev_time, &low_sln,&R_h_1,&R_h_2,&massmatrix, adapting,al, h_min,h_max, ts,as,smooth_elem, h_start);	
 			
@@ -270,23 +280,33 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 
 //P=2 -----------------------------( nicht uniformes Gitter!!!!!!)
 					bool* fct = new bool[ref_ndof]; 
-			for(int i=0; i<ref_ndof;i++){fct[i]=false; /*P_plus[i]=0.;*/ }
-					//if(ts==1) p1_list(ref_space, fct, al,P_plus,&u_prev_time,h_start);		
-					//else p1_list(ref_space, fct, al,P_plus,&u_prev,h_start);		
-					p1_list(ref_space, fct, al,h_start);		
+			for(int i=0; i<ref_ndof;i++)
+					fct[i]=false;	
+			p1_list(ref_space, fct, al,h_start);		
 
 
 				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
-			dp_mass->assemble(mass_matrix,vec_rhs); 	
+Hermes::Mixins::Loggable::Static::info("mass_assembling");
+			dp_mass->assemble(mass_matrix); 
+							
+Hermes::Mixins::Loggable::Static::info("mass_lumping");	
 				UMFPackMatrix<double>* lumped_matrix = massLumping(fct,mass_matrix);
 
 			//------------------------artificial DIFFUSION D---------------------------------------
+							
+Hermes::Mixins::Loggable::Static::info("diffusion");
 			dp_convection->assemble(conv_matrix, NULL,true);
 				UMFPackMatrix<double>* diffusion = artificialDiffusion(fct,conv_matrix);
+				
+			//-----------------surface Integrals for DG and Boundary-------------------------------
+			Hermes::Mixins::Loggable::Static::info("bdry");
+			dp_surf->assemble(dg_surface_matrix,NULL,true);
 
 			//--------------------------------------------------------------------------------------------
-			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
+			Hermes::Mixins::Loggable::Static::info("all ");
+			lowmat_rhs->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
 			lowmat_rhs->add_matrix(diffusion); 
+			lowmat_rhs->add_matrix(conv_matrix); 
 			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
 			//(-theta)(K+D)
 			if(theta==0) low_matrix->zero();
@@ -312,6 +332,8 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 
+
+Hermes::Mixins::Loggable::Static::info("Projection");
 			// Project the initial condition on the FE space->coeff_vec	
 			if(ts==1) {
 				Lumped_Projection::project_lumped(ref_space, &u_prev_time, coeff_vec,lumped_matrix);
@@ -341,6 +363,7 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 
 	//-------------------------solution of lower order------------	
+	Hermes::Mixins::Loggable::Static::info("sln low order");
 			  // Solve the linear system and if successful, obtain the solution. M_L/tau u^L=  M_L/tau+ (1-theta)(K+D) u^n
 			lumped_matrix->multiply_with_Scalar(1./time_step); //M_L/tau
 			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (lumped_matrix,vec_rhs);	
@@ -426,6 +449,7 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 
 		delete dp_convection;
 		delete dp_mass; 
+		delete dp_surf;
 		delete adapting;
 		
 
@@ -464,6 +488,7 @@ ord.save_orders_vtk(ref_space, "end_order.vtk");
 	delete lowmat_rhs;
 	delete high_matrix;
 	delete high_rhs;
+	delete dg_surface_matrix;
 
 
 	delete al;

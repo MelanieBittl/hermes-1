@@ -44,6 +44,8 @@ namespace Hermes
     template<typename Scalar> class H1Space;
     template<typename Scalar> class HcurlSpace;
     template<typename Scalar> class HdivSpace;
+    template<typename Scalar> class L2_SEMI_CG_Space;
+
 
     /// @defgroup spaces FEM Spaces handling
 
@@ -387,7 +389,7 @@ namespace Hermes
       Hermes::vector<void*> bc_data;
 
       void precalculate_projection_matrix(int nv, double**& mat, double*& p);
-      void update_edge_bc(Element* e, SurfPos* surf_pos);
+      virtual void update_edge_bc(Element* e, SurfPos* surf_pos);
 
       /// Called by Space to update constraining relationships between shape functions due
       /// to hanging nodes in the mesh. As this is space-specific, this function is reimplemented

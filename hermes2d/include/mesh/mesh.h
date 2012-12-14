@@ -201,6 +201,7 @@ namespace Hermes
       template<typename Scalar> friend class HcurlSpace;
       template<typename Scalar> friend class HdivSpace;
       template<typename Scalar> friend class L2Space;
+      template<typename Scalar> friend class L2_SEMI_CG_Space;
       template<typename Scalar> friend class KellyTypeAdapt;
       template<typename Scalar> friend class DiscreteProblem;
       template<typename Scalar> friend class Solution;
@@ -550,6 +551,7 @@ namespace Hermes
       template<typename Scalar> friend class HcurlSpace;
       template<typename Scalar> friend class HdivSpace;
       template<typename Scalar> friend class L2Space;
+      template<typename Scalar> friend class L2_SEMI_CG_Space;
       friend class Views::ScalarView;
       friend class Views::Orderizer;
     public:
