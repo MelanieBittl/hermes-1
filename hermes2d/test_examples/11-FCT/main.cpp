@@ -27,12 +27,12 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 3; 										//Maximal polynomial degree.
 
 const double time_step = 1e-3;                           // Time step.
-const double T_FINAL = 2*PI;                       // Time interval length.
+const double T_FINAL = 2e-3;//2*PI;                       // Time interval length.
 
 const double EPS_smooth = 1e-5;   		//constant for the smoothness indicator (a<b => a+eps<=b)
 const double theta = 0.5;   			 // theta-scheme for time (theta =0 -> explizit, theta=1 -> implizit)
@@ -74,11 +74,11 @@ const double ERR_STOP = 7.0;                      // Stopping criterion for adap
 const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
 // over this limit. This is to prevent h-adaptivity to go on forever.
 
-const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
+const int ADAPSTEP_MAX = 1;												// max. numbers of adaptivity steps
 
 
 //Visualization
-const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const int VTK_FREQ = 1000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 

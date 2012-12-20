@@ -327,18 +327,18 @@ namespace Hermes
           {
             for(typename std::map<uint64_t, CacheRecordPerSubIdx*>::iterator it = this->cache_records_sub_idx[i][j]->begin(); it != this->cache_records_sub_idx[i][j]->end(); it++)
             {
-              it->second->clear();
-              delete it->second;
+              it->second->clear();  
+              delete it->second; 
             }
 
-            this->cache_records_sub_idx[i][j]->clear();
+            this->cache_records_sub_idx[i][j]->clear();  
             delete this->cache_records_sub_idx[i][j];
             this->cache_records_sub_idx[i][j] = NULL;
           }
           if(this->cache_records_element[i][j] != NULL)
           {
-            this->cache_records_element[i][j]->clear();
-            delete this->cache_records_element[i][j];
+            this->cache_records_element[i][j]->clear();  
+            delete this->cache_records_element[i][j]; 
             this->cache_records_element[i][j] = NULL;
           }
           free(cache_records_sub_idx[i]);
@@ -1016,7 +1016,8 @@ namespace Hermes
         weakforms[i]->free_ext();
         delete weakforms[i];
       }
-
+		 delete [] weakforms;
+ 
       for(unsigned int i = 0; i < this->spaces.size(); i++)
         delete [] cache_element_stored[i];
       delete [] cache_element_stored;
@@ -1205,7 +1206,7 @@ namespace Hermes
 
     template<typename Scalar>
     DiscreteProblem<Scalar>::CacheRecordPerSubIdx::CacheRecordPerSubIdx() : fnsSurface(NULL)
-    {
+    {   
     }
 
     template<typename Scalar>
@@ -1293,6 +1294,7 @@ namespace Hermes
     void DiscreteProblem<Scalar>::calculate_cache_records(PrecalcShapeset** current_pss, PrecalcShapeset** current_spss, RefMap** current_refmaps, Solution<Scalar>** current_u_ext, AsmList<Scalar>** current_als, Traverse::State* current_state,
       AsmList<Scalar>** current_alsSurface, WeakForm<Scalar>* current_wf)
     {
+ bool new_cache = false;
       for(unsigned int space_i = 0; space_i < this->spaces.size(); space_i++)
       {
         if(current_state->e[space_i] == NULL)
@@ -1300,21 +1302,25 @@ namespace Hermes
 
         // No sub_idx map for this element.
         if(this->cache_records_sub_idx[space_i][current_state->e[space_i]->id] == NULL)
-        {
+        { 
 #pragma omp critical (cache_for_subidx_preparation)
           if(this->cache_records_sub_idx[space_i][current_state->e[space_i]->id] == NULL)
             this->cache_records_sub_idx[space_i][current_state->e[space_i]->id] = new std::map<uint64_t, CacheRecordPerSubIdx*>;
+            
+            new_cache = true;
         }
         else
         {
           // If the sub_idx map exists AND contains a record for this sub_idx, we need to delete the record.
           typename std::map<uint64_t, CacheRecordPerSubIdx*>::iterator it = this->cache_records_sub_idx[space_i][current_state->e[space_i]->id]->find(current_state->sub_idx[space_i]);
           if(it != this->cache_records_sub_idx[space_i][current_state->e[space_i]->id]->end())
-            (*it).second->clear();
+            (*it).second->clear();  
+           else new_cache = true;          
         }
 
         // Insert the new record.
 #pragma omp critical (cache_for_subidx_preparation)
+if(new_cache ==true)
         this->cache_records_sub_idx[space_i][current_state->e[space_i]->id]->insert(std::pair<uint64_t, CacheRecordPerSubIdx*>(current_state->sub_idx[space_i], new CacheRecordPerSubIdx));
         
         // Set active element to reference mappings.
@@ -2511,7 +2517,10 @@ namespace Hermes
           if(ext != NULL)
           {
             for(unsigned int i = 0; i < mfs->wf->ext.size(); i++)
-              ext[i]->free_fn();
+           {
+              	ext[i]->free_fn();
+              	delete ext[i];
+           }
             delete [] ext;
           }
 

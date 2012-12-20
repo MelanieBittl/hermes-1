@@ -16,6 +16,7 @@ public:
   CustomWeakForm(double time_step, double theta, Solution<double>* sln_prev_time, std::string inlet,  Mesh* mesh);
   WeakForm<double>* clone() const;
 	~CustomWeakForm();
+	
 private:
   class CustomMatrixFormVol : public MatrixFormVol<double>
   {

@@ -3,9 +3,9 @@
 CustomWeakForm::CustomWeakForm(double time_step,double theta, Solution<double>* sln_prev_time, std::string inlet, Mesh* mesh) : WeakForm<double>(1), mesh(mesh)
 {
  this->set_ext(sln_prev_time);
-    //add_matrix_form(new CustomMatrixFormVol(0, 0, time_step,theta));
-   // add_vector_form(new CustomVectorFormVol(0,time_step,theta));
-    add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));    
+    add_matrix_form(new CustomMatrixFormVol(0, 0, time_step,theta));
+    add_vector_form(new CustomVectorFormVol(0,time_step,theta));
+   add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));    
     add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
 
 }
@@ -15,23 +15,13 @@ WeakForm<double>* CustomWeakForm::clone() const
   return new CustomWeakForm(*this);
 }
 
-	CustomWeakForm::~CustomWeakForm(){		
-	for(int i=0; i<this->mfvol.size();i++)
-		delete get_mfvol()[i];			
-	
-	for(int i=0; i<this->vfvol.size();i++)
-		delete get_vfvol()[i];			
-	
-	for(int i=0; i<this->mfsurf.size();i++)
-		delete get_mfsurf()[i];			
-	
-	for(int i=0; i<this->mfDG.size();i++)
-		delete get_mfDG()[i];			
-	
-		
-		
-		WeakForm<double>::delete_all();
-	}
+CustomWeakForm::~CustomWeakForm()
+{
+ for(unsigned int i = 0; i < this->forms.size(); i++)
+ 	delete get_forms()[i];
+ WeakForm<double>::delete_all();
+}
+
 
 template<typename Real, typename Scalar>
 Scalar CustomWeakForm::CustomMatrixFormVol::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
@@ -59,7 +49,7 @@ Ord CustomWeakForm::CustomMatrixFormVol::ord(int n, double *wt, Func<Ord> *u_ext
 
 MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVol::clone() const
 {
-  return new CustomWeakForm::CustomMatrixFormVol(*this);
+  return new CustomWeakForm::CustomMatrixFormVol(0, 0, time_step,theta);
 }
 
 template<typename Real, typename Scalar>
@@ -88,7 +78,7 @@ Ord CustomWeakForm::CustomVectorFormVol::ord(int n, double *wt, Func<Ord> *u_ext
 
 VectorFormVol<double>* CustomWeakForm::CustomVectorFormVol::clone() const
 {
-  return new CustomWeakForm::CustomVectorFormVol(*this);
+  return new CustomWeakForm::CustomVectorFormVol(0,time_step,theta);
 }
 
 
@@ -121,8 +111,9 @@ Ord CustomWeakForm::CustomMatrixFormSurface::ord(int n, double *wt, Func<Ord> *u
 
 MatrixFormSurf<double>* CustomWeakForm::CustomMatrixFormSurface::clone() const
 {
-  return new CustomWeakForm::CustomMatrixFormSurface(*this);
+  return new CustomWeakForm::CustomMatrixFormSurface(0, 0);
 }
+
 template<typename Real, typename Scalar>
 Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
                                                         Geom<Real> *e, Func<Scalar> **ext) const
@@ -152,7 +143,7 @@ Ord CustomWeakForm::CustomMatrixFormInterface::ord(int n, double *wt, Func<Ord> 
 
 MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
 {
-  return new CustomWeakForm::CustomMatrixFormInterface(*this);
+  return new CustomWeakForm::CustomMatrixFormInterface(0, 0);
 }
 
 double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,

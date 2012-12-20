@@ -46,6 +46,8 @@ namespace Hermes
     template<typename Scalar>
     WeakForm<Scalar>::~WeakForm()
     {
+		for(unsigned int i = 0; i < this->forms.size(); i++)
+		 	delete get_forms()[i];
       delete_all();
     }
 
@@ -64,7 +66,8 @@ namespace Hermes
 
     template<typename Scalar>
     void WeakForm<Scalar>::cloneMembers(const WeakForm<Scalar>* otherWf)
-    {
+    {    
+    
       this->mfvol.clear();
       this->mfsurf.clear();
       this->mfDG.clear();
@@ -73,6 +76,7 @@ namespace Hermes
       this->vfDG.clear();
       this->forms.clear();
       this->ext.clear();
+
 
       for(unsigned int i = 0; i < otherWf->forms.size(); i++)
       {
