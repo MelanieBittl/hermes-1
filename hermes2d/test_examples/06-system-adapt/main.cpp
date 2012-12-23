@@ -217,6 +217,22 @@ int main(int argc, char* argv[])
     s_view_1.show(&v_sln);
     o_view_1.show(&v_space);
 
+		Vectorizer lin;
+		Linearizer orderizer;
+		lin.process_solution(&u_sln, &v_sln, 1, 1, 1e-4);
+		orderizer.process_solution(&v_sln);
+		std::ofstream out("lin");
+		std::ofstream outO("linO");
+		for(int i = 0; i < lin.get_num_edges(); i++)
+			out << i << lin.get_edges()[i][0] << '-' << lin.get_edges()[i][1] << '\t' << lin.get_edge_markers()[i] << std::endl;
+
+		for(int i = 0; i < orderizer.get_num_triangles(); i++)
+			outO << orderizer.get_triangles()[i][0]  << '-' << orderizer.get_triangles()[i][1] << '-' << orderizer.get_triangles()[i][2] << '\t' << orderizer.get_triangle_markers()[i] << std::endl;
+
+		out.close();
+		outO.close();
+
+
     // Calculate element errors.
     Hermes::Mixins::Loggable::Static::info("Calculating error estimate and exact error.");
     Adapt<double>* adaptivity = new Adapt<double>(Hermes::vector<Space<double> *>(&u_space, &v_space));

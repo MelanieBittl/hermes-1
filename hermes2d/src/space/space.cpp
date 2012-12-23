@@ -1056,6 +1056,28 @@ namespace Hermes
           al->dof[i] += first_dof;
     }
 
+		template<typename Scalar>
+    void Space<Scalar>::get_element_assembly_list_with_edge_numbers(Element* e, AsmListEdgeOrientation<Scalar>* al, unsigned int first_dof) const
+    {
+      // some checks
+      if(e->id >= esize || edata[e->id].order < 0)
+        throw Hermes::Exceptions::Exception("Uninitialized element order in get_element_assembly_list(id = #%d).", e->id);
+      if(!is_up_to_date())
+        throw Hermes::Exceptions::Exception("The space in get_element_assembly_list() is out of date. You need to update it with assign_dofs()"
+        " any time the mesh changes.");
+
+      // add vertex, edge and bubble functions to the assembly list
+      al->cnt = 0;
+      for (unsigned int i = 0; i < e->get_nvert(); i++)
+        get_vertex_assembly_list(e, i, al);
+      for (unsigned int i = 0; i < e->get_nvert(); i++)
+        get_boundary_assembly_list_with_edge_orientation(e, i, al);
+      get_bubble_assembly_list(e, al);
+      for(unsigned int i = 0; i < al->cnt; i++)
+        if(al->dof[i] >= 0)
+          al->dof[i] += first_dof;
+    }
+
     template<typename Scalar>
     void Space<Scalar>::get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al, unsigned int first_dof) const
     {

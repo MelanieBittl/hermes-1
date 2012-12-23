@@ -190,6 +190,7 @@ namespace Hermes
 
       /// Obtains an assembly list for the given element.
       virtual void get_element_assembly_list(Element* e, AsmList<Scalar>* al, unsigned int first_dof = 0) const;
+      virtual void get_element_assembly_list_with_edge_numbers(Element* e, AsmListEdgeOrientation<Scalar>* al, unsigned int first_dof = 0) const;
 
       /// Copy from Space instance 'space'
       virtual void copy(const Space<Scalar>* space, Mesh* new_mesh);
@@ -378,6 +379,7 @@ namespace Hermes
 
       virtual void get_vertex_assembly_list(Element* e, int iv, AsmList<Scalar>* al) const = 0;
       virtual void get_boundary_assembly_list_internal(Element* e, int surf_num, AsmList<Scalar>* al) const = 0;
+			virtual void get_boundary_assembly_list_with_edge_orientation(Element* e, int surf_num, AsmListEdgeOrientation<Scalar>* al) const {}
       virtual void get_bubble_assembly_list(Element* e, AsmList<Scalar>* al) const;
 
       double** proj_mat;
