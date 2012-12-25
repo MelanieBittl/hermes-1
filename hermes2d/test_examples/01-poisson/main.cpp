@@ -28,27 +28,59 @@
 const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const bool BASE_VISUALIZATION = true;              // Set to "true" to enable base functions output.
-const int P_INIT = 3;                             // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 2;                       // Number of initial uniform mesh refinements.
+const int P_INIT = 4;                             // Uniform polynomial degree of mesh elements.
+const int INIT_REF_NUM = 7;                       // Number of initial uniform mesh refinements.
 
 // Problem parameters.
-const double LAMBDA_AL = 236.0;            // Thermal cond. of Al for temperatures around 20 deg Celsius.
-const double LAMBDA_CU = 386.0;            // Thermal cond. of Cu for temperatures around 20 deg Celsius.
+const double LAMBDA_AL = 236.0;							// Thermal cond. of Al for temperatures around 20 deg Celsius.
+const double LAMBDA_CU = 386.0;							// Thermal cond. of Cu for temperatures around 20 deg Celsius.
 const double VOLUME_HEAT_SRC = 1.0;          // Volume heat sources generated (for example) by electric current.
-const double FIXED_BDY_TEMP = 10.0;        // Fixed temperature on the boundary.
+const double FIXED_BDY_TEMP = 10.0;					// Fixed temperature on the boundary.
 
 const Hermes::Hermes2D::ElementMode2D elementMode = HERMES_MODE_TRIANGLE;
 
+double matrixFunction(int np, double* wt, Func<double>* u, Func<double>* v)
+{
+	double result = 0;
+  for (int i = 0; i < np; i++)
+    result += wt[i] * (u->dx[i] * v->dx[i] + u->dy[i] * v->dy[i]);
+	return result;
+}
+
+double rhsValue = 10.0;
+
+double rhsFunction(int np, double* wt, Func<double>* v)
+{
+	double result = 0;
+  for (int i = 0; i < np; i++)
+    result += wt[i] * v->val[i] * rhsValue;
+	return result;
+}
+
 // Globals.
 Hermes::Hermes2D::H1Space<double>* space;
+int max_index;
 Hermes::Hermes2D::Mesh* mesh;
 
-void loadCache(int* i_indices_A, int* j_indices_A, int* i_indices_rhs, double** A_values, double* rhs_values, double** A_valuesReversed, double* rhs_valuesReversed);
+// Storage.
+double** A_values;
+double* rhs_values;
+
+// Cache loading.
+void loadCache();
+
+// Problem loading.
 void loadProblemData();
-void calculateCache(CustomWeakFormPoisson& wf, bool);
-void calculateResultFromCache(CustomWeakFormPoisson& wf, int* i_indices_A, int* j_indices_A, int* i_indices_rhs, double** A_values, double* rhs_values, double** A_valuesReversed, double* rhs_valuesReversed);
-void calculateResultAssembling(CustomWeakFormPoisson& wf);
+
+// Cache calculation.
+void calculateCache(CustomWeakFormPoisson& wf);
+
+// Calculation from cache.
+void calculateResultFromCache(CustomWeakFormPoisson& wf);
 double handleDirichlet(CustomWeakFormPoisson& wf, int shape_indexBasis, int shape_indexDirichlet, Element* e);
+
+// For comparison: calculation by using standard assembling.
+void calculateResultAssembling(CustomWeakFormPoisson& wf);
 
 int main(int argc, char* argv[])
 {
@@ -56,39 +88,25 @@ int main(int argc, char* argv[])
   CustomWeakFormPoisson wf("Aluminum", new Hermes::Hermes1DFunction<double>(LAMBDA_AL), "Copper",
     new Hermes::Hermes1DFunction<double>(LAMBDA_CU), new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
   
-	// One needs to run both of these calculations
-	// Reason: edge functions (their use) depend on the orientation of the edge and the edge number.
-	// So calculating on one reference element does not suffice.
-	// The following two calls generate two files. These need to be manually merged, so that they contain the proper information.
-  calculateCache(wf, false);
-  calculateCache(wf, true);
+
+	calculateCache(wf);
 
   loadProblemData();
 
-  int max_index = space->get_shapeset()->get_max_index(HERMES_MODE_QUAD) + 1;
-
-  int* i_indices_A = new int[max_index*max_index];
-  int* j_indices_A = new int[max_index*max_index];
-  int* i_indices_rhs = new int[max_index];
-  double** A_values = new double*[max_index];
+	A_values = new double*[max_index];
   for(unsigned int i = 0; i < max_index; i++)
     A_values[i] = new double[max_index];
-	double** A_valuesReversed = new double*[max_index];
-  for(unsigned int i = 0; i < max_index; i++)
-    A_valuesReversed[i] = new double[max_index];
 
-  double* rhs_values = new double[max_index];
-  double* rhs_valuesReversed = new double[max_index];
+  rhs_values = new double[max_index];
 
-  loadCache(i_indices_A, j_indices_A, i_indices_rhs, A_values, rhs_values, A_valuesReversed, rhs_valuesReversed);
+  loadCache();
 
-  calculateResultFromCache(wf, i_indices_A, j_indices_A, i_indices_rhs, A_values, rhs_values, A_valuesReversed, rhs_valuesReversed);
+  calculateResultFromCache(wf);
 	calculateResultAssembling(wf);
 }
 
-void loadCache(int* i_indices_A, int* j_indices_A, int* i_indices_rhs, double** A_values, double* rhs_values, double** A_valuesReversed, double* rhs_valuesReversed)
+void loadCache()
 {
-	int counter = 0;
 	std::stringstream ssMatrix;
 	std::stringstream ssRhs;
 	ssMatrix << "matrixCache";
@@ -96,24 +114,24 @@ void loadCache(int* i_indices_A, int* j_indices_A, int* i_indices_rhs, double** 
 	if(elementMode == HERMES_MODE_TRIANGLE)
 	{
 		ssMatrix << "Triangle";
-		ssMatrix << "Triangle";
+		ssRhs << "Triangle";
 	}
 	else
 	{
-		ssRhs << "Quad";
+		ssMatrix << "Quad";
 		ssRhs << "Quad";
 	}
+
 	std::ifstream matrixFormIn(ssMatrix.str());
 	std::ifstream rhsFormIn(ssRhs.str());
 
-  int index_i, index_j;
+	int index_i, index_j;
+	int counter = 0;
   double valueTemp;
   while(matrixFormIn.good())
   {
     matrixFormIn >> index_i >> index_j >> valueTemp;
-    i_indices_A[counter] = index_i;
-    j_indices_A[counter] = index_j;
-    A_values[i_indices_A[counter]][j_indices_A[counter]] = valueTemp;
+    A_values[index_i][index_j] = valueTemp;
     counter++;
   }
 
@@ -121,37 +139,12 @@ void loadCache(int* i_indices_A, int* j_indices_A, int* i_indices_rhs, double** 
   while(rhsFormIn.good())
   {
     rhsFormIn >> index_i >> valueTemp;
-    i_indices_rhs[counter] = index_i;
-    rhs_values[i_indices_rhs[counter]] = valueTemp;
-    counter++;
-  }
-
-	ssMatrix << "Reversed";
-	ssRhs << "Reversed";
-	std::ifstream matrixFormInReversed(ssMatrix.str());
-	std::ifstream rhsFormInReversed(ssRhs.str());
-
-  counter = 0;
-  while(matrixFormInReversed.good())
-  {
-    matrixFormInReversed >> index_i >> index_j >> valueTemp;
-    i_indices_A[counter] = index_i;
-    j_indices_A[counter] = index_j;
-		A_valuesReversed[i_indices_A[counter]][j_indices_A[counter]] = valueTemp;
-    counter++;
-  }
-
-  counter = 0;
-  while(rhsFormInReversed.good())
-  {
-    rhsFormInReversed >> index_i >> valueTemp;
-    i_indices_rhs[counter] = index_i;
-		rhs_valuesReversed[i_indices_rhs[counter]] = valueTemp;
+    rhs_values[index_i] = valueTemp;
     counter++;
   }
 }
 
-void  loadProblemData()
+void loadProblemData()
 {
   // Load the mesh.
   Hermes::Hermes2D::MeshReaderH2DXML mloader;
@@ -183,7 +176,7 @@ void  loadProblemData()
   space = new Hermes::Hermes2D::H1Space<double>(mesh, bcs, P_INIT);
 }
 
-void calculateCache(CustomWeakFormPoisson& wf, bool reverseLineOrientation)
+void calculateCache(CustomWeakFormPoisson& wf)
 {
   // Load the mesh.
   Hermes::Hermes2D::MeshReaderH2DXML mloader;
@@ -213,78 +206,58 @@ void calculateCache(CustomWeakFormPoisson& wf, bool reverseLineOrientation)
 	if(elementMode == HERMES_MODE_TRIANGLE)
 	{
 		ssMatrix << "Triangle";
-		ssMatrix << "Triangle";
+		ssRhs << "Triangle";
 	}
 	else
 	{
-		ssRhs << "Quad";
+		ssMatrix << "Quad";
 		ssRhs << "Quad";
 	}
 
-	std::ifstream matrixFormIn(ssMatrix.str());
-	std::ifstream rhsFormIn(ssRhs.str());
-
-	if(reverseLineOrientation)
-	{
-			ssMatrix << "Reversed";
-			ssRhs << "Reversed";
-
-			// The important part.
-			int iv1 = mesh->get_element(0)->vn[0]->id;
-			int iv2 = mesh->get_element(0)->vn[2]->id;
-
-			mesh->get_element(0)->vn[0]->id = iv2;
-			mesh->get_element(0)->vn[2]->id = iv1;
-	}
-	
 	std::ofstream matrixFormOut(ssMatrix.str());
 	std::ofstream rhsFormOut(ssRhs.str());
+
+  H1Shapeset shapeset;
+  max_index = shapeset.get_max_index(elementMode) + 1;
+	PrecalcShapeset uP(&shapeset);
+	PrecalcShapeset vP(&shapeset);
+	uP.set_active_element(mesh->get_element(0));
+	vP.set_active_element(mesh->get_element(0));
+  
+	int np = g_quad_2d_std.get_num_points(elementMode == HERMES_MODE_TRIANGLE ? 20 : 24, elementMode);
+	double3* pt = g_quad_2d_std.get_points(elementMode == HERMES_MODE_TRIANGLE ? 20 : 24, elementMode);
+	double* jwt = new double[np];
+	for(int i = 0; i < np; i++)
+		jwt[i] = pt[i][2];
+
+	RefMap rm;
+	rm.set_active_element(mesh->get_element(0));
 	
-  // Create an H1 space with default shapeset.
-  space = new Hermes::Hermes2D::H1Space<double>(mesh, 10);
-
-  // Initialize linear solver.
-  Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
-
-	if(elementMode == HERMES_MODE_TRIANGLE)
-		wf.set_global_integration_order(20);
-	else
-		wf.set_global_integration_order(24);
-
-  // Solve the linear problem.
-	linear_solver.set_verbose_output(false);
-  linear_solver.solve();
-
-  int ndof = space->get_num_dofs();
-
-	AsmList<double> al;
-  space->get_element_assembly_list(mesh->get_element(0), &al);
-  for(int i = 0; i < al.get_cnt(); i++)
+	for(int i = 0; i < max_index; i++)
   {
     if(i > 0)
       rhsFormOut << std::endl;
-    for(int j = 0; j < al.get_cnt(); j++)
+		vP.set_active_shape(i);
+		Func<double>* v = init_fn(&vP, &rm, (elementMode == HERMES_MODE_TRIANGLE ? 20 : 24));
+
+    for(int j = 0; j < max_index; j++)
     {
       if(i > 0 || j > 0)
         matrixFormOut << std::endl;
-      matrixFormOut << al.get_idx()[i] << ' ' << al.get_idx()[j] << ' ' << linear_solver.get_jacobian()->get(i, j);
+			uP.set_active_shape(j);
+			Func<double>* u = init_fn(&uP, &rm, (elementMode == HERMES_MODE_TRIANGLE ? 20 : 24));
+      matrixFormOut << i << ' ' << j << ' ' << matrixFunction(np, jwt, u, v);
     }
-    rhsFormOut << al.get_idx()[i] << ' ' << linear_solver.get_residual()->get(i);
+    rhsFormOut << i << ' ' << rhsFunction(np, jwt, v);
   }
 
   matrixFormOut.close();
   rhsFormOut.close();
-   
-	if(BASE_VISUALIZATION)
-	{
-		Views::BaseView<double> b;
-		b.show(space, Views::HERMES_EPS_VERYHIGH);
-		b.wait_for_close();
-	}
+
   return;
 }
 
-void calculateResultFromCache(CustomWeakFormPoisson& wf, int* i_indices_A, int* j_indices_A, int* i_indices_rhs, double** A_values, double* rhs_values, double** A_valuesReversed, double* rhs_valuesReversed)
+void calculateResultFromCache(CustomWeakFormPoisson& wf)
 {
   // Utilities.
   int ndof = space->get_num_dofs();
@@ -363,20 +336,15 @@ void calculateResultFromCache(CustomWeakFormPoisson& wf, int* i_indices_A, int* 
 				{
 					if(al.get_dof()[j] >= 0)
 					{
-						if((al.edge_orientation[i] % 10 == 1 && (al.edge_orientation[i] / 10 != 2)) || (al.edge_orientation[i] % 10 == 0 && (al.edge_orientation[i] / 10 == 2)))
-							jacobian->add(al.get_dof()[i], al.get_dof()[j], A_valuesReversed[al.get_idx()[i]][al.get_idx()[j]] * al.get_coef()[i] * al.get_coef()[j]);
-						else
-							jacobian->add(al.get_dof()[i], al.get_dof()[j], A_values[al.get_idx()[i]][al.get_idx()[j]] * al.get_coef()[i] * al.get_coef()[j]);
+						jacobian->add(al.get_dof()[i], al.get_dof()[j], A_values[al.get_idx()[i]][al.get_idx()[j]] * al.get_coef()[i] * al.get_coef()[j]);
 					}
 					else
 					{
 						residual->add(al.get_dof()[i], -handleDirichlet(wf, al.get_idx()[i], al.get_idx()[j], e) * al.get_coef()[i] * al.get_coef()[j]);
 					}
 				}
-				if((al.edge_orientation[i] % 10 == 1 && (al.edge_orientation[i] / 10 != 2)) || (al.edge_orientation[i] % 10 == 0 && (al.edge_orientation[i] / 10 == 2)))
-					residual->add(al.get_dof()[i], rhs_valuesReversed[al.get_idx()[i]] * al.get_coef()[i] * inv_ref_map_determinant);
-				else
-					residual->add(al.get_dof()[i], rhs_values[al.get_idx()[i]] * al.get_coef()[i] * inv_ref_map_determinant);
+
+				residual->add(al.get_dof()[i], rhs_values[al.get_idx()[i]] * al.get_coef()[i] * inv_ref_map_determinant);
 			}
 		}
 	}
