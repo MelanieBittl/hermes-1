@@ -29,11 +29,9 @@ const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress 
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const bool BASE_VISUALIZATION = true;              // Set to "true" to enable base functions output.
 const int P_INIT = 4;                             // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 7;                       // Number of initial uniform mesh refinements.
+const int INIT_REF_NUM = 2;                       // Number of initial uniform mesh refinements.
 
 // Problem parameters.
-const double LAMBDA_AL = 236.0;							// Thermal cond. of Al for temperatures around 20 deg Celsius.
-const double LAMBDA_CU = 386.0;							// Thermal cond. of Cu for temperatures around 20 deg Celsius.
 const double VOLUME_HEAT_SRC = 1.0;          // Volume heat sources generated (for example) by electric current.
 const double FIXED_BDY_TEMP = 10.0;					// Fixed temperature on the boundary.
 
@@ -47,7 +45,7 @@ double matrixFunction(int np, double* wt, Func<double>* u, Func<double>* v)
 	return result;
 }
 
-double rhsValue = 10.0;
+double rhsValue = VOLUME_HEAT_SRC;
 
 double rhsFunction(int np, double* wt, Func<double>* v)
 {
@@ -85,9 +83,7 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf);
 int main(int argc, char* argv[])
 {
   // Initialize the weak formulation.
-  CustomWeakFormPoisson wf("Aluminum", new Hermes::Hermes1DFunction<double>(LAMBDA_AL), "Copper",
-    new Hermes::Hermes1DFunction<double>(LAMBDA_CU), new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
-  
+  CustomWeakFormPoisson wf(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
 
 	calculateCache(wf);
 
