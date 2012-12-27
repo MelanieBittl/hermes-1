@@ -416,8 +416,6 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
 	DiscreteProblemLinear<double> dp(&wf, space);
 	dp.assemble(jacobian, residual);
 
-  std::cout << dp.time1 << std::endl;
-
 	time.tick();
 	std::cout << (std::string)"Ndofs: " << ndof << '.' << std::endl;
 	std::cout << (std::string)"Assembling WITHOUT cache: " << time.last() << '.' << std::endl;
@@ -477,5 +475,5 @@ double handleDirichlet(CustomWeakFormPoisson& wf, int shape_indexBasis, int shap
   Func<double>* fnBasis = init_fn(&pssBasis, &refmap, P_INIT);
   Func<double>* fnDirichlet = init_fn(&pssDirichlet, &refmap, P_INIT);
   
-  return wf.mfvol_const[0]->value(n_quadrature_points, jacobian_x_weights, NULL, fnBasis, fnDirichlet, geometry, NULL);
+  return wf.get_mfvol()[0]->value(n_quadrature_points, jacobian_x_weights, NULL, fnBasis, fnDirichlet, geometry, NULL);
 }
