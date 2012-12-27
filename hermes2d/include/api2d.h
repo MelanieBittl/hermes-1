@@ -41,7 +41,8 @@ namespace Hermes
     {
       numThreads,
       secondDerivatives,
-			xmlSchemasDirPath
+			xmlSchemasDirPath,
+			precalculatedFormsDirPath
     };
 
 

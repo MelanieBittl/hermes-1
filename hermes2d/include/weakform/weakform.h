@@ -123,6 +123,9 @@ namespace Hermes
       Hermes::vector<VectorFormSurf<Scalar> *> get_vfsurf() const;
       Hermes::vector<VectorFormDG<Scalar> *> get_vfDG() const;
 
+      /// Returns true if the weakform has only constant forms registered.
+      bool only_constant_forms() const;
+
       /// Deletes all volumetric and surface forms.
       void delete_all();
 
@@ -153,21 +156,27 @@ namespace Hermes
 
       /// Holds volumetric matrix forms.
       Hermes::vector<MatrixFormVol<Scalar> *> mfvol;
+      Hermes::vector<MatrixFormVol<Scalar> *> mfvol_const;
 
       /// Holds surface matrix forms.
       Hermes::vector<MatrixFormSurf<Scalar> *> mfsurf;
+      Hermes::vector<MatrixFormSurf<Scalar> *> mfsurf_const;
 
       /// Holds DG matrix forms.
       Hermes::vector<MatrixFormDG<Scalar> *> mfDG;
+      Hermes::vector<MatrixFormDG<Scalar> *> mfDG_const;
 
       /// Holds volumetric vector forms.
       Hermes::vector<VectorFormVol<Scalar> *> vfvol;
+      Hermes::vector<VectorFormVol<Scalar> *> vfvol_const;
 
       /// Holds surface vector forms.
       Hermes::vector<VectorFormSurf<Scalar> *> vfsurf;
+      Hermes::vector<VectorFormSurf<Scalar> *> vfsurf_const;
 
       /// Holds DG vector forms.
       Hermes::vector<VectorFormDG<Scalar> *> vfDG;
+      Hermes::vector<VectorFormDG<Scalar> *> vfDG_const;
 
       bool** get_blocks(bool force_diagonal_blocks) const;
 
@@ -216,7 +225,13 @@ namespace Hermes
       /// solutions coming to the assembling procedure via the
       /// external coefficient vector.
       int u_ext_offset;
-      
+
+      /// Constant form that can be precalculated.
+      bool is_const;
+
+      /// To what power is the jacobian of the inverse reference map calculated.
+      double jacobian_power;
+
       /// External solutions.
       Hermes::vector<MeshFunction<Scalar>*> ext;
 
@@ -260,6 +275,23 @@ namespace Hermes
 
       virtual Hermes::Ord ord(int n, double *wt, Func<Hermes::Ord> *u_ext[], Func<Hermes::Ord> *u, Func<Hermes::Ord> *v,
         Geom<Hermes::Ord> *e, Func<Ord> **ext) const;
+    protected:
+      /// Set this form to constant and provide the tables.
+      /// For various spaces and shapesets.
+      /// \param[in] A_values: [ElementMode2D][row][column] => value.
+      void set_h1_h1_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_h1_l2_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_l2_h1_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_l2_l2_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_const_tables(ElementMode2D mode, const char* filename, double***& matrix_values, double jacobian_power);
+
+      /// The storage for precalculated values.
+      /// For speed purposes, these are accesses directly.
+      double*** matrix_values_h1_h1;
+      double*** matrix_values_h1_l2;
+      double*** matrix_values_l2_h1;
+      double*** matrix_values_l2_l2;
+      friend class DiscreteProblem<Scalar>;
     };
 
     template<typename Scalar>
@@ -316,6 +348,24 @@ namespace Hermes
       virtual Hermes::Ord ord(int n, double *wt, Func<Hermes::Ord> *u_ext[], Func<Hermes::Ord> *v, Geom<Hermes::Ord> *e,
         Func<Ord> **ext) const;
       unsigned int i;
+      
+    protected:
+      /// Set this form to constant and provide the tables.
+      /// For various spaces and shapesets.
+      /// \param[in] rhs_values: [ElementMode2D][row] => value.
+      void set_h1_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_l2_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_hcurl_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_hdiv_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
+      void set_const_tables(ElementMode2D mode, const char* filename, double**& rhs_values, double jacobian_power);
+
+      /// The storage for precalculated values.
+      /// For speed purposes, these are accesses directly.
+      double** rhs_values_h1;
+      double** rhs_values_l2;
+      double** rhs_values_hcurl;
+      double** rhs_values_hdiv;
+      friend class DiscreteProblem<Scalar>;
     };
 
     template<typename Scalar>

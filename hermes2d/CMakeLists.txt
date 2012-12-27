@@ -9,6 +9,7 @@ project(hermes2d)
   endif(WIN32)
 
   SET(H2D_XML_SCHEMAS_DIRECTORY "\"${PROJECT_SOURCE_DIR}/xml_schemas\"")
+  SET(H2D_PRECALCULATED_FORMS_DIRECTORY "\"${PROJECT_SOURCE_DIR}/precalculated_forms\"")
 
   configure_file(
     config.h.cmake

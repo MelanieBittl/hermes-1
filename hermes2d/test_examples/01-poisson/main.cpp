@@ -28,8 +28,8 @@
 const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const bool BASE_VISUALIZATION = true;              // Set to "true" to enable base functions output.
-const int P_INIT = 4;                             // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 2;                       // Number of initial uniform mesh refinements.
+const int P_INIT = 6;                             // Uniform polynomial degree of mesh elements.
+const int INIT_REF_NUM = 6;                       // Number of initial uniform mesh refinements.
 
 // Problem parameters.
 const double VOLUME_HEAT_SRC = 1.0;          // Volume heat sources generated (for example) by electric current.
@@ -85,7 +85,9 @@ int main(int argc, char* argv[])
   // Initialize the weak formulation.
   CustomWeakFormPoisson wf(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
 
-	calculateCache(wf);
+  Hermes2DApi.set_integral_param_value(numThreads, 1);
+
+	//calculateCache(wf);
 
   loadProblemData();
 
@@ -95,9 +97,9 @@ int main(int argc, char* argv[])
 
   rhs_values = new double[max_index];
 
-  loadCache();
+  //loadCache();
 
-  calculateResultFromCache(wf);
+  //calculateResultFromCache(wf);
 	calculateResultAssembling(wf);
 }
 
@@ -414,10 +416,20 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
 	DiscreteProblemLinear<double> dp(&wf, space);
 	dp.assemble(jacobian, residual);
 
+  std::cout << dp.time1 << std::endl;
+
 	time.tick();
+	std::cout << (std::string)"Ndofs: " << ndof << '.' << std::endl;
 	std::cout << (std::string)"Assembling WITHOUT cache: " << time.last() << '.' << std::endl;
 
-	/*
+  LinearMatrixSolver<double>* matrix_solver = create_linear_solver<double>(jacobian, residual);
+	FILE* matrixFile = fopen("matrix", "w");
+	FILE* rhsFile = fopen("rhs", "w");
+	jacobian->dump(matrixFile, "A");
+	residual->dump(rhsFile, "b");
+  fclose(matrixFile);
+  fclose(rhsFile);
+	matrix_solver->solve();
   sln_vector = matrix_solver->get_sln_vector();
 
   // Translate the solution vector into the previously initialized Solution.
@@ -445,7 +457,6 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
     viewS.show(&sln, Hermes::Hermes2D::Views::HERMES_EPS_VERYHIGH);
     viewS.wait_for_close();
   }
-  */
 
   return;
 }
@@ -466,5 +477,5 @@ double handleDirichlet(CustomWeakFormPoisson& wf, int shape_indexBasis, int shap
   Func<double>* fnBasis = init_fn(&pssBasis, &refmap, P_INIT);
   Func<double>* fnDirichlet = init_fn(&pssDirichlet, &refmap, P_INIT);
   
-  return wf.get_mfvol()[0]->value(n_quadrature_points, jacobian_x_weights, NULL, fnBasis, fnDirichlet, geometry, NULL);
+  return wf.mfvol_const[0]->value(n_quadrature_points, jacobian_x_weights, NULL, fnBasis, fnDirichlet, geometry, NULL);
 }
