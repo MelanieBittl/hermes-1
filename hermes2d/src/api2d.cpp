@@ -87,7 +87,7 @@ namespace Hermes
       this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::xmlSchemasDirPath,new Parameter<std::string>(*(new std::string(H2D_XML_SCHEMAS_DIRECTORY)))));
       std::stringstream ss;
       ss << H2D_PRECALCULATED_FORMS_DIRECTORY;
-      if(ss.str().back() == '\\' || ss.str().back() == '/')
+      if(ss.str().at(ss.str().length() - 1) == '\\' || ss.str().at(ss.str().length() == '/'))
         this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::precalculatedFormsDirPath,new Parameter<std::string>(*(new std::string(H2D_PRECALCULATED_FORMS_DIRECTORY)))));
       else
       {

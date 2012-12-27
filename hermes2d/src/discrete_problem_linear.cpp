@@ -189,9 +189,6 @@ namespace Hermes
         }
       }
 
-      this->tick();
-      std::cout << this->last() << std::endl;
-
       this->deinit_assembling(pss, spss, refmaps, NULL, als, weakforms);
 
       trav_master.finish();
