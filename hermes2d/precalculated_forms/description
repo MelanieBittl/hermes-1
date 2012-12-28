@@ -1,0 +1,14 @@
+DefaultMatrixFormDiffusion
+u->dx[i] * v->dx[i] + u->dy[i] * v->dy[i]
+DefaultMatrixFormDX
+u->dx[i] * v->dx[i]
+DefaultMatrixFormDY
+u->dy[i] * v->dy[i]
+DefaultMatrixFormVol
+u->val[i] * v->val[i]
+DefaultVectorFormDX
+v->dx[i]
+DefaultVectorFormDY
+v->dy[i]
+DefaultVectorFormVol
+v->val[i]

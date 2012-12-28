@@ -30,9 +30,9 @@ namespace Hermes
     public:
       H1ShapesetOrtho();
       virtual Shapeset* clone() { return new H1ShapesetOrtho(*this); };
+      virtual SpaceType get_space_type() const { return HERMES_H1_SPACE; }
     private:
       virtual int get_id() const { return 0; }
-      virtual SpaceType get_space_type() const { return HERMES_H1_SPACE; }
       template<typename Scalar> friend class DiscreteProblem; template<typename Scalar> friend class Solution; friend class CurvMap; friend class RefMap; template<typename Scalar> friend class RefinementSelectors::H1ProjBasedSelector; template<typename Scalar> friend class RefinementSelectors::L2ProjBasedSelector; template<typename Scalar> friend class RefinementSelectors::HcurlProjBasedSelector; template<typename Scalar> friend class RefinementSelectors::OptimumSelector; friend class PrecalcShapeset;
     };
 

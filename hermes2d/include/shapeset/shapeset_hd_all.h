@@ -29,9 +29,9 @@ namespace Hermes
     public:
       HdivShapesetLegendre();
       virtual Shapeset* clone() { return new HdivShapesetLegendre(*this); };
+      virtual SpaceType get_space_type() const { return HERMES_HDIV_SPACE; }
     protected:
       virtual int get_id() const { return 20; }
-      virtual SpaceType get_space_type() const { return HERMES_HDIV_SPACE; }
       template<typename Scalar> friend class DiscreteProblem;
       template<typename Scalar> friend class Solution;
       friend class CurvMap; friend class RefMap;

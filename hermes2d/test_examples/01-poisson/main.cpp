@@ -35,13 +35,32 @@ const int INIT_REF_NUM = 6;                       // Number of initial uniform m
 const double VOLUME_HEAT_SRC = 1.0;          // Volume heat sources generated (for example) by electric current.
 const double FIXED_BDY_TEMP = 10.0;					// Fixed temperature on the boundary.
 
-const Hermes::Hermes2D::ElementMode2D elementMode = HERMES_MODE_TRIANGLE;
+Hermes::Hermes2D::ElementMode2D elementMode = HERMES_MODE_QUAD;
+int form_i = 0;
 
 double matrixFunction(int np, double* wt, Func<double>* u, Func<double>* v)
 {
 	double result = 0;
   for (int i = 0; i < np; i++)
-    result += wt[i] * (u->dx[i] * v->dx[i] + u->dy[i] * v->dy[i]);
+    switch (form_i)
+    {
+      // Diffusion.
+    case 0:
+      result += wt[i] * (u->dx[i] * v->dx[i] + u->dy[i] * v->dy[i]);
+      break;
+      // Vol.
+      case 1:
+      result += wt[i] * (u->val[i] * v->val[i]);
+      break;
+      // DX.
+      case 2:
+      result += wt[i] * (u->dx[i] * v->dx[i]);
+      break;
+      // DY.
+      case 3:
+      result += wt[i] * (u->dy[i] * v->dy[i]);
+      break;
+    }
 	return result;
 }
 
@@ -51,7 +70,25 @@ double rhsFunction(int np, double* wt, Func<double>* v)
 {
 	double result = 0;
   for (int i = 0; i < np; i++)
-    result += wt[i] * v->val[i] * rhsValue;
+  switch (form_i)
+    {
+      // Diffusion.
+    case 0:
+      result += 0.0;
+      break;
+      // Vol.
+      case 1:
+      result += wt[i] * (v->val[i]);
+      break;
+      // DX.
+      case 2:
+      result += wt[i] * (v->dx[i]);
+      break;
+      // DY.
+      case 3:
+      result += wt[i] * (v->dy[i]);
+      break;
+    }
 	return result;
 }
 
@@ -71,7 +108,7 @@ void loadCache();
 void loadProblemData();
 
 // Cache calculation.
-void calculateCache(CustomWeakFormPoisson& wf);
+void calculateCache(CustomWeakFormPoisson& wf, Shapeset* shapeset);
 
 // Calculation from cache.
 void calculateResultFromCache(CustomWeakFormPoisson& wf);
@@ -87,11 +124,24 @@ int main(int argc, char* argv[])
 
   Hermes2DApi.set_integral_param_value(numThreads, 1);
 
-	//calculateCache(wf);
+  for(int i = 0; i < 2; i++)
+    for(int j = 0; j < 4; j++)
+    {
+      elementMode = i == 0 ? HERMES_MODE_TRIANGLE : HERMES_MODE_QUAD;
+      form_i = j;
+      calculateCache(wf, new H1Shapeset);
+    }
 
-  loadProblemData();
+    for(int i = 0; i < 2; i++)
+    for(int j = 0; j < 4; j++)
+    {
+      elementMode = i == 0 ? HERMES_MODE_TRIANGLE : HERMES_MODE_QUAD;
+      form_i = j;
+      calculateCache(wf, new L2Shapeset);
+    }
+  // loadProblemData();
 
-	A_values = new double*[max_index];
+  A_values = new double*[max_index];
   for(unsigned int i = 0; i < max_index; i++)
     A_values[i] = new double[max_index];
 
@@ -100,7 +150,7 @@ int main(int argc, char* argv[])
   //loadCache();
 
   //calculateResultFromCache(wf);
-	calculateResultAssembling(wf);
+	//calculateResultAssembling(wf);
 }
 
 void loadCache()
@@ -174,7 +224,7 @@ void loadProblemData()
   space = new Hermes::Hermes2D::H1Space<double>(mesh, bcs, P_INIT);
 }
 
-void calculateCache(CustomWeakFormPoisson& wf)
+void calculateCache(CustomWeakFormPoisson& wf, Shapeset* shapeset)
 {
   // Load the mesh.
   Hermes::Hermes2D::MeshReaderH2DXML mloader;
@@ -198,8 +248,27 @@ void calculateCache(CustomWeakFormPoisson& wf)
 
 	std::stringstream ssMatrix;
 	std::stringstream ssRhs;
-	ssMatrix << "matrixCache";
-	ssRhs << "rhsCache";
+	
+  if(form_i == 0)
+  {
+    ssMatrix << "DefaultMatrixFormDiffusion";
+    ssRhs << "!@#$%^$#@$%^&";
+  }
+  if(form_i == 1)
+  {
+    ssMatrix << "DefaultMatrixFormVol";
+	  ssRhs << "DefaultVectorFormVol";
+  }
+  if(form_i == 2)
+  {
+    ssMatrix << "DefaultMatrixFormDX";
+	  ssRhs << "DefaultVectorFormDX";
+  }
+  if(form_i == 3)
+  {
+    ssMatrix << "DefaultMatrixFormDY";
+	  ssRhs << "DefaultVectorFormDY";
+  }
 
 	if(elementMode == HERMES_MODE_TRIANGLE)
 	{
@@ -211,14 +280,23 @@ void calculateCache(CustomWeakFormPoisson& wf)
 		ssMatrix << "Quad";
 		ssRhs << "Quad";
 	}
+  if(shapeset->get_space_type() == HERMES_H1_SPACE)
+  {
+		ssMatrix << ".h1h1";
+		ssRhs << ".h1";
+	}
+	else
+	{
+		ssMatrix << ".l2l2";
+		ssRhs << ".l2";
+	}
 
 	std::ofstream matrixFormOut(ssMatrix.str());
 	std::ofstream rhsFormOut(ssRhs.str());
 
-  H1Shapeset shapeset;
-  max_index = shapeset.get_max_index(elementMode) + 1;
-	PrecalcShapeset uP(&shapeset);
-	PrecalcShapeset vP(&shapeset);
+  max_index = shapeset->get_max_index(elementMode) + 1;
+	PrecalcShapeset uP(shapeset);
+	PrecalcShapeset vP(shapeset);
 	uP.set_active_element(mesh->get_element(0));
 	vP.set_active_element(mesh->get_element(0));
   

@@ -115,6 +115,9 @@ namespace Hermes
       /// shapesets with non-symmetric edge functions).
       int get_edge_index(int edge, int ori, int order, ElementMode2D mode) const;
 
+      /// Returns space type.
+      virtual SpaceType get_space_type() const = 0;
+
     protected:
       /// Returns a complete set of indices of bubble functions for an element of the given order.
       int* get_bubble_indices(int order, ElementMode2D mode) const;
@@ -142,9 +145,6 @@ namespace Hermes
 
       /// Returns shapeset identifier. Internal.
       virtual int get_id() const = 0;
-
-      /// Returns space type.
-      virtual SpaceType get_space_type() const = 0;
 
       shape_fn_t*** shape_table[6];
 

@@ -31,9 +31,9 @@ namespace Hermes
     public:
       L2ShapesetLegendre();
       virtual Shapeset* clone() { return new L2ShapesetLegendre(*this); };
+      virtual SpaceType get_space_type() const { return HERMES_L2_SPACE; }
     protected:
       virtual int get_id() const { return 30; }
-      virtual SpaceType get_space_type() const { return HERMES_L2_SPACE; }
       template<typename Scalar> friend class DiscreteProblem;
       template<typename Scalar> friend class Solution;
       friend class CurvMap; friend class RefMap;
