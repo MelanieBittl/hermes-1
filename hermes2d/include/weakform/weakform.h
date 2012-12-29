@@ -156,27 +156,21 @@ namespace Hermes
 
       /// Holds volumetric matrix forms.
       Hermes::vector<MatrixFormVol<Scalar> *> mfvol;
-      Hermes::vector<MatrixFormVol<Scalar> *> mfvol_const;
 
       /// Holds surface matrix forms.
       Hermes::vector<MatrixFormSurf<Scalar> *> mfsurf;
-      Hermes::vector<MatrixFormSurf<Scalar> *> mfsurf_const;
 
       /// Holds DG matrix forms.
       Hermes::vector<MatrixFormDG<Scalar> *> mfDG;
-      Hermes::vector<MatrixFormDG<Scalar> *> mfDG_const;
 
       /// Holds volumetric vector forms.
       Hermes::vector<VectorFormVol<Scalar> *> vfvol;
-      Hermes::vector<VectorFormVol<Scalar> *> vfvol_const;
 
       /// Holds surface vector forms.
       Hermes::vector<VectorFormSurf<Scalar> *> vfsurf;
-      Hermes::vector<VectorFormSurf<Scalar> *> vfsurf_const;
 
       /// Holds DG vector forms.
       Hermes::vector<VectorFormDG<Scalar> *> vfDG;
-      Hermes::vector<VectorFormDG<Scalar> *> vfDG_const;
 
       bool** get_blocks(bool force_diagonal_blocks) const;
 
@@ -198,7 +192,7 @@ namespace Hermes
     public:
       /// Constructor with coordinates.
       Form();
-      virtual ~Form() {};
+      virtual ~Form();
 
       /// get-set methods
       /// areas
@@ -230,7 +224,8 @@ namespace Hermes
       bool is_const;
 
       /// To what power is the jacobian of the inverse reference map calculated.
-      double jacobian_power;
+      double dx_power;
+      double dy_power;
 
       /// External solutions.
       Hermes::vector<MeshFunction<Scalar>*> ext;
@@ -263,7 +258,7 @@ namespace Hermes
       /// Constructor with coordinates.
       MatrixForm(unsigned int i, unsigned int j);
 
-      virtual ~MatrixForm() {};
+      virtual ~MatrixForm();
 
       unsigned int i;
       unsigned int j;
@@ -279,11 +274,11 @@ namespace Hermes
       /// Set this form to constant and provide the tables.
       /// For various spaces and shapesets.
       /// \param[in] A_values: [ElementMode2D][row][column] => value.
-      void set_h1_h1_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_h1_l2_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_l2_h1_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_l2_l2_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_const_tables(ElementMode2D mode, const char* filename, double***& matrix_values, double jacobian_power);
+      void set_h1_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_h1_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_l2_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_l2_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_const_tables(ElementMode2D mode, const char* filename, double***& matrix_values, double dx_power, double dy_power, const int dimensions_test[2], const int dimensions_basis[2]);
 
       /// The storage for precalculated values.
       /// For speed purposes, these are accesses directly.
@@ -304,7 +299,7 @@ namespace Hermes
       void setSymFlag(SymFlag sym);
       SymFlag getSymFlag() const;
 
-      virtual ~MatrixFormVol() {};
+      virtual ~MatrixFormVol();
 
       virtual MatrixFormVol* clone() const;
     };
@@ -316,7 +311,7 @@ namespace Hermes
       /// Constructor with coordinates.
       MatrixFormSurf(unsigned int i, unsigned int j);
 
-      virtual ~MatrixFormSurf() {};
+      virtual ~MatrixFormSurf();
 
       virtual MatrixFormSurf* clone() const;
     };
@@ -328,7 +323,7 @@ namespace Hermes
       /// Constructor with coordinates.
       MatrixFormDG(unsigned int i, unsigned int j);
 
-      virtual ~MatrixFormDG() {};
+      virtual ~MatrixFormDG();
 
       virtual MatrixFormDG* clone() const;
     };
@@ -340,7 +335,7 @@ namespace Hermes
       /// Constructor with coordinates.
       VectorForm(unsigned int i);
 
-      virtual ~VectorForm() {};
+      virtual ~VectorForm();
 
       virtual Scalar value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *v,
         Geom<double> *e, Func<Scalar> **ext) const;
@@ -353,11 +348,11 @@ namespace Hermes
       /// Set this form to constant and provide the tables.
       /// For various spaces and shapesets.
       /// \param[in] rhs_values: [ElementMode2D][row] => value.
-      void set_h1_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_l2_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_hcurl_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_hdiv_const_tables(ElementMode2D mode, const char* filename, double jacobian_power);
-      void set_const_tables(ElementMode2D mode, const char* filename, double**& rhs_values, double jacobian_power);
+      void set_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_hcurl_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_hdiv_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
+      void set_const_tables(ElementMode2D mode, const char* filename, double**& rhs_values, double dx_power, double dy_power, const int dimensions_test[2]);
 
       /// The storage for precalculated values.
       /// For speed purposes, these are accesses directly.
@@ -375,7 +370,7 @@ namespace Hermes
       /// Constructor with coordinates.
       VectorFormVol(unsigned int i);
 
-      virtual ~VectorFormVol() {};
+      virtual ~VectorFormVol();
 
       virtual VectorFormVol* clone() const;
     };
@@ -387,7 +382,7 @@ namespace Hermes
       /// Constructor with coordinates.
       VectorFormSurf(unsigned int i);
 
-      virtual ~VectorFormSurf() {};
+      virtual ~VectorFormSurf();
 
       virtual VectorFormSurf* clone() const;
     };
@@ -399,7 +394,7 @@ namespace Hermes
       /// Constructor with coordinates.
       VectorFormDG(unsigned int i);
 
-      virtual ~VectorFormDG() {};
+      virtual ~VectorFormDG();
 
       virtual VectorFormDG* clone() const;
     };

@@ -261,13 +261,13 @@ void calculateCache(CustomWeakFormPoisson& wf, Shapeset* shapeset)
   }
   if(form_i == 2)
   {
-    ssMatrix << "DefaultMatrixFormDX";
-	  ssRhs << "DefaultVectorFormDX";
+    ssMatrix << "DefaultMatrixFormDx";
+	  ssRhs << "DefaultVectorFormDx";
   }
   if(form_i == 3)
   {
-    ssMatrix << "DefaultMatrixFormDY";
-	  ssRhs << "DefaultVectorFormDY";
+    ssMatrix << "DefaultMatrixFormDy";
+	  ssRhs << "DefaultVectorFormDy";
   }
 
 	if(elementMode == HERMES_MODE_TRIANGLE)

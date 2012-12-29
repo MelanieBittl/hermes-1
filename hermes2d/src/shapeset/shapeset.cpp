@@ -169,7 +169,6 @@ namespace Hermes
 
     int Shapeset::get_max_order() const { return max_order; }
 
-    int Shapeset::get_max_index(ElementMode2D mode) const { return max_index[mode]; }
 
     int Shapeset::get_num_components() const { return num_components; }
 
@@ -225,7 +224,6 @@ namespace Hermes
     int Shapeset::get_order(int index, ElementMode2D mode) const
     {
       if(index >= 0) {
-        assert(index >= 0 && index <= max_index[mode]);
         return index_to_order[mode][index];
       }
       else return ((-1 - index) >> 3) & 15;
@@ -235,7 +233,6 @@ namespace Hermes
     {
       if(index >= 0)
       {
-        assert(index >= 0 && index <= max_index[mode]); assert(component >= 0 && component < num_components);
         Shapeset::shape_fn_t** shape_expansion = shape_table[n][mode];
         if(shape_expansion == NULL)
         { // requested exansion (f, df/dx, df/dy, ddf/dxdx, ...) is not defined.

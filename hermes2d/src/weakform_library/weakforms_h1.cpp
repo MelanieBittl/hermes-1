@@ -256,12 +256,6 @@ namespace Hermes
         
         // If coeff is HERMES_ONE, initialize it to be constant 1.0.
         if(coeff == HERMES_ONE) this->coeff = new Hermes1DFunction<Scalar>(1.0);
-
-        // Settings of precalculated values.
-        std::stringstream ss;
-        ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
-        ss << "DefaultMatrixFormDiffusionTriangle.h2d";
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, ss.str().c_str(), 0);
       };
 
       template<typename Scalar>
@@ -274,12 +268,6 @@ namespace Hermes
         
         // If coeff is HERMES_ONE, initialize it to be constant 1.0.
         if(coeff == HERMES_ONE) this->coeff = new Hermes1DFunction<Scalar>(1.0);
-
-        // Settings of precalculated values.
-        std::stringstream ss;
-        ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
-        ss << "DefaultMatrixFormDiffusionTriangle.h2d";
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, ss.str().c_str(), 0);
       }
 
       template<typename Scalar>
@@ -433,12 +421,6 @@ namespace Hermes
         
         // If coeff is HERMES_ONE, initialize it to be constant 1.0.
         if(coeff == HERMES_ONE) this->coeff = new Hermes2DFunction<Scalar>(1.0);
-
-        // Settings of precalculated values.
-        std::stringstream ss;
-        ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
-        ss << "DefaultVectorFormVolTriangle.h2d";
-        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, ss.str().c_str(), 1.0);
       }
 
       template<typename Scalar>
@@ -451,12 +433,6 @@ namespace Hermes
         
         // If coeff is HERMES_ONE, initialize it to be constant 1.0.
         if(coeff == HERMES_ONE) this->coeff = new Hermes2DFunction<Scalar>(1.0);
-
-        // Settings of precalculated values.
-        std::stringstream ss;
-        ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
-        ss << "DefaultVectorFormVolTriangle.h2d";
-        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, ss.str().c_str(), 1.0);
       }
 
       template<typename Scalar>
