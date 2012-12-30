@@ -89,6 +89,90 @@ namespace Hermes
         virtual MatrixFormVol<Scalar>* clone() const;
       };
 
+      template<typename Scalar>
+      class HERMES_API ConstantMatrixFormDuDxValV : public MatrixFormVol<Scalar>
+      {
+      public:
+        ConstantMatrixFormDuDxValV(int i, int j, std::string area = HERMES_ANY);
+
+        ConstantMatrixFormDuDxValV(int i, int j, Hermes::vector<std::string> areas);
+
+        void init_tables();
+
+        ~ConstantMatrixFormDuDxValV();
+
+        virtual Scalar value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+          Geom<double> *e, Func<Scalar> **ext) const;
+
+        virtual Hermes::Ord ord(int n, double *wt, Func<Hermes::Ord> *u_ext[], Func<Hermes::Ord> *u,
+          Func<Hermes::Ord> *v, Geom<Hermes::Ord> *e, Func<Ord> **ext) const;
+
+        virtual MatrixFormVol<Scalar>* clone() const;
+      };
+
+      template<typename Scalar>
+      class HERMES_API ConstantMatrixFormDuDyValV : public MatrixFormVol<Scalar>
+      {
+      public:
+        ConstantMatrixFormDuDyValV(int i, int j, std::string area = HERMES_ANY);
+
+        ConstantMatrixFormDuDyValV(int i, int j, Hermes::vector<std::string> areas);
+
+        void init_tables();
+
+        ~ConstantMatrixFormDuDyValV();
+
+        virtual Scalar value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+          Geom<double> *e, Func<Scalar> **ext) const;
+
+        virtual Hermes::Ord ord(int n, double *wt, Func<Hermes::Ord> *u_ext[], Func<Hermes::Ord> *u,
+          Func<Hermes::Ord> *v, Geom<Hermes::Ord> *e, Func<Ord> **ext) const;
+
+        virtual MatrixFormVol<Scalar>* clone() const;
+      };
+
+      template<typename Scalar>
+      class HERMES_API ConstantMatrixFormValUDvDx : public MatrixFormVol<Scalar>
+      {
+      public:
+        ConstantMatrixFormValUDvDx(int i, int j, std::string area = HERMES_ANY);
+
+        ConstantMatrixFormValUDvDx(int i, int j, Hermes::vector<std::string> areas);
+
+        void init_tables();
+
+        ~ConstantMatrixFormValUDvDx();
+
+        virtual Scalar value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+          Geom<double> *e, Func<Scalar> **ext) const;
+
+        virtual Hermes::Ord ord(int n, double *wt, Func<Hermes::Ord> *u_ext[], Func<Hermes::Ord> *u,
+          Func<Hermes::Ord> *v, Geom<Hermes::Ord> *e, Func<Ord> **ext) const;
+
+        virtual MatrixFormVol<Scalar>* clone() const;
+      };
+
+      template<typename Scalar>
+      class HERMES_API ConstantMatrixFormValUDvDy : public MatrixFormVol<Scalar>
+      {
+      public:
+        ConstantMatrixFormValUDvDy(int i, int j, std::string area = HERMES_ANY);
+
+        ConstantMatrixFormValUDvDy(int i, int j, Hermes::vector<std::string> areas);
+
+        void init_tables();
+
+        ~ConstantMatrixFormValUDvDy();
+
+        virtual Scalar value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+          Geom<double> *e, Func<Scalar> **ext) const;
+
+        virtual Hermes::Ord ord(int n, double *wt, Func<Hermes::Ord> *u_ext[], Func<Hermes::Ord> *u,
+          Func<Hermes::Ord> *v, Geom<Hermes::Ord> *e, Func<Ord> **ext) const;
+
+        virtual MatrixFormVol<Scalar>* clone() const;
+      };
+
       /* Default volumetric vector form \int_{area} const_coeff * function_coeff(x, y) * v d\bfx
       const_coeff... constant number
       function_coeff... (generally nonconstant) function of x, y

@@ -1379,7 +1379,7 @@ if(new_cache==true)
         }
 
         // Surface forms.
-        if(current_state->isBnd)
+        if(current_state->isBnd && (current_wf->mfsurf.size() > 0 || current_wf->vfsurf.size() > 0))
         {
           Hermes::vector<MatrixFormSurf<Scalar>*> current_mfsurf = current_wf->mfsurf;
           Hermes::vector<VectorFormSurf<Scalar>*> current_vfsurf = current_wf->vfsurf;
@@ -1465,7 +1465,7 @@ if(new_cache==true)
 
         newRecord->n_quadrature_points = init_geometry_points(current_refmaps[i], newRecord->order, newRecord->geometry, newRecord->jacobian_x_weights);
 
-        if(current_state->isBnd)
+        if(current_state->isBnd && (current_wf->mfsurf.size() > 0 || current_wf->vfsurf.size() > 0))
         {
           newRecord->fnsSurface = new Func<double>**[newRecord->nvert];
           memset(newRecord->fnsSurface, NULL, sizeof(Func<double>**) * newRecord->nvert);
@@ -1531,7 +1531,7 @@ if(new_cache==true)
 
       // Assembly lists for surface forms.
       AsmList<Scalar>** current_alsSurface = new AsmList<Scalar>*[this->spaces.size()];
-      if(current_state->isBnd)
+      if(current_state->isBnd && (current_wf->mfsurf.size() > 0 || current_wf->vfsurf.size() > 0))
       {
         for(unsigned int space_i = 0; space_i < this->spaces.size(); space_i++)
         {
@@ -1699,7 +1699,7 @@ if(new_cache==true)
       }
           
       // Assemble surface integrals now: loop through surfaces of the element.
-      if(current_state->isBnd)
+      if(current_state->isBnd && (current_wf->mfsurf.size() > 0 || current_wf->vfsurf.size() > 0))
       {
         for (current_state->isurf = 0; current_state->isurf < current_state->rep->nvert; current_state->isurf++)
         {
@@ -1963,12 +1963,10 @@ if(new_cache==true)
 
             if(current_als[form->j]->dof[j] < 0)
             {
-              {
-                if(surface_form)
-                  this->current_rhs->add(current_als[form->i]->dof[i], - 0.5 * this->block_scaling_coeff(form) * form->value(n_quadrature_points, jacobian_x_weights, NULL, u, v, geometry, NULL) * form->scaling_factor * current_als[form->j]->coef[j] * current_als[form->i]->coef[i]);
-                else
-                  this->current_rhs->add(current_als[form->i]->dof[i], -this->block_scaling_coeff(form) * form->value(n_quadrature_points, jacobian_x_weights, NULL, u, v, geometry, NULL) * form->scaling_factor * current_als[form->j]->coef[j] * current_als[form->i]->coef[i]);
-              }
+              if(surface_form)
+                this->current_rhs->add(current_als[form->i]->dof[i], - 0.5 * this->block_scaling_coeff(form) * form->value(n_quadrature_points, jacobian_x_weights, NULL, u, v, geometry, NULL) * form->scaling_factor * current_als[form->j]->coef[j] * current_als[form->i]->coef[i]);
+              else
+                this->current_rhs->add(current_als[form->i]->dof[i], -this->block_scaling_coeff(form) * form->value(n_quadrature_points, jacobian_x_weights, NULL, u, v, geometry, NULL) * form->scaling_factor * current_als[form->j]->coef[j] * current_als[form->i]->coef[i]);
             }
           }
         }
@@ -1989,7 +1987,9 @@ if(new_cache==true)
             Scalar val = this->block_scaling_coeff(form) * form->value(n_quadrature_points, jacobian_x_weights, NULL, u, v, geometry, NULL) * form->scaling_factor * current_als[form->j]->coef[j] * current_als[form->i]->coef[i];
 
             if(current_als[form->j]->dof[j] < 0)
+            {
               this->current_rhs->add(current_als[form->i]->dof[i], -val);
+            }
           }
         }
       }

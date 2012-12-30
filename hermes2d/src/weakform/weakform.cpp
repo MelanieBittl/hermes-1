@@ -314,19 +314,21 @@ namespace Hermes
       ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
       ss << filename;
       std::ifstream matrixFormIn(ss.str());
-      if(matrixFormIn.bad())
+      if(!matrixFormIn.is_open())
         throw Exceptions::Exception("Failed to load file with precalculated form in MatrixForm::set_const_tables().");
-
-      if(this->matrix_values_h1_h1 == NULL)
+      if(!matrixFormIn.good())
+        throw Exceptions::Exception("Failed to load file with precalculated form in MatrixForm::set_const_tables().");
+      
+      if(matrix_values == NULL)
       {
-        this->matrix_values_h1_h1 = new double**[2];
-        memset(this->matrix_values_h1_h1, 0, sizeof(double**)*2);
+        matrix_values = new double**[2];
+        memset(matrix_values, 0, sizeof(double**)*2);
       }
-      if(this->matrix_values_h1_h1[mode] == NULL)
+      if(matrix_values[mode] == NULL)
       {
-        this->matrix_values_h1_h1[mode] = new double*[dimensions_test[mode]];
-        for(unsigned int i = 0; i < dimensions_test[mode]; i++)
-          this->matrix_values_h1_h1[mode][i] = new double[dimensions_test[mode]];
+        matrix_values[mode] = new double*[dimensions_test[mode] + 1];
+        for(unsigned int i = 0; i < dimensions_test[mode] + 1; i++)
+          matrix_values[mode][i] = new double[dimensions_test[mode] + 1];
       }
 
 	    int index_i, index_j;
@@ -494,7 +496,9 @@ namespace Hermes
       this->dy_power = dy_power;
 
       std::ifstream rhsFormIn(filename);
-      if(rhsFormIn.bad())
+      if(!rhsFormIn.is_open())
+        throw Exceptions::Exception("Failed to load file with precalculated form in VectorForm::set_const_tables().");
+      if(!rhsFormIn.good())
         throw Exceptions::Exception("Failed to load file with precalculated form in VectorForm::set_const_tables().");
 
 	    if(rhs_values == NULL)
@@ -504,7 +508,7 @@ namespace Hermes
       }
       if(rhs_values[mode] == NULL)
       {
-        rhs_values[mode] = new double[dimensions_test[mode]];
+        rhs_values[mode] = new double[dimensions_test[mode] + 1];
       }
 
       int index_i;

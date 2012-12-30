@@ -41,10 +41,10 @@ namespace Hermes
       void ConstantMatrixFormVol<Scalar>::init_tables()
       {
         // Settings of precalculated values.
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultMatrixFormVolTriangle.h1h1", 0, 0);
-        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "DefaultMatrixFormVolQuad.h1h1", 0, 0);
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultMatrixFormVolTriangle.l2l2", 0, 0);
-        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "DefaultMatrixFormVolQuad.l2l2", 0, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormVolTriangle.h1h1", 0, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "MatrixFormVolQuad.h1h1", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormVolTriangle.l2l2", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_QUAD, "MatrixFormVolQuad.l2l2", 0, 0);
 
         /// \todo Cross-tables (h1 <-> l2)
         /// \todo Hcurl, Hdiv
@@ -102,10 +102,10 @@ namespace Hermes
       void ConstantMatrixFormDx<Scalar>::init_tables()
       {
         // Settings of precalculated values.
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultMatrixFormDxTriangle.h1h1", 2, 0);
-        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "DefaultMatrixFormDxQuad.h1h1", 2, 0);
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultMatrixFormDxTriangle.l2l2", 2, 0);
-        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "DefaultMatrixFormDxQuad.l2l2", 2, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDxTriangle.h1h1", 2, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "MatrixFormDxQuad.h1h1", 2, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDxTriangle.l2l2", 2, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_QUAD, "MatrixFormDxQuad.l2l2", 2, 0);
 
         /// \todo Cross-tables (h1 <-> l2)
         /// \todo Hcurl, Hdiv
@@ -163,10 +163,10 @@ namespace Hermes
       void ConstantMatrixFormDy<Scalar>::init_tables()
       {
         // Settings of precalculated values.
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultMatrixFormDyTriangle.h1h1", 0, 2);
-        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "DefaultMatrixFormDyQuad.h1h1", 0, 2);
-        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultMatrixFormDyTriangle.l2l2", 0, 2);
-        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "DefaultMatrixFormDyQuad.l2l2", 0, 2);
+        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDyTriangle.h1h1", 0, 2);
+        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "MatrixFormDyQuad.h1h1", 0, 2);
+        this->set_l2_l2_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDyTriangle.l2l2", 0, 2);
+        this->set_l2_l2_const_tables(HERMES_MODE_QUAD, "MatrixFormDyQuad.l2l2", 0, 2);
 
         /// \todo Cross-tables (h1 <-> l2)
         /// \todo Hcurl, Hdiv
@@ -204,6 +204,249 @@ namespace Hermes
         return new ConstantMatrixFormDy<Scalar>(*this);
       }
 
+      template<typename Scalar>
+      ConstantMatrixFormDuDxValV<Scalar>::ConstantMatrixFormDuDxValV
+        (int i, int j, std::string area) : MatrixFormDuDxValV<Scalar>(i, j)
+      {
+        this->set_area(area);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormDuDxValV<Scalar>::ConstantMatrixFormDuDxValV
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormDuDxValV<Scalar>(i, j)
+      {
+        this->set_areas(areas);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      void ConstantMatrixFormDuDxValV<Scalar>::init_tables()
+      {
+        // Settings of precalculated values.
+        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDuDxValVTriangle.h1h1", 0, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "MatrixFormDuDxValVQuad.h1h1", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDuDxValVTriangle.l2l2", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_QUAD, "MatrixFormDuDxValVQuad.l2l2", 0, 0);
+
+        /// \todo Cross-tables (h1 <-> l2)
+        /// \todo Hcurl, Hdiv
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormDuDxValV<Scalar>::~ConstantMatrixFormDuDxValV()
+      {
+      };
+
+      template<typename Scalar>
+      Scalar ConstantMatrixFormDuDxValV<Scalar>::value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+        Geom<double> *e, Func<Scalar> **ext) const
+      {
+        Scalar result = 0;
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->dx[i] * v->val[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      Ord ConstantMatrixFormDuDxValV<Scalar>::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u,
+        Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+      {
+        Ord result = Ord(0);
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->dx[i] * v->val[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      MatrixFormVol<Scalar>* ConstantMatrixFormDuDxValV<Scalar>::clone() const
+      {
+        /// \todo Check that this copies the tables data.
+        return new ConstantMatrixFormDuDxValV<Scalar>(*this);
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormDuDyValV<Scalar>::ConstantMatrixFormDuDyValV
+        (int i, int j, std::string area) : MatrixFormDuDyValV<Scalar>(i, j)
+      {
+        this->set_area(area);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormDuDyValV<Scalar>::ConstantMatrixFormDuDyValV
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormDuDyValV<Scalar>(i, j)
+      {
+        this->set_areas(areas);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      void ConstantMatrixFormDuDyValV<Scalar>::init_tables()
+      {
+        // Settings of precalculated values.
+        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDuDyValVTriangle.h1h1", 0, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "MatrixFormDuDyValVQuad.h1h1", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormDuDyValVTriangle.l2l2", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_QUAD, "MatrixFormDuDyValVQuad.l2l2", 0, 0);
+
+        /// \todo Cross-tables (h1 <-> l2)
+        /// \todo Hcurl, Hdiv
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormDuDyValV<Scalar>::~ConstantMatrixFormDuDyValV()
+      {
+      };
+
+      template<typename Scalar>
+      Scalar ConstantMatrixFormDuDyValV<Scalar>::value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+        Geom<double> *e, Func<Scalar> **ext) const
+      {
+        Scalar result = 0;
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->dy[i] * v->val[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      Ord ConstantMatrixFormDuDyValV<Scalar>::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u,
+        Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+      {
+        Ord result = Ord(0);
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->dy[i] * v->val[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      MatrixFormVol<Scalar>* ConstantMatrixFormDuDyValV<Scalar>::clone() const
+      {
+        /// \todo Check that this copies the tables data.
+        return new ConstantMatrixFormDuDyValV<Scalar>(*this);
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormValUDvDx<Scalar>::ConstantMatrixFormValUDvDx
+        (int i, int j, std::string area) : MatrixFormValUDvDx<Scalar>(i, j)
+      {
+        this->set_area(area);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormValUDvDx<Scalar>::ConstantMatrixFormValUDvDx
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormValUDvDx<Scalar>(i, j)
+      {
+        this->set_areas(areas);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      void ConstantMatrixFormValUDvDx<Scalar>::init_tables()
+      {
+        // Settings of precalculated values.
+        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormValUDvDxTriangle.h1h1", 0, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "MatrixFormValUDvDxQuad.h1h1", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormValUDvDxTriangle.l2l2", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_QUAD, "MatrixFormValUDvDxQuad.l2l2", 0, 0);
+
+        /// \todo Cross-tables (h1 <-> l2)
+        /// \todo Hcurl, Hdiv
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormValUDvDx<Scalar>::~ConstantMatrixFormValUDvDx()
+      {
+      };
+
+      template<typename Scalar>
+      Scalar ConstantMatrixFormValUDvDx<Scalar>::value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+        Geom<double> *e, Func<Scalar> **ext) const
+      {
+        Scalar result = 0;
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->val[i] * v->dx[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      Ord ConstantMatrixFormValUDvDx<Scalar>::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u,
+        Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+      {
+        Ord result = Ord(0);
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->val[i] * v->dx[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      MatrixFormVol<Scalar>* ConstantMatrixFormValUDvDx<Scalar>::clone() const
+      {
+        /// \todo Check that this copies the tables data.
+        return new ConstantMatrixFormValUDvDx<Scalar>(*this);
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormValUDvDy<Scalar>::ConstantMatrixFormValUDvDy
+        (int i, int j, std::string area) : MatrixFormValUDvDy<Scalar>(i, j)
+      {
+        this->set_area(area);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormValUDvDy<Scalar>::ConstantMatrixFormValUDvDy
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormValUDvDy<Scalar>(i, j)
+      {
+        this->set_areas(areas);
+        this->init_tables();
+      }
+
+      template<typename Scalar>
+      void ConstantMatrixFormValUDvDy<Scalar>::init_tables()
+      {
+        // Settings of precalculated values.
+        this->set_h1_h1_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormValUDvDyTriangle.h1h1", 0, 0);
+        this->set_h1_h1_const_tables(HERMES_MODE_QUAD, "MatrixFormValUDvDyQuad.h1h1", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_TRIANGLE, "MatrixFormValUDvDyTriangle.l2l2", 0, 0);
+        this->set_l2_l2_const_tables(HERMES_MODE_QUAD, "MatrixFormValUDvDyQuad.l2l2", 0, 0);
+
+        /// \todo Cross-tables (h1 <-> l2)
+        /// \todo Hcurl, Hdiv
+      }
+
+      template<typename Scalar>
+      ConstantMatrixFormValUDvDy<Scalar>::~ConstantMatrixFormValUDvDy()
+      {
+      };
+
+      template<typename Scalar>
+      Scalar ConstantMatrixFormValUDvDy<Scalar>::value(int n, double *wt, Func<Scalar> *u_ext[], Func<double> *u, Func<double> *v,
+        Geom<double> *e, Func<Scalar> **ext) const
+      {
+        Scalar result = 0;
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->val[i] * v->dy[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      Ord ConstantMatrixFormValUDvDy<Scalar>::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u,
+        Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+      {
+        Ord result = Ord(0);
+        for (int i = 0; i < n; i++)
+          result += wt[i] * u->val[i] * v->dy[i];
+        return result;
+      }
+
+      template<typename Scalar>
+      MatrixFormVol<Scalar>* ConstantMatrixFormValUDvDy<Scalar>::clone() const
+      {
+        /// \todo Check that this copies the tables data.
+        return new ConstantMatrixFormValUDvDy<Scalar>(*this);
+      }
 
       template<typename Scalar>
       ConstantVectorFormVol<Scalar>::ConstantVectorFormVol
@@ -225,10 +468,10 @@ namespace Hermes
       void ConstantVectorFormVol<Scalar>::init_tables()
       {
         // Settings of precalculated values.
-        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultVectorFormVolTriangle.h1", 0, 0);
-        this->set_h1_const_tables(HERMES_MODE_QUAD, "DefaultVectorFormVolQuad.h1", 0, 0);
-        this->set_l2_const_tables(HERMES_MODE_TRIANGLE, "DefaultVectorFormVolTriangle.l2", 0, 0);
-        this->set_l2_const_tables(HERMES_MODE_QUAD, "DefaultVectorFormVolQuad.l2", 0, 0);
+        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, "VectorFormVolTriangle.h1", 0, 0);
+        this->set_h1_const_tables(HERMES_MODE_QUAD, "VectorFormVolQuad.h1", 0, 0);
+        this->set_l2_const_tables(HERMES_MODE_TRIANGLE, "VectorFormVolTriangle.l2", 0, 0);
+        this->set_l2_const_tables(HERMES_MODE_QUAD, "VectorFormVolQuad.l2", 0, 0);
         /// \todo Hcurl, Hdiv
       }
 
@@ -284,10 +527,10 @@ namespace Hermes
       void ConstantVectorFormDx<Scalar>::init_tables()
       {
         // Settings of precalculated values.
-        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultVectorFormDxTriangle.h1", 1, 0);
-        this->set_h1_const_tables(HERMES_MODE_QUAD, "DefaultVectorFormDxQuad.h1", 1, 0);
-        this->set_l2_const_tables(HERMES_MODE_TRIANGLE, "DefaultVectorFormDxTriangle.l2", 1, 0);
-        this->set_l2_const_tables(HERMES_MODE_QUAD, "DefaultVectorFormDxQuad.l2", 1, 0);
+        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, "VectorFormDxTriangle.h1", 1, 0);
+        this->set_h1_const_tables(HERMES_MODE_QUAD, "VectorFormDxQuad.h1", 1, 0);
+        this->set_l2_const_tables(HERMES_MODE_TRIANGLE, "VectorFormDxTriangle.l2", 1, 0);
+        this->set_l2_const_tables(HERMES_MODE_QUAD, "VectorFormDxQuad.l2", 1, 0);
         /// \todo Hcurl, Hdiv
       }
 
@@ -343,10 +586,10 @@ namespace Hermes
       void ConstantVectorFormDy<Scalar>::init_tables()
       {
         // Settings of precalculated values.
-        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, "DefaultVectorFormDyTriangle.h1", 1, 0);
-        this->set_h1_const_tables(HERMES_MODE_QUAD, "DefaultVectorFormDyQuad.h1", 1, 0);
-        this->set_l2_const_tables(HERMES_MODE_TRIANGLE, "DefaultVectorFormDyTriangle.l2", 1, 0);
-        this->set_l2_const_tables(HERMES_MODE_QUAD, "DefaultVectorFormDyQuad.l2", 1, 0);
+        this->set_h1_const_tables(HERMES_MODE_TRIANGLE, "VectorFormDyTriangle.h1", 1, 0);
+        this->set_h1_const_tables(HERMES_MODE_QUAD, "VectorFormDyQuad.h1", 1, 0);
+        this->set_l2_const_tables(HERMES_MODE_TRIANGLE, "VectorFormDyTriangle.l2", 1, 0);
+        this->set_l2_const_tables(HERMES_MODE_QUAD, "VectorFormDyQuad.l2", 1, 0);
         /// \todo Hcurl, Hdiv
       }
 
