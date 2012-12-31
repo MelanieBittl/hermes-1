@@ -28,8 +28,8 @@
 const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const bool BASE_VISUALIZATION = true;              // Set to "true" to enable base functions output.
-const int P_INIT = 3;                             // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 0;                       // Number of initial uniform mesh refinements.
+const int P_INIT = 7;                             // Uniform polynomial degree of mesh elements.
+const int INIT_REF_NUM = 6;                       // Number of initial uniform mesh refinements.
 
 // Problem parameters.
 const double VOLUME_HEAT_SRC = 1.0;          // Volume heat sources generated (for example) by electric current.
@@ -37,6 +37,31 @@ const double FIXED_BDY_TEMP = 0.0;					// Fixed temperature on the boundary.
 
 Hermes::Hermes2D::ElementMode2D elementMode = HERMES_MODE_TRIANGLE;
 int form_i = 0;
+int form_matrix_i = 0;
+
+/* form_matrix_i indices:
+0 - no multiplying
+1 - 0, 0
+2 - 0, 1
+3 - 1, 0
+4 - 1, 1
+5 - 1 * 1
+6 - 1 * 2
+7 - 1 * 3
+8 - 1 * 4
+9 - 2 * 1
+10 - 2 * 2
+11 - 2 * 3
+12 - 2 * 4
+13 - 3 * 1
+14 - 3 * 2
+15 - 3 * 3
+16 - 3 * 4
+17 - 4 * 1
+18 - 4 * 2
+19 - 4 * 3
+20 - 4 * 4
+*/
 
 double matrixFunction(int np, double* wt, Func<double>* u, Func<double>* v)
 {
@@ -46,31 +71,96 @@ double matrixFunction(int np, double* wt, Func<double>* u, Func<double>* v)
     {
       // Vol.
       case 0:
-      result += wt[i] * (u->val[i] * v->val[i]);
+        switch(form_matrix_i)
+        {
+        case 0:
+          result += wt[i] * (u->val[i] * v->val[i]);
+        break;
+        }
       break;
       // DX.
       case 1:
-      result += wt[i] * (u->dx[i] * v->dx[i]);
+        switch(form_matrix_i)
+        {
+        case 5:
+          result += wt[i] * (u->dx[i] * v->dx[i]);
+        break;
+        case 6:
+          result += wt[i] * (u->dx[i] * v->dy[i]);
+        break;
+        case 9:
+          result += wt[i] * (u->dy[i] * v->dx[i]);
+        break;
+        case 10:
+          result += wt[i] * (u->dy[i] * v->dy[i]);
+        break;
+        }
       break;
       // DY.
       case 2:
-      result += wt[i] * (u->dy[i] * v->dy[i]);
+        switch(form_matrix_i)
+        {
+        case 15:
+          result += wt[i] * (u->dx[i] * v->dx[i]);
+        break;
+        case 16:
+          result += wt[i] * (u->dx[i] * v->dy[i]);
+        break;
+        case 19:
+          result += wt[i] * (u->dy[i] * v->dx[i]);
+        break;
+        case 20:
+          result += wt[i] * (u->dy[i] * v->dy[i]);
+        break;
+        }
       break;
       // DuDxValV.
       case 3:
-      result += wt[i] * (u->dx[i] * v->val[i]);
+        switch(form_matrix_i)
+        {
+        case 1:
+          result += wt[i] * (u->dx[i] * v->val[i]);
+        break;
+        case 2:
+          result += wt[i] * (u->dy[i] * v->val[i]);
+        break;
+        }
       break;
       // DuDyValV.
       case 4:
-      result += wt[i] * (u->dy[i] * v->val[i]);
+        switch(form_matrix_i)
+        {
+        case 3:
+          result += wt[i] * (u->dx[i] * v->val[i]);
+        break;
+        case 4:
+          result += wt[i] * (u->dy[i] * v->val[i]);
+        break;
+        }
       break;
       // ValUDvDx.
       case 5:
-      result += wt[i] * (u->val[i] * v->dx[i]);
+        switch(form_matrix_i)
+        {
+        case 1:
+          result += wt[i] * (u->val[i] * v->dx[i]);
+        break;
+        case 2:
+          result += wt[i] * (u->val[i] * v->dy[i]);
+        break;
+        }
       break;
       // ValUDvDy.
       case 6:
-      result += wt[i] * (u->val[i] * v->dy[i]);
+        switch(form_matrix_i)
+        {
+        case 3:
+          result += wt[i] * (u->val[i] * v->dx[i]);
+        break;
+        case 4:
+          result += wt[i] * (u->val[i] * v->dy[i]);
+        break;
+        }
       break;
     }
 	return result;
@@ -86,15 +176,36 @@ double rhsFunction(int np, double* wt, Func<double>* v)
     {
       // Vol.
       case 0:
-      result += wt[i] * (v->val[i]);
+      switch(form_matrix_i)
+        {
+        case 0:
+          result += wt[i] * (v->val[i]);
+        break;
+        }
       break;
       // DX.
       case 1:
-      result += wt[i] * (v->dx[i]);
+      switch(form_matrix_i)
+        {
+        case 1:
+          result += wt[i] * (v->dx[i]);
+        break;
+        case 2:
+          result += wt[i] * (v->dy[i]);
+        break;
+        }
       break;
       // DY.
       case 2:
-      result += wt[i] * (v->dy[i]);
+      switch(form_matrix_i)
+        {
+        case 3:
+          result += wt[i] * (v->dx[i]);
+        break;
+        case 4:
+          result += wt[i] * (v->dy[i]);
+        break;
+        }
       break;
       default:
       result += 0.0;
@@ -118,7 +229,7 @@ void loadCache();
 void loadProblemData();
 
 // Cache calculation.
-void calculateCache(CustomWeakFormPoisson& wf, Shapeset* shapeset);
+void calculateCache(CustomWeakFormPoissonCacheCalculation& wf, Shapeset* shapeset);
 
 void calculateResultAssembling(CustomWeakFormPoisson& wf);
 
@@ -127,30 +238,32 @@ int main(int argc, char* argv[])
   try
   {
     // Initialize the weak formulation.
-    CustomWeakFormPoisson wf(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
+    CustomWeakFormPoissonCacheCalculation wf(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
+    CustomWeakFormPoisson wf1(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
 
     Hermes2DApi.set_integral_param_value(numThreads, 1);
 
     /*
     for(int i = 0; i < 2; i++)
       for(int j = 0; j < 6; j++)
-      {
-        elementMode = i == 0 ? HERMES_MODE_TRIANGLE : HERMES_MODE_QUAD;
-        form_i = j;
-        calculateCache(wf, new H1Shapeset);
-      }
+        {
+          elementMode = i == 0 ? HERMES_MODE_TRIANGLE : HERMES_MODE_QUAD;
+          form_i = j;
+          calculateCache(wf, new H1Shapeset);
+        }
 
-      for(int i = 0; i < 2; i++)
+    for(int i = 0; i < 2; i++)
       for(int j = 0; j < 6; j++)
-      {
-        elementMode = i == 0 ? HERMES_MODE_TRIANGLE : HERMES_MODE_QUAD;
-        form_i = j;
-        calculateCache(wf, new L2Shapeset);
-      }
+        {
+          elementMode = i == 0 ? HERMES_MODE_TRIANGLE : HERMES_MODE_QUAD;
+          form_i = j;
+          calculateCache(wf, new L2Shapeset);
+        }
+
     */
 
     loadProblemData();
-    calculateResultAssembling(wf);
+    calculateResultAssembling(wf1);
   }
   catch(std::exception& e)
   {
@@ -229,7 +342,7 @@ void loadProblemData()
   space = new Hermes::Hermes2D::H1Space<double>(mesh, bcs, P_INIT);
 }
 
-void calculateCache(CustomWeakFormPoisson& wf, Shapeset* shapeset)
+void calculateCache(CustomWeakFormPoissonCacheCalculation& wf, Shapeset* shapeset)
 {
   // Load the mesh.
   Hermes::Hermes2D::MeshReaderH2DXML mloader;
@@ -314,6 +427,165 @@ void calculateCache(CustomWeakFormPoisson& wf, Shapeset* shapeset)
 	std::ofstream matrixFormOut(ssMatrix.str());
 	std::ofstream rhsFormOut(ssRhs.str());
 
+  for(int mf_i = 0; mf_i < 21; mf_i++)
+    switch (form_i)
+    {
+      // Vol.
+      case 0:
+        switch(mf_i)
+        {
+        case 0:
+          matrixFormOut << 'a';
+        default:
+          matrixFormOut << 'n';
+        break;
+        }
+      break;
+      // DX.
+      case 1:
+        switch(mf_i)
+        {
+        case 5:
+          matrixFormOut << 'a';
+        break;
+        case 6:
+          matrixFormOut << 'a';
+        break;
+        case 9:
+          matrixFormOut << 'a';
+        break;
+        case 10:
+          matrixFormOut << 'a';
+        break;
+        default:
+          matrixFormOut << 'n';
+        }
+      break;
+      // DY.
+      case 2:
+        switch(mf_i)
+        {
+        case 15:
+          matrixFormOut << 'a';
+        break;
+        case 16:
+          matrixFormOut << 'a';
+        break;
+        case 19:
+          matrixFormOut << 'a';
+        break;
+        case 20:
+          matrixFormOut << 'a';
+        break;
+        default:
+          matrixFormOut << 'n';
+        }
+      break;
+      // DuDxValV.
+      case 3:
+        switch(mf_i)
+        {
+        case 1:
+          matrixFormOut << 'a';
+        break;
+        case 2:
+          matrixFormOut << 'a';
+        break;
+        default:
+          matrixFormOut << 'n';
+        }
+      break;
+      // DuDyValV.
+      case 4:
+        switch(form_matrix_i)
+        {
+        case 3:
+          matrixFormOut << 'a';
+        break;
+        case 4:
+          matrixFormOut << 'a';
+        break;
+        default:
+          matrixFormOut << 'n';
+        }
+      break;
+      // ValUDvDx.
+      case 5:
+        switch(form_matrix_i)
+        {
+        case 1:
+          matrixFormOut << 'a';
+        break;
+        case 2:
+          matrixFormOut << 'a';
+        break;
+        default:
+          matrixFormOut << 'n';
+        }
+      break;
+      // ValUDvDy.
+      case 6:
+        switch(form_matrix_i)
+        {
+        case 3:
+          matrixFormOut << 'a';
+        break;
+        case 4:
+          matrixFormOut << 'a';
+        break;
+        default:
+          matrixFormOut << 'n';
+        }
+      break;
+    }
+
+  for(int mf_i = 0; mf_i < 5; mf_i++)
+    switch (form_i)
+    {
+      // Vol.
+      case 0:
+        switch(mf_i)
+        {
+        case 0:
+          rhsFormOut << 'a';
+        break;
+        default:
+          rhsFormOut << 'n';
+        }
+      break;
+      // DX.
+      case 1:
+      switch(mf_i)
+        {
+        case 1:
+          rhsFormOut << 'a';
+        break;
+        case 2:
+          rhsFormOut << 'a';
+        break;
+        default:
+          rhsFormOut << 'n';
+        }
+      break;
+      // DY.
+      case 2:
+      switch(mf_i)
+        {
+        case 3:
+          rhsFormOut << 'a';
+        break;
+        case 4:
+          rhsFormOut << 'a';
+        break;
+        default:
+          rhsFormOut << 'n';
+        }
+      break;
+    }
+
+  matrixFormOut << std::endl;
+  rhsFormOut << std::endl;
+
   max_index = shapeset->get_max_index(elementMode) + 1;
 	PrecalcShapeset uP(shapeset);
 	PrecalcShapeset vP(shapeset);
@@ -342,9 +614,13 @@ void calculateCache(CustomWeakFormPoisson& wf, Shapeset* shapeset)
         matrixFormOut << std::endl;
 			uP.set_active_shape(j);
 			Func<double>* u = init_fn(&uP, &rm, (elementMode == HERMES_MODE_TRIANGLE ? 20 : 24));
-      matrixFormOut << i << ' ' << j << ' ' << matrixFunction(np, jwt, u, v);
+      matrixFormOut << i << ' ' << j;
+      for(form_matrix_i = 0; form_matrix_i < 21; form_matrix_i++)
+        matrixFormOut << ' ' << matrixFunction(np, jwt, u, v);
     }
-    rhsFormOut << i << ' ' << rhsFunction(np, jwt, v);
+    rhsFormOut << i;
+    for(form_matrix_i = 0; form_matrix_i < 5; form_matrix_i++)
+        rhsFormOut << ' ' << rhsFunction(np, jwt, v);
   }
 
   matrixFormOut.close();
@@ -379,7 +655,7 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
 
 	time.tick();
 	std::cout << (std::string)"Ndofs: " << ndof << '.' << std::endl;
-	std::cout << (std::string)"Assembling WITHOUT cache: " << time.last() << '.' << std::endl;
+	std::cout << (std::string)"Assembling: " << time.last() << '.' << std::endl;
 
   LinearMatrixSolver<double>* matrix_solver = create_linear_solver<double>(jacobian, residual);
 	FILE* matrixFile = fopen("matrix", "w");

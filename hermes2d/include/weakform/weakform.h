@@ -223,10 +223,6 @@ namespace Hermes
       /// Constant form that can be precalculated.
       bool is_const;
 
-      /// To what power is the jacobian of the inverse reference map calculated.
-      double dx_power;
-      double dy_power;
-
       /// External solutions.
       Hermes::vector<MeshFunction<Scalar>*> ext;
 
@@ -274,18 +270,18 @@ namespace Hermes
       /// Set this form to constant and provide the tables.
       /// For various spaces and shapesets.
       /// \param[in] A_values: [ElementMode2D][row][column] => value.
-      void set_h1_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_h1_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_l2_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_l2_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_const_tables(ElementMode2D mode, const char* filename, double***& matrix_values, double dx_power, double dy_power, const int dimensions_test[2], const int dimensions_basis[2]);
+      void set_h1_h1_const_tables(ElementMode2D mode, const char* filename);
+      void set_h1_l2_const_tables(ElementMode2D mode, const char* filename);
+      void set_l2_h1_const_tables(ElementMode2D mode, const char* filename);
+      void set_l2_l2_const_tables(ElementMode2D mode, const char* filename);
+      void set_const_tables(ElementMode2D mode, const char* filename, Scalar****& matrix_values, const int dimensions_test[2], const int dimensions_basis[2]);
 
       /// The storage for precalculated values.
       /// For speed purposes, these are accesses directly.
-      double*** matrix_values_h1_h1;
-      double*** matrix_values_h1_l2;
-      double*** matrix_values_l2_h1;
-      double*** matrix_values_l2_l2;
+      Scalar**** matrix_values_h1_h1;
+      Scalar**** matrix_values_h1_l2;
+      Scalar**** matrix_values_l2_h1;
+      Scalar**** matrix_values_l2_l2;
       friend class DiscreteProblem<Scalar>;
     };
 
@@ -348,18 +344,18 @@ namespace Hermes
       /// Set this form to constant and provide the tables.
       /// For various spaces and shapesets.
       /// \param[in] rhs_values: [ElementMode2D][row] => value.
-      void set_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_hcurl_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_hdiv_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power);
-      void set_const_tables(ElementMode2D mode, const char* filename, double**& rhs_values, double dx_power, double dy_power, const int dimensions_test[2]);
+      void set_h1_const_tables(ElementMode2D mode, const char* filename);
+      void set_l2_const_tables(ElementMode2D mode, const char* filename);
+      void set_hcurl_const_tables(ElementMode2D mode, const char* filename);
+      void set_hdiv_const_tables(ElementMode2D mode, const char* filename);
+      void set_const_tables(ElementMode2D mode, const char* filename, Scalar***& rhs_values, const int dimensions_test[2]);
 
       /// The storage for precalculated values.
       /// For speed purposes, these are accesses directly.
-      double** rhs_values_h1;
-      double** rhs_values_l2;
-      double** rhs_values_hcurl;
-      double** rhs_values_hdiv;
+      Scalar*** rhs_values_h1;
+      Scalar*** rhs_values_l2;
+      Scalar*** rhs_values_hcurl;
+      Scalar*** rhs_values_hdiv;
       friend class DiscreteProblem<Scalar>;
     };
 

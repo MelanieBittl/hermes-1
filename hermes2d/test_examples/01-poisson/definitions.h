@@ -9,3 +9,9 @@ class CustomWeakFormPoisson : public Hermes::Hermes2D::WeakForm<double>
 public:
   CustomWeakFormPoisson(Hermes::Hermes2DFunction<double>* src_term);
 };
+
+class CustomWeakFormPoissonCacheCalculation : public Hermes::Hermes2D::WeakForm<double>
+{
+public:
+  CustomWeakFormPoissonCacheCalculation(Hermes::Hermes2DFunction<double>* src_term);
+};

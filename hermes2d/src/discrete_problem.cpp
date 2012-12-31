@@ -1544,7 +1544,7 @@ if(new_cache==true)
 
       // The constant forms.
       if(constantElement)
-        this->assemble_constant_forms(current_refmaps, current_als, current_state, current_wf);
+        this->assemble_constant_forms(current_refmaps[rep_space_i], current_als, current_state, current_wf);
       
       // Calculate the cache entries.
       if(changedInLastAdaptation && (!onlyConstantForms || current_state->isBnd))
@@ -1819,8 +1819,13 @@ if(new_cache==true)
     }
 
     template<typename Scalar>
-    void DiscreteProblem<Scalar>::assemble_constant_forms(RefMap** current_refmaps, AsmList<Scalar>** current_als, Traverse::State* current_state, WeakForm<Scalar>* current_wf)
+    void DiscreteProblem<Scalar>::assemble_constant_forms(RefMap* current_refmap, AsmList<Scalar>** current_als, Traverse::State* current_state, WeakForm<Scalar>* current_wf)
     {
+      double const_jacobian = current_refmap->get_const_jacobian();
+      double const_inv_ref_map_0_0 = current_refmap->get_const_inv_ref_map()[0][0][0];
+      double const_inv_ref_map_0_1 = current_refmap->get_const_inv_ref_map()[0][0][1];
+      double const_inv_ref_map_1_0 = current_refmap->get_const_inv_ref_map()[0][1][0];
+      double const_inv_ref_map_1_1 = current_refmap->get_const_inv_ref_map()[0][1][1];
       if(current_mat != NULL)
       {
         // Matrix forms.
@@ -1843,7 +1848,7 @@ if(new_cache==true)
           Scalar **local_stiffness_matrix = new_matrix<Scalar>(std::max(asmlist_i->cnt, asmlist_j->cnt));
 
           // Select the right precalculated table.
-          double*** matrix_values;
+          Scalar**** matrix_values;
           if(this->spaces[form_i]->get_type() == HERMES_H1_SPACE)
           {
             if(this->spaces[form_i]->get_type() == HERMES_H1_SPACE)
@@ -1863,27 +1868,95 @@ if(new_cache==true)
               throw Exceptions::Exception("Precalculating of vector shapesets not implemented.");
           }
 
-          // Calculate the power of the inverse map jacobian.
-          double multiplier = current_refmaps[form_i]->get_const_jacobian();
-          if(mfv->dx_power > 0)
-            multiplier *= std::pow(current_refmaps[form_i]->get_const_inv_ref_map()[0][0][0], mfv->dx_power);
-          if(mfv->dy_power > 0)
-            multiplier *= std::pow(current_refmaps[form_i]->get_const_inv_ref_map()[0][1][1], mfv->dy_power);
-
-			    for(int i = 0; i < asmlist_i->cnt; i++)
-			    {
-				    if(asmlist_i->dof[i] < 0)
-					    continue;
-				    for(int j = 0; j < asmlist_j->cnt; j++)
-				    {
-					    if(asmlist_j->dof[j] >= 0)
-                local_stiffness_matrix[i][j] = matrix_values[current_state->rep->get_mode()][asmlist_i->idx[i]][asmlist_j->idx[j]] * asmlist_i->coef[i] * asmlist_j->coef[j] * multiplier;
+          for(int i = 0; i < asmlist_i->cnt; i++)
+          {
+            if(asmlist_i->dof[i] < 0)
+              continue;
+            for(int j = 0; j < asmlist_j->cnt; j++)
+            {
+              if(asmlist_j->dof[j] >= 0)
+              {
+                local_stiffness_matrix[i][j] = 0.0;
+                for(int calc_i = 0; calc_i < 21; calc_i++)
+                {
+                  if(matrix_values[current_state->rep->get_mode()][calc_i] != NULL)
+                  {
+                    Scalar val = matrix_values[current_state->rep->get_mode()][calc_i][asmlist_i->idx[i]][asmlist_j->idx[j]] * asmlist_i->coef[i] * asmlist_j->coef[j];
+                    switch(calc_i)
+                    {
+                    case 0:
+                      val *= const_jacobian;
+                      break;
+                    case 1:
+                      val *= const_jacobian * const_inv_ref_map_0_0;
+                      break;
+                    case 2:
+                      val *= const_jacobian * const_inv_ref_map_0_1;
+                      break;
+                    case 3:
+                      val *= const_jacobian * const_inv_ref_map_1_0;
+                      break;
+                    case 4:
+                      val *= const_jacobian * const_inv_ref_map_1_1;
+                      break;
+                      case 5:
+                      val *= const_jacobian * const_inv_ref_map_0_0 * const_inv_ref_map_0_0;
+                      break;
+                      case 6:
+                      val *= const_jacobian * const_inv_ref_map_0_0 * const_inv_ref_map_0_1;
+                      break;
+                      case 7:
+                      val *= const_jacobian * const_inv_ref_map_0_0 * const_inv_ref_map_1_0;
+                      break;
+                      case 8:
+                      val *= const_jacobian * const_inv_ref_map_0_0 * const_inv_ref_map_1_1;
+                      break;
+                      case 9:
+                      val *= const_jacobian * const_inv_ref_map_0_1 * const_inv_ref_map_0_0;
+                      break;
+                      case 10:
+                      val *= const_jacobian * const_inv_ref_map_0_1 * const_inv_ref_map_0_1;
+                      break;
+                      case 11:
+                      val *= const_jacobian * const_inv_ref_map_0_1 * const_inv_ref_map_1_0;
+                      break;
+                      case 12:
+                      val *= const_jacobian * const_inv_ref_map_0_1 * const_inv_ref_map_1_1;
+                      break;
+                      case 13:
+                      val *= const_jacobian * const_inv_ref_map_1_0 * const_inv_ref_map_0_0;
+                      break;
+                      case 14:
+                      val *= const_jacobian * const_inv_ref_map_1_0 * const_inv_ref_map_0_1;
+                      break;
+                      case 15:
+                      val *= const_jacobian * const_inv_ref_map_1_0 * const_inv_ref_map_1_0;
+                      break;
+                      case 16:
+                      val *= const_jacobian * const_inv_ref_map_1_0 * const_inv_ref_map_1_1;
+                      break;
+                      case 17:
+                      val *= const_jacobian * const_inv_ref_map_1_1 * const_inv_ref_map_0_0;
+                      break;
+                      case 18:
+                      val *= const_jacobian * const_inv_ref_map_1_1 * const_inv_ref_map_0_1;
+                      break;
+                      case 19:
+                      val *= const_jacobian * const_inv_ref_map_1_1 * const_inv_ref_map_1_0;
+                      break;
+                      case 20:
+                      val *= const_jacobian * const_inv_ref_map_1_1 * const_inv_ref_map_1_1;
+                      break;
+                    }
+                    local_stiffness_matrix[i][j] += val;
+                  }
+                }
+              }
             }
-			    }
+          }
 
           // Local -> Global.
           current_mat->add(asmlist_i->cnt, asmlist_j->cnt, local_stiffness_matrix, asmlist_i->dof, asmlist_j->dof);
-
         }
       }
       if(current_rhs != NULL)
@@ -1902,7 +1975,7 @@ if(new_cache==true)
 
           AsmList<Scalar>* asmlist_i = current_als[form_i];
           
-          double** rhs_values;
+          Scalar*** rhs_values;
           if(this->spaces[form_i]->get_type() == HERMES_H1_SPACE)
             rhs_values = vfv->rhs_values_h1;
           else if(this->spaces[form_i]->get_type() == HERMES_L2_SPACE)
@@ -1911,17 +1984,37 @@ if(new_cache==true)
               throw Exceptions::Exception("Precalculating of vector shapesets not implemented.");
             
           // Calculate the power of the inverse map jacobian.
-          double multiplier = current_refmaps[form_i]->get_const_jacobian();
-          if(vfv->dx_power > 0)
-            multiplier *= std::pow(current_refmaps[form_i]->get_const_inv_ref_map()[0][0][0], vfv->dx_power);
-          if(vfv->dy_power > 0)
-            multiplier *= std::pow(current_refmaps[form_i]->get_const_inv_ref_map()[0][1][1], vfv->dy_power);
 
 			    for(int i = 0; i < asmlist_i->cnt; i++)
 			    {
 				    if(asmlist_i->dof[i] < 0)
 					    continue;
-            this->current_rhs->add(asmlist_i->dof[i], rhs_values[current_state->rep->get_mode()][asmlist_i->idx[i]] * asmlist_i->coef[i] * multiplier);
+            for(int calc_i = 0; calc_i < 5; calc_i++)
+            {
+              if(rhs_values[current_state->rep->get_mode()][calc_i] != NULL)
+              {
+                Scalar val = rhs_values[current_state->rep->get_mode()][calc_i][asmlist_i->idx[i]] * asmlist_i->coef[i];
+                switch(calc_i)
+                {
+                case 0:
+                  val *= const_jacobian;
+                  break;
+                case 1:
+                  val *= const_jacobian * const_inv_ref_map_0_0;
+                  break;
+                case 2:
+                  val *= const_jacobian * const_inv_ref_map_0_1;
+                  break;
+                case 3:
+                  val *= const_jacobian * const_inv_ref_map_1_0;
+                  break;
+                case 4:
+                  val *= const_jacobian * const_inv_ref_map_1_1;
+                  break;
+                }
+                this->current_rhs->add(asmlist_i->dof[i], val);
+              }
+            }
 			    }
         }
       }

@@ -243,21 +243,32 @@ namespace Hermes
       this->matrix_values_l2_l2 = NULL;
     }
 
-    static inline void delete_one_matrix_table(double ***& table, const int dimensions_test[2], const int dimensions_basis[2])
+    template<typename Scalar>
+    static inline void delete_one_matrix_table(Scalar ****& table, const int dimensions_test[2], const int dimensions_basis[2])
     {
       if(table == NULL)
         return;
 
       if(table[0] != NULL)
       {
-        for(unsigned int i = 0; i < dimensions_test[0]; i++)
-          delete [] table[0][i];
+        for(unsigned int j = 0; j < 21; j++)
+          if(table[0][j] != NULL)
+          {
+            for(unsigned int i = 0; i < dimensions_test[0]; i++)
+              delete [] table[0][j][i];
+            delete table[0][j];
+          }
         delete [] table[0];
       }
       if(table[1] != NULL)
       {
-        for(unsigned int i = 0; i < dimensions_test[1]; i++)
-          delete [] table[1][i];
+        for(unsigned int j = 0; j < 21; j++)
+          if(table[1][j] != NULL)
+          {
+            for(unsigned int i = 0; i < dimensions_test[0]; i++)
+              delete [] table[1][j][i];
+            delete table[1][j];
+          }
         delete [] table[1];
       }
       if(table != NULL)
@@ -277,38 +288,36 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void MatrixForm<Scalar>::set_h1_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void MatrixForm<Scalar>::set_h1_h1_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->matrix_values_h1_h1, dx_power, dy_power, H1Shapeset::max_index, H1Shapeset::max_index);
+      this->set_const_tables(mode, filename, this->matrix_values_h1_h1, H1Shapeset::max_index, H1Shapeset::max_index);
     }
 
     template<typename Scalar>
-    void MatrixForm<Scalar>::set_h1_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void MatrixForm<Scalar>::set_h1_l2_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->matrix_values_h1_l2, dx_power, dy_power, H1Shapeset::max_index, L2Shapeset::max_index);
+      this->set_const_tables(mode, filename, this->matrix_values_h1_l2, H1Shapeset::max_index, L2Shapeset::max_index);
     }
 
     template<typename Scalar>
-    void MatrixForm<Scalar>::set_l2_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void MatrixForm<Scalar>::set_l2_h1_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->matrix_values_l2_h1, dx_power, dy_power, L2Shapeset::max_index, H1Shapeset::max_index);
+      this->set_const_tables(mode, filename, this->matrix_values_l2_h1, L2Shapeset::max_index, H1Shapeset::max_index);
     }
 
     template<typename Scalar>
-    void MatrixForm<Scalar>::set_l2_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void MatrixForm<Scalar>::set_l2_l2_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->matrix_values_l2_l2, dx_power, dy_power, L2Shapeset::max_index, L2Shapeset::max_index);
+      this->set_const_tables(mode, filename, this->matrix_values_l2_l2, L2Shapeset::max_index, L2Shapeset::max_index);
     }
 
     template<typename Scalar>
-    void MatrixForm<Scalar>::set_const_tables(ElementMode2D mode, const char* filename, double***& matrix_values, double dx_power, double dy_power, const int dimensions_test[2], const int dimensions_basis[2])
+    void MatrixForm<Scalar>::set_const_tables(ElementMode2D mode, const char* filename, Scalar****& matrix_values, const int dimensions_test[2], const int dimensions_basis[2])
     {
       if(!this->is_const)
         if(this->wf != NULL)
           throw Hermes::Exceptions::Exception("It is not allowed to change constantness of Forms already added to a WeakForm.");
       this->is_const = true;
-      this->dx_power = dx_power;
-      this->dy_power = dy_power;
 
       std::stringstream ss;
       ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
@@ -319,25 +328,45 @@ namespace Hermes
       if(!matrixFormIn.good())
         throw Exceptions::Exception("Failed to load file with precalculated form in MatrixForm::set_const_tables().");
       
+      char* calculatedColumns = new char[21];
+      for(int calc_i = 0; calc_i < 21; calc_i++)
+      {
+        matrixFormIn >> calculatedColumns[calc_i];
+      }
+
       if(matrix_values == NULL)
       {
-        matrix_values = new double**[2];
-        memset(matrix_values, 0, sizeof(double**)*2);
+        matrix_values = new Scalar***[2];
+        memset(matrix_values, 0, sizeof(Scalar***)*2);
       }
       if(matrix_values[mode] == NULL)
       {
-        matrix_values[mode] = new double*[dimensions_test[mode] + 1];
-        for(unsigned int i = 0; i < dimensions_test[mode] + 1; i++)
-          matrix_values[mode][i] = new double[dimensions_test[mode] + 1];
+        matrix_values[mode] = new Scalar**[21];
+        for(int calc_i = 0; calc_i < 21; calc_i++)
+        {
+          if(calculatedColumns[calc_i] == 'a')
+          {
+            matrix_values[mode][calc_i] = new Scalar*[dimensions_test[mode] + 1];
+            for(unsigned int i = 0; i < dimensions_test[mode] + 1; i++)
+              matrix_values[mode][calc_i][i] = new Scalar[dimensions_test[mode] + 1];
+          }
+          else
+            matrix_values[mode][calc_i] = NULL;
+        }
       }
 
 	    int index_i, index_j;
 	    int counter = 0;
-      double valueTemp;
+      Scalar valueTemp;
       while(matrixFormIn.good())
       {
-        matrixFormIn >> index_i >> index_j >> valueTemp;
-        matrix_values[mode][index_i][index_j] = valueTemp;
+        matrixFormIn >> index_i >> index_j;
+        for(int calc_i = 0; calc_i < 21; calc_i++)
+        {
+          matrixFormIn >> valueTemp;
+          if(calculatedColumns[calc_i] == 'a')
+            matrix_values[mode][calc_i][index_i][index_j] = valueTemp;
+        }
         counter++;
       }
 
@@ -462,38 +491,36 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void VectorForm<Scalar>::set_h1_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void VectorForm<Scalar>::set_h1_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->rhs_values_h1, dx_power, dy_power, H1Shapeset::max_index);
+      this->set_const_tables(mode, filename, this->rhs_values_h1, H1Shapeset::max_index);
     }
 
     template<typename Scalar>
-    void VectorForm<Scalar>::set_l2_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void VectorForm<Scalar>::set_l2_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->rhs_values_l2, dx_power, dy_power, L2Shapeset::max_index);
+      this->set_const_tables(mode, filename, this->rhs_values_l2, L2Shapeset::max_index);
     }
 
     template<typename Scalar>
-    void VectorForm<Scalar>::set_hcurl_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void VectorForm<Scalar>::set_hcurl_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->rhs_values_hcurl, dx_power, dy_power, HcurlShapeset::max_index);
+      this->set_const_tables(mode, filename, this->rhs_values_hcurl, HcurlShapeset::max_index);
     }
 
     template<typename Scalar>
-    void VectorForm<Scalar>::set_hdiv_const_tables(ElementMode2D mode, const char* filename, double dx_power, double dy_power)
+    void VectorForm<Scalar>::set_hdiv_const_tables(ElementMode2D mode, const char* filename)
     {
-      this->set_const_tables(mode, filename, this->rhs_values_hdiv, dx_power, dy_power, HdivShapeset::max_index);
+      this->set_const_tables(mode, filename, this->rhs_values_hdiv, HdivShapeset::max_index);
     }
 
     template<typename Scalar>
-    void VectorForm<Scalar>::set_const_tables(ElementMode2D mode, const char* filename, double**& rhs_values, double dx_power, double dy_power, const int dimensions_test[2])
+    void VectorForm<Scalar>::set_const_tables(ElementMode2D mode, const char* filename, Scalar***& rhs_values, const int dimensions_test[2])
     {
       if(!this->is_const)
         if(this->wf != NULL)
           throw Hermes::Exceptions::Exception("It is not allowed to change constantness of Forms already added to a WeakForm.");
       this->is_const = true;
-      this->dx_power = dx_power;
-      this->dy_power = dy_power;
 
       std::ifstream rhsFormIn(filename);
       if(!rhsFormIn.is_open())
@@ -501,14 +528,29 @@ namespace Hermes
       if(!rhsFormIn.good())
         throw Exceptions::Exception("Failed to load file with precalculated form in VectorForm::set_const_tables().");
 
-	    if(rhs_values == NULL)
+      char* calculatedColumns = new char[5];
+      for(int calc_i = 0; calc_i < 5; calc_i++)
       {
-        rhs_values = new double*[2];
-        memset(rhs_values, 0, sizeof(double*)*2);
+        rhsFormIn >> calculatedColumns[calc_i];
+      }
+
+      if(rhs_values == NULL)
+      {
+        rhs_values = new Scalar**[2];
+        memset(rhs_values, 0, sizeof(Scalar**)*2);
       }
       if(rhs_values[mode] == NULL)
       {
-        rhs_values[mode] = new double[dimensions_test[mode] + 1];
+        rhs_values[mode] = new Scalar*[5];
+        for(int calc_i = 0; calc_i < 5; calc_i++)
+        {
+          if(calculatedColumns[calc_i] == 'a')
+          {
+            rhs_values[mode][calc_i] = new Scalar[dimensions_test[mode] + 1];
+          }
+          else
+            rhs_values[mode][calc_i] = NULL;
+        }
       }
 
       int index_i;
@@ -516,10 +558,16 @@ namespace Hermes
       double valueTemp;
       while(rhsFormIn.good())
       {
-        rhsFormIn >> index_i >> valueTemp;
-        rhs_values[mode][index_i] = valueTemp;
+        rhsFormIn >> index_i;
+        for(int calc_i = 0; calc_i < 5; calc_i++)
+        {
+          rhsFormIn >> valueTemp;
+          if(calculatedColumns[calc_i] == 'a')
+            rhs_values[mode][calc_i][index_i] = valueTemp;
+        }
         counter++;
       }
+
       rhsFormIn.close();
     }
 
