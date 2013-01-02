@@ -28,8 +28,8 @@
 const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const bool BASE_VISUALIZATION = true;              // Set to "true" to enable base functions output.
-const int P_INIT = 3;                             // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 2;                       // Number of initial uniform mesh refinements.
+const int P_INIT = 6;                             // Uniform polynomial degree of mesh elements.
+const int INIT_REF_NUM = 6;                       // Number of initial uniform mesh refinements.
 
 // Problem parameters.
 const double VOLUME_HEAT_SRC = 1.0;          // Volume heat sources generated (for example) by electric current.
@@ -38,7 +38,7 @@ const double FIXED_BDY_TEMP = 0.0;					// Fixed temperature on the boundary.
 Hermes::Hermes2D::ElementMode2D elementMode = HERMES_MODE_QUAD;
 int form_i = 0;
 int form_matrix_i = 0;
-bool complexMesh = true;
+bool complexMesh = false;
 
 /* form_matrix_i indices:
 0 - no multiplying
@@ -232,14 +232,16 @@ void loadProblemData();
 // Cache calculation.
 void calculateCache(CustomWeakFormPoissonCacheCalculation& wf, Shapeset* shapeset);
 
-void calculateResultAssembling(CustomWeakFormPoisson& wf);
+void calculateResultWithConstantForms(CustomWeakFormPoisson& wf);
+
+void calculateResultAssembling(CustomWeakFormPoissonCacheCalculation& wf);
 
 int main(int argc, char* argv[])
 {
   try
   {
     // Initialize the weak formulation.
-    CustomWeakFormPoissonCacheCalculation wf(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
+    CustomWeakFormPoissonCacheCalculation wf;
     CustomWeakFormPoisson wf1;
 
     //Hermes2DApi.set_integral_param_value(numThreads, 1);
@@ -261,8 +263,10 @@ int main(int argc, char* argv[])
           calculateCache(wf, new L2Shapeset);
         }
         */
+
     loadProblemData();
-    calculateResultAssembling(wf1);
+    calculateResultWithConstantForms(wf1);
+    calculateResultAssembling(wf);
   }
   catch(std::exception& e)
   {
@@ -648,7 +652,7 @@ void calculateCache(CustomWeakFormPoissonCacheCalculation& wf, Shapeset* shapese
   return;
 }
 
-void calculateResultAssembling(CustomWeakFormPoisson& wf)
+void calculateResultWithConstantForms(CustomWeakFormPoisson& wf)
 {
   Views::BaseView<double> m;
   m.show(space);
@@ -674,7 +678,7 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
 
 	time.tick();
 	std::cout << (std::string)"Ndofs: " << ndof << '.' << std::endl;
-	std::cout << (std::string)"Assembling: " << time.last() << '.' << std::endl;
+	std::cout << (std::string)"Assembling with constant forms: " << time.last() << '.' << std::endl;
 
   LinearMatrixSolver<double>* matrix_solver = create_linear_solver<double>(jacobian, residual);
 	FILE* matrixFile = fopen("matrix", "w");
@@ -683,6 +687,7 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
 	residual->dump(rhsFile, "b");
   fclose(matrixFile);
   fclose(rhsFile);
+	time.tick();
   try
   {
 	  matrix_solver->solve();
@@ -691,6 +696,8 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
   {
     std::cout << e.what();
   }
+	time.tick();
+	std::cout << (std::string)"Solving: " << time.last() << '.' << std::endl;
   sln_vector = matrix_solver->get_sln_vector();
 
   // Translate the solution vector into the previously initialized Solution.
@@ -718,6 +725,52 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
     viewS.show(&sln);
     viewS.wait_for_close();
   }
+
+  return;
+}
+
+void calculateResultAssembling(CustomWeakFormPoissonCacheCalculation& wf)
+{
+  // Utilities.
+  int ndof = space->get_num_dofs();
+
+  // Initialize the solution.
+  Hermes::Hermes2D::Solution<double> sln;
+
+  /// The solution vector.
+  double* sln_vector;
+
+	Hermes::Mixins::TimeMeasurable time;
+	time.tick();
+
+  SparseMatrix<double>* jacobian = create_matrix<double>();
+  Vector<double>* residual = create_vector<double>();
+	DiscreteProblemLinear<double> dp(&wf, space);
+	dp.assemble(jacobian, residual);
+
+	time.tick();
+	std::cout << (std::string)"Ndofs: " << ndof << '.' << std::endl;
+	std::cout << (std::string)"Assembling without constant forms: " << time.last() << '.' << std::endl;
+
+  LinearMatrixSolver<double>* matrix_solver = create_linear_solver<double>(jacobian, residual);
+	FILE* matrixFile = fopen("matrix", "w");
+	FILE* rhsFile = fopen("rhs", "w");
+	jacobian->dump(matrixFile, "A");
+	residual->dump(rhsFile, "b");
+  fclose(matrixFile);
+  fclose(rhsFile);
+  try
+  {
+	  matrix_solver->solve();
+  }
+  catch(std::exception& e)
+  {
+    std::cout << e.what();
+  }
+  sln_vector = matrix_solver->get_sln_vector();
+
+  // Translate the solution vector into the previously initialized Solution.
+  Hermes::Hermes2D::Solution<double>::vector_to_solution(sln_vector, space, &sln, false);
 
   return;
 }
