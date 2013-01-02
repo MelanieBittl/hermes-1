@@ -287,8 +287,10 @@ void loadCache()
 		ssRhs << "Quad";
 	}
 
-	std::ifstream matrixFormIn(ssMatrix.str());
-	std::ifstream rhsFormIn(ssRhs.str());
+	std::ifstream matrixFormIn;
+  matrixFormIn.open(ssMatrix.str().c_str());
+	std::ifstream rhsFormIn;
+  rhsFormIn.open(ssRhs.str().c_str());
 
 	int index_i, index_j;
 	int counter = 0;
@@ -437,9 +439,11 @@ void calculateCache(CustomWeakFormPoissonCacheCalculation& wf, Shapeset* shapese
 		ssRhs << ".l2";
 	}
 
-	std::ofstream matrixFormOut(ssMatrix.str());
+	std::ofstream matrixFormOut;
+  matrixFormOut.open(ssMatrix.str().c_str());
   matrixFormOut.precision(20);
-	std::ofstream rhsFormOut(ssRhs.str());
+	std::ofstream rhsFormOut;
+  rhsFormOut.open(ssRhs.str().c_str());
   rhsFormOut.precision(20);
 
   for(int mf_i = 0; mf_i < 21; mf_i++)
