@@ -212,7 +212,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDuDxValV<Scalar>::ConstantMatrixFormDuDxValV
-        (int i, int j, std::string area) : MatrixFormDuDxValV<Scalar>(i, j)
+        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
@@ -220,7 +220,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDuDxValV<Scalar>::ConstantMatrixFormDuDxValV
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormDuDxValV<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
@@ -275,7 +275,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDuDyValV<Scalar>::ConstantMatrixFormDuDyValV
-        (int i, int j, std::string area) : MatrixFormDuDyValV<Scalar>(i, j)
+        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
@@ -283,7 +283,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDuDyValV<Scalar>::ConstantMatrixFormDuDyValV
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormDuDyValV<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
@@ -338,7 +338,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDx<Scalar>::ConstantMatrixFormValUDvDx
-        (int i, int j, std::string area) : MatrixFormValUDvDx<Scalar>(i, j)
+        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
@@ -346,7 +346,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDx<Scalar>::ConstantMatrixFormValUDvDx
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormValUDvDx<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
@@ -401,7 +401,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDy<Scalar>::ConstantMatrixFormValUDvDy
-        (int i, int j, std::string area) : MatrixFormValUDvDy<Scalar>(i, j)
+        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
@@ -409,7 +409,7 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDy<Scalar>::ConstantMatrixFormValUDvDy
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormValUDvDy<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
