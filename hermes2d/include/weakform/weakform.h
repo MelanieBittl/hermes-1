@@ -223,6 +223,9 @@ namespace Hermes
       /// Constant form that can be precalculated.
       bool is_const;
 
+      /// This form holds the memory for the precalculated tables.
+      bool has_precalculated_tables;
+
       /// External solutions.
       Hermes::vector<MeshFunction<Scalar>*> ext;
 

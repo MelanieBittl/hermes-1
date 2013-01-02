@@ -79,7 +79,9 @@ namespace Hermes
       MatrixFormVol<Scalar>* ConstantMatrixFormVol<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantMatrixFormVol<Scalar>(*this);
+        ConstantMatrixFormVol<Scalar>* toReturn = new ConstantMatrixFormVol<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -140,7 +142,9 @@ namespace Hermes
       MatrixFormVol<Scalar>* ConstantMatrixFormDx<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantMatrixFormDx<Scalar>(*this);
+        ConstantMatrixFormDx<Scalar>* toReturn = new ConstantMatrixFormDx<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -201,7 +205,9 @@ namespace Hermes
       MatrixFormVol<Scalar>* ConstantMatrixFormDy<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantMatrixFormDy<Scalar>(*this);
+        ConstantMatrixFormDy<Scalar>* toReturn = new ConstantMatrixFormDy<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -262,7 +268,9 @@ namespace Hermes
       MatrixFormVol<Scalar>* ConstantMatrixFormDuDxValV<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantMatrixFormDuDxValV<Scalar>(*this);
+        ConstantMatrixFormDuDxValV<Scalar>* toReturn = new ConstantMatrixFormDuDxValV<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -323,7 +331,9 @@ namespace Hermes
       MatrixFormVol<Scalar>* ConstantMatrixFormDuDyValV<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantMatrixFormDuDyValV<Scalar>(*this);
+        ConstantMatrixFormDuDyValV<Scalar>* toReturn = new ConstantMatrixFormDuDyValV<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -384,7 +394,9 @@ namespace Hermes
       MatrixFormVol<Scalar>* ConstantMatrixFormValUDvDx<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantMatrixFormValUDvDx<Scalar>(*this);
+        ConstantMatrixFormValUDvDx<Scalar>* toReturn = new ConstantMatrixFormValUDvDx<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -445,7 +457,9 @@ namespace Hermes
       MatrixFormVol<Scalar>* ConstantMatrixFormValUDvDy<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantMatrixFormValUDvDy<Scalar>(*this);
+        ConstantMatrixFormValUDvDy<Scalar>* toReturn = new ConstantMatrixFormValUDvDy<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -504,7 +518,9 @@ namespace Hermes
       VectorFormVol<Scalar>* ConstantVectorFormVol<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantVectorFormVol<Scalar>(*this);
+        ConstantVectorFormVol<Scalar>* toReturn = new ConstantVectorFormVol<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -563,7 +579,9 @@ namespace Hermes
       VectorFormVol<Scalar>* ConstantVectorFormDx<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantVectorFormDx<Scalar>(*this);
+        ConstantVectorFormDx<Scalar>* toReturn = new ConstantVectorFormDx<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template<typename Scalar>
@@ -622,7 +640,9 @@ namespace Hermes
       VectorFormVol<Scalar>* ConstantVectorFormDy<Scalar>::clone() const
       {
         /// \todo Check that this copies the tables data.
-        return new ConstantVectorFormDy<Scalar>(*this);
+        ConstantVectorFormDy<Scalar>* toReturn = new ConstantVectorFormDy<Scalar>(*this);
+        toReturn->has_precalculated_tables = false;
+        return toReturn;
       }
 
       template class HERMES_API ConstantMatrixFormVol<double>;

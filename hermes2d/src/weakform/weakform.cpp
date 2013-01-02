@@ -161,7 +161,7 @@ namespace Hermes
     }
     
     template<typename Scalar>
-    Form<Scalar>::Form() : scaling_factor(1.0), u_ext_offset(0), is_const(false), wf(NULL)
+    Form<Scalar>::Form() : scaling_factor(1.0), u_ext_offset(0), is_const(false), has_precalculated_tables(false), wf(NULL)
     {
       areas.push_back(HERMES_ANY);
       stage_time = 0.0;
@@ -259,6 +259,7 @@ namespace Hermes
             delete table[0][j];
           }
         delete [] table[0];
+        table[0] = NULL;
       }
       if(table[1] != NULL)
       {
@@ -270,6 +271,7 @@ namespace Hermes
             delete table[1][j];
           }
         delete [] table[1];
+        table[1] = NULL;
       }
       if(table != NULL)
       {
@@ -281,6 +283,9 @@ namespace Hermes
     template<typename Scalar>
     MatrixForm<Scalar>::~MatrixForm()
     {
+      if(!this->has_precalculated_tables)
+        return;
+      
       delete_one_matrix_table(this->matrix_values_h1_h1, H1Shapeset::max_index, H1Shapeset::max_index);
       delete_one_matrix_table(this->matrix_values_h1_l2, H1Shapeset::max_index, L2Shapeset::max_index);
       delete_one_matrix_table(this->matrix_values_l2_h1, L2Shapeset::max_index, H1Shapeset::max_index);
@@ -318,6 +323,7 @@ namespace Hermes
         if(this->wf != NULL)
           throw Hermes::Exceptions::Exception("It is not allowed to change constantness of Forms already added to a WeakForm.");
       this->is_const = true;
+      this->has_precalculated_tables = true;
 
       std::stringstream ss;
       ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
@@ -469,6 +475,8 @@ namespace Hermes
     template<typename Scalar>
     VectorForm<Scalar>::~VectorForm()
     {
+      if(!this->has_precalculated_tables)
+        return;
       if(this->rhs_values_h1 != NULL)
         delete [] rhs_values_h1;
       if(this->rhs_values_l2 != NULL)
@@ -477,6 +485,10 @@ namespace Hermes
         delete [] rhs_values_hcurl;
       if(this->rhs_values_hdiv != NULL)
         delete [] rhs_values_hdiv;
+      this->rhs_values_h1 = NULL;
+      this->rhs_values_l2 = NULL;
+      this->rhs_values_hcurl = NULL;
+      this->rhs_values_hdiv = NULL;
     }
 
     template<typename Scalar>
@@ -521,6 +533,7 @@ namespace Hermes
         if(this->wf != NULL)
           throw Hermes::Exceptions::Exception("It is not allowed to change constantness of Forms already added to a WeakForm.");
       this->is_const = true;
+      this->has_precalculated_tables = true;
 
       std::ifstream rhsFormIn(filename);
       if(!rhsFormIn.is_open())

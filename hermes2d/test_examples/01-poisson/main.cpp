@@ -28,16 +28,17 @@
 const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const bool BASE_VISUALIZATION = true;              // Set to "true" to enable base functions output.
-const int P_INIT = 7;                             // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 6;                       // Number of initial uniform mesh refinements.
+const int P_INIT = 5;                             // Uniform polynomial degree of mesh elements.
+const int INIT_REF_NUM = 3;                       // Number of initial uniform mesh refinements.
 
 // Problem parameters.
 const double VOLUME_HEAT_SRC = 1.0;          // Volume heat sources generated (for example) by electric current.
 const double FIXED_BDY_TEMP = 0.0;					// Fixed temperature on the boundary.
 
-Hermes::Hermes2D::ElementMode2D elementMode = HERMES_MODE_TRIANGLE;
+Hermes::Hermes2D::ElementMode2D elementMode = HERMES_MODE_QUAD;
 int form_i = 0;
 int form_matrix_i = 0;
+bool complexMesh = true;
 
 /* form_matrix_i indices:
 0 - no multiplying
@@ -241,8 +242,8 @@ int main(int argc, char* argv[])
     CustomWeakFormPoissonCacheCalculation wf(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
     CustomWeakFormPoisson wf1(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
 
-    Hermes2DApi.set_integral_param_value(numThreads, 1);
-
+    //Hermes2DApi.set_integral_param_value(numThreads, 1);
+    
     /*
     for(int i = 0; i < 2; i++)
       for(int j = 0; j < 6; j++)
@@ -259,9 +260,7 @@ int main(int argc, char* argv[])
           form_i = j;
           calculateCache(wf, new L2Shapeset);
         }
-
-    */
-
+        */
     loadProblemData();
     calculateResultAssembling(wf1);
   }
@@ -313,29 +312,43 @@ void loadCache()
 void loadProblemData()
 {
   // Load the mesh.
-  Hermes::Hermes2D::MeshReaderH2DXML mloader;
+  Hermes::Hermes2D::MeshReaderH2DXML mXMLloader;
+  Hermes::Hermes2D::MeshReaderH2D mloader;
   mesh = new Mesh();
 	std::stringstream ss;
 	ss << "domain";
-	if(elementMode == HERMES_MODE_TRIANGLE)
-		ss << "Triangle";
-	else
-		ss << "Quad";
-	ss << ".xml";
-	try
-	{
-		mloader.load(ss.str().c_str(), mesh);
-	}
-	catch(std::exception& e)
-	{
-		std::cout << e.what();
-	}
+  if(complexMesh)
+  {
+	  if(elementMode == HERMES_MODE_TRIANGLE)
+		  ss << "-tri";
+	  else
+		  ss << "-quad";
+	  ss << ".mesh";
+    mloader.load(ss.str().c_str(), mesh);
+  }
+  else
+  {
+    if(elementMode == HERMES_MODE_TRIANGLE)
+		  ss << "Triangle";
+	  else
+		  ss << "Quad";
+	  ss << ".xml";
+    try
+    {
 
+      mXMLloader.load(ss.str().c_str(), mesh);
+    }
+    catch(std::exception& e)
+    {
+      std::cout << e.what();
+    } 
+  }
+	
 	for(int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements();
 
   // Create a H1 space with default shapeset.
-  Hermes::Hermes2D::DefaultEssentialBCConst<double>* bc_essential = new Hermes::Hermes2D::DefaultEssentialBCConst<double>("Bnd", FIXED_BDY_TEMP);
+  Hermes::Hermes2D::DefaultEssentialBCConst<double>* bc_essential = new Hermes::Hermes2D::DefaultEssentialBCConst<double>(HERMES_ANY, FIXED_BDY_TEMP);
   Hermes::Hermes2D::EssentialBCs<double>* bcs = new Hermes::Hermes2D::EssentialBCs<double>(bc_essential);
 
   // Create an H1 space with default shapeset.
@@ -425,7 +438,9 @@ void calculateCache(CustomWeakFormPoissonCacheCalculation& wf, Shapeset* shapese
 	}
 
 	std::ofstream matrixFormOut(ssMatrix.str());
+  matrixFormOut.precision(20);
 	std::ofstream rhsFormOut(ssRhs.str());
+  rhsFormOut.precision(20);
 
   for(int mf_i = 0; mf_i < 21; mf_i++)
     switch (form_i)
@@ -664,7 +679,14 @@ void calculateResultAssembling(CustomWeakFormPoisson& wf)
 	residual->dump(rhsFile, "b");
   fclose(matrixFile);
   fclose(rhsFile);
-	matrix_solver->solve();
+  try
+  {
+	  matrix_solver->solve();
+  }
+  catch(std::exception& e)
+  {
+    std::cout << e.what();
+  }
   sln_vector = matrix_solver->get_sln_vector();
 
   // Translate the solution vector into the previously initialized Solution.

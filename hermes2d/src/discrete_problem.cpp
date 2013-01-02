@@ -106,6 +106,8 @@ namespace Hermes
 			cache_element_stored = NULL;
 
 			this->do_not_use_cache = false;
+
+      this->is_linear = false;
     }
 
     template<typename Scalar>
@@ -1547,7 +1549,7 @@ if(new_cache==true)
         this->assemble_constant_forms(current_refmaps[rep_space_i], current_als, current_state, current_wf);
       
       // Calculate the cache entries.
-      if(changedInLastAdaptation && (!onlyConstantForms || current_state->isBnd))
+      if(changedInLastAdaptation && ((!onlyConstantForms || !constantElement) || current_state->isBnd))
         this->calculate_cache_records(current_pss, current_spss, current_refmaps, current_u_ext, current_als, current_state, current_alsSurface, current_wf);
 
       /// Dirichlet handling for constant elements.
@@ -1575,7 +1577,7 @@ if(new_cache==true)
         }
       }
 
-      if(!onlyConstantForms)
+      if(!onlyConstantForms || !constantElement)
       {
         // Ext functions.
         // - order
