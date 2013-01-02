@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
   {
     // Initialize the weak formulation.
     CustomWeakFormPoissonCacheCalculation wf(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
-    CustomWeakFormPoisson wf1(new Hermes::Hermes2DFunction<double>(VOLUME_HEAT_SRC));
+    CustomWeakFormPoisson wf1;
 
     //Hermes2DApi.set_integral_param_value(numThreads, 1);
     
