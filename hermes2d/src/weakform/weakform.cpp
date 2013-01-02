@@ -328,7 +328,8 @@ namespace Hermes
       std::stringstream ss;
       ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
       ss << filename;
-      std::ifstream matrixFormIn(ss.str());
+      std::ifstream matrixFormIn;
+      matrixFormIn.open(ss.str().c_str());
       if(!matrixFormIn.is_open())
         throw Exceptions::Exception("Failed to load file with precalculated form in MatrixForm::set_const_tables().");
       if(!matrixFormIn.good())
@@ -535,7 +536,12 @@ namespace Hermes
       this->is_const = true;
       this->has_precalculated_tables = true;
 
-      std::ifstream rhsFormIn(filename);
+      std::stringstream ss;
+      ss << Hermes2D::Hermes2DApi.get_text_param_value(precalculatedFormsDirPath);
+      ss << filename;
+      std::ifstream rhsFormIn;
+      rhsFormIn.open(ss.str().c_str());
+
       if(!rhsFormIn.is_open())
         throw Exceptions::Exception("Failed to load file with precalculated form in VectorForm::set_const_tables().");
       if(!rhsFormIn.good())
