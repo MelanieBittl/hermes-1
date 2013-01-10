@@ -1950,7 +1950,7 @@ if(new_cache==true)
                       val *= const_jacobian * const_inv_ref_map_1_1 * const_inv_ref_map_1_1;
                       break;
                     }
-                    local_stiffness_matrix[i][j] += val;
+                    local_stiffness_matrix[i][j] += val * mfv->const_coefficient;
                   }
                 }
               }
@@ -2014,7 +2014,7 @@ if(new_cache==true)
                   val *= const_jacobian * const_inv_ref_map_1_1;
                   break;
                 }
-                this->current_rhs->add(asmlist_i->dof[i], val);
+                this->current_rhs->add(asmlist_i->dof[i], val * vfv->const_coefficient);
               }
             }
 			    }

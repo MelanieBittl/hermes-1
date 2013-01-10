@@ -223,7 +223,11 @@ namespace Hermes
       /// Constant form that can be precalculated.
       bool is_const;
 
+      /// Coefficient (factor) for the constant form.
+      Scalar const_coefficient;
+
       /// This form holds the memory for the precalculated tables.
+      /// Used in cloning (only the original form's memory has to be released, other forms only point to the data).
       bool has_precalculated_tables;
 
       /// External solutions.

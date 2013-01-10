@@ -23,18 +23,22 @@ namespace Hermes
     {
       template<typename Scalar>
       ConstantMatrixFormVol<Scalar>::ConstantMatrixFormVol
-        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, std::string area, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantMatrixFormVol<Scalar>::ConstantMatrixFormVol
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
@@ -86,18 +90,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDx<Scalar>::ConstantMatrixFormDx
-        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, std::string area, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantMatrixFormDx<Scalar>::ConstantMatrixFormDx
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
@@ -149,18 +157,20 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDy<Scalar>::ConstantMatrixFormDy
-        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, std::string area, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
       }
 
       template<typename Scalar>
       ConstantMatrixFormDy<Scalar>::ConstantMatrixFormDy
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
       }
 
       template<typename Scalar>
@@ -212,18 +222,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDuDxValV<Scalar>::ConstantMatrixFormDuDxValV
-        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, std::string area, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantMatrixFormDuDxValV<Scalar>::ConstantMatrixFormDuDxValV
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
@@ -275,18 +289,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormDuDyValV<Scalar>::ConstantMatrixFormDuDyValV
-        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, std::string area, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantMatrixFormDuDyValV<Scalar>::ConstantMatrixFormDuDyValV
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
@@ -338,18 +356,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDx<Scalar>::ConstantMatrixFormValUDvDx
-        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, std::string area, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDx<Scalar>::ConstantMatrixFormValUDvDx
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
@@ -401,18 +423,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDy<Scalar>::ConstantMatrixFormValUDvDy
-        (int i, int j, std::string area) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, std::string area, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantMatrixFormValUDvDy<Scalar>::ConstantMatrixFormValUDvDy
-        (int i, int j, Hermes::vector<std::string> areas) : MatrixFormVol<Scalar>(i, j)
+        (int i, int j, Hermes::vector<std::string> areas, Scalar coefficient) : MatrixFormVol<Scalar>(i, j)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
@@ -464,18 +490,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantVectorFormVol<Scalar>::ConstantVectorFormVol
-        (int i, std::string area) : VectorFormVol<Scalar>(i)
+        (int i, std::string area, Scalar coefficient) : VectorFormVol<Scalar>(i)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantVectorFormVol<Scalar>::ConstantVectorFormVol
-        (int i, Hermes::vector<std::string> areas) : VectorFormVol<Scalar>(i)
+        (int i, Hermes::vector<std::string> areas, Scalar coefficient) : VectorFormVol<Scalar>(i)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
         
       template<typename Scalar>
@@ -525,18 +555,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantVectorFormDx<Scalar>::ConstantVectorFormDx
-        (int i, std::string area) : VectorFormVol<Scalar>(i)
+        (int i, std::string area, Scalar coefficient) : VectorFormVol<Scalar>(i)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantVectorFormDx<Scalar>::ConstantVectorFormDx
-        (int i, Hermes::vector<std::string> areas) : VectorFormVol<Scalar>(i)
+        (int i, Hermes::vector<std::string> areas, Scalar coefficient) : VectorFormVol<Scalar>(i)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
@@ -586,18 +620,22 @@ namespace Hermes
 
       template<typename Scalar>
       ConstantVectorFormDy<Scalar>::ConstantVectorFormDy
-        (int i, std::string area) : VectorFormVol<Scalar>(i)
+        (int i, std::string area, Scalar coefficient) : VectorFormVol<Scalar>(i)
       {
         this->set_area(area);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
       ConstantVectorFormDy<Scalar>::ConstantVectorFormDy
-        (int i, Hermes::vector<std::string> areas) : VectorFormVol<Scalar>(i)
+        (int i, Hermes::vector<std::string> areas, Scalar coefficient) : VectorFormVol<Scalar>(i)
       {
         this->set_areas(areas);
         this->init_tables();
+        this->const_coefficient = coefficient;
+
       }
 
       template<typename Scalar>
