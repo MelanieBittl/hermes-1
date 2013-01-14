@@ -843,6 +843,7 @@ namespace Hermes
               }
             }
           }
+          
         }
 
         trav.finish();
@@ -1294,9 +1295,10 @@ namespace Hermes
     void DiscreteProblem<Scalar>::calculate_cache_records(PrecalcShapeset** current_pss, PrecalcShapeset** current_spss, RefMap** current_refmaps, Solution<Scalar>** current_u_ext, AsmList<Scalar>** current_als, Traverse::State* current_state,
       AsmList<Scalar>** current_alsSurface, WeakForm<Scalar>* current_wf)
     {
- bool new_cache = false;
+
       for(unsigned int space_i = 0; space_i < this->spaces.size(); space_i++)
       {
+       bool new_cache = false;
         if(current_state->e[space_i] == NULL)
           continue;
 

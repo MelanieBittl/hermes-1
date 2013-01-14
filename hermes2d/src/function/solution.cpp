@@ -992,7 +992,8 @@ namespace Hermes
       int i, mstep = 0;
 
       // H1 space
-      if(space_type == HERMES_H1_SPACE)
+     // if(space_type == HERMES_H1_SPACE)
+      if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE)
       {
 #ifdef H2D_SECOND_DERIVATIVES_ENABLED
         if(((newmask & H2D_SECOND) == H2D_SECOND && (oldmask & H2D_SECOND) != H2D_SECOND))

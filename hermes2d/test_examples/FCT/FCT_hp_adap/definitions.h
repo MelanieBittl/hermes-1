@@ -60,7 +60,7 @@ class  CustomWeakFormMassmatrix  : public WeakForm<double>
 {
 public:
   CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time);
-	~CustomWeakFormMassmatrix();
+	//~CustomWeakFormMassmatrix();
 };
 
 //---------------Konvektion-----------
@@ -106,7 +106,7 @@ class CustomWeakFormConvection : public WeakForm<double>    //Konvektion
 {
 public:
   CustomWeakFormConvection(Solution<double>* sln_prev_time);
-	~CustomWeakFormConvection();  
+	//~CustomWeakFormConvection();  
 };
 
 
@@ -154,7 +154,7 @@ class GradientReconstruction_1 : public WeakForm<double>
 {
 public:
   GradientReconstruction_1(Solution<double>* sln);
-	~GradientReconstruction_1();
+	//~GradientReconstruction_1();
 };
 
 
@@ -199,7 +199,7 @@ class GradientReconstruction_2 : public WeakForm<double>
 {
 public:
   GradientReconstruction_2(Solution<double>* sln);
-	~GradientReconstruction_2();
+	//~GradientReconstruction_2();
 };
 
 //------------------- Initial condition ----------------
@@ -208,7 +208,7 @@ class CustomInitialCondition : public ExactSolutionScalar<double>
 {
 public:
   CustomInitialCondition(const Mesh* mesh) : ExactSolutionScalar<double>(mesh) {};
-   ~CustomInitialCondition(){};
+   //~CustomInitialCondition(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 

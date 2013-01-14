@@ -7,12 +7,12 @@
 		VectorFormVolMass* vector_form = new VectorFormVolMass(0, time_step);		
 		add_vector_form(vector_form);
   }
- CustomWeakFormMassmatrix::~CustomWeakFormMassmatrix(){
+/* CustomWeakFormMassmatrix::~CustomWeakFormMassmatrix(){
 		delete get_mfvol()[0];
 		delete get_vfvol()[0];
 		WeakForm<double>::delete_all();
 
-	};
+	};*/
 
 
     template<typename Real, typename Scalar>
@@ -69,11 +69,11 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
    VectorFormVolConvection* vector_form = new VectorFormVolConvection(0);
     add_vector_form(vector_form);
   };
-	CustomWeakFormConvection::~CustomWeakFormConvection(){
+/*	CustomWeakFormConvection::~CustomWeakFormConvection(){
 		delete get_mfvol()[0];
 		delete get_vfvol()[0];
 		WeakForm<double>::delete_all();
-	};
+	};*/
 
 
 
@@ -138,11 +138,11 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
     add_vector_form(vector_form);
   };
 
-	GradientReconstruction_1::~GradientReconstruction_1(){
+/*	GradientReconstruction_1::~GradientReconstruction_1(){
 		delete get_mfvol()[0];
 		delete get_vfvol()[0];
 		WeakForm<double>::delete_all();
-	};
+	};*/
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_1 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -199,11 +199,11 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
     add_vector_form(vector_form);
   };
 
-	GradientReconstruction_2::~GradientReconstruction_2(){
+/*	GradientReconstruction_2::~GradientReconstruction_2(){
 		delete get_mfvol()[0];
 		delete get_vfvol()[0];
 		WeakForm<double>::delete_all();
-	};
+	};*/
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_2 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 

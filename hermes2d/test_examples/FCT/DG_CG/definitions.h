@@ -13,9 +13,9 @@ using namespace Hermes::Hermes2D;
 class CustomWeakForm : public WeakForm<double>
 {
 public:
-  CustomWeakForm(double time_step, double theta, Solution<double>* sln_prev_time, std::string inlet,  Mesh* mesh);
+  CustomWeakForm(double time_step, double theta, Solution<double>* sln_prev_time, std::string inlet,  Mesh* mesh, bool all = false, bool DG = true);
   WeakForm<double>* clone() const;
-	~CustomWeakForm();
+//	~CustomWeakForm();
 	
 private:
   class CustomMatrixFormVol : public MatrixFormVol<double>
@@ -156,31 +156,31 @@ class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>
     double time_step;
 };
 
+  class CustomMatrixFormDummy : public MatrixFormDG<double>
+  {
+  public:
+    CustomMatrixFormDummy(int i, int j) : MatrixFormDG<double>(i, j) 
+    {
+    };
 
-class VectorFormVolMass : public VectorFormVol<double>
-{
-public:
-	VectorFormVolMass(int i, double  time_step) : VectorFormVol<double>(i), time_step(time_step) { };
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
-	template<typename Real, typename Scalar>
-	Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
-	virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
 
-	virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+    MatrixFormDG<double>* clone() const;
 
-   VectorFormVol<double>* clone() const;
+  };
 
-	// Members.  
-	double time_step;
 
-};
 
 class  CustomWeakFormMassmatrix  : public WeakForm<double>     
 {
 public:
   CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time);
-	~CustomWeakFormMassmatrix();
+	//~CustomWeakFormMassmatrix();
 };
 
 //---------------Konvektion-----------
@@ -226,7 +226,7 @@ class CustomWeakFormConvection : public WeakForm<double>    //Konvektion
 {
 public:
   CustomWeakFormConvection(Solution<double>* sln_prev_time);
-	~CustomWeakFormConvection();  
+	//~CustomWeakFormConvection();  
 };
 
 
@@ -274,7 +274,7 @@ class GradientReconstruction_1 : public WeakForm<double>
 {
 public:
   GradientReconstruction_1(Solution<double>* sln);
-	~GradientReconstruction_1();
+	//~GradientReconstruction_1();
 };
 
 
@@ -319,7 +319,7 @@ class GradientReconstruction_2 : public WeakForm<double>
 {
 public:
   GradientReconstruction_2(Solution<double>* sln);
-	~GradientReconstruction_2();
+	//~GradientReconstruction_2();
 };
 
 //------------------- Initial condition ----------------
@@ -328,7 +328,7 @@ class CustomInitialCondition : public ExactSolutionScalar<double>
 {
 public:
   CustomInitialCondition(const Mesh* mesh) : ExactSolutionScalar<double>(mesh) {};
-   ~CustomInitialCondition(){};
+  // ~CustomInitialCondition(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 

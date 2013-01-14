@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 //ScalarView hview("Solution", new WinGeom(0, 500, 500, 400));
 	//sview.show(&u_prev_time, HERMES_EPS_HIGH); 
-	//ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
+	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
 	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 
 
@@ -235,12 +235,12 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 									P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus,smooth_dof);
 
 
-/*
+
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, &u_new);
 		sprintf(title, "proj. Loesung, as=%i, ts=%i", as,ts);
 			pview.set_title(title);
 			pview.show(&u_new);
-*/
+//View::wait(HERMES_WAIT_KEYPRESS);
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(K+D) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, lumped_double); 
@@ -259,7 +259,7 @@ sprintf(title, "nach changed Mesh, as=%i, ts=%i", as,ts);
 			mview.set_title(title);
 				mview.show(ref_space);
 
-//View::wait(HERMES_WAIT_KEYPRESS);
+View::wait(HERMES_WAIT_KEYPRESS);
 			delete lumped_matrix; 
 			delete diffusion;
 	

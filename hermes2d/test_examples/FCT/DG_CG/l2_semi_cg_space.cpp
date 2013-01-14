@@ -33,13 +33,13 @@ namespace Hermes
         this->shapeset = new H1Shapeset;
         this->own_shapeset = true;
       }
-      ldata = NULL;
-      lsize = 0;
+    //  ldata = NULL;
+      //lsize = 0;
       this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
 
       // set uniform poly order in elements
       if(p_init < 1) 
-        throw Hermes::Exceptions::Exception("P_INIT must be >=  1 in an H1 space.");
+        throw Hermes::Exceptions::Exception("P_INIT must be >=  1 in an L2_SEMI_CG_Space space.");
 
       else this->set_uniform_order_internal(p_init, HERMES_ANY_INT);
 
@@ -64,7 +64,7 @@ namespace Hermes
     template<typename Scalar>
     L2_SEMI_CG_Space<Scalar>::~L2_SEMI_CG_Space()
     {
-          ::free(ldata);
+     //     ::free(ldata);
       if(this->own_shapeset)
         delete this->shapeset;
     }
@@ -73,8 +73,8 @@ namespace Hermes
     void L2_SEMI_CG_Space<Scalar>::copy(const Space<Scalar>* space, Mesh* new_mesh)
     {
       Space<Scalar>::copy(space, new_mesh);
-            ldata = NULL;
-      lsize = 0;
+          //  ldata = NULL;
+     // lsize = 0;
 
       this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
 
@@ -142,19 +142,19 @@ namespace Hermes
         if(order > 1)
         {
           int ndofs_total = 0;
-          typename Space<Scalar>::ElementData* ed = &this->edata[e->id];
+          typename Space<Scalar>::ElementData* ed = &this->edata[e->id];          
           ed->bdof = this->next_dof;
           for (unsigned int i = 0; i < e->get_nvert(); i++)
           {
              Node* en = e->en[i];
-		        if(en->ref > 1 || en->bnd)
+		        if(en->ref >= 1 || en->bnd)
 		        {
 		          ndofs = this->get_edge_order_internal(en) - 1;					 
 					 ndofs_total += ndofs;               
 		        }    
           }          
           
-          ndofs = order ? this->shapeset->get_num_bubbles(ed->order, e->get_mode()) : 0;
+          ndofs = this->shapeset->get_num_bubbles(ed->order, e->get_mode()) ;
           ndofs_total += ndofs;
           ed->n = ndofs_total;
           this->next_dof += ed->n * this->stride;
@@ -180,6 +180,7 @@ namespace Hermes
         for (int j = 0; j < nd->ncomponents; j++)
           if(nd->baselist[j].coef != (Scalar) 0)
           {
+		//Hermes::Mixins::Loggable::Static::info("dof = %i", nd->baselist[j].dof);  
             al->add_triplet(index, nd->baselist[j].dof, nd->baselist[j].coef);
           }
       }
@@ -187,8 +188,8 @@ namespace Hermes
 
     template<typename Scalar>
     void L2_SEMI_CG_Space<Scalar>::get_boundary_assembly_list_internal(Element* e, int surf_num, AsmList<Scalar>* al) const
-    { 
-    //this->get_bubble_assembly_list(e, al);
+    { //edge basis functions
+        
      Node* en = e->en[surf_num];      
       typename Space<Scalar>::ElementData* ed = &this->edata[e->id];
       if(this->get_element_order(e->id) == 0)
@@ -198,10 +199,10 @@ namespace Hermes
       { 			
  			//int ndofs_total = 0;
  			 int ndofs_start = 0;int ndofs =0;
- 		for (unsigned int i = 0; i <= surf_num; i++)
+ 			for (unsigned int i = 0; i <= surf_num; i++)
           {
              Node* en = e->en[i];
-		        if(en->ref > 1 || en->bnd)
+		        if(en->ref >= 1 || en->bnd)
 		        {
 		          ndofs = this->get_edge_order_internal(en) - 1;					 
 					 //ndofs_total += ndofs;
@@ -225,11 +226,12 @@ namespace Hermes
       typename Space<Scalar>::ElementData* ed = &this->edata[e->id];
       if(!ed->n) return;      
          int ndofs_total = 0;int ndofs;  
-          int ndofs_start = ed->bdof;       
+          int ndofs_start = ed->bdof; 
+ 
 		 for (unsigned int i = 0; i < e->get_nvert(); i++)
 		 {
 		    Node* en = e->en[i]; int surf_num = i;
-		     if(en->ref > 1 || en->bnd )
+		     if(en->ref >= 1 || en->bnd )
 		     {
 		       ndofs = this->get_edge_order_internal(en) - 1;					 
 				 ndofs_total += ndofs;
@@ -260,7 +262,8 @@ namespace Hermes
      for (unsigned int i = 0; i < e->get_nvert(); i++)
         get_vertex_assembly_list(e, i, al);            
 
-     get_bubble_assembly_list(e, al);
+		if(this->edata[e->id].order > 1)
+     		get_bubble_assembly_list(e, al);
            
       if(first_dof!=0.)
       {     
@@ -310,11 +313,11 @@ namespace Hermes
     
     
     
-    
+  /*     
     template<typename Scalar>
     void L2_SEMI_CG_Space<Scalar>::resize_tables()
     {
-      if(lsize < this->mesh->get_max_element_id())
+   if(lsize < this->mesh->get_max_element_id())
       {
         if(!lsize) lsize = 1000;
         while (lsize < this->mesh->get_max_element_id()) lsize = lsize * 3 / 2;
@@ -322,7 +325,7 @@ namespace Hermes
       }
       Space<Scalar>::resize_tables();
     }
-
+*/
 
     template<typename Scalar>
     Scalar* L2_SEMI_CG_Space<Scalar>::get_bc_projection(SurfPos* surf_pos, int order)
@@ -400,8 +403,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    inline void L2_SEMI_CG_Space<Scalar>::output_component(typename Space<Scalar>::BaseComponent*& current, typename Space<Scalar>::BaseComponent*& last, typename Space<Scalar>::BaseComponent* min,
-      Node*& edge, typename Space<Scalar>::BaseComponent*& edge_dofs)
+    inline void L2_SEMI_CG_Space<Scalar>::output_component(typename Space<Scalar>::BaseComponent*& current, typename Space<Scalar>::BaseComponent*& last, typename Space<Scalar>::BaseComponent* min )
     {
       // if the dof is already in the list, just add half of the other coef
       if(last != NULL && last->dof == min->dof)
@@ -410,32 +412,17 @@ namespace Hermes
         return;
       }
 
-      // leave space for edge node dofs if they belong in front of the current minimum dof
-      if(edge != NULL && this->ndata[edge->id].dof <= min->dof)
-      {
-        edge_dofs = current;
-
-        // (reserve space only if the edge dofs are not in the list yet)
-        if(this->ndata[edge->id].dof != min->dof)
-        {
-          current += this->ndata[edge->id].n;
-        }
-        edge = NULL;
-      }
-
       // output new dof
       current->dof = min->dof;
       current->coef = min->coef * 0.5;
-      last = current++;
+      last = current++;  // last = current; current++;
     }
 
     template<typename Scalar>
-    typename Space<Scalar>::BaseComponent* L2_SEMI_CG_Space<Scalar>::merge_baselists(typename Space<Scalar>::BaseComponent* l1, int n1, typename Space<Scalar>::BaseComponent* l2, int n2,
-      Node* edge, typename Space<Scalar>::BaseComponent*& edge_dofs, int& ncomponents)
+    typename Space<Scalar>::BaseComponent* L2_SEMI_CG_Space<Scalar>::merge_baselists(typename Space<Scalar>::BaseComponent* l1, int n1, typename Space<Scalar>::BaseComponent* l2, int n2, int& ncomponents)
     {
       // estimate the upper bound of the result size
-      int max_result = n1 + n2;
-      if(edge != NULL) max_result += this->ndata[edge->id].n;
+      int max_result = n1 + n2;     
 
       typename Space<Scalar>::BaseComponent* result = (typename Space<Scalar>::BaseComponent*) malloc(max_result * sizeof(typename Space<Scalar>::BaseComponent));
       typename Space<Scalar>::BaseComponent* current = result;
@@ -446,21 +433,15 @@ namespace Hermes
       while (i1 < n1 && i2 < n2)
       {
         if(l1[i1].dof < l2[i2].dof)
-          output_component(current, last, l1 + i1++, edge, edge_dofs);
+          output_component(current, last, l1 + i1++);
         else
-          output_component(current, last, l2 + i2++, edge, edge_dofs);
+          output_component(current, last, l2 + i2++);
       }
 
       // finish the longer baselist
-      while (i1 < n1) output_component(current, last, l1 + i1++, edge, edge_dofs);
-      while (i2 < n2) output_component(current, last, l2 + i2++, edge, edge_dofs);
+      while (i1 < n1) output_component(current, last, l1 + i1++);
+      while (i2 < n2) output_component(current, last, l2 + i2++);
 
-      // don't forget to reserve space for edge dofs if we haven't done that already
-      if(edge != NULL)
-      {
-        edge_dofs = current;
-        current += this->ndata[edge->id].n;
-      }
 
       // if we produced less components than we expected, reallocate the resulting array
       // ...this should be OK as we are always shrinking the array so no copying should occur
@@ -468,10 +449,7 @@ namespace Hermes
       if(ncomponents < max_result)
       {
         typename Space<Scalar>::BaseComponent* reallocated_result = (typename Space<Scalar>::BaseComponent*) realloc(result, ncomponents * sizeof(typename Space<Scalar>::BaseComponent));
-        if(edge_dofs != NULL)
-        {
-          edge_dofs = reallocated_result + (edge_dofs - result);
-        }
+
         return reallocated_result;
       }
       else
@@ -487,22 +465,9 @@ namespace Hermes
 
       if(this->get_element_order(e->id) == 0) return;
 
-      // on non-refined elements all we have to do is update edge nodes lying on constrained edges
-      if(e->active)
-      {
-       /* for (unsigned int i = 0; i < e->get_nvert(); i++)
-        {
-          if(ei[i] != NULL)
-          {
-            nd = &this->ndata[e->en[i]->id];
-            nd->base = ei[i]->node;
-            nd->part = ei[i]->part;
-            if(ei[i]->ori) nd->part ^=  ~0;
-          }
-        }*/
-      }
-      // the element has sons - update mid-edge constrained vertex nodes
-      else
+
+      if(!e->active)
+      // the element has sons - update mid-edge constrained vertex nodes    
       {
         // create new edge infos where we don't have them yet
         EdgeInfo ei_data[4];
@@ -514,7 +479,7 @@ namespace Hermes
             Node* mid_vn = this->get_mid_edge_vertex_node(e, i, j);
             if(mid_vn != NULL && mid_vn->is_constrained_vertex())
             {
-              Node* mid_en = this->mesh->peek_edge_node(e->vn[i]->id, e->vn[j]->id);
+            Node* mid_en = this->mesh->peek_edge_node(e->vn[i]->id, e->vn[j]->id);
               if(mid_en != NULL)
               {
                 ei[i] = ei_data + i;
@@ -563,19 +528,9 @@ namespace Hermes
           // merge the baselists
           typename Space<Scalar>::BaseComponent* edge_dofs;
           nd = &this->ndata[mid_vn->id];
-          nd->baselist = merge_baselists(bl[0], nc[0], bl[1], nc[1], en, edge_dofs, nd->ncomponents);
+          nd->baselist = merge_baselists(bl[0], nc[0], bl[1], nc[1], nd->ncomponents);
           this->bc_data.push_back(nd->baselist);
 
-          // set edge node coeffs to function values of the edge functions
-         /* double mid = (ei[i]->lo + ei[i]->hi) * 0.5;
-          nd = &this->ndata[en->id];
-          for (k = 0; k < nd->n; k++, edge_dofs++)
-          {
-            edge_dofs->dof = nd->dof + k*this->stride;
-            edge_dofs->coef = this->shapeset->get_fn_value(this->shapeset->get_edge_index(0, ei[i]->ori, k + 2, e->get_mode()), mid, -1.0, 0, e->get_mode());
-          }*/
-
-          //dump_baselist(ndata[mid_vn->id]);
         }
 
         // create edge infos for half-edges

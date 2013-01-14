@@ -324,12 +324,12 @@ void Regularity_Estimator::smoothness_indicator(UMFPackMatrix<double> * mass_mat
 		  add_vector_form(vector_form);
 		};
 
-		GradientReconstruction_1::~GradientReconstruction_1()
+	/*	GradientReconstruction_1::~GradientReconstruction_1()
 		{
 			delete get_mfvol()[0];
 			delete get_vfvol()[0];
 			WeakForm<double>::delete_all();
-		};
+		};*/
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_1 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -392,12 +392,12 @@ void Regularity_Estimator::smoothness_indicator(UMFPackMatrix<double> * mass_mat
 		add_vector_form(vector_form);
   };
 
-	GradientReconstruction_2::~GradientReconstruction_2()
+/*	GradientReconstruction_2::~GradientReconstruction_2()
 	{
 		delete get_mfvol()[0];
 		delete get_vfvol()[0];
 		WeakForm<double>::delete_all();
-	};
+	};*/
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_2 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 

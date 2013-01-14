@@ -98,8 +98,8 @@ void Lumped_Projection::project_lumped( const  Space<double>* space, MeshFunctio
 
       // Clean up.
       delete proj_wf;
-			delete vector_form;
-			delete matrix_form;
+		//	delete vector_form;
+		//	delete matrix_form;
 
 }
 

@@ -41,7 +41,7 @@ namespace Hermes
 
 		protected:
 		
-					virtual int get_edge_order(Element* e, int edge) const {
+			virtual int get_edge_order(Element* e, int edge) const {
 				return H2D_MAKE_EDGE_ORDER(e->get_mode(), edge, this->edata[e->id].order);
 			}
 		
@@ -69,7 +69,7 @@ namespace Hermes
 			};
 			
 			
-			struct L2Data
+	/*		struct L2Data
 			{
 				int vdof[4];
 				int edof[4];
@@ -78,15 +78,13 @@ namespace Hermes
 			L2Data* ldata;
 			int lsize;
 			
-			virtual void resize_tables();
+			virtual void resize_tables();*/
 
       virtual void update_edge_bc(Element* e, SurfPos* surf_pos);
 
-			inline void output_component(typename Space<Scalar>::BaseComponent*& current, typename Space<Scalar>::BaseComponent*& last, typename Space<Scalar>::BaseComponent* min,
-				Node*& edge, typename Space<Scalar>::BaseComponent*& edge_dofs);
+			inline void output_component(typename Space<Scalar>::BaseComponent*& current, typename Space<Scalar>::BaseComponent*& last, typename Space<Scalar>::BaseComponent* min);
 
-			typename Space<Scalar>::BaseComponent* merge_baselists(typename Space<Scalar>::BaseComponent* l1, int n1, typename Space<Scalar>::BaseComponent* l2, int n2,
-				Node* edge, typename Space<Scalar>::BaseComponent*& edge_dofs, int& ncomponents);
+			typename Space<Scalar>::BaseComponent* merge_baselists(typename Space<Scalar>::BaseComponent* l1, int n1, typename Space<Scalar>::BaseComponent* l2, int n2, int& ncomponents);
 
 			void update_constrained_nodes(Element* e, EdgeInfo* ei0, EdgeInfo* ei1, EdgeInfo* ei2, EdgeInfo* ei3);
 

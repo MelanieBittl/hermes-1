@@ -10,7 +10,7 @@ int max(int a, int b){
 
 
 template<typename Scalar>
-bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2, CustomWeakFormMassmatrix* massmatrix, HPAdapt* adapt, AsmList<Scalar>* al,  double h_min, double h_max, int ts, int ps, int* smooth_elem, double h_start)
+bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2, CustomWeakFormMassmatrix* massmatrix, HPAdapt* adapt, AsmList<Scalar>* al,  double h_min, double h_max, int ts, int ps, int* smooth_elem, double h_start)
 {		
 
 	int* elements_to_refine = new int[space->get_mesh()->get_max_element_id()];   // 0 = nothing..
@@ -57,16 +57,22 @@ bool h_p_adap(Space<Scalar>* space,Solution<Scalar>* u_prev_time, Solution<Scala
 		no_of_refinement_steps[e->id]=0;	elements_to_refine[e->id] = 0;
 			int i = 1;	
 			if(elem_error[e->id] <EPS){ 
-										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
+							refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]< (EPS/i*100))&&(i<4)){
-					 													no_of_refinement_steps[e->id]++; i++;
+					 	no_of_refinement_steps[e->id]++; i++;
 					}
 			}else 
 			if(smooth_elem[e->id]==1){
 					if(elem_error[e->id] >tol_p){
 										refine = true; elements_to_refine[e->id] =2; no_of_refinement_steps[e->id]++;
-					}else if(elem_error[e->id] >EPS){
-										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
+										/*	while((elem_error[e->id]> (tol_p+i*std_dev_p))&&(i<2)){
+					 													no_of_refinement_steps[e->id]++; i++;
+										} */
+					}else if(elem_error[e->id] >tol_z){
+									//	refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++;
+									/*	while((elem_error[e->id]> (tol_z+i*std_dev_z))&&(i<2)){
+					 													no_of_refinement_steps[e->id]++; i++;
+										} */
 					}
 			}else if(elem_error[e->id] >tol_z){ 
 										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
