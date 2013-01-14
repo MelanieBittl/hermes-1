@@ -1252,6 +1252,21 @@ namespace Hermes
       try
       {
         XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs, 0, 0);
+        switch(this->get_space_type())
+        {
+          case HERMES_H1_SPACE:
+            xmlsolution.spaceType().set("h1");
+            break;
+          case HERMES_HCURL_SPACE:
+            xmlsolution.spaceType().set("hcurl");
+            break;
+          case HERMES_HDIV_SPACE:
+            xmlsolution.spaceType().set("hdiv");
+            break;
+          case HERMES_L2_SPACE:
+            xmlsolution.spaceType().set("l2");
+            break;
+        }
 
         for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
           xmlsolution.mono_coeffs().push_back(XMLSolution::mono_coeffs(coeffs_i, mono_coeffs[coeffs_i]));
@@ -1295,6 +1310,22 @@ namespace Hermes
       {
         XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs, 0, 1);
 
+        switch(this->get_space_type())
+        {
+          case HERMES_H1_SPACE:
+            xmlsolution.spaceType().set("h1");
+            break;
+          case HERMES_HCURL_SPACE:
+            xmlsolution.spaceType().set("hcurl");
+            break;
+          case HERMES_HDIV_SPACE:
+            xmlsolution.spaceType().set("hdiv");
+            break;
+          case HERMES_L2_SPACE:
+            xmlsolution.spaceType().set("l2");
+            break;
+        }
+
         for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
         {
           xmlsolution.mono_coeffs().push_back(XMLSolution::mono_coeffs(coeffs_i, mono_coeffs[coeffs_i].real()));
@@ -1335,12 +1366,19 @@ namespace Hermes
     {
       free();
       this->mesh = space->get_mesh();
-			this->space_type = space->get_type();
 
 			try
       {
         std::auto_ptr<XMLSolution::solution> parsed_xml_solution(XMLSolution::solution_(filename));
         sln_type = parsed_xml_solution->exact() == 0 ? HERMES_SLN : HERMES_EXACT;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"h1"))
+          this->space_type = HERMES_H1_SPACE;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"l2"))
+          this->space_type = HERMES_L2_SPACE;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"hcurl"))
+          this->space_type = HERMES_HCURL_SPACE;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"hdiv"))
+          this->space_type = HERMES_HDIV_SPACE;
 
         if(sln_type == HERMES_EXACT)
         {
@@ -1414,12 +1452,19 @@ namespace Hermes
       free();
       sln_type = HERMES_SLN;
       this->mesh = space->get_mesh();
-			this->space_type = space->get_type();
 
       try
       {
         std::auto_ptr<XMLSolution::solution> parsed_xml_solution(XMLSolution::solution_(filename));
         sln_type = parsed_xml_solution->exact() == 0 ? HERMES_SLN : HERMES_EXACT;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"h1"))
+          this->space_type = HERMES_H1_SPACE;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"l2"))
+          this->space_type = HERMES_L2_SPACE;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"hcurl"))
+          this->space_type = HERMES_HCURL_SPACE;
+        if(!strcmp(parsed_xml_solution->spaceType().get().c_str(),"hdiv"))
+          this->space_type = HERMES_HDIV_SPACE;
 
         if(sln_type == HERMES_EXACT)
         {

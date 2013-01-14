@@ -221,9 +221,12 @@ namespace Hermes
 
             std::map<std::string, double> variables;
             for (unsigned int variables_i = 0; variables_i < variables_count; variables_i++)
-              variables.insert(std::make_pair<std::string, double>(parsed_xml_domain->variables()->variable().at(variables_i).name(), parsed_xml_domain->variables()->variable().at(variables_i).value()));
-
-            // Vertex numbers //
+#ifdef _MSC_VER
+				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_domain->variables()->variable().at(variables_i).name(), (double&&)parsed_xml_domain->variables()->variable().at(variables_i).value()));
+#else
+				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_domain->variables()->variable().at(variables_i).name(), parsed_xml_domain->variables()->variable().at(variables_i).value()));
+#endif
+			// Vertex numbers //
             // create a mapping order-in-the-whole-domain <-> order-in-this-subdomain.
             std::map<unsigned int, unsigned int> vertex_vertex_numbers;
 
@@ -242,7 +245,7 @@ namespace Hermes
               if(vertex_number_count == parsed_xml_domain->vertices().vertex().size())
                 vertex_number = vertex_is[vertex_numbers_i];
               else
-                vertex_number =  vertex_is[parsed_xml_domain->subdomains().subdomain().at(subdomains_i).vertices()->i().at(vertex_numbers_i)];
+                vertex_number =  parsed_xml_domain->subdomains().subdomain().at(subdomains_i).vertices()->i().at(vertex_numbers_i);
 
               vertex_vertex_numbers.insert(std::pair<unsigned int, unsigned int>(vertex_number, vertex_numbers_i));
               Node* node = meshes[subdomains_i]->nodes.add();
@@ -318,11 +321,12 @@ namespace Hermes
             meshes[subdomains_i]->nactive = meshes[subdomains_i]->ninitial = element_number_count;
 
             Element* e;
-            bool* elements_existing = new bool[element_count];
+            int* elements_existing = new int[element_count];
             for(int i = 0; i < element_count; i++)
-              elements_existing[i] = false;
+              elements_existing[i] = -1;
             for (int element_number_i = 0; element_number_i < element_number_count; element_number_i++)
-              elements_existing[element_is[parsed_xml_domain->subdomains().subdomain().at(subdomains_i).elements()->i().at(element_number_i)]] = true;
+              elements_existing[parsed_xml_domain->subdomains().subdomain().at(subdomains_i).elements()->i().at(element_number_i)] =
+                parsed_xml_domain->subdomains().subdomain().at(subdomains_i).elements()->i().at(element_number_i);
 
             for (int element_i = 0; element_i < element_count; element_i++)
             {
@@ -330,7 +334,7 @@ namespace Hermes
               if(element_number_count == 0)
                 found = true;
               else
-                found = elements_existing[element_i];
+                found = elements_existing[element_i] != -1;
 
               if(!found)
               {
@@ -338,7 +342,17 @@ namespace Hermes
                 continue;
               }
 
-              XMLSubdomains::domain::elements_type::element_type* element = &parsed_xml_domain->elements().element().at(element_i);
+              XMLSubdomains::domain::elements_type::element_type* element = NULL;
+              for(int searched_element_i = 0; searched_element_i < element_count; searched_element_i++)
+              {
+                 element = &parsed_xml_domain->elements().element().at(searched_element_i);
+                 if(element->i() == elements_existing[element_i])
+                     break;
+                 else
+                     element = NULL;
+              }
+              if(element == NULL)
+                  throw Exceptions::Exception("Element number wrong in the mesh file.");
 
               if(dynamic_cast<XMLSubdomains::quad_type*>(element) != NULL)
                 e = meshes[subdomains_i]->create_quad(meshes[subdomains_i]->element_markers_conversion.get_internal_marker(element->marker()).marker,
@@ -346,13 +360,13 @@ namespace Hermes
                 &meshes[subdomains_i]->nodes[vertex_vertex_numbers.find(dynamic_cast<XMLSubdomains::quad_type*>(element)->v2())->second],
                 &meshes[subdomains_i]->nodes[vertex_vertex_numbers.find(dynamic_cast<XMLSubdomains::quad_type*>(element)->v3())->second],
                 &meshes[subdomains_i]->nodes[vertex_vertex_numbers.find(dynamic_cast<XMLSubdomains::quad_type*>(element)->v4())->second],
-                NULL);
+                NULL, elements_existing[element_i]);
               else
                 e = meshes[subdomains_i]->create_triangle(meshes[subdomains_i]->element_markers_conversion.get_internal_marker(element->marker()).marker,
                 &meshes[subdomains_i]->nodes[vertex_vertex_numbers.find(dynamic_cast<XMLSubdomains::triangle_type*>(element)->v1())->second],
                 &meshes[subdomains_i]->nodes[vertex_vertex_numbers.find(dynamic_cast<XMLSubdomains::triangle_type*>(element)->v2())->second],
                 &meshes[subdomains_i]->nodes[vertex_vertex_numbers.find(dynamic_cast<XMLSubdomains::triangle_type*>(element)->v3())->second],
-                NULL);
+                NULL, elements_existing[element_i]);
             }
 
             // Boundary Edge numbers //
@@ -730,7 +744,11 @@ namespace Hermes
         unsigned int variables_count = parsed_xml_mesh->variables().present() ? parsed_xml_mesh->variables()->variable().size() : 0;
         std::map<std::string, double> variables;
         for (unsigned int variables_i = 0; variables_i < variables_count; variables_i++)
-          variables.insert(std::make_pair<std::string, double>(parsed_xml_mesh->variables()->variable().at(variables_i).name(), parsed_xml_mesh->variables()->variable().at(variables_i).value()));
+#ifdef _MSC_VER
+				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_mesh->variables()->variable().at(variables_i).name(), (double&&)parsed_xml_mesh->variables()->variable().at(variables_i).value()));
+#else
+				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_mesh->variables()->variable().at(variables_i).name(), parsed_xml_mesh->variables()->variable().at(variables_i).value()));
+#endif
 
         // Vertices //
         int vertices_count = parsed_xml_mesh->vertices().vertex().size();
@@ -974,7 +992,12 @@ namespace Hermes
         unsigned int variables_count = parsed_xml_domain->variables().present() ? parsed_xml_domain->variables()->variable().size() : 0;
         std::map<std::string, double> variables;
         for (unsigned int variables_i = 0; variables_i < variables_count; variables_i++)
-          variables.insert(std::make_pair<std::string, double>(parsed_xml_domain->variables()->variable().at(variables_i).name(), parsed_xml_domain->variables()->variable().at(variables_i).value()));
+#ifdef _MSC_VER
+				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_domain->variables()->variable().at(variables_i).name(), (double&&)parsed_xml_domain->variables()->variable().at(variables_i).value()));
+#else
+				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_domain->variables()->variable().at(variables_i).name(), parsed_xml_domain->variables()->variable().at(variables_i).value()));
+#endif
+
 
         // Vertices //
         int vertices_count = parsed_xml_domain->vertices().vertex().size();

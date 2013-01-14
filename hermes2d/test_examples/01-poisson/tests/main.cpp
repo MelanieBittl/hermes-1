@@ -30,8 +30,7 @@ int main(int argc, char* argv[])
   mesh.refine_in_areas(Hermes::vector<std::string>("Aluminum", "Copper"), INIT_REF_NUM);
 
   // Initialize the weak formulation.
-  CustomWeakFormPoisson wf("Aluminum", new Hermes::Hermes1DFunction<double>(LAMBDA_AL), "Copper",
-    new Hermes::Hermes1DFunction<double>(LAMBDA_CU), new Hermes::Hermes2DFunction<double>(-VOLUME_HEAT_SRC));
+  CustomWeakFormPoisson wf;
 
   // Initialize essential boundary conditions.
   Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential(Hermes::vector<std::string>("Bottom", "Inner", "Outer", "Left"),
@@ -57,9 +56,10 @@ int main(int argc, char* argv[])
   for (int i = 0; i < space.get_num_dofs(); i++)
     sum += linear_solver.get_sln_vector()[i];
   printf("coefficient sum = %f\n", sum);
-
+  
   bool success = true;
-  if(std::abs(sum + 2761.840589) > 1e-4) success = false;
+  if(std::abs(sum - 3231.963681) > 1e-6)
+    success = false;
 
   if(success == true)
   {

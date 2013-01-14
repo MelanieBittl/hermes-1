@@ -123,7 +123,7 @@ namespace Hermes
             else
               for (i = 0; i < np; i++)
                 node->values[j][k][i] = shapeset->get_value(k, index, ctm->m[0] * pt[i][0] + ctm->t[0],
-                ctm->m[1] * pt[i][1] + ctm->t[1], j, element->get_mode());
+                 ctm->m[1] * pt[i][1] + ctm->t[1], j, element->get_mode());
           }
         }
       }

@@ -1056,6 +1056,28 @@ namespace Hermes
           al->dof[i] += first_dof;
     }
 
+		template<typename Scalar>
+    void Space<Scalar>::get_element_assembly_list_with_edge_numbers(Element* e, AsmListEdgeOrientation<Scalar>* al, unsigned int first_dof) const
+    {
+      // some checks
+      if(e->id >= esize || edata[e->id].order < 0)
+        throw Hermes::Exceptions::Exception("Uninitialized element order in get_element_assembly_list(id = #%d).", e->id);
+      if(!is_up_to_date())
+        throw Hermes::Exceptions::Exception("The space in get_element_assembly_list() is out of date. You need to update it with assign_dofs()"
+        " any time the mesh changes.");
+
+      // add vertex, edge and bubble functions to the assembly list
+      al->cnt = 0;
+      for (unsigned int i = 0; i < e->get_nvert(); i++)
+        get_vertex_assembly_list(e, i, al);
+      for (unsigned int i = 0; i < e->get_nvert(); i++)
+        get_boundary_assembly_list_with_edge_orientation(e, i, al);
+      get_bubble_assembly_list(e, al);
+      for(unsigned int i = 0; i < al->cnt; i++)
+        if(al->dof[i] >= 0)
+          al->dof[i] += first_dof;
+    }
+
     template<typename Scalar>
     void Space<Scalar>::get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al, unsigned int first_dof) const
     {
@@ -1191,23 +1213,23 @@ namespace Hermes
     {
       XMLSpace::space xmlspace;
 
-			switch(this->get_type())
-			{
-			case HERMES_H1_SPACE:
-				xmlspace.spaceType().set("h1");
-				break;
-			case HERMES_HCURL_SPACE:
-				xmlspace.spaceType().set("hcurl");
-				break;
-			case HERMES_HDIV_SPACE:
-				xmlspace.spaceType().set("hdiv");
-				break;
-			case HERMES_L2_SPACE:
-				xmlspace.spaceType().set("l2");
-				break;
-			default:
-				return false;
-			}
+      switch(this->get_type())
+      {
+        case HERMES_H1_SPACE:
+            xmlspace.spaceType().set("h1");
+            break;
+        case HERMES_HCURL_SPACE:
+            xmlspace.spaceType().set("hcurl");
+            break;
+        case HERMES_HDIV_SPACE:
+            xmlspace.spaceType().set("hdiv");
+            break;
+        case HERMES_L2_SPACE:
+            xmlspace.spaceType().set("l2");
+            break;
+        default:
+            return false;
+      }
 
       // Utility pointer.
       Element *e;
@@ -1348,9 +1370,9 @@ namespace Hermes
           space->edata[parsed_xml_space->element_data().at(elem_data_i).element_id()].changed_in_last_adaptation = parsed_xml_space->element_data().at(elem_data_i).changed_in_last_adaptation();
         }
 
-				space->assign_dofs();
-				space->seq = g_space_seq++;
-				return space;
+        space->assign_dofs();
+        space->seq = g_space_seq++;
+        return space;
       }
       catch (const xml_schema::exception& e)
       {

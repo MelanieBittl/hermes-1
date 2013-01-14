@@ -42,12 +42,14 @@ namespace Hermes
       int* get_idx();
       int* get_dof();
       unsigned int get_cnt();
-			Scalar* get_coef();
+
+		Scalar* get_coef();
 
 			/// Adds a record for one basis function (shape functions index, basis functions index, coefficient).
       void add_triplet(int i, int d, Scalar c);
 
-    private:
+    protected:
+
       /// Copy constructor.
       AsmList(const AsmList<Scalar> & other);
 
@@ -56,7 +58,6 @@ namespace Hermes
       Scalar* coef;  ///< array of coefficients
       unsigned int cnt;       ///< the number of items in the arrays idx, dof and coef
       unsigned int cap;       ///< internal
-
 
       /// Internal. Enlarges the storage capacity.
       void enlarge();
@@ -71,6 +72,16 @@ namespace Hermes
       template<typename T> friend class HdivSpace;
       template<typename T> friend class L2_SEMI_CG_Space;
     };
+		template<typename Scalar>
+    class HERMES_API AsmListEdgeOrientation : public AsmList<Scalar>
+    {
+    public:
+      /// Constructor.
+      AsmListEdgeOrientation() : AsmList<Scalar>() { edge_orientation = (int*) malloc(sizeof(int) * 256); }
+      int* edge_orientation;      ///< array of edge numbers (just for edge dofs)
+      void add_triplet(int i, int d, Scalar c) { AsmList<Scalar>::add_triplet(i, d, c); edge_orientation[this->cnt - 1] = -1; }
+      template<typename T> friend class H1Space;
+		};
   }
 }
 #endif

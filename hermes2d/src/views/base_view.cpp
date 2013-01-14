@@ -86,7 +86,10 @@ namespace Hermes
           Solution<double>::vector_to_solution(coeffs, space, sln, pss, true);
         }
 
-        ScalarView::show(sln, eps, item);
+				delete lin;
+        lin = new Linearizer;
+        
+				ScalarView::show(sln, eps, item);
         update_title();
 
         delete [] coeffs;

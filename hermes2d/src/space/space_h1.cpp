@@ -264,6 +264,45 @@ namespace Hermes
       }
     }
 
+		template<typename Scalar>
+    void H1Space<Scalar>::get_boundary_assembly_list_with_edge_orientation(Element* e, int surf_num, AsmListEdgeOrientation<Scalar>* al) const
+    {
+      Node* en = e->en[surf_num];
+      typename Space<Scalar>::NodeData* nd = &this->ndata[en->id];
+      if(this->get_element_order(e->id) == 0)
+        return;
+
+      if(nd->n >= 0) // unconstrained
+      {
+        if(nd->dof >= 0)
+        {
+          int ori = (e->vn[surf_num]->id < e->vn[e->next_vert(surf_num)]->id) ? 0 : 1;
+          for (int j = 0, dof = nd->dof; j < nd->n; j++, dof += this->stride)
+					{
+            al->add_triplet(this->shapeset->get_edge_index(surf_num, ori, j + 2, e->get_mode()), dof, 1.0);
+						al->edge_orientation[al->get_cnt() - 1] = surf_num * 10 + ori;
+					}
+        }
+        else
+        {
+          for (int j = 0; j < nd->n; j++)
+          {
+            al->add_triplet(this->shapeset->get_edge_index(surf_num, 0, j + 2, e->get_mode()), -1, nd->edge_bc_proj[j + 2]);
+          }
+        }
+      }
+      else // constrained
+      {
+        int part = nd->part;
+        int ori = part < 0 ? 1 : 0;
+        if(part < 0) part ^=  ~0;
+
+        nd = &this->ndata[nd->base->id];
+        for (int j = 0, dof = nd->dof; j < nd->n; j++, dof += this->stride)
+          al->add_triplet(this->shapeset->get_constrained_edge_index(surf_num, j + 2, ori, part, e->get_mode()), dof, 1.0);
+      }
+    }
+
     template<typename Scalar>
     Scalar* H1Space<Scalar>::get_bc_projection(SurfPos* surf_pos, int order)
     {
