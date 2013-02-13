@@ -56,6 +56,10 @@
 
 #include "config.h"
 
+#ifndef H2D_SECOND_DERIVATIVES_ENABLED
+#define H2D_SECOND_DERIVATIVES_ENABLED         
+#endif
+
 typedef int int2[2];
 typedef int int3[3];
 typedef int int4[4];

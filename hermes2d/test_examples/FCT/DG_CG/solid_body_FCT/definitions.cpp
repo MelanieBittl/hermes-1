@@ -17,14 +17,7 @@ WeakForm<double>* CustomWeakForm::clone() const
 {
   return new CustomWeakForm(*this);
 }
-/*
-CustomWeakForm::~CustomWeakForm()
-{
- for(unsigned int i = 0; i < this->forms.size(); i++)
- 	delete get_forms()[i];
- WeakForm<double>::delete_all();
-}
-*/
+
 
 template<typename Real, typename Scalar>
 Scalar CustomWeakForm::CustomMatrixFormVol::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
@@ -226,14 +219,6 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
 		 
 
   }
-  /*
- CustomWeakFormMassmatrix::~CustomWeakFormMassmatrix(){
-		delete get_mfvol()[0];
-		//delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-
-	};*/
-
 
     template<typename Real, typename Scalar>
     Scalar CustomMatrixFormVolMassmatrix::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -270,13 +255,6 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
    VectorFormVolConvection* vector_form = new VectorFormVolConvection(0);
    add_vector_form(vector_form);
   };
-  /*
-	CustomWeakFormConvection::~CustomWeakFormConvection(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-	};*/
-
 
 
 
@@ -340,12 +318,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
     GradientReconstructionVectorForm_1* vector_form = new GradientReconstructionVectorForm_1(0);
     add_vector_form(vector_form);
   };
-/*
-	GradientReconstruction_1::~GradientReconstruction_1(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-	};*/
+
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_1 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -402,11 +375,7 @@ Ord GradientReconstructionMatForm_1 ::ord(int n, double *wt, Func<Ord> *u_ext[],
     add_vector_form(vector_form);
   };
 
-/*	GradientReconstruction_2::~GradientReconstruction_2(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-	};*/
+
 
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_2 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 

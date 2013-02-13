@@ -21,7 +21,7 @@ const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 const double EPS = 1e-8;
-const double theta = 1.;
+const double theta = 0.5;
 
 const double h_max = 0.1;
 const int NDOF_STOP = 6000000;
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 do
 {	 
  // 	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
- 	    Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2);  
+ 	    Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1);  
 
 	if ((ts > 1 && ts % UNREF_FREQ == 0)||(space_rho.get_num_dofs() >= NDOF_STOP)) 
     { 
@@ -177,7 +177,7 @@ do
                 break;
         default: Exceptions::Exception("Wrong global derefinement method.");
       }
-Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2); //sonst Segfault
+//Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1); //sonst Segfault
        	  //numThreads>1 kommt anscheinend nicht mit Gittern zurecht die groeber sind als im vorherigen Schritt? 
        	       
     }

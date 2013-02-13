@@ -33,8 +33,7 @@ namespace Hermes
         this->shapeset = new H1Shapeset;
         this->own_shapeset = true;
       }
-    //  ldata = NULL;
-      //lsize = 0;
+
       this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
 
       // set uniform poly order in elements
@@ -64,7 +63,7 @@ namespace Hermes
     template<typename Scalar>
     L2_SEMI_CG_Space<Scalar>::~L2_SEMI_CG_Space()
     {
-     //     ::free(ldata);
+
       if(this->own_shapeset)
         delete this->shapeset;
     }
@@ -73,8 +72,6 @@ namespace Hermes
     void L2_SEMI_CG_Space<Scalar>::copy(const Space<Scalar>* space, Mesh* new_mesh)
     {
       Space<Scalar>::copy(space, new_mesh);
-          //  ldata = NULL;
-     // lsize = 0;
 
       this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
 
@@ -84,7 +81,9 @@ namespace Hermes
     template<typename Scalar>
     void L2_SEMI_CG_Space<Scalar>::set_shapeset(Shapeset *shapeset)
     {
-      if(shapeset->get_id() < 10)
+        if((this->shapeset!=NULL)&& (this->own_shapeset)) 
+    		delete this->shapeset;
+      if((shapeset->get_id() < 10)||(shapeset->get_id() ==31)) // <10=> H1 shapeset, 31=>taylor_shapeset
       {
         this->shapeset = shapeset;
         this->own_shapeset = false;
@@ -139,8 +138,8 @@ namespace Hermes
       for_all_active_elements(e, this->mesh)
       {
         int order = this->get_element_order(e->id);
-        if(order > 1)
-        {
+        //if(order > 1)
+       // {
           int ndofs_total = 0;
           typename Space<Scalar>::ElementData* ed = &this->edata[e->id];          
           ed->bdof = this->next_dof;
@@ -150,7 +149,7 @@ namespace Hermes
 		        if(en->ref >= 1 || en->bnd)
 		        {
 		          ndofs = this->get_edge_order_internal(en) - 1;					 
-					 ndofs_total += ndofs;               
+					 ndofs_total += ndofs;             
 		        }    
           }          
           
@@ -159,7 +158,7 @@ namespace Hermes
           ed->n = ndofs_total;
           this->next_dof += ed->n * this->stride;
           this->bubble_functions_count += ed->n;
-        }
+       // }
       }
     }
 
@@ -312,20 +311,7 @@ namespace Hermes
     }
     
     
-    
-  /*     
-    template<typename Scalar>
-    void L2_SEMI_CG_Space<Scalar>::resize_tables()
-    {
-   if(lsize < this->mesh->get_max_element_id())
-      {
-        if(!lsize) lsize = 1000;
-        while (lsize < this->mesh->get_max_element_id()) lsize = lsize * 3 / 2;
-        ldata = (L2Data*) realloc(ldata, sizeof(L2Data) * lsize);
-      }
-      Space<Scalar>::resize_tables();
-    }
-*/
+
 
     template<typename Scalar>
     Scalar* L2_SEMI_CG_Space<Scalar>::get_bc_projection(SurfPos* surf_pos, int order)

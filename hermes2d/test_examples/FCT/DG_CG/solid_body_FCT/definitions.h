@@ -15,7 +15,7 @@ class CustomWeakForm : public WeakForm<double>
 public:
   CustomWeakForm(double time_step, double theta, Solution<double>* sln_prev_time, std::string inlet,  Mesh* mesh, bool all = false, bool DG = true);
   WeakForm<double>* clone() const;
-//	~CustomWeakForm();
+
 	
 private:
   class CustomMatrixFormVol : public MatrixFormVol<double>
@@ -136,7 +136,7 @@ class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>
 
 {
   public:
-    // This weak form is custom since it contains a nonlinearity in the diffusion term.
+
     CustomMatrixFormVolMassmatrix(int i, int j, double time_step) 
       : MatrixFormVol<double>(i, j), time_step(time_step) { };
 
@@ -180,7 +180,7 @@ class  CustomWeakFormMassmatrix  : public WeakForm<double>
 {
 public:
   CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time);
-	//~CustomWeakFormMassmatrix();
+	
 };
 
 //---------------Konvektion-----------
@@ -226,7 +226,7 @@ class CustomWeakFormConvection : public WeakForm<double>    //Konvektion
 {
 public:
   CustomWeakFormConvection(Solution<double>* sln_prev_time);
-	//~CustomWeakFormConvection();  
+	  
 };
 
 
@@ -274,7 +274,7 @@ class GradientReconstruction_1 : public WeakForm<double>
 {
 public:
   GradientReconstruction_1(Solution<double>* sln);
-	//~GradientReconstruction_1();
+
 };
 
 
@@ -319,7 +319,7 @@ class GradientReconstruction_2 : public WeakForm<double>
 {
 public:
   GradientReconstruction_2(Solution<double>* sln);
-	//~GradientReconstruction_2();
+	
 };
 
 //------------------- Initial condition ----------------
@@ -328,7 +328,7 @@ class CustomInitialCondition : public ExactSolutionScalar<double>
 {
 public:
   CustomInitialCondition(const Mesh* mesh) : ExactSolutionScalar<double>(mesh) {};
-  // ~CustomInitialCondition(){};
+ 
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 

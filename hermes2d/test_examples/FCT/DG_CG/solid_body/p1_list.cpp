@@ -12,7 +12,7 @@ Element* elem_neigh=NULL;
 		if((space->get_element_order(e->id)== H2D_MAKE_QUAD_ORDER(1, 1))||(space->get_element_order(e->id)==1)){
 				elem_diag=e->get_diameter();
 				elem_id= e->id;
-		if(elem_diag>h_start){	p2_neighbor =true;
+	if(elem_diag>h_start){	p2_neighbor =true;  //vergroebert!
 				}else{
 					for (unsigned int iv = 0; iv < e->get_nvert(); iv++)
 					{  

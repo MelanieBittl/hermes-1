@@ -1653,7 +1653,8 @@ namespace Hermes
           toReturn->dy0[0] = dy[0] * (static_cast<ExactSolutionScalar<Scalar>*>(this))->exact_multiplicator;
           toReturn->dy1[0] = dy[1] * (static_cast<ExactSolutionScalar<Scalar>*>(this))->exact_multiplicator;
         }
-        throw Hermes::Exceptions::Exception("Cannot obtain second derivatives of an exact solution.");
+        return toReturn;
+        //throw Hermes::Exceptions::Exception("Cannot obtain second derivatives of an exact solution.");
       }
       else if(sln_type == HERMES_UNDEF)
       {
@@ -1685,7 +1686,7 @@ namespace Hermes
 #ifdef H2D_SECOND_DERIVATIVES_ENABLED
             double2x2 mat;
             double3x2 mat2;
-            double xx, yy;
+           // double xx, yy;
 
             this->refmap->inv_ref_map_at_point(xi1, xi2, xx, yy, mat);
             this->refmap->second_ref_map_at_point(xi1, xi2, xx, yy, mat2);

@@ -75,6 +75,8 @@ namespace Hermes
     template<typename Scalar>
     void L2Space<Scalar>::set_shapeset(Shapeset *shapeset)
     {
+    if((this->shapeset!=NULL)&& (this->own_shapeset)) 
+    		delete this->shapeset;
       if(shapeset->get_id() < 40 && shapeset->get_id() > 29)
       {
         this->shapeset = shapeset;

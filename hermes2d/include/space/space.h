@@ -219,6 +219,7 @@ namespace Hermes
         virtual H1Space<Scalar>* create_ref_h1_space();
         virtual HcurlSpace<Scalar>* create_ref_hcurl_space();
         virtual HdivSpace<Scalar>* create_ref_hdiv_space();
+        virtual L2_SEMI_CG_Space<Scalar>* create_ref_l2_semi_cg_space();
 
         /// Construction initialization.
       private:
@@ -226,7 +227,8 @@ namespace Hermes
         H1Space<Scalar>* init_construction_h1();
         HcurlSpace<Scalar>* init_construction_hcurl();
         HdivSpace<Scalar>* init_construction_hdiv();
-
+		  L2_SEMI_CG_Space<Scalar>* init_construction_l2_semi_cg();
+		  
         /// Construction finalization.
         virtual void finish_construction(Space<Scalar>* ref_space);
 

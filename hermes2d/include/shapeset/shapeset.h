@@ -133,7 +133,7 @@ namespace Hermes
 
       /// Obtains the value of the given shape function. (x,y) is a coordinate in the reference
       /// domain, component is 0 for Scalar shapesets and 0 or 1 for vector shapesets.
-      double get_value(int n, int index, double x, double y, int component, ElementMode2D mode);
+      virtual double get_value(int n, int index, double x, double y, int component, ElementMode2D mode);
 
       double get_fn_value (int index, double x, double y, int component, ElementMode2D mode);
       double get_dx_value (int index, double x, double y, int component, ElementMode2D mode);

@@ -55,6 +55,8 @@ namespace Hermes
       T *dy0, *dy1;      ///< Components of the gradient of a vector field.
       T *curl;           ///< Components of the curl of a vector field.
       T *div;            ///< Components of the div of a vector field.
+      
+      T* dxx, *dxy,*dyy;  ///<second-order partial derivatives
 
       /// Methods designed for discontinuous functions, return errors here.
       virtual T& get_val_central(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
@@ -72,6 +74,19 @@ namespace Hermes
       virtual T& get_laplace_central(int k) { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
       /// Methods designed for discontinuous functions, return errors here.
       virtual T& get_laplace_neighbor(int k) { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+       /// Methods designed for discontinuous functions, return errors here.
+      virtual T& get_dxx_central(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      /// Methods designed for discontinuous functions, return errors here.
+      virtual T& get_dxx_neighbor(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+       /// Methods designed for discontinuous functions, return errors here.
+      virtual T& get_dxy_central(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      /// Methods designed for discontinuous functions, return errors here.
+      virtual T& get_dxy_neighbor(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+       /// Methods designed for discontinuous functions, return errors here.
+      virtual T& get_dyy_central(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+      /// Methods designed for discontinuous functions, return errors here.
+      virtual T& get_dyy_neighbor(int k) const { throw Hermes::Exceptions::Exception(ERR_UNDEFINED_NEIGHBORING_ELEMENTS); return * new T; }
+
 
       /// Dellocates an instance of Func<Ord>
       virtual void free_ord();
@@ -155,6 +170,19 @@ namespace Hermes
       virtual T& get_laplace_central(int k);
       /// Get second derivatives (laplacian) on the neighboring element.
       virtual T& get_laplace_neighbor(int k);
+      
+      /// Gets second derivativ wrt x on central element 
+      virtual T& get_dxx_central(int k);
+      /// Gets second derivativ wrt x on the neighboring element.
+      virtual T& get_dxx_neighbor(int k) ;
+      /// Gets second derivativ wrt xy on central element 
+      virtual T& get_dxy_central(int k) ;
+     /// Gets second derivativ wrt xy on the neighboring element.
+      virtual T& get_dxy_neighbor(int k);
+      /// Gets second derivativ wrt y on central element 
+      virtual T& get_dyy_central(int k) ;
+        /// Gets second derivativ wrt y on the neighboring element.
+      virtual T& get_dyy_neighbor(int k);
 
       /// One-component constructor.
       ///

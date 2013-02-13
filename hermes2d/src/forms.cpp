@@ -30,6 +30,9 @@ namespace Hermes
       dx = NULL;
       dy = NULL;
       laplace = NULL;
+      dxx = NULL;
+      dxy = NULL;
+      dyy = NULL;
 
       if(this->nc > 1)
       {
@@ -53,7 +56,12 @@ namespace Hermes
       subtract(this->dx, func->dx);
       subtract(this->dy, func->dy);
       if(Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::secondDerivatives) == 1)
+      {
         subtract(this->laplace, func->laplace);
+        subtract(this->dxx, func->dxx);
+        subtract(this->dxy, func->dxy);
+        subtract(this->dyy, func->dyy);        
+      }
       
       if(nc > 1)
       {
@@ -97,7 +105,12 @@ namespace Hermes
       add(this->dy, func->dy);
 
       if(Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::secondDerivatives) == 1)
+      {
         add(this->laplace, func->laplace);
+        add(this->dxx, func->dxx);
+        add(this->dxy, func->dxy);
+        add(this->dyy, func->dyy);        
+      }
       
       if(nc > 1)
       {
@@ -131,6 +144,9 @@ namespace Hermes
       val = NULL;
       dx = NULL;
       dy = NULL;
+      dxx = NULL;
+      dxy = NULL;
+      dyy = NULL;
       
       if(this->nc > 1)
       {
@@ -155,6 +171,12 @@ namespace Hermes
       {
         delete [] laplace; 
         laplace = NULL;
+        delete [] dxx; 
+        dxx = NULL;
+        delete [] dxy;
+        dxy = NULL;
+        delete [] dyy;
+        dyy = NULL;
       }
 
       if(this->nc > 1)
@@ -224,7 +246,29 @@ namespace Hermes
     T& DiscontinuousFunc<T>::get_laplace_central(int k) { return (fn_central != NULL) ? fn_central->laplace[k] : zero; }
 
     template<typename T>
-    T& DiscontinuousFunc<T>::get_laplace_neighbor(int k) { return (fn_neighbor != NULL) ? fn_neighbor->laplace[ reverse_neighbor_side ? fn_neighbor->num_gip-k-1 : k ] : zero; }
+    T& DiscontinuousFunc<T>::get_laplace_neighbor(int k) { return (fn_neighbor != NULL) ? fn_neighbor->laplace[ reverse_neighbor_side ? fn_neighbor->num_gip-k-1 : k ] : zero; }  
+    
+      
+     template<typename T>
+    T& DiscontinuousFunc<T>::get_dxx_central(int k){ return (fn_central != NULL) ? fn_central->dxx[k] : zero; }
+
+    template<typename T>
+    T& DiscontinuousFunc<T>::get_dxx_neighbor(int k) { return (fn_neighbor != NULL) ? fn_neighbor->dxx[ reverse_neighbor_side ? fn_neighbor->num_gip-k-1 : k ] : zero; }
+    
+     template<typename T>
+    T& DiscontinuousFunc<T>::get_dxy_central(int k) { return (fn_central != NULL) ? fn_central->dxy[k] : zero; }
+    
+    template<typename T>
+    T& DiscontinuousFunc<T>::get_dxy_neighbor(int k){ return (fn_neighbor != NULL) ? fn_neighbor->dxy[ reverse_neighbor_side ? fn_neighbor->num_gip-k-1 : k ] : zero; }
+
+    template<typename T>
+    T& DiscontinuousFunc<T>::get_dyy_central(int k) { return (fn_central != NULL) ? fn_central->dyy[k] : zero; }
+    
+   template<typename T>
+    T& DiscontinuousFunc<T>::get_dyy_neighbor(int k){ return (fn_neighbor != NULL) ? fn_neighbor->dyy[ reverse_neighbor_side ? fn_neighbor->num_gip-k-1 : k ] : zero; }
+
+    
+    
 
     template<typename T>
     void DiscontinuousFunc<T>::subtract(const DiscontinuousFunc<T>& func)
@@ -426,6 +470,7 @@ namespace Hermes
       f->dx = f->dy = d;
 #ifdef H2D_SECOND_DERIVATIVES_ENABLED
       f->laplace = d;
+     // f->dxx = d; f->dxy = d; d->dyy = d;
 #endif
       f->val0 = f->val1 = d;
       f->dx0 = f->dx1 = d;
@@ -456,7 +501,13 @@ namespace Hermes
         u->dx  = new double[np];
         u->dy  = new double[np];
         if(Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::secondDerivatives) == 1)
+        {
           u->laplace = new double[np];
+       	 u->dxx  = new double[np];
+       	 u->dxy  = new double[np];
+        	 u->dyy  = new double[np];
+          
+        }
     
         double *fn = fu->get_fn_values();
         double *dx = fu->get_dx_values();
@@ -513,6 +564,27 @@ namespace Hermes
             double ax = (*mm)[0][0] + (*mm)[2][0];
             double ay = (*mm)[0][1] + (*mm)[2][1];
             u->laplace[i] = ( dx[i] * ax + dy[i] * ay + dxx[i] * axx + dxy[i] * axy + dyy[i] * ayy );
+            
+            axx = (Hermes::sqr((*m)[0][0])) ;
+            ayy = (Hermes::sqr((*m)[0][1])) ;
+            axy = 2.0 * ((*m)[0][0]*(*m)[0][1] );
+            ax = (*mm)[0][0] ;
+            ay = (*mm)[0][1];               
+            u->dxx[i] = ( dx[i] * ax + dy[i] * ay + dxx[i] * axx + dxy[i] * axy + dyy[i] * ayy );
+            
+            axx = (*m)[0][0]*(*m)[1][0];
+            ayy =(*m)[0][1]*(*m)[1][1];
+            axy = ((*m)[1][0]*(*m)[0][1] ) + ((*m)[0][0]*(*m)[1][1] ) ;
+            ax = (*mm)[1][0] ;
+            ay = (*mm)[1][1];             
+            u->dxy[i] = ( dx[i] * ax + dy[i] * ay + dxx[i] * axx + dxy[i] * axy + dyy[i] * ayy );
+            
+            axx = (Hermes::sqr((*m)[1][0])) ;
+            ayy = (Hermes::sqr((*m)[1][1])) ;
+            axy = 2.0 * ((*m)[1][0]*(*m)[1][1] );
+            ax = (*mm)[2][0] ;
+            ay = (*mm)[2][1];             
+            u->dyy[i] = ( dx[i] * ax + dy[i] * ay + dxx[i] * axx + dxy[i] * axy + dyy[i] * ayy );
           }
         }
         else
@@ -690,7 +762,13 @@ namespace Hermes
         u->dy  = new Scalar[np];
         
         if(Hermes2DApi.get_integral_param_value(Hermes::Hermes2D::secondDerivatives) == 1 && space_type == HERMES_H1_SPACE && sln_type != HERMES_EXACT)
+        {
           u->laplace = new Scalar[np];
+          u->dxx  = new Scalar[np];
+       	 u->dxy  = new Scalar[np];
+        	 u->dyy  = new Scalar[np];
+          
+         }
 
         memcpy(u->val, fu->get_fn_values(), np * sizeof(Scalar));
         memcpy(u->dx, fu->get_dx_values(), np * sizeof(Scalar));
@@ -700,8 +778,12 @@ namespace Hermes
         {
           Scalar *dxx = fu->get_dxx_values();
           Scalar *dyy = fu->get_dyy_values();
-          for (int i = 0; i < np; i++)
+          for (int i = 0; i < np; i++)          
             u->laplace[i] = dxx[i] + dyy[i];
+            
+		     memcpy(u->dxx, fu->get_dxx_values(), np * sizeof(Scalar));
+		     memcpy(u->dxy, fu->get_dxy_values(), np * sizeof(Scalar));
+		     memcpy(u->dyy, fu->get_dyy_values(), np * sizeof(Scalar));
         }
       }
       else if(u->nc == 2)

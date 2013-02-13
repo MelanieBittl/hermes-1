@@ -22,6 +22,7 @@
 #include "space_hcurl.h"
 #include "space_hdiv.h"
 #include "space_h2d_xml.h"
+#include "../test_examples/FCT/DG_CG/solid_body_ref/l2_semi_cg_space.h"
 #include "api2d.h"
 #include <iostream>
 
@@ -770,6 +771,24 @@ namespace Hermes
       /// Return.
       return ref_space;
     }
+    
+    template<typename Scalar>
+    L2_SEMI_CG_Space<Scalar>* Space<Scalar>::ReferenceSpaceCreator::create_ref_l2_semi_cg_space()
+    {
+          /// Initialization
+      L2_SEMI_CG_Space<Scalar>* ref_space = this->init_construction_l2_semi_cg();
+
+      /// Call to the OVERRIDABLE handling method.
+      this->handle_orders(ref_space);
+
+      /// Finish - MUST BE CALLED BEFORE RETURN.
+      this->finish_construction(ref_space);
+
+      /// Return.
+      return ref_space;   
+    
+    }
+    
 
     template<typename Scalar>
     L2Space<Scalar>* Space<Scalar>::ReferenceSpaceCreator::init_construction_l2()
@@ -796,6 +815,14 @@ namespace Hermes
     HdivSpace<Scalar>* Space<Scalar>::ReferenceSpaceCreator::init_construction_hdiv()
     {
       HdivSpace<Scalar>* ref_space = new HdivSpace<Scalar>(this->ref_mesh, this->coarse_space->essential_bcs, 1, this->coarse_space->shapeset);
+      return ref_space;
+    }
+    
+    
+        template<typename Scalar>
+    L2_SEMI_CG_Space<Scalar>* Space<Scalar>::ReferenceSpaceCreator::init_construction_l2_semi_cg()
+    {
+      L2_SEMI_CG_Space<Scalar>* ref_space = new L2_SEMI_CG_Space<Scalar>(this->ref_mesh, 1, this->coarse_space->get_shapeset());
       return ref_space;
     }
 

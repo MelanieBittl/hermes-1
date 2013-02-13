@@ -47,6 +47,7 @@ const unsigned int EVERY_NTH_STEP = 1;
 
 int main(int argc, char* argv[])
 {
+ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,4); 
    // Load the mesh.
   Mesh mesh, basemesh;
   MeshReaderH2D mloader;
@@ -177,18 +178,18 @@ do
 {	 
 
   	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
- Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2); 
+
  	  
  	  if(ts!=1)
  	  {
-	 	  Hermes::Mixins::Loggable::Static::info("assemble dS");
+	 	  //Hermes::Mixins::Loggable::Static::info("assemble dS");
 			dp_boundary.assemble(matrix_dS);
-	 		Hermes::Mixins::Loggable::Static::info("assemble K");
+	 		//Hermes::Mixins::Loggable::Static::info("assemble K");
 		  dp_K.assemble(lowmat_rhs);
 		}else{
-			Hermes::Mixins::Loggable::Static::info("assemble dS");
+			//Hermes::Mixins::Loggable::Static::info("assemble dS");
 			dp_boundary_init.assemble(matrix_dS);
-	 		Hermes::Mixins::Loggable::Static::info("assemble K");
+	 		//Hermes::Mixins::Loggable::Static::info("assemble K");
 		  dp_K_init.assemble(lowmat_rhs);
 		
 		
@@ -196,7 +197,7 @@ do
 
 
 					//------------------------artificial DIFFUSION D---------------------------------------		
-					  	Hermes::Mixins::Loggable::Static::info("artificial Diffusion");
+				//	  	Hermes::Mixins::Loggable::Static::info("artificial Diffusion");
 			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
 
 
@@ -218,7 +219,7 @@ do
 
 
 	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
-						  	Hermes::Mixins::Loggable::Static::info("Solution low order ");
+					//	  	Hermes::Mixins::Loggable::Static::info("Solution low order ");
 			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
 			if(lowOrd->solve()){ 
 				u_L = lowOrd->get_sln_vector();  
@@ -233,7 +234,7 @@ do
 			matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
-		Hermes::Mixins::Loggable::Static::info("antidiffusive fluxes ");
+	//	Hermes::Mixins::Loggable::Static::info("antidiffusive fluxes ");
 		antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 
 		for(int i=0; i<ndof;i++)
@@ -244,15 +245,16 @@ do
 
 
  PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
-//VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
- // VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
+VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
+  VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
 
 			 // Visualize the solution.
 			  sprintf(title, "pressure: ts=%i",ts);
 			 pressure_view.set_title(title);
-			//s1.show(&prev_rho);
-		//	s2.show(&vel_x);
-			//s3.show(&vel_y);
+			 s1.set_title(title);
+			s1.show(&prev_rho);
+			s2.show(&vel_x);
+			s3.show(&vel_y);
   		pressure_view.show(&pressure);
   		
 
