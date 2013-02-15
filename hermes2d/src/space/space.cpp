@@ -22,7 +22,7 @@
 #include "space_hcurl.h"
 #include "space_hdiv.h"
 #include "space_h2d_xml.h"
-#include "../test_examples/FCT/DG_CG/solid_body_ref/l2_semi_cg_space.h"
+#include "l2_semi_cg_space.h"
 #include "api2d.h"
 #include <iostream>
 

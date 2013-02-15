@@ -3,7 +3,6 @@
 #include "lumped_projection.h"
 #include "hp_adapt.h"
 #include "prev_solution.h"
-#include "l2_semi_cg_space.h"
 #include"util.h"
 #include "shapeset_taylor.h" 
  #include "solution_slopelimiter.h"

@@ -1,6 +1,6 @@
 project(DG_solid_body_ref)
 
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp hp_adapt.cpp highOrder.cpp lowOrder.cpp fct.cpp reg_estimator.cpp prev_solution.cpp l2_semi_cg_space.cpp util.cpp shapeset_taylor.cpp solution_slopelimiter.cpp)
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp hp_adapt.cpp highOrder.cpp lowOrder.cpp fct.cpp reg_estimator.cpp prev_solution.cpp util.cpp shapeset_taylor.cpp solution_slopelimiter.cpp)
 
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS ${FLAGS})

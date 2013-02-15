@@ -1,3 +1,5 @@
+add_subdirectory("FCT")
+
 add_subdirectory("01-poisson")
 
 add_subdirectory("02-poisson-newton")
@@ -19,7 +21,7 @@ IF(WITH_TRILINOS)
 ENDIF(WITH_TRILINOS)
 
 
-add_subdirectory("FCT")
+
 
 add_subdirectory("10-linear-advection-dg-adapt")
 

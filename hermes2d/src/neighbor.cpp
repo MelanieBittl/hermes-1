@@ -656,7 +656,9 @@ namespace Hermes
 
               // Add to the array of neighbor_transformations one that transforms central el. to its parent completely
               // adjacent to the single big neighbor.
-              assert(n_neighbors == 0);
+             	assert(n_neighbors == 0);
+              if(neighbor_transformations.present(n_neighbors)) 
+ 						delete neighbor_transformations.get(n_neighbors);
 
               neighbor_transformations.add(new Transformations, n_neighbors);
               Transformations *neighbor_transforms = neighbor_transformations.get(n_neighbors);
@@ -770,7 +772,9 @@ namespace Hermes
                 if(neighbor_edge.local_num_of_edge == -1) throw Hermes::Exceptions::Exception("Neighbor edge wasn't found");
 
                 //assert(!central_transformations.present(n_neighbors));
-
+ 					if(central_transformations.present(n_neighbors)) 
+ 						delete central_transformations.get(n_neighbors);
+ 						
                 central_transformations.add(new Transformations, n_neighbors);
                 Transformations *tr = central_transformations.get(n_neighbors);
 

@@ -150,6 +150,9 @@ namespace Hermes
             delete error_form[i][j];
             own_forms[i][j] = false;
           }
+        for (int i = 0; i < H2D_MAX_COMPONENTS; i++)
+        	delete [] own_forms[i];
+        delete [] own_forms;
     }
 
     template<typename Scalar>

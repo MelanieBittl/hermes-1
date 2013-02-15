@@ -7,7 +7,6 @@
 #include "fct.h"
 #include "reg_estimator.h"
 #include "prev_solution.h"
-#include"l2_semi_cg_space.h"
 #include"util.h"
 #include "shapeset_taylor.h" 
  #include "solution_slopelimiter.h"
@@ -46,8 +45,8 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 
 // Adaptivity
-const double THRESHOLD_UNREF = 0.001; 							// Unrefinement: error of all sons is smaller than THRESHOLD_UNREF times maximum element error
-const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time step the mesh is derefined.
+const double THRESHOLD_UNREF = 0.001; 			// Unrefinement: error of all sons is smaller than THRESHOLD_UNREF times maximum element error
+const int UNREF_FREQ = 10;                         // Every UNREF_FREQth time step the mesh is derefined.
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
@@ -74,7 +73,7 @@ const int MESH_REGULARITY = -1;                   // Maximum allowed level of ha
                                                   // their notoriously bad performance.
 const double CONV_EXP = 1.0;                      // Default value is 1.0. This parameter influences the selection of
                                                   // cancidates in hp-adaptivity. See get_optimal_refinement() for details.
-const double ERR_STOP = 2.0;                      // Stopping criterion for adaptivity (rel. error tolerance between the
+const double ERR_STOP = 1.0;                      // Stopping criterion for adaptivity (rel. error tolerance between the
                                                   // fine mesh and coarse mesh solution in percent).
 const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
@@ -85,7 +84,7 @@ const int ADAPSTEP_MAX = 2;												// max. numbers of adaptivity steps
 //Visualization
 const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
-const int VTK_FREQ = 1000;													//Every VTK_FREQth time step the solution is saved as VTK output.
+const int VTK_FREQ = 6000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
 // Boundary markers.
 const std::string BDY_IN = "inlet";
@@ -157,11 +156,7 @@ int main(int argc, char* argv[])
 	Regularity_Estimator regEst(EPS_smooth);
 	
 	Regularity_Estimator_slope regEst_slope(&space);
-	
-	DiscreteProblem<double> dp_mass(&massmatrix, &space);
-	DiscreteProblem<double> dp_convection(&convection, &space); 
 
-	DiscreteProblem<double>  dp_surf(&wf_surf, &space);	
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -259,10 +254,11 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 				ref_mview.show(ref_space);
 			}
 
+	DiscreteProblem<double>* dp_mass = new DiscreteProblem<double>(&massmatrix, ref_space);
+	DiscreteProblem<double>* dp_convection = new DiscreteProblem<double>(&convection, ref_space); 
+	DiscreteProblem<double>*  dp_surf = new DiscreteProblem<double>(&wf_surf, ref_space);
 	
-			dp_mass.set_space(ref_space);
-			dp_convection.set_space(ref_space);
-			dp_surf.set_space(ref_space);
+
 			fluxCorrection.init(ref_space);	
 
 			double* coeff_vec = new double[ref_ndof];
@@ -270,9 +266,9 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 			double* limited_flux = new double[ref_ndof];	
 				
 
-			dp_mass.assemble(mass_matrix); 										//M_c/tau
-			dp_convection.assemble(conv_matrix, NULL,true);		//K
-			dp_surf.assemble(surface_matrix, NULL,true);   //Boundary Integral and DG-edge-boundary-part				
+			dp_mass->assemble(mass_matrix); 										//M_c/tau
+			dp_convection->assemble(conv_matrix, NULL,true);		//K
+			dp_surf->assemble(surface_matrix, NULL,true);   //Boundary Integral and DG-edge-boundary-part				
 		
 		//----------------------MassLumping  & Artificial Diffusion --------------------------------------------------------------------	
 			UMFPackMatrix<double>* lumped_matrix = fluxCorrection.massLumping(mass_matrix); // M_L/tau
@@ -369,6 +365,9 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 			delete [] limited_flux; 	
 			delete ref_mesh; 
 			delete ref_space; 
+			delete dp_mass;
+			delete dp_convection;
+			delete dp_surf;
 
 	  
     }

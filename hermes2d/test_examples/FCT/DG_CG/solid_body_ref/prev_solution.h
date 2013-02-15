@@ -28,21 +28,6 @@ using namespace Hermes::Hermes2D;
 	  virtual void free();
 
     };
-    
-class Quad2DCheb;
-   
-   
- class LimitedSolution : public PrevSolution
- { 
- public:
- LimitedSolution(): PrevSolution() {};
 
- 	LimitedSolution(const Mesh* mesh): PrevSolution(mesh){};
-
- 	void limit_solution(double* coeff_vec,Space<double>* space); 	
-
- 
- };
-    
     
 #endif

@@ -46,6 +46,7 @@
 #include "space/space_hcurl.h"
 #include "space/space_l2.h"
 #include "space/space_hdiv.h"
+#include "space/l2_semi_cg_space.h"
 
 #include "shapeset/shapeset_h1_all.h"
 #include "shapeset/shapeset_hc_all.h"

@@ -98,8 +98,14 @@ namespace Hermes
 
     Api2D::~Api2D()
     {
-			this->integral_parameters.clear();
-      this->text_parameters.clear();
+			//this->integral_parameters.clear();
+      //this->text_parameters.clear();
+      
+            for(std::map<Hermes2DApiParam, Parameter<std::string>*>::const_iterator it = this->text_parameters.begin(); it != this->text_parameters.end(); ++it)
+        delete it->second;
+
+      for(std::map<Hermes2DApiParam, Parameter<int>*>::const_iterator it = this->integral_parameters.begin(); it != this->integral_parameters.end(); ++it)
+        delete it->second;
     }
 
     int Api2D::get_integral_param_value(Hermes2DApiParam param)
