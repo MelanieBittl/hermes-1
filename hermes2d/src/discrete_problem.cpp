@@ -2107,7 +2107,10 @@ if(new_cache==true)
       {
         // order of solutions from the previous Newton iteration etc..
         Func<Hermes::Ord>** u_ext_ord = new Func<Hermes::Ord>*[RungeKutta ? RK_original_spaces_count : this->wf->get_neq() - form->u_ext_offset];
-        Func<Hermes::Ord>** ext_ord = new Func<Hermes::Ord>*[std::max(form->ext.size(), form->wf->ext.size())];
+     		Func<Hermes::Ord>** ext_ord = NULL;
+        int ext_size = std::max(form->ext.size(), form->wf->ext.size());
+        if(ext_size > 0)
+          ext_ord = new Func<Hermes::Ord>*[ext_size];
         init_ext_orders(form, u_ext_ord, ext_ord, current_u_ext, current_state);
 
         // Order of shape functions.

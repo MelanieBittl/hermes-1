@@ -81,31 +81,44 @@ namespace Hermes
       signal(SIGILL, CallStack::dump);
       signal(SIGSEGV, CallStack::dump);
       signal(SIGTERM, CallStack::dump);
+      
+      std::string* a = new std::string(H2D_XML_SCHEMAS_DIRECTORY);
+      std::string* b = new std::string(H2D_PRECALCULATED_FORMS_DIRECTORY);
+
 
       this->integral_parameters.insert(std::pair<Hermes2DApiParam, Parameter<int>*> (Hermes::Hermes2D::numThreads,new Parameter<int>(NUM_THREADS)));
 			this->integral_parameters.insert(std::pair<Hermes2DApiParam, Parameter<int>*> (Hermes::Hermes2D::secondDerivatives,new Parameter<int>(0)));
-      this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::xmlSchemasDirPath,new Parameter<std::string>(*(new std::string(H2D_XML_SCHEMAS_DIRECTORY)))));
+//      this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::xmlSchemasDirPath,new Parameter<std::string>(*(new std::string(H2D_XML_SCHEMAS_DIRECTORY)))));
+this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::xmlSchemasDirPath,new Parameter<std::string>(*(a))));
       std::stringstream ss;
       ss << H2D_PRECALCULATED_FORMS_DIRECTORY;
       if(ss.str().at(ss.str().length() - 1) == '\\' || ss.str().at(ss.str().length() - 1) == '/')
-        this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::precalculatedFormsDirPath,new Parameter<std::string>(*(new std::string(H2D_PRECALCULATED_FORMS_DIRECTORY)))));
+      	this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::precalculatedFormsDirPath,new Parameter<std::string>(*(b))));
+        //this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::precalculatedFormsDirPath,new Parameter<std::string>(*(new std::string(H2D_PRECALCULATED_FORMS_DIRECTORY)))));
       else
       {
         ss << '/';
-        this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::precalculatedFormsDirPath,new Parameter<std::string>(*(new std::string(ss.str())))));
+              std::string* c = new std::string(ss.str());
+          this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::precalculatedFormsDirPath,new Parameter<std::string>(*(c))));
+       // this->text_parameters.insert(std::pair<Hermes2DApiParam, Parameter<std::string>*> (Hermes::Hermes2D::precalculatedFormsDirPath,new Parameter<std::string>(*(new std::string(ss.str())))));
+       delete c;
       }
+      
+      delete a; 
+      delete b;
     }
 
     Api2D::~Api2D()
     {
-			//this->integral_parameters.clear();
-      //this->text_parameters.clear();
-      
-            for(std::map<Hermes2DApiParam, Parameter<std::string>*>::const_iterator it = this->text_parameters.begin(); it != this->text_parameters.end(); ++it)
+     
+       for(std::map<Hermes2DApiParam, Parameter<std::string>*>::const_iterator it = this->text_parameters.begin(); it != this->text_parameters.end(); ++it)
         delete it->second;
 
       for(std::map<Hermes2DApiParam, Parameter<int>*>::const_iterator it = this->integral_parameters.begin(); it != this->integral_parameters.end(); ++it)
         delete it->second;
+        
+       this->integral_parameters.clear();
+      this->text_parameters.clear();
     }
 
     int Api2D::get_integral_param_value(Hermes2DApiParam param)

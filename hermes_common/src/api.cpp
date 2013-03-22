@@ -46,6 +46,8 @@ namespace Hermes
 
   Api::~Api()
   {
+    for(std::map<HermesCommonApiParam, Parameter*>::const_iterator it = this->parameters.begin(); it != this->parameters.end(); ++it)
+        delete it->second;
     this->parameters.clear();
   }
 

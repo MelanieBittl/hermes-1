@@ -30,13 +30,13 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 										//Maximal polynomial degree.
                       
 const double time_step = 1e-3;                           // Time step.
-//const double T_FINAL = 2*PI;                       // Time interval length.
-const double T_FINAL = 2e-3;  
+const double T_FINAL = 2*PI;                       // Time interval length.
+//const double T_FINAL = 2e-3;  
  
 const double EPS_smooth = 1e-8;   		//constant for the smoothness indicator (a<b => a+eps<=b)
 const double theta = 0.5;   			 // theta-scheme for time (theta =0 -> explizit, theta=1 -> implizit)
@@ -46,7 +46,7 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 // Adaptivity
 const double THRESHOLD_UNREF = 0.001; 			// Unrefinement: error of all sons is smaller than THRESHOLD_UNREF times maximum element error
-const int UNREF_FREQ = 10;                         // Every UNREF_FREQth time step the mesh is derefined.
+const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time step the mesh is derefined.
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
@@ -78,13 +78,13 @@ const double ERR_STOP = 1.0;                      // Stopping criterion for adap
 const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
 
-const int ADAPSTEP_MAX = 2;												// max. numbers of adaptivity steps
+const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
 
 
 //Visualization
 const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
-const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
-const int VTK_FREQ = 6000;													//Every VTK_FREQth time step the solution is saved as VTK output.
+const bool VTK_VISUALIZATION = true;              // Set to "true" to enable VTK output.
+const int VTK_FREQ = 7000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
 // Boundary markers.
 const std::string BDY_IN = "inlet";
@@ -121,17 +121,13 @@ int main(int argc, char* argv[])
 	CustomWeakFormConvection  convection;
 	CustomWeakForm wf_surf(time_step, theta, &u_prev_time, BDY_IN, &mesh);
 
-  // Initialize views.
-	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
-	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
-	OrderView ref_mview("ref_mesh", new WinGeom(500, 0, 500, 400));
-		char title[100];
 
   // Output solution in VTK format.
 	Linearizer lin;
 	Orderizer ord;
 	bool mode_3D = true;
 	char filename[40];
+	char title[100];
 
   // Create a refinement selector.
   H1ProjBasedSelector<double> selector(CAND_LIST, CONV_EXP, H2DRS_DEFAULT_ORDER);
@@ -161,14 +157,11 @@ int main(int argc, char* argv[])
 // Time stepping loop:
 	double current_time = 0.0; 
 	int ts = 1;
-	
+	Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1);
 	
 	do
 	{ 
   	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
-Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1);
-
-
     // Periodic global derefinement. 
    if ((ts > 1 && ts % UNREF_FREQ == 0)||(space.get_num_dofs() >= NDOF_STOP)) 
     { 
@@ -249,6 +242,7 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 			
 			if(HERMES_VISUALIZATION) 
 			{
+				OrderView ref_mview("ref_mesh", new WinGeom(500, 0, 500, 400));
 				sprintf(title, "Ref_Mesh: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
 				ref_mview.set_title(title);
 				ref_mview.show(ref_space);
@@ -327,6 +321,8 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 	      // Visualize the solution and mesh.
 	  if(HERMES_VISUALIZATION)
 	  {
+			  	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
+			  	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 				sprintf(title, "Ref-Loesung: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
 				sview.set_title(title);
 				sview.show(&ref_sln);
@@ -385,11 +381,12 @@ Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThre
 
 
   // Visualize the solution.
-  if(VTK_VISUALIZATION) {
+/*  if(VTK_VISUALIZATION) 
+  {
 		lin.save_solution_vtk(&u_prev_time, "end_solution.vtk", "solution", mode_3D);
 		ord.save_mesh_vtk(&space, "end_mesh.vtk");
 		ord.save_orders_vtk(&space, "end_order.vtk");
-		}
+		}*/
 
 
 

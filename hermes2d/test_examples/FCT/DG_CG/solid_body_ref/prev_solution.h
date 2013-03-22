@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
     class PrevSolution : public Solution<double>
     {
 		 public:
-		   PrevSolution() : Solution<double>(){ };
+		   PrevSolution() : Solution<double>(){own_mesh = false;    };
 		    PrevSolution(const Mesh* mesh): Solution<double>(mesh){
 							own_mesh = false;     
 		    };

@@ -130,6 +130,8 @@ private:
 
 
 
+
+
 //---------------Massematrix-----------
 
 class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>   
@@ -339,7 +341,34 @@ public:
    MeshFunction<double>* clone() const ;
 };
 
+class CustomV_x : public ExactSolutionScalar<double>
+{
+public:
+  CustomV_x(const Mesh* mesh) : ExactSolutionScalar<double>(mesh) {};
+ 
 
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 
+  virtual double value (double x, double y) const;
+
+ virtual Ord ord(Ord x, Ord y) const ;
+
+   MeshFunction<double>* clone() const ;
+};
+
+class CustomV_y : public ExactSolutionScalar<double>
+{
+public:
+  CustomV_y(const Mesh* mesh) : ExactSolutionScalar<double>(mesh) {};
+ 
+
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+ virtual Ord ord(Ord x, Ord y) const ;
+
+   MeshFunction<double>* clone() const ;
+};
 #endif
 

@@ -437,8 +437,14 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 	if( radius<= 1.0) {		
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
+	/////////////	new
+		dx *= (1.0+ std::cos(PI*radius))/2.0;
+		dy *= (1.0+ std::cos(PI*radius))/2.0;
+		///////////////
 	}
-	else{			
+	else{dx=0.; dy=0.;
+		}	
+	/*else{			
 		//cone
 		x_0 = 0.5;
 		y_0 = 0.25;
@@ -450,7 +456,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		else{dx=0.; dy=0.;
 		}	
   
-	}
+	}*/
 		
 
 };
@@ -468,10 +474,11 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 	radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if( radius<= 1.0) { 
 		 result = (1.0+ std::cos(PI*radius))/4.0;
-		return result;	
+		// return result;	
+		return Hermes::sqr(result);	
 	}
 	//slotted cylinder
-	x_0 = 0.5;
+/*	x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius <= 1) { 	
@@ -484,7 +491,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius<= 1.0) { 	
 		result = 1.0-radius;
-	}
+	}*/
        return result;
 };
 
@@ -499,4 +506,42 @@ return new CustomInitialCondition(this->mesh);
     }
 
 
+ void CustomV_x::derivatives(double x, double y, double& dx, double& dy) const 
+ {   
+	dx=0.; dy=-1.0;		
+};
 
+ double CustomV_x::value(double x, double y) const 
+ {
+       return (0.5-y);
+};
+
+ Ord CustomV_x::ord(Ord x, Ord y) const {
+      return Ord(2);
+};
+
+ MeshFunction<double>* CustomV_x::clone() const
+    {
+return new CustomV_x(this->mesh);
+
+    }
+ void CustomV_y::derivatives(double x, double y, double& dx, double& dy) const 
+ {   
+	dx=1.; dy=0.0;		
+
+};
+
+ double CustomV_y::value(double x, double y) const 
+ {       
+		return (x-0.5);
+};
+
+ Ord CustomV_y::ord(Ord x, Ord y) const {
+      return Ord(2);
+};
+
+ MeshFunction<double>* CustomV_y::clone() const
+    {
+return new CustomV_y(this->mesh);
+
+    }
