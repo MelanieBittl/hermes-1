@@ -1,6 +1,6 @@
-project(DG_CG_solid)
+project(DG_CG_stationary)
 
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS ${FLAGS})
 

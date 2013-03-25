@@ -1,7 +1,6 @@
 #define HERMES_REPORT_ALL
 #include "definitions.h"
 
-
 using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -11,13 +10,12 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 6;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 const double h_max = 0.1;                       
-const double time_step = 1e-5;                           // Time step.
-//const double T_FINAL = 2*PI;                         // Time interval length. 
-const double T_FINAL = 0.5*PI;   
+const double time_step = 0.01;                           // Time step.
+const double T_FINAL = 4.5;   
 
 
 const double EPS = 1e-10;
@@ -26,7 +24,7 @@ const int P_MAX = 3;
 
 const int NDOF_STOP = 20000;   
 
-const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
+const double theta = 1.;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -34,13 +32,13 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 const std::string BDY_IN = "inlet";
 const std::string BDY_OUT = "outlet";
 
-
+//FCT & p-Adaptivity
 #include "error_estimations.cpp"
 
 
 int main(int argc, char* argv[])
 {
-   // Load the mesh.
+   // Load the mesh->
   Mesh mesh, basemesh;
   MeshReaderH2D mloader;
   mloader.load("domain.mesh", &basemesh);
@@ -49,16 +47,12 @@ int main(int argc, char* argv[])
   for (int i=0; i < INIT_REF_NUM; i++) basemesh.refine_all_elements();
   mesh.copy(&basemesh);
 
-
-  // Initialize boundary conditions.
-  DefaultEssentialBCConst<double>  bc_essential(BDY_IN, 0.0);
-  EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
 
 //L2_SEMI_CG_Space<double> space(&mesh,P_INIT);
 //L2Space<double> space(&mesh, P_INIT);
-H1Space<double> space(&mesh, &bcs, P_INIT);
+H1Space<double> space(&mesh, P_INIT);
 
   int ndof = space.get_num_dofs();
   
@@ -72,9 +66,8 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
  
   // Initialize views.
 	ScalarView sview("Loesung", new WinGeom(500, 500, 500, 400));
-	ScalarView lview("init Loesung", new WinGeom(500, 0, 500, 400));
-	//lview.show(&u_prev_time);
-
+	ScalarView lview("anfangs-Loesung", new WinGeom(500, 0, 500, 400));
+lview.show(&u_prev_time);
   OGProjection<double> ogProjection;
   
     // Output solution in VTK format.
@@ -91,6 +84,8 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
 	UMFPackMatrix<double> * conv_matrix = new UMFPackMatrix<double> ;   //K
 	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; //inner and outer edge integrals
+	UMFPackVector<double> * surf_rhs = new UMFPackVector<double> (ref_ndof); 
+		UMFPackVector<double> * mass_rhs = new UMFPackVector<double> (ref_ndof); 
 	CustomWeakFormMassmatrix  massmatrix(time_step, &u_prev_time);
 	CustomWeakFormConvection  convection(&u_prev_time);
 	///////////////////////////------------false, false (only CG), false, true (DG) --------------------------------------------------------------------------------
@@ -99,31 +94,29 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, &space);
 	DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, &space);
 	DiscreteProblem<double> * dp_surf = new DiscreteProblem<double> (&wf_surf,&space);	
-	dp_mass->assemble(mass_matrix); 
+	dp_mass->assemble(mass_matrix, mass_rhs); 
 	dp_convection->assemble(conv_matrix, NULL,true);
-	dp_surf->assemble(dg_surface_matrix,NULL,true);
+	dp_surf->assemble(dg_surface_matrix,surf_rhs);
 	
 		UMFPackMatrix<double> * high_rhs = new UMFPackMatrix<double> ; 
 		UMFPackMatrix<double> * matrix = new UMFPackMatrix<double> ;
 		     
-		/*	matrix->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
+			matrix->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
 			matrix->multiply_with_Scalar(-1.); //damit surface richtiges Vorzeichen!!
-			matrix->add_matrix(conv_matrix); */
-	matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());		
+			matrix->add_matrix(conv_matrix); 
 			matrix->multiply_with_Scalar(-theta);
 			matrix->add_matrix(mass_matrix);  
 			
-/*	high_rhs->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
+			high_rhs->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
 			high_rhs->multiply_with_Scalar(-1.); //damit surface richtiges Vorzeichen!!
-			high_rhs->add_matrix(conv_matrix);*/ 
-	high_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());	
+			high_rhs->add_matrix(conv_matrix); 
 			high_rhs->multiply_with_Scalar((1.0-theta));
 			high_rhs->add_matrix(mass_matrix); 
 	
 	double *coeff_vec = new double[ref_ndof];		
 	double *coeff_vec_2 = new double[ref_ndof];
 	double* vec_new;
-  ogProjection.project_global(&space, &u_prev_time, coeff_vec_2,  HERMES_L2_NORM); 
+  memset(coeff_vec_2, 0, ref_ndof*sizeof(double));
 
   
         // Initialize matrix solver.  
@@ -137,10 +130,10 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
   {     
   Hermes::Mixins::Loggable::Static::info(" Time step %d, time %3.5f", ts, current_time); 
   
-    high_rhs->multiply_with_vector(coeff_vec_2, coeff_vec);     
-		rhs->zero(); 
+     high_rhs->multiply_with_vector(coeff_vec_2, coeff_vec); 
+		rhs->zero(); rhs->add_vector(surf_rhs);
 		rhs->add_vector(coeff_vec);
-    UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(matrix, rhs); 
+    UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>( matrix, rhs); 
     
     
      if(solver->solve())
@@ -153,9 +146,9 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 		for(int i = 0; i<ref_ndof; i++) 
 			coeff_vec_2[i] = vec_new[i];
 		
-			/*sprintf(title, "Loesung: Time %3.2f,timestep %i", current_time,ts);
+			sprintf(title, "Loesung: Time %3.2f,timestep %i", current_time,ts);
 			 sview.set_title(title);
-		sview.show(&u_new);*/
+		sview.show(&u_new);
 		//View::wait(HERMES_WAIT_KEYPRESS);	
 	
 	 	current_time += time_step;
@@ -193,15 +186,15 @@ double bdry_err = calc_error_bdry(&u_new,&exact_solution, &space);
 
   ogProjection.project_global(&space, &exact_solution, coeff_vec,  HERMES_L2_NORM);  
  double abs_err_l2 = Global<double>::calc_abs_error(&exact_solution,&u_new, HERMES_L2_NORM);
+ double err_l2 = calc_error_l2(&exact_solution, &u_new, &space);
  double abs_err_max = calc_error_max(&exact_solution, &u_new, &space);
  double vec_err_max = calc_error_max(coeff_vec, coeff_vec_2 ,ref_ndof);
- double l2 = calc_error_l2(&exact_solution, &u_new, &space);
 
-Hermes::Mixins::Loggable::Static::info("l2=%.15e,l2_new=%.15e, abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2,l2 , abs_err_max ,vec_err_max, ref_ndof);
+Hermes::Mixins::Loggable::Static::info("l2=%f, l2_2= %f abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2,err_l2, abs_err_max ,vec_err_max, ref_ndof);
 
 FILE * pFile;
 pFile = fopen ("error.txt","w");
-    fprintf (pFile, "l2=%.15e,abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2, abs_err_max, vec_err_max,  ref_ndof);
+    fprintf (pFile, "l2=%f,abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2, abs_err_max, vec_err_max,  ref_ndof);
 fclose (pFile);  
   
   
