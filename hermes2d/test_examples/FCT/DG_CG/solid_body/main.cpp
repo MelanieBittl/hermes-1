@@ -11,13 +11,13 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 6;                   // Number of initial refinements.
+const int INIT_REF_NUM = 7;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 const double h_max = 0.1;                       
-const double time_step = 1e-5;                           // Time step.
-//const double T_FINAL = 2*PI;                         // Time interval length. 
-const double T_FINAL = 0.5*PI;   
+const double time_step = 5e-4;                           // Time step.
+const double T_FINAL = 2*PI;                         // Time interval length. 
+//const double T_FINAL = 0.5*PI;   
 
 
 const double EPS = 1e-10;
@@ -51,14 +51,14 @@ int main(int argc, char* argv[])
 
 
   // Initialize boundary conditions.
-  DefaultEssentialBCConst<double>  bc_essential(BDY_IN, 0.0);
-  EssentialBCs<double>  bcs(&bc_essential);
+  //DefaultEssentialBCConst<double>  bc_essential(BDY_IN, 0.0);
+  //EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
 
 //L2_SEMI_CG_Space<double> space(&mesh,P_INIT);
 //L2Space<double> space(&mesh, P_INIT);
-H1Space<double> space(&mesh, &bcs, P_INIT);
+H1Space<double> space(&mesh, P_INIT);
 
   int ndof = space.get_num_dofs();
   
@@ -106,17 +106,17 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 		UMFPackMatrix<double> * high_rhs = new UMFPackMatrix<double> ; 
 		UMFPackMatrix<double> * matrix = new UMFPackMatrix<double> ;
 		     
-		/*	matrix->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
+			matrix->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
 			matrix->multiply_with_Scalar(-1.); //damit surface richtiges Vorzeichen!!
-			matrix->add_matrix(conv_matrix); */
-	matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());		
+			matrix->add_matrix(conv_matrix); 
+//	matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());		
 			matrix->multiply_with_Scalar(-theta);
 			matrix->add_matrix(mass_matrix);  
 			
-/*	high_rhs->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
+	high_rhs->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
 			high_rhs->multiply_with_Scalar(-1.); //damit surface richtiges Vorzeichen!!
-			high_rhs->add_matrix(conv_matrix);*/ 
-	high_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());	
+			high_rhs->add_matrix(conv_matrix);
+	//high_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());	
 			high_rhs->multiply_with_Scalar((1.0-theta));
 			high_rhs->add_matrix(mass_matrix); 
 	
@@ -195,9 +195,8 @@ double bdry_err = calc_error_bdry(&u_new,&exact_solution, &space);
  double abs_err_l2 = Global<double>::calc_abs_error(&exact_solution,&u_new, HERMES_L2_NORM);
  double abs_err_max = calc_error_max(&exact_solution, &u_new, &space);
  double vec_err_max = calc_error_max(coeff_vec, coeff_vec_2 ,ref_ndof);
- double l2 = calc_error_l2(&exact_solution, &u_new, &space);
 
-Hermes::Mixins::Loggable::Static::info("l2=%.15e,l2_new=%.15e, abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2,l2 , abs_err_max ,vec_err_max, ref_ndof);
+Hermes::Mixins::Loggable::Static::info("l2=%.15e, abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2, abs_err_max ,vec_err_max, ref_ndof);
 
 FILE * pFile;
 pFile = fopen ("error.txt","w");

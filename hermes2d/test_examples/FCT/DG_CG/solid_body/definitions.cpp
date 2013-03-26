@@ -264,8 +264,8 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
 
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
-  //result += wt[i] * (u->val[i] *(v->dx[i] * (0.5- e->y[i]) + v->dy[i] * (e->x[i]-0.5) ));
-    result += -wt[i] * (v->val[i] *(u->dx[i] * (0.5- e->y[i]) + u->dy[i] * (e->x[i]-0.5) ));
+  result += wt[i] * (u->val[i] *(v->dx[i] * (0.5- e->y[i]) + v->dy[i] * (e->x[i]-0.5) ));
+  //  result += -wt[i] * (v->val[i] *(u->dx[i] * (0.5- e->y[i]) + u->dy[i] * (e->x[i]-0.5) ));
   return result;
 
     };
@@ -314,7 +314,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
       
- /* 	double radius = 0.;
+ 	double radius = 0.;
         //hump
 	double x_0 =0.25;
 	double y_0= 0.5;	
@@ -324,9 +324,9 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
 
 	}
-	//else{dx=0.; dy=0.;
+	else{dx=0.; dy=0.;
 		}	
-	else{			
+ /*	else{			
 		//cone
 		x_0 = 0.5;
 		y_0 = 0.25;
@@ -340,8 +340,8 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
   
 	}*/
 	
-	dx = (1.-2*x)*(1.-y)*y*2*x*(1.-x)*y*(1.-y);
-	dy = (1.-2*y)*(1.-x)*x*2*x*(1.-x)*y*(1.-y);
+//	dx = (1.-2*x)*(1.-y)*y*2*x*(1.-x)*y*(1.-y);
+//	dy = (1.-2*y)*(1.-x)*x*2*x*(1.-x)*y*(1.-y);
 		
 
 };
@@ -350,9 +350,9 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
        
      double result = 0.0;
      
-     result = Hermes::sqr(x*(1.-x)*y*(1.-y));
+   //  result = Hermes::sqr(x*(1.-x)*y*(1.-y));
      
-	/*double radius;
+	double radius;
 
 	
        //hump
@@ -365,7 +365,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 		return result;	
 
 	}
-	//slotted cylinder
+/*	//slotted cylinder
 	x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));

@@ -153,6 +153,9 @@ namespace Hermes
     public:
       Func<T> *fn_central;        ///< Central element's component.
       Func<T> *fn_neighbor;       ///< Neighbor element's component.
+      
+         T *val_neighbor; ///< Function values. If T == Hermes::Ord and orders vary with direction, this returns max(h_order, v_order).
+      T *dx_neighbor, *dy_neighbor; ///< First-order partial derivatives.
 
       /// Get values on the central element.
       virtual T& get_val_central(int k) const;

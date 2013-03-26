@@ -96,7 +96,8 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
 	for (int i = 0; i < n; i++)
 	{
 		double radius = Hermes::sqrt(e->x[i]*e->x[i]+e->y[i]*e->y[i]);
-		if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.5)&&(radius<=0.8)){  //Dirichlet-Rand!
+		//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.5)&&(radius<=0.8)){  //Dirichlet-Rand!
+		if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.35)&&(radius<=0.65)){
 		}else// if(((e->x[i]>0)&&(e->y[i]<1))||((e->x[i]<0)&&(e->y[i]=1))){	
 		/*	Real v_x = e->y[i];
 			Real v_y = -e->x[i];					
@@ -181,7 +182,8 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
   		Func<double>* exact = ext[0];			
 			for (int i = 0; i < n; i++){ //normale = (0,-1)
 										double radius = Hermes::sqrt(e->x[i]*e->x[i]+e->y[i]*e->y[i]);
-				if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.5)&&(radius<=0.8)){  //Dirichlet-Rand!
+				//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.5)&&(radius<=0.8)){  //Dirichlet-Rand!
+						if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.35)&&(radius<=0.65)){
 				double v_x = (e->y[i]); double v_y =(-e->x[i]);
     double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 									result -= wt[i] * exact->val[i] * v->val[i] * a_dot_n;
@@ -366,10 +368,18 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
       
 			double radius = Hermes::sqrt(x*x+y*y);
-	if((radius>= 0.5)&&(radius<=0.8)){		
+/*	if((radius>= 0.5)&&(radius<=0.8)){		
 		double arg = PI*(radius-0.65)/0.15;
 		dx = -0.25*Hermes::sin(arg)*(PI/0.15)*x/radius;
-		dy	= -0.25*Hermes::sin(arg)*(PI/0.15)*y/radius;
+		dy	= -0.25*Hermes::sin(arg)*(PI/0.15)*y/radius;*/
+		if((radius>= 0.35)&&(radius<=0.65))
+	{		
+		double arg = PI*10.*(radius-0.5)/3.;
+		dx = -Hermes::sin(arg)*(PI/0.3)*x/radius;
+		dy	= -Hermes::sin(arg)*(PI/0.3)*y/radius;
+		
+		dx *=2*Hermes::cos(arg);
+		dy *=2*Hermes::cos(arg);
 	}else{	dx=0.; dy=0.;		}
 		
 
@@ -379,11 +389,18 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
        
   double result = 0.0;
 		double radius = Hermes::sqrt(x*x+y*y);
-		if((radius>= 0.5)&&(radius<=0.8)){		
+	/*	if((radius>= 0.5)&&(radius<=0.8)){		
 			double arg = PI*(radius-0.65)/0.15;
 			result = 0.25*(1+Hermes::cos(arg));
 		}	
-  return result;
+		return result;*/
+		if((radius>= 0.35)&&(radius<=0.65))
+		{
+		
+		double arg = PI*(radius-0.5)/0.3;
+		result= Hermes::cos(arg);
+		}
+		return Hermes::sqr(result);
 };
 
  Ord CustomInitialCondition::ord(Ord x, Ord y) const {

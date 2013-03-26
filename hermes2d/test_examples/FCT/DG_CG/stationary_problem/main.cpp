@@ -10,21 +10,14 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
-const int P_INIT =2;       						// Initial polynomial degree.
+const int INIT_REF_NUM =7;                   // Number of initial refinements.
+const int P_INIT =1;       						// Initial polynomial degree.
 
-const double h_max = 0.1;                       
-const double time_step = 0.01;                           // Time step.
-const double T_FINAL = 4.5;   
+                    
+const double time_step = 5e-4;                           // Time step.
+const double T_FINAL = 2.5;  
 
-
-const double EPS = 1e-10;
-const double EPS_smooth = 1e-10;
-const int P_MAX = 3; 
-
-const int NDOF_STOP = 20000;   
-
-const double theta = 1.;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
+const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -41,7 +34,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   Mesh mesh, basemesh;
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", &basemesh);
+  mloader.load("domain_2.mesh", &basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh.refine_all_elements();
@@ -66,6 +59,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
  
   // Initialize views.
 	ScalarView sview("Loesung", new WinGeom(500, 500, 500, 400));
+	      sview.set_min_max_range(-0.01, 1.);
 	ScalarView lview("anfangs-Loesung", new WinGeom(500, 0, 500, 400));
 lview.show(&u_prev_time);
   OGProjection<double> ogProjection;
