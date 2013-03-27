@@ -323,6 +323,9 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
 
+		dx *= (1.0+ std::cos(PI*radius))/2.0;
+		dy *= (1.0+ std::cos(PI*radius))/2.0;
+
 	}
 	else{dx=0.; dy=0.;
 		}	
@@ -340,7 +343,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
   
 	}*/
 	
-//	dx = (1.-2*x)*(1.-y)*y*2*x*(1.-x)*y*(1.-y);
+	//dx = (1.-2*x)*(1.-y)*y*2*x*(1.-x)*y*(1.-y);
 //	dy = (1.-2*y)*(1.-x)*x*2*x*(1.-x)*y*(1.-y);
 		
 
@@ -350,11 +353,9 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
        
      double result = 0.0;
      
-   //  result = Hermes::sqr(x*(1.-x)*y*(1.-y));
-     
-	double radius;
-
-	
+     //result = Hermes::sqr(x*(1.-x)*y*(1.-y));
+    
+	double radius;	
        //hump
 	double x_0 =0.25;
 	double y_0= 0.5;	
@@ -362,7 +363,9 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 	radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if( radius<= 1.0) { 
 		 result = (1.0+ std::cos(PI*radius))/4.0;
-		return result;	
+		//return result;	
+		
+			return Hermes::sqr(result);	
 
 	}
 /*	//slotted cylinder

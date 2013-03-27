@@ -11,11 +11,11 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 7;                   // Number of initial refinements.
+const int INIT_REF_NUM = 4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 const double h_max = 0.1;                       
-const double time_step = 5e-4;                           // Time step.
+const double time_step = 4e-3;                           // Time step.
 const double T_FINAL = 2*PI;                         // Time interval length. 
 //const double T_FINAL = 0.5*PI;   
 
