@@ -131,6 +131,7 @@ result += wt[i]*(u->get_val_central(i) - u->get_val_neighbor(i)) * (u->get_val_c
 
 
 
+
 double calc_error_l2(Solution<double>* u_1, Solution<double>* u_2,Space<double>* space)
 {
 

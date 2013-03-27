@@ -184,7 +184,10 @@ double bdry_err = calc_error_bdry(&u_new,&exact_solution, &space);
  double abs_err_max = calc_error_max(&exact_solution, &u_new, &space);
  double vec_err_max = calc_error_max(coeff_vec, coeff_vec_2 ,ref_ndof);
 
+
+
 Hermes::Mixins::Loggable::Static::info("l2=%f, l2_2= %f abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2,err_l2, abs_err_max ,vec_err_max, ref_ndof);
+
 
 FILE * pFile;
 pFile = fopen ("error.txt","w");
