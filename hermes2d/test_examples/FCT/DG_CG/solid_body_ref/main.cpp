@@ -30,7 +30,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 										//Maximal polynomial degree.
                       
@@ -246,6 +246,7 @@ int main(int argc, char* argv[])
 				sprintf(title, "Ref_Mesh: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
 				ref_mview.set_title(title);
 				ref_mview.show(ref_space);
+				//View::wait();
 			}
 
 	DiscreteProblem<double>* dp_mass = new DiscreteProblem<double>(&massmatrix, ref_space);
