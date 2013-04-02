@@ -1,4 +1,144 @@
 #include "definitions.h"
+
+
+
+CustomWeakForm::CustomWeakForm(double time_step,double theta, Solution<double>* sln_prev_time) : WeakForm<double>(1)
+{
+    add_matrix_form(new CustomMatrixFormVol(0, 0, time_step,theta));
+   CustomVectorFormVol* vector_form = new CustomVectorFormVol(0,time_step,theta);
+    vector_form->ext.push_back(sln_prev_time);
+   add_vector_form(vector_form);
+   add_matrix_form_surf(new CustomMatrixFormSurface(0, 0)); 
+
+}
+
+WeakForm<double>* CustomWeakForm::clone() const
+{
+  return new CustomWeakForm(*this);
+}
+
+	CustomWeakForm::~CustomWeakForm(){
+		delete get_mfvol()[0];			
+		delete get_vfvol()[0];	
+		delete get_mfsurf()[0];			
+		
+		WeakForm<double>::delete_all();
+	}
+
+template<typename Real, typename Scalar>
+Scalar CustomWeakForm::CustomMatrixFormVol::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
+                                                  Geom<Real> *e, ExtData<Scalar> *ext) const
+{
+  Scalar result = Scalar(0);
+  for (int i = 0; i < n; i++)
+    result += wt[i] * (u->val[i] * v->val[i])/time_step
+    -wt[i] *theta* (u->val[i] *(v->dx[i] * (0.5- e->y[i]) + v->dy[i] * (e->x[i]-0.5) ));
+
+  return result;
+}
+
+double CustomWeakForm::CustomMatrixFormVol::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
+                                            Geom<double> *e, ExtData<double> *ext) const
+{
+  return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+}
+
+Ord CustomWeakForm::CustomMatrixFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+                                       Geom<Ord> *e, ExtData<Ord> *ext) const
+{
+  return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+}
+
+MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVol::clone() const
+{
+  return new CustomWeakForm::CustomMatrixFormVol(*this);
+}
+
+template<typename Real, typename Scalar>
+Scalar CustomWeakForm::CustomVectorFormVol::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v,
+                                                  Geom<Real> *e, ExtData<Scalar> *ext) const
+{
+  Scalar result = Scalar(0);
+  Func<Scalar>* u_prev_time =  ext->fn[0];
+  for (int i = 0; i < n; i++)
+	result += wt[i] *  u_prev_time->val[i] * v->val[i]/time_step + (1.-theta)*wt[i] * ( u_prev_time->val[i] * (v->dx[i] * (0.5- e->y[i]) + v->dy[i] *  (e->x[i]-0.5)));
+
+  return result;
+}
+
+double CustomWeakForm::CustomVectorFormVol::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
+                                            Geom<double> *e, ExtData<double> *ext) const
+{
+  return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+}
+
+Ord CustomWeakForm::CustomVectorFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v,
+                                       Geom<Ord> *e, ExtData<Ord> *ext) const
+{
+  return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
+}
+
+VectorFormVol<double>* CustomWeakForm::CustomVectorFormVol::clone() const
+{
+  return new CustomWeakForm::CustomVectorFormVol(*this);
+}
+
+
+template<typename Real, typename Scalar>
+Scalar CustomWeakForm::CustomMatrixFormSurface::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
+                                                      Geom<Real> *e, ExtData<Scalar> *ext) const
+{
+  Scalar result = Scalar(0);
+  for (int i = 0; i < n; i++)
+  {
+ 		Real v_x = (0.5- e->y[i]);
+ 		Real v_y = (e->x[i]-0.5); 
+    Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
+    result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], Scalar(0), a_dot_n) * v->val[i];
+  }
+  return result;
+}
+
+double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
+                                                Geom<double> *e, ExtData<double> *ext) const
+{
+  return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+}
+
+Ord CustomWeakForm::CustomMatrixFormSurface::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+                                           Geom<Ord> *e, ExtData<Ord> *ext) const
+{
+  return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+}
+
+MatrixFormSurf<double>* CustomWeakForm::CustomMatrixFormSurface::clone() const
+{
+  return new CustomWeakForm::CustomMatrixFormSurface(*this);
+}
+
+double CustomWeakForm::calculate_a_dot_v(double x, double y, double vx, double vy) const
+{
+ 
+ return  x*vx + y*vy;
+}
+
+Ord CustomWeakForm::calculate_a_dot_v(Ord x, Ord y, Ord vx, Ord vy) const
+{
+  return Ord(10);
+}
+
+double CustomWeakForm::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
+{
+  return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
+}
+
+Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
+{
+  return a_dot_n * (u_cent + u_neib);
+}
+
+
+
 //---------------Massematrix-----------
  CustomWeakFormMassmatrix::CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time) : WeakForm<double>(1) {
 		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0, time_step);	
@@ -301,7 +441,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
 	}
-	else{			
+	/*else{			
 		//cone
 		x_0 = 0.5;
 		y_0 = 0.25;
@@ -309,11 +449,11 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		if((radius< 1.0)&&(x!=x_0)) { 	
 				dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
 			dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
-		}
+		}*/
 		else{dx=0.; dy=0.;
 		}	
   
-	}
+	//}
 		
 
 };
@@ -331,7 +471,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		return result;	
 	}
 	//slotted cylinder
-	x_0 = 0.5;
+/*	x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius <= 1) { 	
@@ -344,7 +484,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius<= 1.0) { 	
 		result = 1.0-radius;
-	}	
+	}*/	
        return result;
 };
 

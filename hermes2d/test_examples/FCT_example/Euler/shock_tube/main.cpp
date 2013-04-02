@@ -287,7 +287,7 @@ do
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 		antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 				for(int i=0; i<ndof;i++){
-								 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);		
+								 coeff_vec[i] = u_L[i] + coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);		
 				}
 
 				Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e));	

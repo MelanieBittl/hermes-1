@@ -9,7 +9,71 @@
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
+class CustomWeakForm : public WeakForm<double>
+{
+public:
+  CustomWeakForm(double time_step, double theta, Solution<double>* sln_prev_time);
+  WeakForm<double>* clone() const;
+	~CustomWeakForm();
+private:
+  class CustomMatrixFormVol : public MatrixFormVol<double>
+  {
+  public:
+    CustomMatrixFormVol(int i, int j, double time_step, double theta) : MatrixFormVol<double>(i, j), time_step(time_step), theta(theta) {};
 
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+
+    MatrixFormVol<double>* clone() const;
+    
+    double time_step;
+    double theta;
+  };
+
+  class CustomVectorFormVol : public VectorFormVol<double>
+  {
+  public:
+    CustomVectorFormVol(int i, double time_step, double theta) : VectorFormVol<double>(i), time_step(time_step), theta(theta) {};
+
+    template<typename Real, typename Scalar>
+    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+
+    VectorFormVol<double>* clone() const;
+
+    double time_step;
+    double theta;
+  };
+    class CustomMatrixFormSurface : public MatrixFormSurf<double>
+  {
+  public:
+    CustomMatrixFormSurface(int i, int j) : MatrixFormSurf<double>(i, j) {};
+
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, Geom<Real> *e, ExtData<Scalar> *ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, ExtData<double> *ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, ExtData<Ord> *ext) const;
+
+    MatrixFormSurf<double>* clone() const;
+
+  };
+    double calculate_a_dot_v(double x, double y, double vx, double vy) const;
+
+  Ord calculate_a_dot_v(Ord x, Ord y, Ord vx, Ord vy) const;
+
+  double upwind_flux(double u_cent, double u_neib, double a_dot_n) const;
+
+  Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
+};
 //---------------Massematrix-----------
 
 class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>   

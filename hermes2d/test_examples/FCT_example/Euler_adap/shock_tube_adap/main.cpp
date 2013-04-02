@@ -15,7 +15,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX =1;
 const double h_max = 0.1;
@@ -47,13 +47,13 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 
 //Visualization
-const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool HERMES_VISUALIZATION_LOW = false;           // Set to "false" to suppress Hermes OpenGL visualization for low_order.
 const bool HERMES_VISUALIZATION_ORDER = false;           // Set to "false" to suppress Hermes OpenGL visualization for low_order.
-const bool VTK_VISUALIZATION = true;              // Set to "true" to enable VTK output.
+const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
 const int VTK_FREQ = 500;													//Every VTK_FREQth time step the solution is saved as VTK output. 
      
-const int UNREF_FREQ = 50;                         // Every UNREF_FREQth time step the mesh is derefined.
+const int UNREF_FREQ = 5;                         // Every UNREF_FREQth time step the mesh is derefined.
 const int  UNREF_METHOD =1;
 
 const bool FCT_W_HANGING_NODES = true; 
