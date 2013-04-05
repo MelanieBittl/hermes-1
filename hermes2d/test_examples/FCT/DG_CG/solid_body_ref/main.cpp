@@ -130,7 +130,9 @@ int main(int argc, char* argv[])
 	char title[100];
 
   // Create a refinement selector.
-  H1ProjBasedSelector<double> selector(CAND_LIST, CONV_EXP, H2DRS_DEFAULT_ORDER);
+  L2ProjBasedSelector<double> selector(CAND_LIST, CONV_EXP, H2DRS_DEFAULT_ORDER);
+
+       selector.set_error_weights(1.0,1.0,1.0); 
 
 	//Initialize
 	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
@@ -152,7 +154,7 @@ int main(int argc, char* argv[])
 	Regularity_Estimator regEst(EPS_smooth);
 	
 	Regularity_Estimator_slope regEst_slope(&space);
-
+//
 
 // Time stepping loop:
 	double current_time = 0.0; 

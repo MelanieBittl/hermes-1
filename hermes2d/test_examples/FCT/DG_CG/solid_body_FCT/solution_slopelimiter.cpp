@@ -445,8 +445,8 @@ void KuzminOscillationDetector::find_second_centroid_derivatives(Element* e, dou
   			detector->find_centroid_derivatives(e, u_dx_c, u_dy_c);
  			detector->find_second_centroid_derivatives(e, u_dxx_c, u_dxy_c, u_dyy_c);
  						
-			//alpha[0] = 0.; 
-			//alpha[1] = 0.;
+			//alpha[0] = 1.; 
+			//alpha[1] = 1.;
 			
         this->mode = e->get_mode();
         o = elem_orders[e->id];

@@ -131,6 +131,15 @@ result += wt[i]*(u->get_val_central(i) - u->get_val_neighbor(i)) * (u->get_val_c
 
 
 
+double calc_l2(double* u, double* u_h, UMFPackVector<double> *mass, int dof)
+{
+	double result = 0;
+for(int i = 0;i<dof; i++)
+	result += std::abs(mass->get(i)) * Hermes::sqr(u[i]-u_h[i]);
+return Hermes::sqrt(result);
+
+}
+
 
 double calc_error_l2(Solution<double>* u_1, Solution<double>* u_2,Space<double>* space)
 {

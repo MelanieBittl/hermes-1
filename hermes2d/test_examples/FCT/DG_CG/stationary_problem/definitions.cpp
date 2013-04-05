@@ -84,35 +84,21 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
                                                 Geom<double> *e, Func<double> **ext) const
 {
   double result = 0.;
- /* for (int i = 0; i < n; i++)
-  {
- 	Real v_x = (e->y[i]);
- 	Real v_y = (-e->x[i]); 
-   Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-   result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], Scalar(0), a_dot_n) * v->val[i];
-  }
-  */
-  
+ 
 	for (int i = 0; i < n; i++)
 	{
 		double radius = Hermes::sqrt(e->x[i]*e->x[i]+e->y[i]*e->y[i]);
-		//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.5)&&(radius<=0.8)){  //Dirichlet-Rand!
-		if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.35)&&(radius<=0.65)){
-		}else// if(((e->x[i]>0)&&(e->y[i]<1))||((e->x[i]<0)&&(e->y[i]=1))){	
-		/*	Real v_x = e->y[i];
-			Real v_y = -e->x[i];					
-			Real n_x = 0.;
-			Real n_y = 0.;
-			if(e->y[i]==0) n_y = -1.;
-			else if(e->y[i]==1) n_y = 1.;
-			else if(e->x[i]==-1) n_x = -1.;
-			else if(e->x[i]==1) n_x = 1.;
-		result += wt[i] * u->val[i] * v->val[i] * (n_x * v_x + n_y*v_y);	*/
+		//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.2)&&(radius<=0.8)){  //Dirichlet-Rand!
+		//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.35)&&(radius<=0.65)){
+		//}else 
+	if(((e->x[i]==0)&&(e->y[i]<1))||((e->x[i]<0)&&(e->y[i]==1)))	//Ausstroemrand
+//if(((e->x[i]>=0)&&(e->y[i]==0))||((e->x[i]<0)&&(e->y[i]==1))||((e->x[i]==1)&&(e->y[i]<1)))
 	{	
-	double v_x = (e->y[i]);
- 	double v_y = (-e->x[i]); 
+	double v_x = e->y[i];
+ 	double v_y = -e->x[i]; 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-   result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];					
+   result += wt[i] *static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];	
+			
 		}
 	}
 			
@@ -172,23 +158,20 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
                                                 Geom<double> *e, Func<double> **ext) const
 {
   double result = 0;
-/*  for (int i = 0; i < n; i++) {
-    double v_x = (0.5- e->y[i]); double v_y =(e->x[i]-0.5);
-    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-    // Function values for Dirichlet boundary conditions.
-    result += -wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(0, g<double,double>(static_cast<CustomWeakForm*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker).marker), a_dot_n) * v->val[i];
-  }*/
-
-  		Func<double>* exact = ext[0];			
-			for (int i = 0; i < n; i++){ //normale = (0,-1)
-										double radius = Hermes::sqrt(e->x[i]*e->x[i]+e->y[i]*e->y[i]);
-				//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.5)&&(radius<=0.8)){  //Dirichlet-Rand!
-						if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.35)&&(radius<=0.65)){
-				double v_x = (e->y[i]); double v_y =(-e->x[i]);
-    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-									result -= wt[i] * exact->val[i] * v->val[i] * a_dot_n;
-						}
-			}
+ Func<double>* exact = ext[0];			
+   for (int i = 0; i < n; i++){ 
+   double radius = Hermes::sqrt(e->x[i]*e->x[i]+e->y[i]*e->y[i]);
+	//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.5)&&(radius<=0.8))  //Dirichlet-Rand!
+	//if((e->x[i]<0)&&(e->y[i]==0)&&(radius> 0.35)&&(radius<0.65))
+//if((e->x[i]<0)&&(e->y[i]==0)&&(radius>= 0.2)&&(radius<=0.8))
+if((e->x[i]<0)&&(e->y[i]==0)) 
+		{
+			double v_x = e->y[i]; 
+			double v_y =-e->x[i];
+			double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
+			result -= wt[i] * exact->val[i] * v->val[i] * a_dot_n;
+		}
+	}
   
   return result;
 }
@@ -368,19 +351,38 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
       
 			double radius = Hermes::sqrt(x*x+y*y);
-/*	if((radius>= 0.5)&&(radius<=0.8)){		
+	/*if((radius>= 0.5)&&(radius<=0.8)){		
 		double arg = PI*(radius-0.65)/0.15;
 		dx = -0.25*Hermes::sin(arg)*(PI/0.15)*x/radius;
 		dy	= -0.25*Hermes::sin(arg)*(PI/0.15)*y/radius;*/
-		if((radius>= 0.35)&&(radius<=0.65))
+	if((radius>= 0.35)&&(radius<=0.65))
 	{		
 		double arg = PI*10.*(radius-0.5)/3.;
 		dx = -Hermes::sin(arg)*(PI/0.3)*x/radius;
 		dy	= -Hermes::sin(arg)*(PI/0.3)*y/radius;
+		double result= Hermes::cos(arg);
+		int k = 2;
+
+		dx *=k*std::pow(result, k-1);
+		dy *=k*std::pow(result, k-1);
+
+	/*if((radius>= 0.2)&&(radius<=0.8)){		
+		double arg = PI*(radius-0.5)/0.3;
+		dx = -0.25*Hermes::sin(arg)*(PI/0.3)*x/radius;
+		dy	= -0.25*Hermes::sin(arg)*(PI/0.3)*y/radius;
+		double result = 0.25*(1+Hermes::cos(arg));
+		int k = 1; 
+		dx *= k *std::pow(result, k-1);
+		dy *=k*std::pow(result, k-1);*/
+	
+	/*if((radius<0.9)&&(radius>0.1))
+	{
+		dx = 0.9*x/radius-2*x;
+		dy = 0.9*y/radius -2*y;*/
 		
-		dx *=2*Hermes::cos(arg);
-		dy *=2*Hermes::cos(arg);
-	}else{	dx=0.; dy=0.;		}
+	}else{	
+	dx=0.; dy=0.;		
+	}
 		
 
 };
@@ -389,7 +391,12 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
        
   double result = 0.0;
 		double radius = Hermes::sqrt(x*x+y*y);
-	/*	if((radius>= 0.5)&&(radius<=0.8)){		
+
+	/*	if((radius<0.9)&&(radius>0.1))
+			return (radius-0.1)*(0.9-radius);
+		else return 0;*/
+
+		/*if((radius>= 0.5)&&(radius<=0.8)){		
 			double arg = PI*(radius-0.65)/0.15;
 			result = 0.25*(1+Hermes::cos(arg));
 		}	
@@ -400,7 +407,19 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 		double arg = PI*(radius-0.5)/0.3;
 		result= Hermes::cos(arg);
 		}
-		return Hermes::sqr(result);
+		int k = 2;
+		return std::pow(result,k);
+
+
+	/*if((radius>= 0.2)&&(radius<=0.8)){		
+			double arg = PI*(radius-0.5)/0.3;
+			result = 0.25*(1+Hermes::cos(arg));
+	
+		}	
+		int k = 1; 
+		return std::pow(result,k);*/
+
+
 };
 
  Ord CustomInitialCondition::ord(Ord x, Ord y) const {
