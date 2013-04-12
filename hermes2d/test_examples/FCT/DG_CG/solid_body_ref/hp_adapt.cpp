@@ -29,8 +29,7 @@ bool refine_elem(Space<double>* space, Element* e, int ref, int order)
 				{
 		  		space->get_mesh()->refine_element_id(e->id);				
 					for (int j = 0; j < 4; j++)
-				  	space->set_element_order_internal(e->sons[j]->id, order);
-							
+				  	space->set_element_order_internal(e->sons[j]->id, order);							
 				}
 				if(ref>1) 
 				{
@@ -60,7 +59,7 @@ bool HPAdapt::adapt_smooth(int* smooth_elem, int max_p)
 					if(order>max_p) order = max_p;
 					space->set_element_order_internal(e->id, order);
 					changed = refine_elem(space, e, 1, order);
-					//changed = true;		
+					changed = true;		
 				}
 				else if(e->is_quad()==true)
 				{
@@ -71,7 +70,7 @@ bool HPAdapt::adapt_smooth(int* smooth_elem, int max_p)
 					order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);
 					space->set_element_order_internal(e->id, order);
 					changed = refine_elem(space, e,1, order);	
-					//changed = true;
+					changed = true;
 				}					
 			}
 			else if((smooth_elem[e->id] == 0)||(smooth_elem[e->id] == 2))	//non-smooth=>h refine					

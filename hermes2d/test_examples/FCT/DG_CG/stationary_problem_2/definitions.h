@@ -36,7 +36,23 @@ private:
     double theta;
   };
 
+  class CustomVectorFormVol : public VectorFormVol<double>
+  {
+  public:
+    CustomVectorFormVol(int i, double time_step, double theta) : VectorFormVol<double>(i), time_step(time_step), theta(theta) {};
 
+    template<typename Real, typename Scalar>
+    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+    VectorFormVol<double>* clone() const;
+
+    double time_step;
+    double theta;
+  };
 
   class CustomMatrixFormSurface : public MatrixFormSurf<double>
   {
@@ -102,6 +118,66 @@ private:
   Mesh* mesh;
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+//---------------Massematrix-----------
+
+class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>   
+
+{
+  public:
+    // This weak form is custom since it contains a nonlinearity in the diffusion term.
+    CustomMatrixFormVolMassmatrix(int i, int j, double time_step) 
+      : MatrixFormVol<double>(i, j), time_step(time_step) { };
+
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, Func<Ord> **ext) const;
+
+    MatrixFormVol<double>* clone() const ;
+
+    // Members.  
+    double time_step;
+};
+
+  class CustomVectorFormMass : public VectorFormVol<double>
+  {
+  public:
+    CustomVectorFormMass(int i) : VectorFormVol<double>(i) {};
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+    VectorFormVol<double>* clone() const;
+
+  };
+
+
+
+class  CustomWeakFormMassmatrix  : public WeakForm<double>     
+{
+public:
+  CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time);
+	
+};
+
 //---------------Konvektion-----------
 class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
 {
@@ -125,11 +201,26 @@ public:
 };
 
 
+class VectorFormVolConvection : public VectorFormVol<double>
+{
+public:
+  VectorFormVolConvection(int i) : VectorFormVol<double>(i){ }
+
+  template<typename Real, typename Scalar>
+  Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
+
+  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+   VectorFormVol<double>* clone() const;
+};
+
 
 class CustomWeakFormConvection : public WeakForm<double>    //Konvektion
 {
 public:
-  CustomWeakFormConvection();
+  CustomWeakFormConvection(Solution<double>* sln_prev_time);
 	  
 };
 

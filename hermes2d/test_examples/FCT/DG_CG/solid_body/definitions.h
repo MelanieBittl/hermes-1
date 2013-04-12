@@ -231,7 +231,6 @@ public:
 	  
 };
 
-
 //------------------- Initial condition ----------------
 
 class CustomInitialCondition : public ExactSolutionScalar<double>

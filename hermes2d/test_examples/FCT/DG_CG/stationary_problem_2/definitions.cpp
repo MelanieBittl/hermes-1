@@ -7,6 +7,7 @@ CustomWeakForm::CustomWeakForm(double time_step,double theta, Solution<double>* 
   if(all)
   {
     add_matrix_form(new CustomMatrixFormVol(0, 0, time_step,theta));
+   // add_vector_form(new CustomVectorFormVol(0,time_step,theta));
     }
    add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));    
    if(DG) add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
@@ -24,13 +25,17 @@ template<typename Real, typename Scalar>
 Scalar CustomWeakForm::CustomMatrixFormVol::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
                                                   Geom<Real> *e, Func<Scalar> **ext) const
 {
+/*  Scalar result = Scalar(0);
+  for (int i = 0; i < n; i++)
+    result += wt[i] * (u->val[i] * v->val[i])/time_step
+    -wt[i] *theta* (u->val[i] *(v->dx[i] * (e->y[i]) + v->dy[i] * (-e->x[i]) ));
+  return result;*/
   Scalar result = Scalar(0);
 			Scalar v_x = e->y[i]; 
-			Scalar v_y = 1.-e->x[i];
+			Scalar v_y = Scalar(1.)-e->x[i];
   for (int i = 0; i < n; i++)
-    result -= wt[i] *(u->val[i] *(v->dx[i] * v_x + v->dy[i] * v_y ));
 	//result += wt[i] *(v->val[i] *(u->dx[i] * v_x + u->dy[i] * v_y ));
-
+    result -= wt[i] *(u->val[i] *(v->dx[i] * v_x + v->dy[i] * v_y ));
 
   return result;
 }
@@ -52,7 +57,34 @@ MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVol::clone() const
   return new CustomWeakForm::CustomMatrixFormVol(*this);
 }
 
+template<typename Real, typename Scalar>
+Scalar CustomWeakForm::CustomVectorFormVol::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v,
+                                                  Geom<Real> *e, Func<Scalar> **ext) const
+{
+  Scalar result = Scalar(0);
+  Func<Scalar>* u_prev_time = ext[0];
+  for (int i = 0; i < n; i++)
+	result += wt[i] *  u_prev_time->val[i] * v->val[i]/time_step + (1.-theta)*wt[i] * ( u_prev_time->val[i] * (v->dx[i] * (e->y[i]) + v->dy[i] *  (-e->x[i])));
 
+  return result;
+}
+
+double CustomWeakForm::CustomVectorFormVol::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
+                                            Geom<double> *e, Func<double> **ext) const
+{
+  return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+}
+
+Ord CustomWeakForm::CustomVectorFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v,
+                                       Geom<Ord> *e, Func<Ord> **ext) const
+{
+  return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
+}
+
+VectorFormVol<double>* CustomWeakForm::CustomVectorFormVol::clone() const
+{
+  return new CustomWeakForm::CustomVectorFormVol(*this);
+}
 
 
 double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
@@ -62,15 +94,16 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
  
 	for (int i = 0; i < n; i++)
 	{
-
+		double radius = Hermes::sqrt(e->x[i]*e->x[i]+e->y[i]*e->y[i]);
 	//Ausstroemrand
 if((e->y[i]==1)||(e->x[i]==1))
 	{	
 	double v_x = e->y[i];
  	double v_y = 1.-e->x[i]; 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-   result += wt[i] *static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];	
-	//result += wt[i] *u->val[i] *a_dot_n* v->val[i];	
+  result += wt[i] *static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];	
+//result += wt[i] *u->val[i] *a_dot_n* v->val[i];	
+			
 		}
 	}
 		return result;
@@ -99,7 +132,7 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
   for (int i = 0; i < n; i++) 
   {
  	 Real v_x = (e->y[i]);
- 	 Real v_y = 1.-e->x[i]; 
+ 	 Real v_y = Real(1.)-e->x[i]; 
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     Real jump_v = v->get_val_central(i) - v->get_val_neighbor(i);
    result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->get_val_central(i), u->get_val_neighbor(i), a_dot_n) * jump_v; 
@@ -131,6 +164,7 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
   double result = 0;
  Func<double>* exact = ext[0];			
    for (int i = 0; i < n; i++){ 
+   double radius = Hermes::sqrt(e->x[i]*e->x[i]+e->y[i]*e->y[i]);
  //Dirichlet-Rand!
 if((e->x[i]<1)&&(e->y[i]==0)) 
 		{
@@ -192,12 +226,73 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
 
 
 
+
+
+
+
+
+
+//---------------Massematrix-----------
+ CustomWeakFormMassmatrix::CustomWeakFormMassmatrix(double time_step,Solution<double>* sln_prev_time) : WeakForm<double>(1) {
+ this->set_ext(sln_prev_time);
+		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0, time_step);	
+		add_matrix_form(mass_form);
+		add_vector_form(new CustomVectorFormMass(0));
+		 
+
+  }
+
+    template<typename Real, typename Scalar>
+    Scalar CustomMatrixFormVolMassmatrix::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
+		     Scalar result = Scalar(0); 
+	  for (int i = 0; i < n; i++)
+		result += wt[i] * (u->val[i] * v->val[i])/time_step;
+	  return result;
+
+    };
+
+   double CustomMatrixFormVolMassmatrix::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
+      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+    };
+
+    Ord CustomMatrixFormVolMassmatrix::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, Func<Ord> **ext) const {
+      return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+    };
+
+MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
+{
+  return new CustomMatrixFormVolMassmatrix(*this);
+}
+
+double CustomVectorFormMass::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
+{
+		     double result = 0.; 
+	  for (int i = 0; i < n; i++)
+		result += wt[i] *v->val[i];
+	  return result;
+
+}
+
+Ord CustomVectorFormMass::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+{
+
+	return Ord(4);
+}
+
+    VectorFormVol<double>* CustomVectorFormMass::clone() const{return new CustomVectorFormMass(0);}
+
+
+
 //---------------Konvektion-----------
 
-  CustomWeakFormConvection::CustomWeakFormConvection() : WeakForm<double>(1) 
-{
+  CustomWeakFormConvection::CustomWeakFormConvection(Solution<double>* sln_prev_time) : WeakForm<double>(1) {
+   this->set_ext(sln_prev_time);
     add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
-
+   VectorFormVolConvection* vector_form = new VectorFormVolConvection(0);
+   add_vector_form(vector_form);
   };
 
 
@@ -208,7 +303,7 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
 
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
-  result -= wt[i] * (u->val[i] *(v->dx[i] * (e->y[i]) + v->dy[i] * (1.-e->x[i]) ));
+  result += wt[i] * (u->val[i] *(v->dx[i] * (e->y[i]) + v->dy[i] * (1.-e->x[i]) ));
   return result;
 
     };
@@ -231,7 +326,26 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 
 
 
+    template<typename Real, typename Scalar>
+    Scalar VectorFormVolConvection::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
+  Scalar result = Scalar(0); 
+  Func<Scalar>* u_prev_time = ext[0];
+  for (int i = 0; i < n; i++)
+    result += -wt[i] * ( v->val[i] * (u_prev_time->dx[i] * (e->y[i]) + u_prev_time->dy[i] *  (1.-e->x[i])));
+  return result;
+    };
+     double VectorFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const {
+      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
+    };
 
+     Ord VectorFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
+      return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
+    };
+
+   VectorFormVol<double>* VectorFormVolConvection::clone() const{
+ 			 return new VectorFormVolConvection(*this);
+
+		}
 
 
 //------------------------------Boundary Condition------------------------
@@ -249,12 +363,13 @@ double CustomDirichletCondition::value(double x, double y, double n_x, double n_
                                        double t_x, double t_y) const
 {
 	double result = 0;
-		double radius = Hermes::sqrt((x-1)*(x-1)+y*y);
-		if((radius>= 0.5)&&(radius<=0.8))
-		{		
-			double arg = PI*(radius-0.65)/0.15;
-			result = 0.25*(1+Hermes::cos(arg));
-		}	
+  	if((x-y<-0.1)&&(x-y>-0.9))
+	{
+		double arg = PI*(x-y+0.5)/0.8;
+		result= std::cos(arg);
+		int k = 4;
+		return std::pow(result,k);		
+	}
 		
 	return result;
 }

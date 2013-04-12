@@ -46,7 +46,7 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 // Adaptivity
 const double THRESHOLD_UNREF = 0.001; 			// Unrefinement: error of all sons is smaller than THRESHOLD_UNREF times maximum element error
-const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time step the mesh is derefined.
+const int UNREF_FREQ = 5;                         // Every UNREF_FREQth time step the mesh is derefined.
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
@@ -78,7 +78,7 @@ const double ERR_STOP = 1.0;                      // Stopping criterion for adap
 const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
 
-const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
+const int ADAPSTEP_MAX = 3;												// max. numbers of adaptivity steps
 
 
 //Visualization
