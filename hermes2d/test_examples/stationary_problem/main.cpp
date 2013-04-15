@@ -1,6 +1,6 @@
 #define HERMES_REPORT_ALL
 #include "definitions.h"
-
+#include "hermes2d.h"
 using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -9,10 +9,7 @@ using namespace Hermes::Hermes2D::Views;
 const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
-                    
-const double time_step = 1.;                           // Time step.
 
-const double theta = 1.;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -36,8 +33,10 @@ int main(int argc, char* argv[])
   
 
   // Create an L2 	space with default shapeset.
-  SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
-
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+/*BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
+bview.show(space);
+View::wait(HERMES_WAIT_KEYPRESS);*/
 
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>),  u_new_2(new Solution<double>);
@@ -57,8 +56,8 @@ int main(int argc, char* argv[])
 	int ndof = space->get_num_dofs();	
 
 //----------------------Solution_1 -----------------------------------------------------------------
-CustomWeakFormConvection  convection; 
-CustomWeakForm wf_surf(u_prev_time,false, true); //for DG and surface part
+	CustomWeakFormConvection  convection; 
+	CustomWeakForm wf_surf(u_prev_time,false, true); //for DG and surface part
 
 	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; 
 	UMFPackVector<double> * surf_rhs = new UMFPackVector<double> (ndof); 

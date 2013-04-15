@@ -21,6 +21,7 @@
 #include "shapeset_l2_all.h"
 #include "space_hcurl.h"
 #include "space_hdiv.h"
+#include "space_l2_semi_cg.h"
 #include "space_h2d_xml.h"
 #include "api2d.h"
 #include <iostream>

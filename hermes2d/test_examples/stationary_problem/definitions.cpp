@@ -24,9 +24,9 @@ template<typename Real, typename Scalar>
 Scalar CustomWeakForm::CustomMatrixFormVol::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
                                                   Geom<Real> *e, Func<Scalar> **ext) const
 {
-  Scalar result = Scalar(0);
-			Scalar v_x = e->y[i]; 
-			Scalar v_y = 1.-e->x[i];
+  Real result = Real(0);
+			Real v_x = e->y[i]; 
+			Real v_y = Real(1.)-e->x[i];
   for (int i = 0; i < n; i++)
     result -= wt[i] *(u->val[i] *(v->dx[i] * v_x + v->dy[i] * v_y ));
   return result;
@@ -90,17 +90,17 @@ MatrixFormSurf<double>* CustomWeakForm::CustomMatrixFormSurface::clone() const
 template<typename Real, typename Scalar>
 Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt, DiscontinuousFunc<Scalar>** u_ext, DiscontinuousFunc<Real> *u, DiscontinuousFunc<Real> *v, Geom<Real> *e, DiscontinuousFunc<Scalar> **ext) const
 {
-  Scalar result = Scalar(0);
+  Real result = Real(0);
   for (int i = 0; i < n; i++) 
   {
  	 Real v_x = (e->y[i]);
- 	 Real v_y = 1.-e->x[i]; 
+ 	 Real v_y = Real(1.)-e->x[i]; 
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
     if(u->fn_central == NULL)
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(Scalar(0), u->val_neighbor[i], a_dot_n) * jump_v;
+      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(Real(0), u->val_neighbor[i], a_dot_n) * jump_v;
     else
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], Scalar(0), a_dot_n) * jump_v;
+      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], Real(0), a_dot_n) * jump_v;
       
   }
   return result;
