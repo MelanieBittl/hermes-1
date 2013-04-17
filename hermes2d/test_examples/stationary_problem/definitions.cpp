@@ -20,37 +20,6 @@ WeakForm<double>* CustomWeakForm::clone() const
 }
 
 
-template<typename Real, typename Scalar>
-Scalar CustomWeakForm::CustomMatrixFormVol::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
-                                                  Geom<Real> *e, Func<Scalar> **ext) const
-{
-  Real result = Real(0);
-			Real v_x = e->y[i]; 
-			Real v_y = Real(1.)-e->x[i];
-  for (int i = 0; i < n; i++)
-    result -= wt[i] *(u->val[i] *(v->dx[i] * v_x + v->dy[i] * v_y ));
-  return result;
-}
-
-double CustomWeakForm::CustomMatrixFormVol::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
-                                            Geom<double> *e, Func<double> **ext) const
-{
-  return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
-}
-
-Ord CustomWeakForm::CustomMatrixFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
-                                       Geom<Ord> *e, Func<Ord> **ext) const
-{
-  return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
-}
-
-MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVol::clone() const
-{
-  return new CustomWeakForm::CustomMatrixFormVol(*this);
-}
-
-
-
 
 double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
                                                 Geom<double> *e, Func<double> **ext) const
