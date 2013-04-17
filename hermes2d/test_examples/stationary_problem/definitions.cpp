@@ -6,7 +6,7 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,bool 
 
   if(all)
   {
-    add_matrix_form(new CustomMatrixFormVol(0, 0));
+    add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
     }
    add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));    
    if(DG) add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
