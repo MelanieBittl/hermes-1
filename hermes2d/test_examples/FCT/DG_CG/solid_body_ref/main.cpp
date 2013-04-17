@@ -32,7 +32,7 @@ using namespace Hermes::Hermes2D::Views;
 
 const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const int P_MAX = 2; 										//Maximal polynomial degree.
+const int P_MAX = 5; 										//Maximal polynomial degree.
                       
 const double time_step = 1e-3;                           // Time step.
 const double T_FINAL = 2*PI;                       // Time interval length.
@@ -50,7 +50,7 @@ const int UNREF_FREQ = 5;                         // Every UNREF_FREQth time ste
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
-const double THRESHOLD = 0.3;                      // This is a quantitative parameter of the adapt(...) function and
+const double THRESHOLD = 0.2;                      // This is a quantitative parameter of the adapt(...) function and
                                                   // it has different meanings for various adaptive strategies (see below).
 const int STRATEGY = 1;                           // Adaptive strategy:
                                                   // STRATEGY = 0 ... refine elements until sqrt(THRESHOLD) times total
@@ -78,7 +78,7 @@ const double ERR_STOP = 1.0;                      // Stopping criterion for adap
 const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
 
-const int ADAPSTEP_MAX = 3;												// max. numbers of adaptivity steps
+const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
 
 
 //Visualization

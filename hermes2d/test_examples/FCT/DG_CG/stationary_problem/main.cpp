@@ -6,7 +6,7 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
                     
@@ -61,7 +61,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 ScalarView fview("filter", new WinGeom(500, 500, 500, 400));
 	      //sview.set_min_max_range(-0.01, 1.);
 	ScalarView lview("anfangs-Loesung", new WinGeom(500, 0, 500, 400));
-lview.show(&u_prev_time);
+//lview.show(&u_prev_time);
   OGProjection<double> ogProjection;
   
     // Output solution in VTK format.
@@ -83,7 +83,7 @@ lview.show(&u_prev_time);
 
 CustomWeakFormConvection  convection;
 	///////////////////////////------------false, false (only CG), false, true (DG) --------------------------------------------------------------------------------
-	CustomWeakForm wf_surf(time_step, theta, &u_prev_time, BDY_IN, &mesh,false, true);
+	CustomWeakForm wf_surf(time_step, theta, &u_prev_time, BDY_IN, &mesh,true,true);
 		///////////////////////////--------------------------------------------------------------------------------------------
 
 
@@ -101,13 +101,13 @@ CustomWeakFormConvection  convection;
 		UMFPackMatrix<double> * matrix = new UMFPackMatrix<double> ;
 		     
 			matrix->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
-			matrix->add_matrix(conv_matrix); 
+			//matrix->add_matrix(conv_matrix); 
   
         // Initialize matrix solver.  
-		UMFPackVector<double> * rhs = new UMFPackVector<double> (ref_ndof);   
+		//UMFPackVector<double> * rhs = new UMFPackVector<double> (ref_ndof);   
  
-		rhs->zero(); rhs->add_vector(surf_rhs);
-    UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>( matrix, rhs); 
+		//rhs->zero(); rhs->add_vector(surf_rhs);
+    UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>( matrix, surf_rhs); 
     
     
      if(solver->solve())
@@ -123,7 +123,7 @@ CustomWeakFormConvection  convection;
 		sview.show(&u_new);
 		//View::wait(HERMES_WAIT_KEYPRESS);	
 
-	 	matrix->multiply_with_vector(coeff_vec_2, coeff_vec); 
+/*	 	matrix->multiply_with_vector(coeff_vec_2, coeff_vec); 
 	for(int i =0; i<ref_ndof; i++) coeff_vec_3[i] = coeff_vec[i] - surf_rhs->get(i);
 double total = 0;
 	for(int i =0;i<ref_ndof; i++) total += abs(coeff_vec_3[i]);	 	
@@ -179,21 +179,18 @@ Solution<double>::vector_to_solution(coeff_vec, &space, &proj_sln);
  double err_l1_proj = calc_error_l1(&proj_sln, &u_new, &space);
  double abs_err_max = calc_error_max(&exact_solution, &u_new, &space);
  double err_max_coeff = calc_error_max(coeff_vec, coeff_vec_2, ref_ndof);
-
-
-//AbsDifffilter filter(Hermes::vector<MeshFunction<double>*>(&exact_solution, &u_new));
-//fview.show(&filter);
-//lin.save_solution_vtk(&u_new, "sln.vtk", "solution", mode_3D);
-//lin.save_solution_vtk(&filter, "error.vtk" , "error", mode_3D);  
-
 Hermes::Mixins::Loggable::Static::info("l2=%.5e, l2_new = %.5e, l1=%.5e, abs_max = %f,  ndof = %d", abs_err_l2,err_l2,err_l1, abs_err_max , ref_ndof);
 
+AbsDifffilter filter(Hermes::vector<MeshFunction<double>*>(&exact_solution, &u_new));
+//fview.show(&filter);
+lin.save_solution_vtk(&u_new, "sln.vtk", "solution", mode_3D);
+lin.save_solution_vtk(&filter, "error.vtk" , "error", mode_3D);  
 
 FILE * pFile;
 pFile = fopen ("error.txt","w");
     fprintf (pFile, "l2=%.5e, l2(proj) = %.5e, l1=%.5e,l1(proj)=%.5e, abs_max = %.5e,abs_coeff = %.5e  ndof = %d", abs_err_l2,err_l2,err_l1,err_l1_proj, abs_err_max , err_max_coeff, ref_ndof);
 fclose (pFile);  
-  
+
  
   
   

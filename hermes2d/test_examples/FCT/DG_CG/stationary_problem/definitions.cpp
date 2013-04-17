@@ -25,11 +25,14 @@ Scalar CustomWeakForm::CustomMatrixFormVol::matrix_form(int n, double *wt, Func<
                                                   Geom<Real> *e, Func<Scalar> **ext) const
 {
   Scalar result = Scalar(0);
-			Scalar v_x = e->y[i]; 
-			Scalar v_y = 1.-e->x[i];
   for (int i = 0; i < n; i++)
+{
+			Real v_x = e->y[i]; 
+			Real v_y = Real(1.)-e->x[i];
     result -= wt[i] *(u->val[i] *(v->dx[i] * v_x + v->dy[i] * v_y ));
 	//result += wt[i] *(v->val[i] *(u->dx[i] * v_x + u->dy[i] * v_y ));
+
+}
 
 
   return result;
@@ -99,7 +102,7 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
   for (int i = 0; i < n; i++) 
   {
  	 Real v_x = (e->y[i]);
- 	 Real v_y = 1.-e->x[i]; 
+ 	 Real v_y = Real(1.)-e->x[i]; 
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     Real jump_v = v->get_val_central(i) - v->get_val_neighbor(i);
    result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->get_val_central(i), u->get_val_neighbor(i), a_dot_n) * jump_v; 
@@ -134,7 +137,7 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
  //Dirichlet-Rand!
 if((e->x[i]<1)&&(e->y[i]==0)) 
 		{
-			double v_x = e->y[i]; 
+			double v_x =	e->y[i]; 
 			double v_y = 1.-e->x[i];
 			double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 			result -= wt[i] * exact->val[i] * v->val[i] * a_dot_n;
@@ -208,7 +211,8 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
 
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
-  result -= wt[i] * (u->val[i] *(v->dx[i] * (e->y[i]) + v->dy[i] * (1.-e->x[i]) ));
+  	result -= wt[i] * (u->val[i] *(v->dx[i] * (e->y[i]) + v->dy[i] * (1.-e->x[i]) ));
+	//result -= wt[i] * (u->val[i] *(v->dx[i]*0.5 + v->dy[i]  ));
   return result;
 
     };
@@ -264,12 +268,12 @@ double CustomDirichletCondition::value(double x, double y, double n_x, double n_
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
       
 			double radius = Hermes::sqrt((x-1)*(x-1)+y*y);
-	if((radius>= 0.5)&&(radius<=0.8)){		
+	/*if((radius>= 0.5)&&(radius<=0.8)){		
 		double arg = PI*(radius-0.65)/0.15;
 		dx = -0.25*Hermes::sin(arg)*(PI/0.15)*x/radius;
 		dy	= -0.25*Hermes::sin(arg)*(PI/0.15)*y/radius;
-	}
-	/*if((radius>= 0.1)&&(radius<=0.9))
+	}*/
+	if((radius>= 0.1)&&(radius<=0.9))
 	{		
 		double arg = PI*(radius-0.5)/0.8;
 		dx = -Hermes::sin(arg)*(PI/0.3)*x/radius;
@@ -278,16 +282,26 @@ double CustomDirichletCondition::value(double x, double y, double n_x, double n_
 		int k = 4;
 		dx *=k*std::pow(result, k-1);
 		dy *=k*std::pow(result, k-1);
-	}*/
+	}
 
 	
 // fuer v = (0.5,1)
-/*	if((x-y>0)&&(x-y<0.5))
+/*	if((x-0.5*y>0)&&(x-0.5*y<0.5))
+{
+	double arg = PI*(x-0.5*y-0.25)/0.5;
+	dx= -std::sin(arg)*PI/0.5;
+	dy=	std::sin(arg)*PI/0.5;
+	int k =2;
+	dx*= k*std::pow(std::cos(arg),k-1);
+	dy *=k*std::pow(std::cos(arg),k-1);
+}
+// fuer v = (1,1)
+/*if((x-y>0)&&(x-y<0.5))
 {
 	double arg = PI*(x-y-0.25)/0.5;
 	dx= -std::sin(arg)*PI/0.5;
 	dy=	std::sin(arg)*PI/0.5;
-	int k =4;
+	int k =2;
 	dx*= k*std::pow(std::cos(arg),k-1);
 	dy *=k*std::pow(std::cos(arg),k-1);
 }*/
@@ -303,33 +317,42 @@ double CustomDirichletCondition::value(double x, double y, double n_x, double n_
        
  		 double result = 0.0;
 		double radius = Hermes::sqrt((x-1)*(x-1)+y*y);
-		if((radius>= 0.5)&&(radius<=0.8))
+		/*if((radius>= 0.5)&&(radius<=0.8))
 		{		
 			double arg = PI*(radius-0.65)/0.15;
 			result = 0.25*(1+Hermes::cos(arg));
 		}	
 		
-
-	/*if((radius> 0.1)&&(radius<0.9))
+*/
+	if((radius> 0.1)&&(radius<0.9))
 		{
 		
 		double arg = PI*(radius-0.5)/0.8;
 		result= Hermes::cos(arg);
 		}
 		int k = 4;
-		return std::pow(result,k);*/
+		return std::pow(result,k);
 
 
 
 // fuer v = (0.5,1)
-/*	if((x-y>0)&&(x-y<0.5))
+/*	if((x-0.5*y>0)&&(x-0.5*y<0.5))
+	{
+		double arg = PI*(x-0.5*y-0.25)/0.5;
+		result= std::cos(arg);
+		int k = 2;
+		return std::pow(result,k);		
+	}
+
+// fuer v = (1,1)
+/*if((x-y>0)&&(x-y<0.5))
 	{
 		double arg = PI*(x-y-0.25)/0.5;
 		result= std::cos(arg);
-		int k = 4;
+		int k = 2;
 		return std::pow(result,k);		
-	}
-*/		
+	}*/
+	
 	return result;
 
 
