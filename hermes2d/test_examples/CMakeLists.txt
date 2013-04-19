@@ -26,4 +26,7 @@ add_subdirectory("12-transient-adapt")
 
 add_subdirectory("13-picard")
 
+add_subdirectory("nonlinearity")
+
 add_subdirectory("stationary_problem")
+
