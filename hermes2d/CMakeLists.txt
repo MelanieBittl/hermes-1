@@ -308,6 +308,7 @@ project(hermes2d)
     include/shapeset/shapeset_hd_all.h
     include/shapeset/shapeset_l2_all.h
     include/shapeset/precalc.h
+		include/shapeset/shapeset_l2_semi.h
 
     include/space/space.h
     include/space/space_h1.h

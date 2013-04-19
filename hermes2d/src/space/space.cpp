@@ -19,6 +19,7 @@
 #include "shapeset_hd_all.h"
 #include "shapeset_h1_all.h"
 #include "shapeset_l2_all.h"
+#include "shapeset_l2_semi.h"
 #include "space_hcurl.h"
 #include "space_hdiv.h"
 #include "space_l2_semi_cg.h"
@@ -1040,6 +1041,16 @@ namespace Hermes
 
     template<typename Scalar>
     void Space<Scalar>::get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const
+    {
+      this->check();
+      al->cnt = 0;
+      get_vertex_assembly_list(e, surf_num, al);
+      get_vertex_assembly_list(e, e->next_vert(surf_num), al);
+      get_boundary_assembly_list_internal(e, surf_num, al);
+    }
+
+    template<typename Scalar>
+    void Space<Scalar>::get_boundary_assembly_list_surf(Element* e, int surf_num, AsmList<Scalar>* al) const
     {
       this->check();
       al->cnt = 0;

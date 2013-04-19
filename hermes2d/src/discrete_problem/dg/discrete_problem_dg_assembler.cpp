@@ -411,7 +411,7 @@ namespace Hermes
 
       for(int i = 0; i < this->spaces_size; i++)
       {
-        if(this->spaces[i]->get_type() != HERMES_L2_SPACE)
+        if((this->spaces[i]->get_type() != HERMES_L2_SPACE) && (this->spaces[i]->get_type() != HERMES_L2_SEMI_SPACE))
           continue;
         delete [] jacobian_x_weights[i];
         e[i]->free();
@@ -474,7 +474,7 @@ namespace Hermes
           NeighborSearch<Scalar>* ns = new NeighborSearch<Scalar>(current_state->e[i], spaces[i]->get_mesh());
           ns->original_central_el_transform = current_state->sub_idx[i];
           current_neighbor_searches[i] = ns;
-          if(current_neighbor_searches[i]->set_active_edge_multimesh(current_state->isurf) && spaces[i]->get_type() == HERMES_L2_SPACE)
+          if(current_neighbor_searches[i]->set_active_edge_multimesh(current_state->isurf) && ((spaces[i]->get_type() == HERMES_L2_SPACE)||(spaces[i]->get_type() == HERMES_L2_SEMI_SPACE)))
             DG_intra = true;
           current_neighbor_searches[i]->clear_initial_sub_idx();
         }

@@ -65,6 +65,8 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
  	 Real v_x = (e->y[i]);
  	 Real v_y = Real(1.)-e->x[i]; 
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
+   // Real jump_v = v->val[i] - v->val_neighbor[i];
+   //result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], u->val_neighbor[i], a_dot_n) * jump_v; 
     Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
     if(u->fn_central == NULL)
       result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(Real(0), u->val_neighbor[i], a_dot_n) * jump_v;

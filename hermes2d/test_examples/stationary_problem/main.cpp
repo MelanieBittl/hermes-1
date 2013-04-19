@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
 const int INIT_REF_NUM =4;                   // Number of initial refinements.
-const int P_INIT =1;       						// Initial polynomial degree.
+const int P_INIT =2;       						// Initial polynomial degree.
 
 
 
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
   // Perform initial mesh refinement.
   for (int i=0; i<INIT_REF_NUM; i++)
     mesh->refine_all_elements(); 
-
+Hermes2DApi.set_integral_param_value(numThreads, 1); 
   //L2Space
 //L2_SEMI_CG_Space
   // Create an L2 	space with default shapeset.
@@ -46,6 +46,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
   // Initialize views.
 	ScalarView sview("solution_1", new WinGeom(500, 500, 500, 400));
 	ScalarView s2view("solution_2", new WinGeom(0, 500, 500, 400));
+s2view.set_min_max_range(0, 0.5);
 	ScalarView fview("filter", new WinGeom(500, 500, 500, 400));
 	ScalarView lview("initial condition", new WinGeom(500, 0, 500, 400));
 	lview.show(u_prev_time);

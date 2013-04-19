@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
-//#include "space_h1.h"
+
 namespace Hermes
 {
   namespace Hermes2D
@@ -30,7 +30,7 @@ namespace Hermes
     {
       if(shapeset == NULL)
       {
-        this->shapeset = new H1Shapeset;
+        this->shapeset = new L2SEMIShapeset;
         this->own_shapeset = true;
       }
 
@@ -88,6 +88,18 @@ namespace Hermes
       else
         throw Hermes::Exceptions::Exception("Wrong shapeset type in L2_SEMI_CG_Space<Scalar>::set_shapeset()");
     }
+
+    template<typename Scalar>
+    void L2_SEMI_CG_Space<Scalar>::get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const
+    {
+      this->check();
+      al->cnt = 0;
+      //get_vertex_assembly_list(e, surf_num, al);
+      //get_vertex_assembly_list(e, e->next_vert(surf_num), al);
+      get_boundary_assembly_list_internal(e, surf_num, al);
+    }
+
+
 
     template<typename Scalar>
     void L2_SEMI_CG_Space<Scalar>::assign_vertex_dofs()
@@ -197,14 +209,14 @@ ndofs_total += ndofs;
   int ndofs_start = 0;int ndofs =0;
   for (unsigned int i = 0; i <= surf_num; i++)
           {
-             Node* en = e->en[i];
-if(en->ref >= 1 || en->bnd)
-{
-ndofs = this->get_edge_order_internal(en) - 1;	
-//ndofs_total += ndofs;
-if(i<surf_num) ndofs_start +=ndofs;
+						Node* en = e->en[i];
+						if(en->ref >= 1 || en->bnd)
+						{
+						ndofs = this->get_edge_order_internal(en) - 1;	
+						//ndofs_total += ndofs;
+						if(i<surf_num) ndofs_start +=ndofs;
 
-}
+						}
             
           }
  
@@ -218,25 +230,25 @@ if(i<surf_num) ndofs_start +=ndofs;
     
         template<typename Scalar>
     void L2_SEMI_CG_Space<Scalar>::get_bubble_assembly_list(Element* e, AsmList<Scalar>* al) const
-    {
+    {//edge and bubble
       typename Space<Scalar>::ElementData* ed = &this->edata[e->id];
       if(!ed->n) return;
          int ndofs_total = 0;int ndofs;
           int ndofs_start = ed->bdof;
  
-for (unsigned int i = 0; i < e->get_nvert(); i++)
-{
-Node* en = e->en[i]; int surf_num = i;
-if(en->ref >= 1 || en->bnd )
-{
-ndofs = this->get_edge_order_internal(en) - 1;	
-ndofs_total += ndofs;
-int ori = (e->vn[surf_num]->id < e->vn[e->next_vert(surf_num)]->id) ? 0 : 1;
-           for (int j = 0, dof = ndofs_start; j < ndofs; j++, dof += this->stride)
-             al->add_triplet(this->shapeset->get_edge_index(surf_num, ori, j + 2, e->get_mode()), dof, 1.0);	
-ndofs_start +=ndofs;
-}
-}
+					for (unsigned int i = 0; i < e->get_nvert(); i++)
+					{
+					Node* en = e->en[i]; int surf_num = i;
+					if(en->ref >= 1 || en->bnd )
+						{
+						ndofs = this->get_edge_order_internal(en) - 1;	
+						ndofs_total += ndofs;
+						int ori = (e->vn[surf_num]->id < e->vn[e->next_vert(surf_num)]->id) ? 0 : 1;
+											 for (int j = 0, dof = ndofs_start; j < ndofs; j++, dof += this->stride)
+												 al->add_triplet(this->shapeset->get_edge_index(surf_num, ori, j + 2, e->get_mode()), dof, 1.0);	
+						ndofs_start +=ndofs;
+						}
+					}
 
       int* indices = this->shapeset->get_bubble_indices(ed->order, e->get_mode());
       for (int i = 0, dof = ndofs_start; i < (ed->n - ndofs_total); i++, dof += this->stride)

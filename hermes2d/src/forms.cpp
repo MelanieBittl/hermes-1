@@ -464,7 +464,7 @@ namespace Hermes
       Quad2D* quad = fu->get_quad_2d();
 
 #ifdef H2D_USE_SECOND_DERIVATIVES
-      if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE)
+      if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE || space_type == HERMES_L2_SEMI_SPACE)
           fu->set_quad_order(order, H2D_FN_ALL);
       else
         fu->set_quad_order(order);
@@ -477,7 +477,7 @@ namespace Hermes
       Func<double>* u = new Func<double>(np, nc);
 
       // H1 & L2 space.
-      if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE)
+      if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE || space_type == HERMES_L2_SEMI_SPACE)
       {
         u->val = new double[np];
         u->dx  = new double[np];
@@ -695,7 +695,7 @@ namespace Hermes
       int nc = fu->get_num_components();
       Quad2D* quad = fu->get_quad_2d();
 #ifdef H2D_USE_SECOND_DERIVATIVES
-      if((space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE) && sln_type != HERMES_EXACT)
+      if((space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE || space_type == HERMES_L2_SEMI_SPACE) && sln_type != HERMES_EXACT)
         fu->set_quad_order(order, H2D_FN_ALL);
       else
         fu->set_quad_order(order);
@@ -713,7 +713,7 @@ namespace Hermes
         u->dy  = new Scalar[np];
         
 #ifdef H2D_USE_SECOND_DERIVATIVES
-        if((space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE) && sln_type != HERMES_EXACT)
+        if((space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE || space_type == HERMES_L2_SEMI_SPACE) && sln_type != HERMES_EXACT)
           u->laplace = new Scalar[np];
 #endif
 
@@ -722,7 +722,7 @@ namespace Hermes
         memcpy(u->dy, fu->get_dy_values(), np * sizeof(Scalar));
 
 #ifdef H2D_USE_SECOND_DERIVATIVES
-        if((space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE) && sln_type != HERMES_EXACT)
+        if((space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SPACE || space_type == HERMES_L2_SEMI_SPACE) && sln_type != HERMES_EXACT)
         {
           Scalar *dxx = fu->get_dxx_values();
           Scalar *dyy = fu->get_dyy_values();
