@@ -6,8 +6,8 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
-const int P_INIT =2;       						// Initial polynomial degree.
+const int INIT_REF_NUM =7;                   // Number of initial refinements.
+const int P_INIT =1;       						// Initial polynomial degree.
 
                     
 const double time_step = 1.;                           // Time step.
@@ -39,12 +39,12 @@ int main(int argc, char* argv[])
   // Create an space with default shapeset.  
 
 //CustomDirichletCondition bc_essential(Hermes::vector<std::string>("inlet1","inlet2"));
- // EssentialBCs<double>  bcs(&bc_essential);
+//  EssentialBCs<double>  bcs(&bc_essential);
 
-L2_SEMI_CG_Space<double> space(&mesh,P_INIT);
+//L2_SEMI_CG_Space<double> space(&mesh,P_INIT);
 //L2Space<double> space(&mesh, P_INIT);
 //H1Space<double> space(&mesh,&bcs, P_INIT);
-//H1Space<double> space(&mesh,P_INIT);
+H1Space<double> space(&mesh,P_INIT);
 
   int ndof = space.get_num_dofs();
   
@@ -81,12 +81,12 @@ ScalarView fview("filter", new WinGeom(500, 500, 500, 400));
 	double* vec_new;
   memset(coeff_vec_2, 0, ref_ndof*sizeof(double));
 
-CustomWeakFormConvection  convection;
+
 	///////////////////////////------------false, false (only CG), false, true (DG) --------------------------------------------------------------------------------
-	CustomWeakForm wf_surf(time_step, theta, &u_prev_time, BDY_IN, &mesh,true,true);
+	CustomWeakForm wf_surf(time_step, theta, &u_prev_time, BDY_IN, &mesh,true,false);
 		///////////////////////////--------------------------------------------------------------------------------------------
-
-
+/*
+CustomWeakFormConvection  convection;
 	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; //inner and outer edge integrals
 	UMFPackVector<double> * surf_rhs = new UMFPackVector<double> (ref_ndof); 
 	DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, &space);
@@ -142,7 +142,7 @@ Hermes::Mixins::Loggable::Static::info("total = %.5e      ", total);
 	 	//delete solver;
 	 	
  // Initialize linear solver.
-/*  Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf_surf, &space);
+  Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf_surf, &space);
 
   // Solve the linear problem.
   try
@@ -158,21 +158,50 @@ Hermes::Mixins::Loggable::Static::info("total = %.5e      ", total);
 		for(int i = 0; i<ref_ndof; i++) 
 			coeff_vec_2[i] = sln_vector[i];
 
-		sview.show(&u_new);
+	//	sview.show(&u_new);
   }catch(std::exception& e)
   {
     std::cout << e.what();
   }
- */ 
+
 
 
  
 
 CustomInitialCondition exact_solution(space.get_mesh());
 
+
   ogProjection.project_global(&space, &exact_solution, coeff_vec,  HERMES_L2_NORM);  
 Solution<double>::vector_to_solution(coeff_vec, &space, &proj_sln);
 
+
+Element* e; AsmList<double> al;
+  memset(coeff_vec, 0, ref_ndof*sizeof(double));
+		for_all_active_elements(e, space.get_mesh())
+	{
+			space.get_element_assembly_list(e, &al);
+	  	for (unsigned int iv = 0; iv < e->get_nvert(); iv++)
+			{   		
+		 	 int index =  space.get_shapeset()->get_vertex_index(iv,HERMES_MODE_QUAD);
+				Node* vn = e->vn[iv];
+				if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
+					for(unsigned int j = 0; j < al.get_cnt(); j ++){			 
+						if((al.get_idx()[j]==index)&&(al.get_dof()[j]!=-1.0))
+										{ 
+										if(coeff_vec[al.get_dof()[j]]==0.)		coeff_vec[al.get_dof()[j]]=exact_solution.value(vn->x, vn->y);
+										}
+						}
+				}
+			}
+	}
+
+
+	//	lview.show(&proj_sln);
+//for(int i = 0; i<ref_ndof; i++) 
+	//coeff_vec[i] = std::abs(coeff_vec[i]-coeff_vec_2[i]);
+Solution<double>::vector_to_solution(coeff_vec, &space, &proj_sln);
+
+/*
  double abs_err_l2 = Global<double>::calc_abs_error(&exact_solution,&u_new, HERMES_L2_NORM);
  double err_l2 = calc_error_l2(&proj_sln, &u_new, &space);
  double err_l1 = calc_error_l1(&exact_solution, &u_new, &space);
@@ -184,15 +213,28 @@ Hermes::Mixins::Loggable::Static::info("l2=%.5e, l2_new = %.5e, l1=%.5e, abs_max
 AbsDifffilter filter(Hermes::vector<MeshFunction<double>*>(&exact_solution, &u_new));
 //fview.show(&filter);
 lin.save_solution_vtk(&u_new, "sln.vtk", "solution", mode_3D);
-lin.save_solution_vtk(&filter, "error.vtk" , "error", mode_3D);  
+lin.save_solution_vtk(&filter, "error.vtk" , "error", false);  
 
 FILE * pFile;
 pFile = fopen ("error.txt","w");
     fprintf (pFile, "l2=%.5e, l2(proj) = %.5e, l1=%.5e,l1(proj)=%.5e, abs_max = %.5e,abs_coeff = %.5e  ndof = %d", abs_err_l2,err_l2,err_l1,err_l1_proj, abs_err_max , err_max_coeff, ref_ndof);
 fclose (pFile);  
+*/
 
- 
-  
+ //double err_l2 = calc_error_l2(&proj_sln, &u_new, &space);
+double err_l2 = Global<double>::calc_abs_error(&proj_sln,&u_new, HERMES_L2_NORM);
+ double err_l1 = calc_error_l1(&exact_solution, &u_new, &space);
+ Hermes::Mixins::Loggable::Static::info("l2=%.5e, l1=%.5e, ndof = %d", err_l2,err_l1,ref_ndof);
+FILE * pFile;
+pFile = fopen ("error_streamline.txt","w");
+    fprintf (pFile, "l2=%.5e, l1=%.5e, ndof = %d", err_l2,err_l1,ref_ndof);
+fclose (pFile);  
+
+//AbsDifffilter filter(Hermes::vector<MeshFunction<double>*>(&exact_solution, &u_new));
+//fview.show(&filter);
+//lin.save_solution_vtk(&filter, "error.vtk" , "error", false);  
+//lin.save_solution_vtk(&proj_sln, "proj_error.vtk", "solution", false);
+//lin.save_solution_vtk(&u_new, "sln.vtk", "solution", mode_3D);
   
     delete [] coeff_vec;
   delete [] coeff_vec_2;

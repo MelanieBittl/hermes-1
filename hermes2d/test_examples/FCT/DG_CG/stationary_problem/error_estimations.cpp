@@ -28,14 +28,14 @@
 
 bool inside(Element* e)
 {
-
+Element* elem = e->parent;
 	double x = 0; 
 	double y = 0;
-	for(int i = 0; i< e->get_nvert(); i++)
-	{ 	x+= e->vn[i]->x/e->get_nvert(); 
-		y+= e->vn[i]->y/e->get_nvert(); 
+	for(int i = 0; i< elem->get_nvert(); i++)
+	{ 	x+= e->vn[i]->x/elem->get_nvert(); 
+		y+= e->vn[i]->y/elem->get_nvert(); 
 	}
-	if((x-y<-0.3)&&(x-y>-0.7)) return true;
+	if((x-y<0.4)&&(x-y>0.1)) return true;
 	else return false;
 }
 
@@ -86,7 +86,7 @@ double calc_error_l2(Solution<double>* u_1, Solution<double>* u_2,Space<double>*
 				u->free_fn();
 				delete v;
 				delete u;
-	//	}
+		//}
 		  }
 		  delete rm;
 	return std::sqrt(err_total);
