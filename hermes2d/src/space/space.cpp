@@ -1049,15 +1049,6 @@ namespace Hermes
       get_boundary_assembly_list_internal(e, surf_num, al);
     }
 
-    template<typename Scalar>
-    void Space<Scalar>::get_boundary_assembly_list_surf(Element* e, int surf_num, AsmList<Scalar>* al) const
-    {
-      this->check();
-      al->cnt = 0;
-      get_vertex_assembly_list(e, surf_num, al);
-      get_vertex_assembly_list(e, e->next_vert(surf_num), al);
-      get_boundary_assembly_list_internal(e, surf_num, al);
-    }
 
     template<typename Scalar>
     void Space<Scalar>::get_bubble_assembly_list(Element* e, AsmList<Scalar>* al) const

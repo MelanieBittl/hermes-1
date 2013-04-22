@@ -310,9 +310,6 @@ namespace Hermes
       /// Obtains an edge assembly list (contains shape functions that are nonzero on the specified edge).
       virtual void get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const;
 
-      /// Obtains an edge assembly list (contains shape functions that are nonzero on the specified edge).
-      virtual void get_boundary_assembly_list_surf(Element* e, int surf_num, AsmList<Scalar>* al) const;
-
       /// Sets the same polynomial order for all elements in the mesh. Does not
       /// call assign_dofs(). For internal use.
       void set_uniform_order_internal(int order, int marker);

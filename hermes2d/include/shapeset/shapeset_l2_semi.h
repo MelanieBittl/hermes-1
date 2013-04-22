@@ -12,7 +12,7 @@ namespace Hermes
     class HERMES_API L2SEMIShapeset : public H1ShapesetJacobi
     {
     public:
-      virtual Shapeset* clone() { return new L2SEMIShapeset (*this); };
+      virtual Shapeset* clone() { return new L2SEMIShapeset(*this); };
     private:
       virtual int get_id() const { return 3; }
 			virtual SpaceType get_space_type() const { return HERMES_L2_SEMI_SPACE; }

@@ -46,7 +46,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
   // Initialize views.
 	ScalarView sview("solution_1", new WinGeom(500, 500, 500, 400));
 	ScalarView s2view("solution_2", new WinGeom(0, 500, 500, 400));
-s2view.set_min_max_range(0, 0.5);
+sview.set_min_max_range(0, 0.5);
 	ScalarView fview("filter", new WinGeom(500, 500, 500, 400));
 	ScalarView lview("initial condition", new WinGeom(500, 0, 500, 400));
 	lview.show(u_prev_time);
@@ -55,6 +55,51 @@ s2view.set_min_max_range(0, 0.5);
 	int ndof = space->get_num_dofs();
 
 
+	double *coeff_vec = new double[ndof];		
+	double *coeff_vec_2 = new double[ndof];
+	double *coeff_vec_3 = new double[ndof];
+	double* vec_new;
+  //memset(coeff_vec_2, 0, ndof*sizeof(double));
+
+
+	///////////////////////////------------false, false (only CG), false, true (DG) --------------------------------------------------------------------------------
+	CustomWeakForm wf_surf(u_prev_time,true, true);
+		///////////////////////////--------------------------------------------------------------------------------------------
+
+
+	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; //inner and outer edge integrals
+	UMFPackVector<double> * surf_rhs = new UMFPackVector<double> (ndof); 
+	DiscreteProblem<double> * dp_surf = new DiscreteProblem<double> (&wf_surf,space);	
+
+	//dp_surf->set_linear();
+	dp_surf->assemble(dg_surface_matrix,surf_rhs);
+
+		UMFPackMatrix<double> * matrix = new UMFPackMatrix<double> ;
+		     
+			matrix->create(dg_surface_matrix->get_size(),dg_surface_matrix->get_nnz(), dg_surface_matrix->get_Ap(), dg_surface_matrix->get_Ai(),dg_surface_matrix->get_Ax());
+
+  
+        // Initialize matrix solver.  
+		UMFPackVector<double> * rhs = new UMFPackVector<double> (ndof);   
+ 
+		rhs->zero(); rhs->add_vector(surf_rhs);
+    UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>( matrix, surf_rhs); 
+    
+    
+     if(solver->solve())
+     {
+     	vec_new = solver->get_sln_vector();
+      Solution<double>::vector_to_solution(vec_new, space, u_new);
+      }
+    else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
+		for(int i = 0; i<ndof; i++) 
+			coeff_vec_2[i] = vec_new[i];
+
+		sview.show(u_new);
+
+
+/*
 CustomWeakForm wf(u_prev_time,true, true);
  // Initialize linear solver.
  Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
@@ -73,7 +118,7 @@ CustomWeakForm wf(u_prev_time,true, true);
   {
     std::cout << e.what();
   }
- 
+ */
 
 
 

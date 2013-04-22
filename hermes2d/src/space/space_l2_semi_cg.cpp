@@ -80,23 +80,14 @@ namespace Hermes
     {
         if((this->shapeset!=NULL)&& (this->own_shapeset))
      delete this->shapeset;
-      if((shapeset->get_id() < 10)||(shapeset->get_id() ==31)) // <10=> H1 shapeset, 31=>taylor_shapeset
+      //if((shapeset->get_id() < 10)||(shapeset->get_id() ==31)) // <10=> H1 shapeset, 31=>taylor_shapeset
+			if(shapeset->get_id()==3)
       {
         this->shapeset = shapeset;
         this->own_shapeset = false;
       }
       else
         throw Hermes::Exceptions::Exception("Wrong shapeset type in L2_SEMI_CG_Space<Scalar>::set_shapeset()");
-    }
-
-    template<typename Scalar>
-    void L2_SEMI_CG_Space<Scalar>::get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const
-    {
-      this->check();
-      al->cnt = 0;
-      //get_vertex_assembly_list(e, surf_num, al);
-      //get_vertex_assembly_list(e, e->next_vert(surf_num), al);
-      get_boundary_assembly_list_internal(e, surf_num, al);
     }
 
 
@@ -155,11 +146,11 @@ namespace Hermes
           for (unsigned int i = 0; i < e->get_nvert(); i++)
           {
              Node* en = e->en[i];
-if(en->ref >= 1 || en->bnd)
-{
-ndofs = this->get_edge_order_internal(en) - 1;	
-ndofs_total += ndofs;
-}
+							if(en->ref >= 1 || en->bnd)
+							{
+							ndofs = this->get_edge_order_internal(en) - 1;	
+							ndofs_total += ndofs;
+							}
           }
           
           ndofs = this->shapeset->get_num_bubbles(ed->order, e->get_mode()) ;
@@ -188,7 +179,6 @@ ndofs_total += ndofs;
         for (int j = 0; j < nd->ncomponents; j++)
           if(nd->baselist[j].coef != (Scalar) 0)
           {
-//Hermes::Mixins::Loggable::Static::info("dof = %i", nd->baselist[j].dof);
             al->add_triplet(index, nd->baselist[j].dof, nd->baselist[j].coef);
           }
       }
@@ -270,14 +260,14 @@ ndofs_total += ndofs;
      for (unsigned int i = 0; i < e->get_nvert(); i++)
         get_vertex_assembly_list(e, i, al);
 
-if(this->edata[e->id].order > 1)
-      get_bubble_assembly_list(e, al);
+			if(this->edata[e->id].order > 1)
+						get_bubble_assembly_list(e, al);
            
       if(first_dof!=0.)
       {
-for(unsigned int i = 0; i < al->cnt; i++)
-if(al->dof[i] >= 0)
-al->dof[i] += first_dof;
+				for(unsigned int i = 0; i < al->cnt; i++)
+				if(al->dof[i] >= 0)
+				al->dof[i] += first_dof;
       }
     }
     

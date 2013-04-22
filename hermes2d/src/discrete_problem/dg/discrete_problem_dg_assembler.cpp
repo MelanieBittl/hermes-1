@@ -137,7 +137,7 @@ namespace Hermes
             debug();
 #endif
             for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors[current_state->isurf]; neighbor_i++)
-            {
+            { 
               if(!DG_vector_forms_present && processed[current_state->isurf][neighbor_i])
                 continue;
 

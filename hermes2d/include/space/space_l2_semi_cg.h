@@ -27,10 +27,6 @@ virtual void set_shapeset(Shapeset* shapeset);
       /// Obtains an assembly list for the given element.
       virtual void get_element_assembly_list(Element* e, AsmList<Scalar>* al, unsigned int first_dof = 0) const;
 
-      /// Obtains an edge assembly list (contains shape functions that are nonzero on the specified edge).
-      virtual void get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const;
-
-
 /// Removes the degree of freedom from a vertex node with the given id (i.e., its number
 /// in the mesh file) and makes it part of the Dirichlet lift with the given value.
 /// This is a special-purpose function which normally should not be needed.

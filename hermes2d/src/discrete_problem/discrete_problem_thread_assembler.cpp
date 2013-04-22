@@ -186,7 +186,7 @@ namespace Hermes
             for(int k = 0; k < current_state->rep->nvert; k++)
             {
               if(current_state->bnd[k])
-                spaces[j]->get_boundary_assembly_list_surf(current_state->e[j], k, alsSurface[j][k]);
+                spaces[j]->get_boundary_assembly_list(current_state->e[j], k, alsSurface[j][k]);
             }
           }
         }
