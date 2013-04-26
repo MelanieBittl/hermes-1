@@ -6,8 +6,8 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =7;                   // Number of initial refinements.
-const int P_INIT =1;       						// Initial polynomial degree.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int P_INIT =2;       						// Initial polynomial degree.
 
                     
 const double time_step = 1.;                           // Time step.
@@ -158,23 +158,41 @@ Hermes::Mixins::Loggable::Static::info("total = %.5e      ", total);
 		for(int i = 0; i<ref_ndof; i++) 
 			coeff_vec_2[i] = sln_vector[i];
 
-	//	sview.show(&u_new);
+		sview.show(&u_new);
   }catch(std::exception& e)
   {
     std::cout << e.what();
   }
 
+ Wf_residual wf_test(&u_new, &u_prev_time);
+	UMFPackVector<double> * rhs = new UMFPackVector<double> (ndof); 
+UMFPackMatrix<double>* matrix = new UMFPackMatrix<double> ; 
+	DiscreteProblem<double> * dp_test = new DiscreteProblem<double> (&wf_test,&space);	
+	//dp_test->set_linear();
+	dp_test->assemble(rhs);
 
+//dg_surface_matrix->multiply_with_vector(coeff_vec_3, coeff_vec_4);
+double test =0; 
+
+for(int i =0; i<ndof;i++) 
+{
+	//if(std::abs(rhs->get(i))>10e-10) printf("test_%i =%.3e \n", i, rhs->get(i));
+	test+=rhs->get(i);
+
+
+}
+
+Hermes::Mixins::Loggable::Static::info("l2=%.5e",test);
 
  
 
-CustomInitialCondition exact_solution(space.get_mesh());
+//CustomInitialCondition exact_solution(space.get_mesh());
 
 
-  ogProjection.project_global(&space, &exact_solution, coeff_vec,  HERMES_L2_NORM);  
-Solution<double>::vector_to_solution(coeff_vec, &space, &proj_sln);
+ // ogProjection.project_global(&space, &exact_solution, coeff_vec,  HERMES_L2_NORM);  
+//Solution<double>::vector_to_solution(coeff_vec, &space, &proj_sln);
 
-
+/*
 Element* e; AsmList<double> al;
   memset(coeff_vec, 0, ref_ndof*sizeof(double));
 		for_all_active_elements(e, space.get_mesh())
@@ -194,12 +212,12 @@ Element* e; AsmList<double> al;
 				}
 			}
 	}
-
+*/
 
 	//	lview.show(&proj_sln);
 //for(int i = 0; i<ref_ndof; i++) 
 	//coeff_vec[i] = std::abs(coeff_vec[i]-coeff_vec_2[i]);
-Solution<double>::vector_to_solution(coeff_vec, &space, &proj_sln);
+//Solution<double>::vector_to_solution(coeff_vec, &space, &proj_sln);
 
 /*
  double abs_err_l2 = Global<double>::calc_abs_error(&exact_solution,&u_new, HERMES_L2_NORM);
@@ -222,13 +240,13 @@ fclose (pFile);
 */
 
  //double err_l2 = calc_error_l2(&proj_sln, &u_new, &space);
-double err_l2 = Global<double>::calc_abs_error(&proj_sln,&u_new, HERMES_L2_NORM);
+/*double err_l2 = Global<double>::calc_abs_error(&proj_sln,&u_new, HERMES_L2_NORM);
  double err_l1 = calc_error_l1(&exact_solution, &u_new, &space);
  Hermes::Mixins::Loggable::Static::info("l2=%.5e, l1=%.5e, ndof = %d", err_l2,err_l1,ref_ndof);
 FILE * pFile;
 pFile = fopen ("error_streamline.txt","w");
     fprintf (pFile, "l2=%.5e, l1=%.5e, ndof = %d", err_l2,err_l1,ref_ndof);
-fclose (pFile);  
+fclose (pFile); */ 
 
 //AbsDifffilter filter(Hermes::vector<MeshFunction<double>*>(&exact_solution, &u_new));
 //fview.show(&filter);

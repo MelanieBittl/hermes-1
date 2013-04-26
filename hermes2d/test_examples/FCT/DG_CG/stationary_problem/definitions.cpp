@@ -7,7 +7,7 @@ CustomWeakForm::CustomWeakForm(double time_step,double theta, Solution<double>* 
   if(all)
   {
     add_matrix_form(new CustomMatrixFormVol(0, 0, time_step,theta));
-	add_matrix_form(new Streamline(0,0));
+	//add_matrix_form(new Streamline(0,0));
     }
    add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));    
    if(DG) add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
@@ -270,6 +270,113 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
   return new CustomMatrixFormVolConvection(*this);
 }
 
+//--------------------REsidual--------------------------
+
+  template<typename Real, typename Scalar>
+  Scalar Residual_Mat::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                     Func<Real> *v, Geom<Real> *e, Func<Scalar>  **ext) const
+{
+     Scalar result = Scalar(0); 
+  for (int i = 0; i < n; i++)
+		result += wt[i] * (v->val[i] *((u->dx[i]+ u->dy[i])));
+  return result;
+
+
+}
+
+ double Residual_Mat::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+               Func<double> *v, Geom<double> *e, Func<double>  **ext) const
+{
+ return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+}
+
+Ord Residual_Mat::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+          Geom<Ord> *e, Func<Ord>  **ext) const
+{
+return Ord(10);
+}
+
+    MatrixFormVol<double>* Residual_Mat::clone() const
+{
+	return new Residual_Mat(*this);
+}
+
+
+
+	double Residual::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
+{
+
+	Func<double>* sln = ext[0];	Func<double>* exact = ext[1];
+  double result = double(0);
+  for (int i = 0; i < n; i++)
+	{		//if((e->y[i]==0)||(e->x[i]==0))
+			//result += wt[i] * (v->val[i] *(exact->dx[i]+exact->dy[i]));
+	//else 
+    	//result += wt[i] * (v->val[i] *(sln->dx[i]+sln->dy[i]));
+
+	/*if((e->y[i]==0)||(e->x[i]==0))
+			result -= wt[i] * (exact->val[i] *(v->dx[i]+v->dy[i]));
+	else */
+    	result -= wt[i] * (sln->val[i] *(v->dx[i]+v->dy[i]));
+		}
+  return result;
+
+}
+
+  Ord Residual::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+{
+
+return Ord(10);
+}
+
+ VectorFormVol<double>* Residual::clone() const
+	{	return new Residual(*this);
+		}
+
+
+	double Residual_surf::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
+{
+  double result = 0;
+	Func<double>* sln = ext[0];
+	Func<double>* exact = ext[1];
+double v_x =1.;
+double v_y = 1.;		
+   for (int i = 0; i < n; i++){ 
+			double a_dot_n = v_x*e->nx[i]+ v_y*e->ny[i];
+	//if((e->y[i]==0)||(e->x[i]==0))
+	//	result += wt[i] * exact->val[i] * v->val[i] * a_dot_n;
+	//else 
+			result += wt[i] * sln->val[i] * v->val[i]* a_dot_n;
+		
+	}
+  
+  return result;
+
+}
+
+  Ord Residual_surf::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+{
+
+return Ord(10);
+}
+
+ VectorFormSurf<double>* Residual_surf::clone() const
+	{	return new Residual_surf(*this);
+		}
+
+
+  Wf_residual::Wf_residual(Solution<double>* sln_1,Solution<double>* sln_2 ): WeakForm<double>(1)
+{ 
+		this->set_ext(Hermes::vector<MeshFunction<double>* >(sln_1,sln_2));
+		add_vector_form(new Residual(0));
+		add_vector_form_surf(new Residual_surf(0));
+		add_matrix_form(new Residual_Mat(0,0));
+}
+
+WeakForm<double>*   Wf_residual::clone() const
+{
+  return new   Wf_residual(*this);
+}
 
 
 
@@ -340,7 +447,7 @@ if((x-y>0)&&(x-y<0.5))
 	double arg = 2*PI*(x-y-0.25);
 	dx= -std::sin(arg)*PI*2.;
 	dy=	std::sin(arg)*PI*2.;
-	int k =4;
+	int k =2;
 	dx*= k*std::pow(std::cos(arg),k-1);
 	dy *=k*std::pow(std::cos(arg),k-1);
 }
@@ -388,7 +495,7 @@ if((x-y>0)&&(x-y<0.5))
 	{
 		double arg = 2.*PI*(x-y-0.25);
 		result= std::cos(arg);
-		int k = 4;
+		int k = 2;
 		return std::pow(result,k);		
 	}
 	
