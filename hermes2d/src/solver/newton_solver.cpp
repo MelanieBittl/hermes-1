@@ -269,12 +269,14 @@ namespace Hermes
         Solution<Scalar>::vector_to_solutions(this->residual, this->dp->get_spaces(), solutions, dir_lift_false);
 
         // Calculate the norm.
-        return Global<Scalar>::calc_norms(solutionsPtrs);
+        
+        DefaultNormCalculator<Scalar, HERMES_L2_NORM> normCalculator(solutions.size());
+        return normCalculator.calculate_norms(solutions);
       }
       else
       {
         // Calculate the l2-norm of residual vector, this is the traditional way.
-        return Global<Scalar>::get_l2_norm(this->residual);
+        return get_l2_norm(this->residual);
       }
     }
 
@@ -416,7 +418,7 @@ namespace Hermes
     void NewtonSolver<Scalar>::do_initial_step(Scalar* coeff_vec)
     {
       // Store the initial norm.
-      this->get_parameter_value(p_solution_norms).push_back(Global<Scalar>::get_l2_norm(coeff_vec, this->ndof));
+      this->get_parameter_value(p_solution_norms).push_back(get_l2_norm(coeff_vec, this->ndof));
 
       // Assemble the system.
       if(this->jacobian_reusable && this->reuse_jacobian_values())
@@ -497,14 +499,14 @@ namespace Hermes
         double damping_coeff = this->get_parameter_value(p_current_damping_coefficient);
 
         // store the solution norm change.
-        this->get_parameter_value(p_solution_change_norm) = damping_coeff * Global<Scalar>::get_l2_norm(sln_vector_local, ndof);
+        this->get_parameter_value(p_solution_change_norm) = damping_coeff * get_l2_norm(sln_vector_local, ndof);
 
         // add the increment to the solution.
         for (int i = 0; i < ndof; i++)
           coeff_vec[i] += damping_coeff * sln_vector_local[i];
 
         // store the solution norm.
-        this->get_parameter_value(p_solution_norms).push_back(Global<Scalar>::get_l2_norm(coeff_vec, this->ndof));
+        this->get_parameter_value(p_solution_norms).push_back(get_l2_norm(coeff_vec, this->ndof));
       }
       else
       {

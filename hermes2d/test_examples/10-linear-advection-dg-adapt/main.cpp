@@ -42,7 +42,7 @@ const CandList CAND_LIST = H2D_HP_ANISO;
 // their notoriously bad performance.
 const int MESH_REGULARITY = -1;
 // Stopping criterion for adaptivity.
-const double ERR_STOP = 1.0;
+const double ERR_STOP = 1e-1;
 // This parameter influences the selection of
 // candidates in hp-adaptivity. Default value is 1.0.
 const double CONV_EXP = 1.0;
@@ -59,7 +59,6 @@ const char* preconditioner = "jacobi";
 
 int main(int argc, char* args[])
 {
-  Hermes2DApi.set_integral_param_value(numThreads, 1);
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
   MeshReaderH2D mloader;
@@ -74,9 +73,6 @@ int main(int argc, char* args[])
 
   // Initialize refinement selector.
   L2ProjBasedSelector<double> selector(CAND_LIST, CONV_EXP, H2DRS_DEFAULT_ORDER);
-
-  // Disable weighting of refinement candidates.
-  selector.set_error_weights(1, 1, 1);
 
   // DOF and CPU convergence graphs.
   SimpleGraph graph_dof_est, graph_cpu_est;
@@ -130,8 +126,13 @@ int main(int argc, char* args[])
     oview.show(space);
 
     // Calculate element errors and total error estimate.
-    Adapt<double>* adaptivity = new Adapt<double>(space);
-    double err_est_rel = adaptivity->calc_err_est(sln, ref_sln) * 100;
+    DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
+    error_calculator.calculate_errors(sln, ref_sln);
+    double err_est_rel = error_calculator.get_total_error_squared() * 100;
+
+    Adapt<double> adaptivity(space, &error_calculator);
+    adaptivity.set_strategy(AdaptStoppingCriterionSingleElement, THRESHOLD);
+    //adaptivity.set_iterative_improvement(1e-1);
 
     std::cout << "Error: " << err_est_rel << "%." << std::endl;
 
@@ -143,7 +144,7 @@ int main(int argc, char* args[])
     if(err_est_rel < ERR_STOP) done = true;
     else
     {
-      done = adaptivity->adapt(&selector, THRESHOLD, STRATEGY, MESH_REGULARITY);
+      done = adaptivity.adapt(&selector);
 
       if(Space<double>::get_num_dofs(space) >= NDOF_STOP)
       {
@@ -151,11 +152,6 @@ int main(int argc, char* args[])
         break;
       }
     }
-
-    // Clean up.
-    delete adaptivity;
-   
-
     as++;
   }
   while (done == false);

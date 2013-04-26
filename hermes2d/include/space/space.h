@@ -429,7 +429,7 @@ namespace Hermes
       Hermes::vector<void*> bc_data;
 
       void precalculate_projection_matrix(int nv, double**& mat, double*& p);
-      void update_edge_bc(Element* e, SurfPos* surf_pos);
+      virtual void update_edge_bc(Element* e, SurfPos* surf_pos);
 
       /// Called by Space to update constraining relationships between shape functions due
       /// to hanging nodes in the mesh. As this is space-specific, this function is reimplemented
@@ -447,7 +447,6 @@ namespace Hermes
       template<typename T> friend class PicardSolver;
       template<typename T> friend class LinearSolver;
       template<typename T> friend class OGProjectionNOX;
-      template<typename T> friend class LocalProjection;
       template<typename T> friend class Solution;
       template<typename T> friend class RungeKutta;
       template<typename T> friend class ExactSolution;

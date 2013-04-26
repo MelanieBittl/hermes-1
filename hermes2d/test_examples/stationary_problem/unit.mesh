@@ -15,10 +15,10 @@ elements =
 
 boundaries =
 {
-  { 0, 1, "inlet"},
+  { 0, 1, "inlet1"},
   { 1, 2, "outlet"},
   { 2, 3, "outlet"},
-  { 3, 0, "inlet"},
+  { 3, 0, "inlet2"},
 
 }
 

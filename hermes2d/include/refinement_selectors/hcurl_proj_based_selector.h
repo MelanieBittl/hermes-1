@@ -17,7 +17,7 @@
 #define __H2D_REFINEMENT_SELECTORS_HCURL_PROJ_BASED_SELECTOR_H
 
 #include "proj_based_selector.h"
-#include <complex>
+#include "shapeset/shapeset_hc_all.h"
 namespace Hermes
 {
   namespace Hermes2D
@@ -38,9 +38,6 @@ namespace Hermes
         *  \param[in] user_shapeset A shapeset. If NULL, it will use internal instance of the class HcurlShapeset. */
         HcurlProjBasedSelector(CandList cand_list = H2D_HP_ANISO, double conv_exp = 1.0, int max_order = H2DRS_DEFAULT_ORDER, HcurlShapeset* user_shapeset = NULL);
 
-        /// Cloning for paralelism.
-        virtual Selector<Scalar>* clone();
-
         /// Destructor.
         virtual ~HcurlProjBasedSelector();
 
@@ -54,14 +51,13 @@ namespace Hermes
         };
 
         Scalar* precalc_rvals[H2D_MAX_ELEMENT_SONS][H2D_HCFE_NUM]; ///< Array of arrays of precalculates. The first index is an index of a subdomain, the second index is an index of a function expansion (see enum LocalFuncExpansion).
-        Scalar** precalc_rvals_curl; ///< Pre-calculated values of curls for every subdomain. Allocated using new_matrix.
 
         static const int H2DRS_MAX_HCURL_ORDER; ///< A maximum used order in this Hcurl-space selector. \todo Replace the numerical constant after a symbolic constant is added to Hcurl shapeset which would declare the maximum supported order.
 
         /// Sets OptimumSelector::current_max_order and OptimumSelector::current_min_order.
         /** The default order range is[1, ::H2DRS_MAX_HCURL_ORDER]. If curved, the upper boundary of the range becomes lower.
         *  Overriden function. For details, see OptimumSelector::set_current_order_range(). */
-        virtual void set_current_order_range(Element* element);
+        virtual void get_current_order_range(Element* element, int& min_order, int& max_order);
 
         /// Returns an array of values of the reference solution at integration points.
         /**  Overriden function. For details, see ProjBasedSelector::precalc_ref_solution(). */
@@ -86,6 +82,8 @@ namespace Hermes
         /// Evaluates an squared error of a projection of an element of a candidate onto subdomains.
         /**  Overriden function. For details, see ProjBasedSelector::evaluate_error_squared_subdomain(). */
         virtual double evaluate_error_squared_subdomain(Element* sub_elem, const typename ProjBasedSelector<Scalar>::ElemGIP& sub_gip, const typename ProjBasedSelector<Scalar>::ElemSubTrf& sub_trf, const typename ProjBasedSelector<Scalar>::ElemProj& elem_proj);
+        
+        friend class ProjBasedSelector<Scalar>;
       };
     }
   }

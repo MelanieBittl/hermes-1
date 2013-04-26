@@ -113,10 +113,6 @@ namespace Hermes
     template<typename Scalar>
     void DiscreteProblemDGAssembler<Scalar>::assemble_one_state()
     {
-      bool intra_edge_passed_DG[H2D_MAX_NUMBER_VERTICES];
-      for(int a = 0; a < H2D_MAX_NUMBER_VERTICES; a++)
-        intra_edge_passed_DG[a] = false;
-
 #pragma omp critical (DG)
       {
         for(unsigned int i = 0; i < current_state->num; i++)

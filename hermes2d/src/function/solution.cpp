@@ -1270,8 +1270,7 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE)
             {
               double* coeff_vec = new double[space->get_num_dofs()];
               MeshFunctionSharedPtr<double> sln(new ConstantSolution<double>(this->mesh, parsed_xml_solution->exactCXR().get()));
-              OGProjection<double> ogProj;
-              ogProj.project_global(space, sln, coeff_vec);
+              OGProjection<double>::project_global(space, sln, coeff_vec);
               this->set_coeff_vector(space, coeff_vec, true, 0);
               sln_type = HERMES_SLN;
             }
@@ -1283,8 +1282,7 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE)
             {
               double* coeff_vec = new double[space->get_num_dofs()];
               MeshFunctionSharedPtr<double> sln(new ConstantSolutionVector<double>(this->mesh, parsed_xml_solution->exactCXR().get(), parsed_xml_solution->exactCYR().get()));
-              OGProjection<double> ogProj;
-              ogProj.project_global(space, sln, coeff_vec);
+              OGProjection<double>::project_global(space, sln, coeff_vec);
               this->set_coeff_vector(space, coeff_vec, true, 0);
               sln_type = HERMES_SLN;
             }
@@ -1368,8 +1366,7 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE)
             {
               std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
               MeshFunctionSharedPtr<std::complex<double> > sln(new ConstantSolution<std::complex<double> >(this->mesh, parsed_xml_solution->exactCXR().get()));
-              OGProjection<std::complex<double> > ogProj;
-              ogProj.project_global(space, sln, coeff_vec);
+              OGProjection<std::complex<double> >::project_global(space, sln, coeff_vec);
               this->set_coeff_vector(space, coeff_vec, true, 0);
               sln_type = HERMES_SLN;
             }
@@ -1381,8 +1378,7 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE)
             {
               std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
               MeshFunctionSharedPtr<std::complex<double> > sln(new ConstantSolutionVector<std::complex<double> >(this->mesh, std::complex<double>(parsed_xml_solution->exactCXR().get(), parsed_xml_solution->exactCXC().get()), std::complex<double>(parsed_xml_solution->exactCYR().get(), parsed_xml_solution->exactCYC().get())));
-              OGProjection<std::complex<double> > ogProj;
-              ogProj.project_global(space, sln, coeff_vec);
+              OGProjection<std::complex<double> >::project_global(space, sln, coeff_vec);
               this->set_coeff_vector(space, coeff_vec, true, 0);
               sln_type = HERMES_SLN;
             }

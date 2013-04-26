@@ -247,7 +247,7 @@ namespace Hermes
     }
     
         template<typename Scalar>
-    void L2_SEMI_CG_Space<Scalar>::get_element_assembly_list(Element* e, AsmList<Scalar>* al, unsigned int first_dof) const
+    void L2_SEMI_CG_Space<Scalar>::get_element_assembly_list(Element* e, AsmList<Scalar>* al) const
     {
           // some checks
     if(e->id >= this->esize || this->edata[e->id].order < 0)
@@ -263,12 +263,6 @@ namespace Hermes
 			if(this->edata[e->id].order > 1)
 						get_bubble_assembly_list(e, al);
            
-      if(first_dof!=0.)
-      {
-				for(unsigned int i = 0; i < al->cnt; i++)
-				if(al->dof[i] >= 0)
-				al->dof[i] += first_dof;
-      }
     }
     
         template<typename Scalar>
