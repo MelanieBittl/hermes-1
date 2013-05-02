@@ -113,7 +113,7 @@ namespace Hermes
             if(!vn->is_constrained_vertex() && nd->dof == this->H2D_UNASSIGNED_DOF)
             {
               if(nd->n == 0 || is_fixed_vertex(vn->id))
-              {
+              {	
                 nd->dof = this->H2D_CONSTRAINED_DOF;
               }
               else

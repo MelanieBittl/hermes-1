@@ -133,7 +133,7 @@ namespace Hermes
 
     int init_surface_geometry_points(RefMap* reference_mapping, int& order, int isurf, int marker, Geom<double>*& geometry, double*& jacobian_x_weights)
     {
-      int eo = reference_mapping->get_quad_2d()->get_edge_points(isurf, order, reference_mapping->get_active_element()->get_mode());
+      int eo = reference_mapping->get_quad_2d()->get_edge_points(isurf, order, reference_mapping->get_active_element()->get_mode()); 
       double3* pt = reference_mapping->get_quad_2d()->get_points(eo, reference_mapping->get_active_element()->get_mode());
       int np = reference_mapping->get_quad_2d()->get_num_points(eo, reference_mapping->get_active_element()->get_mode());
 

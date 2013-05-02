@@ -7,12 +7,13 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,bool 
   if(all)
   {
     add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
-		//add_vector_form(new RHS(0));
+//add_matrix_form(new Streamline(0,0));
+		add_vector_form(new RHS(0));
     }
    add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));    
    if(DG) add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
    
-	add_vector_form_surf(new CustomVectorFormSurface(0) );
+	//add_vector_form_surf(new CustomVectorFormSurface(0) );
 }
 
 WeakForm<double>* CustomWeakForm::clone() const
@@ -20,13 +21,89 @@ WeakForm<double>* CustomWeakForm::clone() const
   return new CustomWeakForm(*this);
 }
 
+//---------------convection-----------
+
+    template<typename Real, typename Scalar>
+    Scalar CustomWeakForm::CustomMatrixFormVolConvection::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
+
+     Scalar result = Scalar(0); 
+  for (int i = 0; i < n; i++)
+{
+	double v_x =0.5;
+double v_y = 1.;
+		//result += wt[i] * (v->val[i] *((u->dx[i]+ u->dy[i])));
+		//result -= wt[i] * (u->val[i] *((v->dx[i]*v_x+ v->dy[i]*v_y)));
+		result += wt[i] * (u->val[i] *(v->val[i]-(v->dx[i]*v_x+ v->dy[i]*v_y)));
+  //result -= wt[i] * (u->val[i] *(v->dx[i] * (e->y[i]) + v->dy[i] * (1.-e->x[i]) ));
+}
+  return result;
+
+    };
+
+double CustomWeakForm::CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
+      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+    };
+
+   Ord CustomWeakForm::CustomMatrixFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, Func<Ord> **ext) const {
+			return Ord(10);
+      //return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+    };
+
+   MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVolConvection::clone() const
+{
+  return new CustomMatrixFormVolConvection(*this);
+}
+//---------Streamline Diffusion---------------
+template<typename Real, typename Scalar>
+Scalar CustomWeakForm::Streamline::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v,
+                                                  Geom<Real> *e, Func<Scalar> **ext) const
+{
+  Scalar result = Scalar(0);
+//double h = 1/std::pow(2, 7);
+//double abs_v = std::sqrt(2);
+//double tau = h/(2.*abs_v);
+double tau = 1./std::pow(2, 9);
+  for (int i = 0; i < n; i++)
+{
+	Real v_x = Real(1.);
+	Real v_y = Real(1.);
+  result += wt[i] *(tau*(u->dx[i] * v_x + u->dy[i] * v_y ) *(v->dx[i] * v_x + v->dy[i] * v_y ));
+
+}
 
 
+  return result;
+}
+
+double CustomWeakForm::Streamline::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
+                                            Geom<double> *e, Func<double> **ext) const
+{
+  return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+}
+
+Ord CustomWeakForm::Streamline::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+                                       Geom<Ord> *e, Func<Ord> **ext) const
+{
+  return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+}
+
+MatrixFormVol<double>* CustomWeakForm::Streamline::clone() const
+{
+  return new CustomWeakForm::Streamline(*this);
+}
+
+
+
+
+//--------Boundary-Matrix-Form
 double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
                                                 Geom<double> *e, Func<double> **ext) const
 {
   double result = 0.;
-double v_x =1.;
+double v_x =0.5;
 double v_y = 1.;
  
 	for (int i = 0; i < n; i++)
@@ -39,6 +116,7 @@ if((e->y[i]==1)||(e->x[i]==1))
  	//double v_y = 1.-e->x[i]; 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
    result += wt[i] *static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
+
 		}
 	}
 		return result;
@@ -48,9 +126,9 @@ if((e->y[i]==1)||(e->x[i]==1))
 Ord CustomWeakForm::CustomMatrixFormSurface::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
                                            Geom<Ord> *e, Func<Ord> **ext) const
 {
-  Ord result = Ord(10);
-  //for (int i = 0; i < n; i++)
-    //result += wt[i] * v->val[i]*u->val[i];
+  Ord result = Ord(0);
+  for (int i = 0; i < n; i++)
+    result += wt[i] * v->val[i]*u->val[i];
   return result;
 }
 
@@ -58,12 +136,12 @@ MatrixFormSurf<double>* CustomWeakForm::CustomMatrixFormSurface::clone() const
 {
   return new CustomWeakForm::CustomMatrixFormSurface(*this);
 }
-
+//----------DG-Matrix-Form------------
 template<typename Real, typename Scalar>
 Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt, DiscontinuousFunc<Scalar>** u_ext, DiscontinuousFunc<Real> *u, DiscontinuousFunc<Real> *v, Geom<Real> *e, DiscontinuousFunc<Scalar> **ext) const
 {
   Scalar result = Scalar(0);
-	Real v_x = Real(1);
+	Real v_x = Real(0.5);
 	Real v_y = Real(1);
   for (int i = 0; i < n; i++) 
   {
@@ -96,24 +174,26 @@ MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
 {
   return new CustomWeakForm::CustomMatrixFormInterface(*this);
 }
-
+//----------Dirichlet Vector surface Form
 double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
                                                 Geom<double> *e, Func<double> **ext) const
 {
   double result = 0;
  Func<double>* exact = ext[0];	
-	double v_x =1.;
+	double v_x =0.5;
 	double v_y = 1.;		
    for (int i = 0; i < n; i++)
 	{ 
 		 //Dirichlet-Bdry!
-		if((e->y[i]==0)||(e->x[i]==0))
+		//if((e->y[i]==0)||(e->x[i]==0))
+			if(e->y[i]==0)
 				{
 					//double v_x = e->y[i]; 
 					//double v_y = 1.-e->x[i];
 					double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 					result -= wt[i] * exact->val[i] * v->val[i] * a_dot_n;
 				}
+
 	}
   
   return result;
@@ -132,11 +212,13 @@ VectorFormSurf<double>* CustomWeakForm::CustomVectorFormSurface::clone() const
   return new CustomWeakForm::CustomVectorFormSurface(*this);
 }
 
-
+//--------rhs Vector Form-----------------
 double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
 {  
 	double result = 0;
  	Func<double>* exact = ext[0];
+	double v_x =0.5;
+	double v_y = 1.;
    for (int i = 0; i < n; i++)
 		{ 
 			double x = e->x[i]; double y = e->y[i];
@@ -146,7 +228,7 @@ double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Fun
 			double erg = (Hermes::cos(arg)-2*PI*Hermes::sin(arg))*Hermes::cos(arg);
 			result += wt[i] * erg * v->val[i];
 		}*/
-			result += wt[i] * exact->val[i] * v->val[i];
+			result += wt[i] * (exact->val[i] + v_x*exact->dx[i] + v_y*exact->dy[i]) * v->val[i];
 		}
  return result;
 }
@@ -162,8 +244,7 @@ double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Fun
 	return new CustomWeakForm::RHS(*this);
 }
 
-
-
+///----------------helper functions--------------
 double CustomWeakForm::calculate_a_dot_v(double x, double y, double vx, double vy) const
 {
  
@@ -187,45 +268,6 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
 
 
 
-//---------------convection-----------
-
-  CustomWeakFormConvection::CustomWeakFormConvection() : WeakForm<double>(1) 
-{
-    add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
-
-  };
-
-
-
-    template<typename Real, typename Scalar>
-    Scalar CustomMatrixFormVolConvection::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
-
-     Scalar result = Scalar(0); 
-  for (int i = 0; i < n; i++)
-		//result += wt[i] * (v->val[i] *((u->dx[i]+ u->dy[i])));
-		result -= wt[i] * (u->val[i] *((v->dx[i]+ v->dy[i])));
-		//result += wt[i] * (u->val[i] *(v->val[i]-(v->dx[i]+ v->dy[i])));
-  //result -= wt[i] * (u->val[i] *(v->dx[i] * (e->y[i]) + v->dy[i] * (1.-e->x[i]) ));
-  return result;
-
-    };
-
-double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
-      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
-    };
-
-   Ord CustomMatrixFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-            Geom<Ord> *e, Func<Ord> **ext) const {
-			return Ord(10);
-      //return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
-    };
-
-   MatrixFormVol<double>* CustomMatrixFormVolConvection::clone() const
-{
-  return new CustomMatrixFormVolConvection(*this);
-}
 
 
 //--------------------REsidual--------------------------
@@ -271,11 +313,13 @@ return Ord(10);
 			//result += wt[i] * (v->val[i] *(exact->dx[i]+exact->dy[i]));
 	//else 
     	//result += wt[i] * (v->val[i] *(sln->dx[i]+sln->dy[i]));
+result += wt[i] * (v->val[i] *(sln->dx[i]+sln->dy[i]));
 
 	/*if((e->y[i]==0)||(e->x[i]==0))
 			result -= wt[i] * (exact->val[i] *(v->dx[i]+v->dy[i]));
 	else */
-    	result -= wt[i] * (sln->val[i] *(v->dx[i]+v->dy[i]));
+    	//result -= wt[i] * (sln->val[i] *(v->dx[i]+v->dy[i]));
+
 		}
   return result;
 
@@ -301,9 +345,9 @@ double v_x =1.;
 double v_y = 1.;		
    for (int i = 0; i < n; i++){ 
 			double a_dot_n = v_x*e->nx[i]+ v_y*e->ny[i];
-	//if((e->y[i]==0)||(e->x[i]==0))
-	//	result += wt[i] * exact->val[i] * v->val[i] * a_dot_n;
-	//else 
+	if((e->y[i]==0)||(e->x[i]==0))
+		result += wt[i] * exact->val[i] * v->val[i] * a_dot_n;
+	else 
 			result += wt[i] * sln->val[i] * v->val[i]* a_dot_n;
 		
 	}
@@ -327,7 +371,7 @@ return Ord(10);
 { 
 		this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(sln_1,sln_2));
 		add_vector_form(new Residual(0));
-		add_vector_form_surf(new Residual_surf(0));
+		//add_vector_form_surf(new Residual_surf(0));
 		add_matrix_form(new Residual_Mat(0,0));
 }
 
@@ -370,11 +414,13 @@ double StreamlineDiffusionNorm::value(int n, double *wt, Func<double> *u, Func<d
 {
 		double diam = e->diam;
 		double area = Hermes::sqrt(e->area);
-		double abs_v = Hermes::sqrt(2);
+		double v_x = 0.5; 
+		double v_y = 1.;
+		double abs_v = Hermes::sqrt(v_x*v_x+v_y*v_y);
    double result = double(0);
   for (int i = 0; i < n; i++)
 	{	
-    result += wt[i] *(u->dx[i]+u->dy[i]) * (v->dx[i]+v->dy[i]) ;
+    result += wt[i] * (v_x*u->dx[i] + v_y*u->dy[i]) * (v_x*v->dx[i] + v_y*v->dy[i]);
 	}
   return (result*diam/(area*abs_v));
 		//return result;
@@ -386,10 +432,10 @@ double CustomNormFormSurf::value(int n, double *wt, Func<double> *u, Func<double
    double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-			double v_x = 1.; 
+			double v_x = 0.5; 
 			double v_y = 1.;
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
-    result += wt[i] * u->val[i] * v->val[i]*a_dot_n;
+    result += wt[i] * u->val[i] * v->val[i] * a_dot_n;
 	}
   return result;
 }
@@ -400,10 +446,10 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
   double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-		double v_x = 1.; 
+		double v_x = 0.5; 
 		double v_y = 1.;
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
-    result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i])*a_dot_n;
+    result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i]) * a_dot_n;
 		}
   return result;
 }
@@ -424,14 +470,14 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
 		dy *=k*std::pow(result, k-1);
 	}*/
 	
-	if((x-y>0)&&(x-y<0.5))
+/*	if((x-0.5*y>0)&&(x-0.5*y<0.5))
 	{
-		double arg = PI*(x-y-0.25)*2;
+		double arg = PI*(x-0.5*y-0.25)*2;
 		dx= -std::sin(arg)*PI*2;
-		dy=	std::sin(arg)*PI*2;
-		int k =2;
-		dx *=k*std::pow(std::cos(arg),k-1);
-		dy *=k*std::pow(std::cos(arg),k-1);
+		dy=	std::sin(arg)*PI*2*0.5;
+		int k =4;
+		dx *=k*std::pow(std::cos(arg),k-1)*0.25;
+		dy *=k*std::pow(std::cos(arg),k-1)*0.25;
 	}
 /*
 if((x-y>0.1)&&(x-y<0.6))
@@ -444,11 +490,14 @@ if((x-y>0.1)&&(x-y<0.6))
 	dy = -(k-1)*c*(std::pow(a,k-1)*std::pow(b,k)+std::pow(a,k)*std::pow(b,k-1));
 
 }*/
-		else 
+/*		else 
 	{
 		dx =0;
 		dy =0;
-	}	
+	}	*/
+
+dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
+dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 
 
 };
@@ -466,12 +515,12 @@ if((x-y>0.1)&&(x-y<0.6))
 		int k = 4;
 		return std::pow(result,k);*/
 
-	if((x-y>0)&&(x-y<0.5))
+/*	if((x-0.5*y>0)&&(x-0.5*y<0.5))
 		{
-			double arg = PI*(x-y-0.25)*2.;
+			double arg = PI*(x-0.5*y-0.25)*2.;
 			result= std::cos(arg);
-			int k = 2;
-			result =  std::pow(result,k);		
+			int k = 4;
+			result =  std::pow(result,k)*0.25;		
 		}
 
 /*
@@ -484,7 +533,8 @@ if((x-y>0.1)&&(x-y<0.6))
 	result =std::pow(a,k)*std::pow(b,k)*c;
 
 }*/
-
+		
+		result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);
 return result;
 
 
@@ -514,12 +564,12 @@ EssentialBoundaryCondition<double>::EssentialBCValueType CustomDirichletConditio
 double CustomDirichletCondition::value(double x, double y, double n_x, double n_y,
                                        double t_x, double t_y) const
 { double result = 0.;
-  	if((x-y>0)&&(x-y<0.5))
+  	if((x-0.5*y>0)&&(x-0.5*y<0.5))
 		{
-			double arg = PI*(x-y-0.25)*2.;
+			double arg = PI*(x-0.5*y-0.25)*2.;
 			result= std::cos(arg);
-			int k = 2;
-			result =  std::pow(result,k);		
+			int k = 4;
+			result =  std::pow(result,k)*0.25;		
 		}
 	return result;
 }

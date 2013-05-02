@@ -30,4 +30,6 @@ add_subdirectory("14-error-calculation")
 
 add_subdirectory("stationary_problem")
 
+add_subdirectory("FCT")
+
 
