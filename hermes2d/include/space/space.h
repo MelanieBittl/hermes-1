@@ -258,6 +258,7 @@ namespace Hermes
         SpaceSharedPtr<Scalar> init_construction_h1();
         SpaceSharedPtr<Scalar> init_construction_hcurl();
         SpaceSharedPtr<Scalar> init_construction_hdiv();
+				SpaceSharedPtr<Scalar> init_construction_l2_semi_cg();
 
         /// Construction finalization.
         virtual void finish_construction(SpaceSharedPtr<Scalar> ref_space);

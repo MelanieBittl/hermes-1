@@ -714,6 +714,8 @@ namespace Hermes
     {
       /// Initialization.
       SpaceSharedPtr<Scalar> ref_space;
+      if(dynamic_cast<L2_SEMI_CG_Space<Scalar>* >(this->coarse_space.get()) != NULL)
+        ref_space = this->init_construction_l2_semi_cg();
       if(dynamic_cast<L2Space<Scalar>* >(this->coarse_space.get()) != NULL)
         ref_space = this->init_construction_l2();
       if(dynamic_cast<H1Space<Scalar>*>(this->coarse_space.get()) != NULL)
@@ -775,6 +777,16 @@ namespace Hermes
       else
         return SpaceSharedPtr<Scalar>(new HdivSpace<Scalar>(this->ref_mesh, this->coarse_space->get_essential_bcs(), 1, this->coarse_space->get_shapeset()));
     }
+
+    template<typename Scalar>
+    SpaceSharedPtr<Scalar> Space<Scalar>::ReferenceSpaceCreator::init_construction_l2_semi_cg()
+		{
+
+      if(this->coarse_space->own_shapeset)
+        return SpaceSharedPtr<Scalar>(new L2_SEMI_CG_Space<Scalar>(this->ref_mesh, 1));
+      else
+        return SpaceSharedPtr<Scalar>(new L2_SEMI_CG_Space<Scalar>(this->ref_mesh, 1, this->coarse_space->get_shapeset()));
+		}
 
     template<typename Scalar>
     void Space<Scalar>::ReferenceSpaceCreator::finish_construction(SpaceSharedPtr<Scalar> ref_space)

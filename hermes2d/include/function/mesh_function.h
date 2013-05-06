@@ -87,6 +87,12 @@ namespace Hermes
       virtual void copy(const MeshFunction<Scalar>* sln);
       virtual void copy(MeshFunctionSharedPtr<Scalar> sln);
 
+		virtual void set_own_mesh(MeshSharedPtr mesh)
+		{
+        throw Hermes::Exceptions::Exception("You need to implement set_own_mesh");
+        
+			}	
+
       /// Return the reference mapping.
       RefMap* get_refmap(bool update = true);
 

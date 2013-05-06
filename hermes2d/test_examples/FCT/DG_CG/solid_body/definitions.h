@@ -2,48 +2,23 @@
 #define __DEFINITIONS_H
 
 #include "hermes2d.h"
- #define PI (3.141592653589793)   
-
-
+ #define PI (3.141592653589793) 
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
-
 class CustomWeakForm : public WeakForm<double>
 {
 public:
-  CustomWeakForm( MeshFunctionSharedPtr<double> sln_prev_time, bool all = false, bool DG = true);
+  CustomWeakForm(double time_step, double theta,  MeshFunctionSharedPtr<double> sln_prev_time, std::string inlet, MeshSharedPtr mesh, bool all = false, bool DG = true);
   WeakForm<double>* clone() const;
 
 	
 private:
-
-class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
-{
-public:
-  
-  CustomMatrixFormVolConvection(int i, int j) 
-    : MatrixFormVol<double>(i, j) { }
-
-  template<typename Real, typename Scalar>
-  Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                     Func<Real> *v, Geom<Real> *e, Func<Scalar>  **ext) const;
-
-  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-               Func<double> *v, Geom<double> *e, Func<double>  **ext) const;
-
-  virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-          Geom<Ord> *e, Func<Ord>  **ext) const;  
-    MatrixFormVol<double>* clone() const;
-
-};
-
-
-  class Streamline : public MatrixFormVol<double>
+  class CustomMatrixFormVol : public MatrixFormVol<double>
   {
   public:
-    Streamline(int i, int j) : MatrixFormVol<double>(i, j) {};
+    CustomMatrixFormVol(int i, int j, double time_step, double theta) : MatrixFormVol<double>(i, j), time_step(time_step), theta(theta) {};
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
@@ -53,15 +28,36 @@ public:
     virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
 
     MatrixFormVol<double>* clone() const;
+    
+    double time_step;
+    double theta;
   };
 
+  class CustomVectorFormVol : public VectorFormVol<double>
+  {
+  public:
+    CustomVectorFormVol(int i, double time_step, double theta) : VectorFormVol<double>(i), time_step(time_step), theta(theta) {};
 
+    template<typename Real, typename Scalar>
+    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+    VectorFormVol<double>* clone() const;
+
+    double time_step;
+    double theta;
+  };
 
   class CustomMatrixFormSurface : public MatrixFormSurf<double>
   {
   public:
     CustomMatrixFormSurface(int i, int j) : MatrixFormSurf<double>(i, j) {};
 
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
     virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
@@ -92,7 +88,7 @@ public:
   class CustomVectorFormSurface : public VectorFormSurf<double>
   {
   public:
-    CustomVectorFormSurface(int i) : VectorFormSurf<double>(i) {};
+    CustomVectorFormSurface(int i, std::string inlet) : VectorFormSurf<double>(i), inlet(inlet) {};
 
     virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
@@ -100,20 +96,14 @@ public:
 
     VectorFormSurf<double>* clone() const;
 
-  };
+    template<typename Real>
+    Real F(Real x, Real y) const;
 
-
-  class RHS : public VectorFormVol<double>
-  {
-  public:
-    RHS(int i) : VectorFormVol<double>(i) {};
-
-    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
-
-    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
-
-    VectorFormVol<double>* clone() const;
-
+    template<typename Real, typename Scalar>
+    Scalar g(std::string ess_bdy_marker) const;
+    
+    // Member.
+    std::string inlet;
   };
   
   double calculate_a_dot_v(double x, double y, double vx, double vy) const;
@@ -124,70 +114,81 @@ public:
 
   Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
 
+  MeshSharedPtr mesh;
 };
 
 
 
-//-------------------------Residual------------------------------
 
-class Residual_surf : public VectorFormSurf<double>   
+
+
+
+//---------------mass-matrix/tau-----------
+
+class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>   
+
 {
-public:
-  
-  Residual_surf(int i) 
-    : VectorFormSurf<double>(i) { };
+  public:
+    CustomMatrixFormVolMassmatrix(int i, int j, double time_step) 
+      : MatrixFormVol<double>(i, j), time_step(time_step) { };
 
-    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
-    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
-    VectorFormSurf<double>* clone() const;
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, Func<Ord> **ext) const;
 
-};
+    MatrixFormVol<double>* clone() const ;
 
-class Residual : public VectorFormVol<double>   
-{
-public:
-  
-  Residual(int i) 
-    : VectorFormVol<double>(i) { };
-
-    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
-
-    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
-
-    VectorFormVol<double>* clone() const;
-
+    // Members.  
+    double time_step;
 };
 
 
-class Residual_Mat : public MatrixFormVol<double>   
+
+
+
+class  CustomWeakFormMassmatrix  : public WeakForm<double>     
+{
+public:
+  CustomWeakFormMassmatrix(double time_step);
+	
+};
+
+//---------------Convection-----------
+class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
 {
 public:
   
-  Residual_Mat(int i, int j) 
+  CustomMatrixFormVolConvection(int i, int j) 
     : MatrixFormVol<double>(i, j) { }
 
   template<typename Real, typename Scalar>
   Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
-                     Func<Real> *v, Geom<Real> *e, Func<Scalar>  **ext) const;
+                     Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
 
   virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-               Func<double> *v, Geom<double> *e, Func<double>  **ext) const;
+               Func<double> *v, Geom<double> *e, Func<double> **ext) const;
 
   virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-          Geom<Ord> *e, Func<Ord>  **ext) const;  
+          Geom<Ord> *e, Func<Ord> **ext) const;  
+
     MatrixFormVol<double>* clone() const;
 
 };
 
-class Wf_residual : public WeakForm<double>   
+
+
+class CustomWeakFormConvection : public WeakForm<double>    //Konvektion
 {
 public:
-  Wf_residual(MeshFunctionSharedPtr<double> sln_1,MeshFunctionSharedPtr<double> sln_2);
-  WeakForm<double>* clone() const;
+  CustomWeakFormConvection();
+	  
 };
-
 
 
 //--------------------Error_calculation--------------
@@ -224,31 +225,6 @@ public:
   virtual double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const;
 };
 
-//----------------Filter-------------
-    class AbsDifffilter : public DiffFilter<double>
-    {
-    public:
-      AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions,  Hermes::vector<int> items = *(new Hermes::vector<int>)):DiffFilter(solutions,items){};
-      virtual MeshFunction<double>* clone() const
-		{
-		  Hermes::vector<MeshFunctionSharedPtr<double> > slns;
-		  Hermes::vector<int> items;
-		  for(int i = 0; i < this->num; i++)
-		  {
-		    slns.push_back(this->sln[i]->clone());
-		    items.push_back(this->item[i]);
-		  }
-		  AbsDifffilter* filter = new AbsDifffilter(slns, items);		
-		  return filter;
-		}
-
-virtual ~AbsDifffilter(){};
-    protected:
-      virtual void filter_fn(int n, Hermes::vector<double*> values, double* result)
-    	{
-      for (int i = 0; i < n; i++) result[i] = std::abs(values.at(0)[i] - values.at(1)[i]);
-    	}
-    };
 
 
 //------------------- Initial condition ----------------
@@ -269,18 +245,6 @@ public:
 };
 
 
-//----------Boundary _Dirichlet
-
-class CustomDirichletCondition : public EssentialBoundaryCondition<double>
-{
-public:
-  CustomDirichletCondition(Hermes::vector<std::string> markers);
-
-  virtual EssentialBoundaryCondition<double>::EssentialBCValueType get_value_type() const;
-
-  virtual double value(double x, double y, double n_x, double n_y, double t_x, double t_y) const;
-
-};
 
 
 #endif

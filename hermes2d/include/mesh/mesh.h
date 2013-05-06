@@ -324,6 +324,7 @@ namespace Hermes
       /// Refines all element sharing the markers passed.
       void refine_in_areas(Hermes::vector<std::string> markers, int depth = 1, bool mark_as_initial = false);
 
+void refine_quad_to_triangles(Element* e);
       /// Regularizes the mesh by refining elements with hanging nodes of
       /// degree more than 'n'. As a result, n-irregular mesh is obtained.
       /// If n = 0, completely regular mesh is created. In this case, however,
@@ -467,7 +468,7 @@ namespace Hermes
 
       void refine_element_to_triangles_id(int id);
 
-      void refine_quad_to_triangles(Element* e);
+      //void refine_quad_to_triangles(Element* e);
 
       /// Refines one quad element into four quad elements.
       /// The difference between refine_quad_to_quads() and refine_quad()
