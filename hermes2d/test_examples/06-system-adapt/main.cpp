@@ -47,42 +47,13 @@ const int INIT_REF_BDY = 5;
 const bool MULTI = true;
 // This is a quantitative parameter of the adapt(...) function and
 // it has different meanings for various adaptive strategies.
-const double THRESHOLD = 0.75;
-// Adaptive strategy:
-// STRATEGY = 0 ... refine elements until sqrt(THRESHOLD) times total
-//   error is processed. If more elements have similar errors, refine
-//   all to keep the mesh symmetric.
-// STRATEGY = 1 ... refine all elements whose error is larger
-//   than THRESHOLD times maximum element error.
-// STRATEGY = 2 ... refine all elements whose error is larger
-//   than THRESHOLD.
-// More adaptive strategies can be created in adapt_ortho_h1.cpp.
-const int STRATEGY = 0;
-// Predefined list of element refinement candidates. Possible values are
-// H2D_P_ISO, H2D_P_ANISO, H2D_H_ISO, H2D_H_ANISO, H2D_HP_ISO,
-// H2D_HP_ANISO_H, H2D_HP_ANISO_P, H2D_HP_ANISO.
+const double THRESHOLD = 0.25;
+// This is a stopping criterion for Adaptivity.
+const AdaptivityStoppingCriterion stoppingCriterion = AdaptStoppingCriterionSingleElement;
+// Predefined list of element refinement candidates.
 const CandList CAND_LIST = H2D_HP_ANISO;
-// Maximum allowed level of hanging nodes:
-// MESH_REGULARITY = -1 ... arbitrary level hangning nodes (default),
-// MESH_REGULARITY = 1 ... at most one-level hanging nodes,
-// MESH_REGULARITY = 2 ... at most two-level hanging nodes, etc.
-// Note that regular meshes are not supported, this is due to
-// their notoriously bad performance.
-const int MESH_REGULARITY = -1;
-// This parameter influences the selection of
-// candidates in hp-adaptivity. Default value is 1.0.
-const double CONV_EXP = 1;
 // Stopping criterion for adaptivity.
-const double ERR_STOP = 1.5;
-// Adaptivity process stops when the number of degrees of freedom grows over
-// this limit. This is mainly to prevent h-adaptivity to go on forever.
-const int NDOF_STOP = 60000;
-// Newton's method.
-double NEWTON_TOL_FINE = 1e-0;
-int max_allowed_iterations = 10;
-// Matrix solver: SOLVER_AMESOS, SOLVER_AZTECOO, SOLVER_MUMPS,
-// SOLVER_PETSC, SOLVER_SUPERLU, SOLVER_UMFPACK.
-MatrixSolverType matrix_solver = SOLVER_UMFPACK;
+const double ERR_STOP = 1e-3;
 
 // Problem parameters.
 const double D_u = 1;
@@ -140,7 +111,8 @@ int main(int argc, char* argv[])
   Hermes::vector<MeshFunctionSharedPtr<double> > exact_slns(exact_u, exact_v);
 
   // Initialize refinement selector.
-  H1ProjBasedSelector<double> selector(CAND_LIST, CONV_EXP, H2DRS_DEFAULT_ORDER);
+  H1ProjBasedSelector<double> selector(CAND_LIST);
+  //HOnlySelector<double> selector;
 
   // Initialize views.
   Views::ScalarView s_view_0("Solution[0]", new Views::WinGeom(0, 0, 440, 350));
@@ -234,8 +206,7 @@ int main(int argc, char* argv[])
     err_est_rel.push_back(error_calculator.get_error_squared(1) * 100);
 
     Adapt<double> adaptivity(Hermes::vector<SpaceSharedPtr<double> >(u_space, v_space), &error_calculator);
-    //adaptivity.set_strategy(AdaptStoppingCriterionSingleElement, 0.95);
-    adaptivity.set_strategy(AdaptStoppingCriterionLevels, 0.5);
+    adaptivity.set_strategy(stoppingCriterion, THRESHOLD);
 
     // Time measurement.
     cpu_time.tick();
@@ -274,8 +245,6 @@ int main(int argc, char* argv[])
       Hermes::vector<RefinementSelectors::Selector<double> *> selectors(&selector, &selector);
       done = adaptivity.adapt(selectors);
     }
-    if (Space<double>::get_num_dofs(Hermes::vector<SpaceSharedPtr<double> >(u_space, v_space)) >= NDOF_STOP)
-      done = true;
 
     // Increase counter.
     as++;

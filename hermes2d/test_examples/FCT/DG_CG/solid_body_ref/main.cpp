@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 			  	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 
   // Create a refinement selector.
-  L2ProjBasedSelector<double> selector(CAND_LIST, CONV_EXP, H2DRS_DEFAULT_ORDER);
+  L2ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
 
        selector.set_error_weights(1.0,1.0,1.0); 
 
@@ -206,10 +206,12 @@ int main(int argc, char* argv[])
 			int* smooth_elem_ref;	
 							
 			//smoothness-check for projected data		
+      Hermes::Mixins::Loggable::Static::info("Projecting...");
 			if(ts==1)
 				ogProjection.project_global(space,initial_condition, coeff_vec_smooth, HERMES_L2_NORM);		
 			else
-				ogProjection.project_global(space,u_prev_time, coeff_vec_smooth, HERMES_L2_NORM);			
+				ogProjection.project_global(space,u_prev_time, coeff_vec_smooth, HERMES_L2_NORM);	
+     Hermes::Mixins::Loggable::Static::info("Calling get_smooth_elems()...");		
 			smooth_elem_ref =regEst.get_smooth_elems(space,coeff_vec_smooth);
 
       // Construct reference mesh and setup reference space->
@@ -220,6 +222,7 @@ int main(int argc, char* argv[])
 
       HPAdapt* adapting = new HPAdapt(ref_space);	
 							// increase p in smooth regions, h refine in non-smooth regions 
+      Hermes::Mixins::Loggable::Static::info("Calling adapt_smooth()...");
 			if(adapting->adapt_smooth(smooth_elem_ref, P_MAX)==false) 
 				throw Exceptions::Exception("reference space couldn't be constructed");							
 									      
@@ -250,8 +253,8 @@ int main(int argc, char* argv[])
 				
 
 			dp_mass->assemble(mass_matrix); 										//M_c/tau
-			dp_convection->assemble(conv_matrix, NULL);		//K
-			dp_surf->assemble(surface_matrix, NULL);   //Boundary Integral and DG-edge-boundary-part				
+			dp_convection->assemble(conv_matrix);		//K
+			dp_surf->assemble(surface_matrix);   //Boundary Integral and DG-edge-boundary-part				
 		
 		//----------------------MassLumping  & Artificial Diffusion --------------------------------------------------------------------	
 			UMFPackMatrix<double>* lumped_matrix = fluxCorrection.massLumping(mass_matrix); // M_L/tau

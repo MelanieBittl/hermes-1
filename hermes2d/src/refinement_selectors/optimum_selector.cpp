@@ -12,12 +12,11 @@ namespace Hermes
     namespace RefinementSelectors
     {
       template<typename Scalar>
-      OptimumSelector<Scalar>::OptimumSelector(CandList cand_list, double conv_exp, int
+      OptimumSelector<Scalar>::OptimumSelector(CandList cand_list, int
         max_order, Shapeset* shapeset, const Range& vertex_order, const
         Range& edge_bubble_order) :
       Selector<Scalar>(shapeset->get_min_order(), max_order),
         cand_list(cand_list),
-        conv_exp(conv_exp),
         shapeset(shapeset)
       {
         if(shapeset == NULL)
@@ -370,14 +369,12 @@ namespace Hermes
         //generate all P-candidates (start from intention of generating all possible candidates
         //and restrict it according to the given adapt-type)
         bool iso_p = false;
-        int start_order_h = std::max(current_min_order, order_h - 1), start_order_v = std::max(current_min_order, order_v - 1);
-        int start_order = H2D_MAKE_QUAD_ORDER(start_order_h, start_order_v);
         int last_order_h = std::min(current_max_order, order_h + H2DRS_MAX_ORDER_INC), last_order_v = std::min(current_max_order, order_v + H2DRS_MAX_ORDER_INC);
         int last_order = H2D_MAKE_QUAD_ORDER(last_order_h, last_order_v);
         switch(cand_list)
         {
         case H2D_H_ISO:
-        case H2D_H_ANISO: last_order = start_order; break; //no P-candidates except the original candidate
+        case H2D_H_ANISO: last_order = quad_order; break; //no P-candidates except the original candidate
         case H2D_P_ISO:
         case H2D_HP_ISO:
         case H2D_HP_ANISO_H: iso_p = true; break; //iso change of orders
@@ -386,8 +383,8 @@ namespace Hermes
 
         //generate all H-candidates
         iso_p = false;
-        start_order_h = std::max(current_min_order, order_h - 1), start_order_v = std::max(current_min_order, order_v - 1);
-        start_order = H2D_MAKE_QUAD_ORDER(start_order_h, start_order_v);
+        int start_order_h = std::max(current_min_order, order_h - 1), start_order_v = std::max(current_min_order, order_v - 1);
+        int start_order = H2D_MAKE_QUAD_ORDER(start_order_h, start_order_v);
         last_order_h = std::min(current_max_order, order_h + H2DRS_MAX_ORDER_INC), last_order_v = std::min(current_max_order, order_v + H2DRS_MAX_ORDER_INC);
         last_order = H2D_MAKE_QUAD_ORDER(last_order_h, last_order_v);
         switch(cand_list)
@@ -565,14 +562,14 @@ namespace Hermes
         Cand& unrefined = candidates[0];
         const int num_cands = (int)candidates.size();
         unrefined.score = 0;
-        const double unrefined_dofs_exp = std::pow(unrefined.dofs, conv_exp);
+
         for (int i = 1; i < num_cands; i++)
         {
           Cand& cand = candidates[i];
-          if(cand.error < unrefined.error && cand.dofs > unrefined.dofs)
+          if(cand.error < unrefined.error)
           {
-            double delta_dof_exp = std::pow(cand.dofs - unrefined.dofs, conv_exp);
-            candidates[i].score = (log10(unrefined.error) - log10(cand.error)) / delta_dof_exp;
+            double delta_dof = cand.dofs - unrefined.dofs;
+            candidates[i].score = (log10(unrefined.error) - log10(cand.error)) / delta_dof;
           }
           else
             candidates[i].score = 0;
@@ -586,7 +583,7 @@ namespace Hermes
       }
 
       template<typename Scalar>
-      void OptimumSelector<Scalar>::select_best_candidate(Hermes::vector<Cand>& candidates, Element* e, Cand* best_candidates[5])
+      void OptimumSelector<Scalar>::select_best_candidate(Hermes::vector<Cand>& candidates, Element* e, Cand*& best_candidate, Cand* best_candidates_specific_type[4])
       {
         //sort according to the score
         const int num_cands = (int)candidates.size();
@@ -597,16 +594,16 @@ namespace Hermes
         // Overall best candidate.
         if(candidates[1].score == 0)
           // This means that the best candidate is the 'do-nothing' one.
-          best_candidates[0] = &candidates[0];
+          best_candidate = &candidates[0];
         else
           // The one with the highest score is the best.
-          best_candidates[0] = &candidates[1];
+          best_candidate = &candidates[1];
 
         for(int i = 0; i < num_cands; i++)
         {
           if(candidates[i].split == H2D_REFINEMENT_P)
           {
-            best_candidates[H2D_REFINEMENT_P] = &candidates[i];
+            best_candidates_specific_type[H2D_REFINEMENT_P] = &candidates[i];
             break;
           }
         }
@@ -615,7 +612,7 @@ namespace Hermes
         {
           if(candidates[i].split == H2D_REFINEMENT_H)
           {
-            best_candidates[H2D_REFINEMENT_H] = &candidates[i];
+            best_candidates_specific_type[H2D_REFINEMENT_H] = &candidates[i];
             break;
           }
         }
@@ -624,7 +621,7 @@ namespace Hermes
         {
           if(candidates[i].split == H2D_REFINEMENT_ANISO_H)
           {
-            best_candidates[H2D_REFINEMENT_ANISO_H] = &candidates[i];
+            best_candidates_specific_type[H2D_REFINEMENT_ANISO_H] = &candidates[i];
             break;
           }
         }
@@ -633,7 +630,7 @@ namespace Hermes
         {
           if(candidates[i].split == H2D_REFINEMENT_ANISO_V)
           {
-            best_candidates[H2D_REFINEMENT_ANISO_V] = &candidates[i];
+            best_candidates_specific_type[H2D_REFINEMENT_ANISO_V] = &candidates[i];
             break;
           }
         }
@@ -656,9 +653,9 @@ namespace Hermes
         //build candidates.
         Hermes::vector<Cand> candidates = create_candidates(element, quad_order);
         //there are candidates to choose from
-        Cand* best_candidates[5];
-        // Initialization
-        memset(best_candidates, 0, 5 * sizeof(Cand*));
+        Cand* best_candidate;
+        Cand* best_candidates_specific_type[4];
+        memset(best_candidates_specific_type, 0, 4 * sizeof(Cand*));
 
         if(candidates.size() > 1)
         { 
@@ -666,23 +663,26 @@ namespace Hermes
           evaluate_candidates(candidates, element, rsln);
 
           //select candidate
-          select_best_candidate(candidates, element, best_candidates);
+          select_best_candidate(candidates, element, best_candidate, best_candidates_specific_type);
         }
 
         //there is not candidate to choose from, select the original candidate
-        else 
+        else
         { 
-          best_candidates[0] = &candidates[0];
+          best_candidate = &candidates[0];
         }
 
-        //copy result to output
-        refinement.split = best_candidates[0]->split;
-        ElementToRefine::copy_orders(refinement.refinement_polynomial_order, best_candidates[0]->p);
-        for(int i = 1; i < 5; i++)
-          if(best_candidates[i] != NULL)
-            ElementToRefine::copy_orders(refinement.best_refinement_polynomial_order_type[i], best_candidates[i]->p);
+        if(best_candidate == &candidates[0])
+          return false;
 
-        ElementToRefine::copy_errors(refinement.errors, best_candidates[0]->errors);
+        //copy result to output
+        refinement.split = best_candidate->split;
+        ElementToRefine::copy_orders(refinement.refinement_polynomial_order, best_candidate->p);
+        for(int i = 1; i < 4; i++)
+          if(best_candidates_specific_type[i] != NULL)
+            ElementToRefine::copy_orders(refinement.best_refinement_polynomial_order_type[i], best_candidates_specific_type[i]->p);
+
+        ElementToRefine::copy_errors(refinement.errors, best_candidate->errors);
 
         //modify orders in a case of a triangle such that order_v is zero
         if(element->is_triangle())
@@ -697,10 +697,7 @@ namespace Hermes
           }
         }
 
-        if(best_candidates[0] == &candidates[0])
-          return false;
-        else
-          return true;
+        return true;
       }
 
       template class HERMES_API OptimumSelector<double>;

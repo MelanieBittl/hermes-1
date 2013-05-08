@@ -22,13 +22,13 @@ elements =
 boundaries =
 {
   { 0, 1, "outlet" },
-  { 1, 2, "inlet1" },
+  { 1, 2, "inlet" },
   { 2, 5, "outlet" },
-  { 5, 8, "inlet1" },
+  { 5, 8, "inlet" },
   { 8, 7, "outlet" },
-  { 7, 6, "inlet2" },
+  { 7, 6, "inlet" },
   { 6,3, "outlet" },
-  { 3, 0, "inlet2" }
+  { 3, 0, "inlet" }
 }
 
 

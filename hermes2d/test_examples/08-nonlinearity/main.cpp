@@ -29,13 +29,10 @@ const int NEWTON_MAX_ITER = 100;
 const int INIT_GLOB_REF_NUM = 3;                  
 // Number of initial refinements towards boundary.
 const int INIT_BDY_REF_NUM = 4;                   
-// Matrix solver: SOLVER_AMESOS, SOLVER_AZTECOO, SOLVER_MUMPS,
-// SOLVER_PETSC, SOLVER_SUPERLU, SOLVER_UMFPACK.
-MatrixSolverType matrix_solver = SOLVER_UMFPACK;  
 
 // Problem parameters.
 double heat_src = 1.0;
-double alpha = 8.0;
+double alpha = 7.69;
 
 int main(int argc, char* argv[])
 {
@@ -78,6 +75,8 @@ int main(int argc, char* argv[])
   NewtonSolver<double> newton(&dp);
   newton.set_max_allowed_residual_norm(1e99);
   newton.set_max_allowed_iterations(NEWTON_MAX_ITER);
+  newton.set_sufficient_improvement_factor_jacobian(0.9);
+  newton.set_max_steps_with_reused_jacobian(10);
 
   // 1st - OK
   // newton.set_sufficient_improvement_factor(1.1);

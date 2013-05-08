@@ -1,57 +1,4 @@
-
-/*
-
-double calc_error_l2(Solution<double>* u_1, Solution<double>* u_2,Space<double>* space)
-{
-
-		// order of integral
-		const int order = 10;
-		double err_total =0.;
-
-		// element for the element loop
-		Element *e =NULL;
-		      // refmap for computing Jacobian
-			RefMap* rm = new RefMap;
-      rm->set_quad_2d(&g_quad_2d_std);
-		for_all_active_elements(e, space->get_mesh())
-		{
-		     // set up the solution quadrature
-		     u_1->set_quad_2d(&g_quad_2d_std);
-		     u_1->set_active_element(e);
-		     u_1->set_quad_order(order);		     
-		     u_2->set_quad_2d(&g_quad_2d_std);
-		     u_2->set_active_element(e);
-		     u_2->set_quad_order(order);		    
-
-		     // get the quadrature points
-		     int np = u_1->get_quad_2d()->get_num_points(order,HERMES_MODE_QUAD);
-		     double3 *pt = g_quad_2d_std.get_points(order,HERMES_MODE_QUAD);
-		             // get the constant Jacobian
-        rm->set_active_element(e);
-        double jac = rm->get_const_jacobian();
-
-		     // get the function derivative values
-		     Func<double>* u = init_fn( u_1, order );
-			  Func<double>* v = init_fn( u_2, order );
-
-		     // loop over points and determine err_max
-		     for( int j = 0; j < np; ++j ) 
-					err_total +=pt[j][2]*jac*Hermes::sqr(u->val[j] - v->val[j]) ;          
-		     
-
-				v->free_fn();
-				u->free_fn();
-				delete v;
-				delete u;
-		  }
-		  delete rm;
-	return std::sqrt(err_total);
-
-}
-
-
-
-double calc_error_max(Solution<double>* u_1, Solution<double>* u_2,Space<double>* space)
+double calc_error_max(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
 {
 
 		// order of integral
@@ -74,9 +21,14 @@ double calc_error_max(Solution<double>* u_1, Solution<double>* u_2,Space<double>
 		     int np = u_1->get_quad_2d()->get_num_points(order,HERMES_MODE_QUAD);
 		     double3 *pt = g_quad_2d_std.get_points(order,HERMES_MODE_QUAD);
 
-		     // get the function derivative values
-		     Func<double>* u = init_fn( u_1, order );
-			  Func<double>* v = init_fn( u_2, order );
+			MeshFunction<double>* sln = u_1->clone();
+			sln->set_active_element(e);
+			MeshFunction<double>* ref_sln = u_2->clone();
+			ref_sln->set_active_element(e);
+
+			// get the function derivative values
+			Func<double>* u = init_fn( sln, order );
+			Func<double>* v = init_fn( ref_sln, order );
 
 		     // loop over points and determine err_max
 		     for( int j = 0; j < np; ++j ) 
@@ -105,77 +57,135 @@ double calc_error_max(double* u, double* v, int ndof)
 }
 
 
-
-
-double calc_error_streamline_sqr(Solution<double>* u_1, Solution<double>* u_2,Space<double>* space)
+double calc_error_test(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
 {
+Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_TRIANGLE;
+//Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
+	// order of integral
+	const int order = 10;
+	double err_total =0.;
+	// element for the element loop
+	Element *e =NULL;
+	// refmap for computing Jacobian
+	RefMap* rm = new RefMap;
+	rm->set_quad_2d(&g_quad_2d_std);
 
-CustomV_x beta_x(space->get_mesh());
-CustomV_y beta_y(space->get_mesh());
+	for_all_active_elements(e, space->get_mesh())
+	{
+			// set up the solution quadrature
+			u_1->set_quad_2d(&g_quad_2d_std);
+			u_1->set_active_element(e);
+			u_1->set_quad_order(order);	
+			u_2->set_quad_2d(&g_quad_2d_std);
+			u_2->set_active_element(e);
+			u_2->set_quad_order(order);	
 
-      // order of integral
-      const int order = 10;
+			// get the quadrature points
+			int np = u_1->get_quad_2d()->get_num_points(order,mode);
+			double3 *pt = g_quad_2d_std.get_points(order, mode);
+			// get the constant Jacobian
+		  rm->set_active_element(e);
+		  double jac = rm->get_const_jacobian();
+			MeshFunction<double>* sln = u_1->clone();
+			sln->set_active_element(e);
+			MeshFunction<double>* ref_sln = u_2->clone();
+			ref_sln->set_active_element(e);
 
-      // initialize total_error
-    double total_error = 0.0;
-    double beta_K, error_elem;
+			// get the function derivative values
+			Func<double>* u = init_fn( sln, order );
+			Func<double>* v = init_fn( ref_sln, order );
+		double diam = e->get_diameter();
+		double area =Hermes::sqrt(e->get_area());
 
-      // element for the element loop
-      Element *e =NULL;
+		//double v_x = 0.5; 
+		//double v_y = 1.;
+		//double abs_v = v_x*v_x+v_y*v_y;
 
-      // refmap for computing Jacobian
-			RefMap* rm = new RefMap;
-      	rm->set_quad_2d(&g_quad_2d_std);
+		double err_elem = 0.;	
+		double abs_v =0;	
 
-      // loop over elements
-      for_all_active_elements( e, space->get_mesh() ) 
-      {
-				beta_K =0.;
-				error_elem = 0.;
-		     // set up the solution quadrature
-		     u_1->set_quad_2d(&g_quad_2d_std);
-		     u_1->set_active_element(e);
-		     u_1->set_quad_order(order);		     
-		     u_2->set_quad_2d(&g_quad_2d_std);
-		     u_2->set_active_element(e);
-		     u_2->set_quad_order(order);	
-		     beta_x.set_quad_2d(&g_quad_2d_std);
-		     beta_x.set_active_element(e);
-		     beta_x.set_quad_order(order);
-		     beta_y.set_quad_2d(&g_quad_2d_std);
-		     beta_y.set_active_element(e);
-		     beta_y.set_quad_order(order);			
+		double* x_coord = rm->get_phys_x(order);
+		double* y_coord = rm->get_phys_y(order);
+			for( int j = 0; j < np; ++j )
+			{
+				double v_x = y_coord[j]; 
+				double v_y = 1.-x_coord[j];
+				err_elem += pt[j][2]*jac*Hermes::sqr(v_x*(u->dx[j]-v->dx[j])+v_y*(u->dy[j]-v->dy[j]));
+				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
+			}
+			err_total += (err_elem*diam/Hermes::sqrt(abs_v));
+			v->free_fn();
+			u->free_fn();
+			delete v;
+			delete u;
+			delete sln;
+			delete ref_sln;
+	}
+	delete rm;
+	return Hermes::sqrt(err_total);
+}
 
-        // get the constant Jacobian
-        rm->set_active_element(e);
-        double jac = rm->get_const_jacobian();
+void calc_error_total(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_prev_time,SpaceSharedPtr<double> space)
+{
+int ndof = space->get_num_dofs();
+ MeshFunctionSharedPtr<double> sln_zero(new ZeroSolution<double>(space->get_mesh()));
+ 
+  ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
+  ErrorCalculator<double> errorCalculator_surf(AbsoluteError);
+  ErrorCalculator<double> errorCalculator_DG(AbsoluteError);
+  ErrorCalculator<double> errorCalculator_sd(AbsoluteError);
+  errorCalculator_l2.add_error_form(new CustomNormFormVol(0,0));
+	errorCalculator_sd.add_error_form(new StreamlineDiffusionNorm(0,0,space->get_mesh()));
+  errorCalculator_surf.add_error_form(new CustomNormFormSurf(0,0));
+  errorCalculator_DG.add_error_form(new CustomNormFormDG(0,0));
 
-        // get the quadrature points
-        int np = u_1->get_quad_2d()->get_num_points(order,HERMES_MODE_QUAD);
-        double3 *pt = g_quad_2d_std.get_points(order,HERMES_MODE_QUAD);
+  errorCalculator_l2.calculate_errors(u_new, u_prev_time);
+	errorCalculator_surf.calculate_errors(u_new, u_prev_time);
+	errorCalculator_DG.calculate_errors(u_new,sln_zero);
+	errorCalculator_sd.calculate_errors(u_new, u_prev_time);
 
-		     // get the function derivative values
-		     Func<double>* u = init_fn( u_1, order );
-			  Func<double>* v = init_fn( u_2, order );
-			  Func<double>* beta_1 = init_fn( &beta_x, order );
-			  Func<double>* beta_2 = init_fn( &beta_y, order );
 
-        // loop over points and integrate the energy
-        for( int j = 0; j < np; ++j ) {
-					error_elem +=pt[j][2]*jac* ((u->dx[j]-v->dx[j])*beta_1->val[j] + (u->dy[j]-v->dy[j])*beta_2->val[j] );   
-					beta_K += pt[j][2]*jac*(beta_1->val[j]*beta_1->val[j] + beta_2->val[j]*beta_2->val[j]);
-        }
-        		
-				total_error += error_elem* e->get_diameter()/std::sqrt(beta_K);
-				v->free_fn();
-				u->free_fn();
-				beta_1->free_fn();
-				beta_2->free_fn();
-				delete beta_1;
-				delete beta_2;
-				delete v;
-				delete u;
-      }
-		delete rm;
+double err_l2_2 = errorCalculator_l2.get_total_error_squared();
+double err_surf_2 = errorCalculator_surf.get_total_error_squared();
+double err_DG_2 = errorCalculator_DG.get_total_error_squared();
+double err_sd_2 = errorCalculator_sd.get_total_error_squared();
 
-}*/
+double diam;Element* e;
+double diam_max =0.; double diam_min = 100.;
+for_all_active_elements(e, space->get_mesh()) 
+{	
+	diam = e->get_diameter(); // Laenge der kleinste Kante
+	if(diam<diam_min)	diam_min = diam;
+	if(diam>diam_max) diam_max = diam;
+	break;
+}
+
+double test = calc_error_test(u_new, u_prev_time,space);
+Hermes::Mixins::Loggable::Static::info("test=%.3e", test);
+
+double err_max = calc_error_max(u_new, u_prev_time,space);
+
+double total = Hermes::sqrt(err_l2_2+0.5*err_surf_2+0.5*err_DG_2+err_sd_2);
+
+Hermes::Mixins::Loggable::Static::info("l2=%.3e, surf = %.3e, dg = %.3e, sd = %.3e, total= %.3e, ndof = %d",
+Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total , ndof);
+
+FILE * pFile;
+pFile = fopen ("error.txt","w");
+    fprintf (pFile, "l2=%.4e, surf = %.4e, dg = %.4e, sd = %.4e, total= %.4e, err_max = %.4e, ndof = %d, diam_min =%.4e, diam_max =%.4e",
+Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total,err_max, ndof,diam_min, diam_max);
+fclose (pFile);  
+
+// Output solution in VTK format.
+	Linearizer lin;
+	bool mode_3D = true;
+
+MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
+//fview.show(filter);
+lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
+lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
+
+
+
+
+}
