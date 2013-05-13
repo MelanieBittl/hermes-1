@@ -338,14 +338,14 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
 		return result;	
 	}
 	//slotted cylinder
-	x_0 = 0.5;
+/*	x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius <= 1) 
 	{ 	
 		if(fabs((x-x_0))>= 0.025) return 1.0;
 		if(y>=0.85) return 1.0;
-	}	
+	}	*/
 	//cone
 	x_0 = 0.5;
 	y_0 = 0.25;

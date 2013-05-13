@@ -69,7 +69,7 @@ bool HPAdapt::adapt_smooth(int* smooth_elem, int max_p)
 					v_ord++; if(v_ord>max_p) v_ord =max_p;
 					order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);
 					space->set_element_order_internal(e->id, order);
-					changed = refine_elem(space, e,1, order);	
+					//changed = refine_elem(space, e,1, order);	
 					changed = true;
 				}					
 			}

@@ -30,7 +30,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 5; 										//Maximal polynomial degree.
                       
@@ -46,7 +46,7 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 // Adaptivity
 const double THRESHOLD_UNREF = 0.001; 			// Unrefinement: error of all sons is smaller than THRESHOLD_UNREF times maximum element error
-const int UNREF_FREQ = 5;                         // Every UNREF_FREQth time step the mesh is derefined.
+const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time step the mesh is derefined.
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
@@ -90,7 +90,7 @@ const int VTK_FREQ = 7000;													//Every VTK_FREQth time step the solution
 const std::string BDY_IN = "inlet";
 const std::string BDY_OUT = "outlet";
 
-
+#include "error_estimations.cpp"
 
 int main(int argc, char* argv[])
 {  
@@ -352,6 +352,19 @@ int main(int argc, char* argv[])
    	lin.save_solution_vtk(&u_prev_time, "end_ref_solution.vtk", "solution", mode_3D);
 		ord.save_mesh_vtk(ref_space, "end_ref_mesh.vtk");
 		ord.save_orders_vtk(ref_space, "end_ref_order.vtk");
+
+
+  ogProjection.project_global(ref_space, &initial_condition, coeff_vec,  HERMES_L2_NORM);  
+ double abs_err_l2 = Global<double>::calc_abs_error(&initial_condition,&ref_sln, HERMES_L2_NORM);
+ double abs_err_max = calc_error_max(&initial_condition, &ref_sln, ref_space);
+ double vec_err_max = calc_error_max(coeff_vec, coeff_vec_2 ,ref_ndof);
+
+Hermes::Mixins::Loggable::Static::info("l2=%.15e, abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2, abs_err_max ,vec_err_max, ref_ndof);
+
+FILE * pFile;
+pFile = fopen ("error.txt","w");
+    fprintf (pFile, "l2=%.15e,abs_max = %f, vec_max = %f, ndof = %d", abs_err_l2, abs_err_max, vec_err_max,  ref_ndof);
+fclose (pFile); 
    	
    	
    	}
