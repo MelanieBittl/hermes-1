@@ -9,7 +9,7 @@ using namespace Hermes::Hermes2D;
 class CustomWeakForm : public WeakForm<double>
 {
 public:
-  CustomWeakForm( MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,double time_step,double theta, bool all = false, bool DG = true, bool SD =false);
+  CustomWeakForm( MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,double time_step,double theta, bool all = false, bool DG = true, bool SD =false, bool right_hand_side = true);
   WeakForm<double>* clone() const;
 
 	

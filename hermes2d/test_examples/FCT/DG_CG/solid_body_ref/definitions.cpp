@@ -1,4 +1,37 @@
 #include "definitions.h"
+double calc_abs_v(Element* e)
+{
+Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_TRIANGLE;
+//Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
+	// order of integral
+	const int order = 4;
+	// refmap for computing Jacobian
+	RefMap* rm = new RefMap;
+	rm->set_quad_2d(&g_quad_2d_std);
+
+			// get the quadrature points
+			int np = g_quad_2d_std.get_num_points(order,mode);
+			double3 *pt = g_quad_2d_std.get_points(order, mode);
+			// get the constant Jacobian
+		  rm->set_active_element(e);
+
+		double diam = e->get_diameter();
+		double area =Hermes::sqrt(e->get_area());
+
+		double abs_v =0;	
+		double* x_coord = rm->get_phys_x(order);
+		double* y_coord = rm->get_phys_y(order);
+			for( int j = 0; j < np; ++j )
+			{
+				double v_x = y_coord[j]; 
+				double v_y = 1.-x_coord[j];	
+				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
+			}
+	
+	delete rm;
+	return Hermes::sqrt(abs_v);
+}
+
 
 CustomWeakForm::CustomWeakForm(double time_step,double theta, MeshFunctionSharedPtr<double> sln_prev_time, std::string inlet, MeshSharedPtr mesh, bool all, bool DG) : WeakForm<double>(1), mesh(mesh)
 {
@@ -287,6 +320,7 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
 
 
 
+
 //--------------error_calculation----------------------
 
 
@@ -294,7 +328,7 @@ CustomNormFormVol::CustomNormFormVol(int i, int j) : NormFormVol<double>(i, j)
 {
   this->set_area(HERMES_ANY);
 }
-StreamlineDiffusionNorm::StreamlineDiffusionNorm(int i, int j) : NormFormVol<double>(i, j)
+StreamlineDiffusionNorm::StreamlineDiffusionNorm(int i, int j,MeshSharedPtr mesh) : NormFormVol<double>(i, j), mesh(mesh)
 {
   this->set_area(HERMES_ANY);
 }
@@ -316,19 +350,24 @@ double CustomNormFormVol::value(int n, double *wt, Func<double> *u, Func<double>
   return result;
 }
 
+
+
 double StreamlineDiffusionNorm::value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
 {
 		double diam = e->diam;
-		double area = Hermes::sqrt(e->area);		
+		//double area = Hermes::sqrt(e->area);
+		//double v_x = 0.5; 
+	//	double v_y = 1.;
+		Element* elem = mesh->get_element(e->id);
+		double abs_v =calc_abs_v(elem); //Hermes::sqrt(v_x*v_x+v_y*v_y);
+
    double result = double(0);
-double abs_v = 0;
   for (int i = 0; i < n; i++)
-	{	    double v_x = (0.5- e->y[i]); 
-			double v_y =(e->x[i]-0.5);
-		 abs_v += wt[i] *(v_x*v_x+v_y*v_y);
+	{			double v_x = e->y[i];
+ 			double v_y = 1.-e->x[i]; 
     result += wt[i] * (v_x*u->dx[i] + v_y*u->dy[i]) * (v_x*v->dx[i] + v_y*v->dy[i]);
 	}
-  return (result*diam/(area*Hermes::sqrt(abs_v)));
+  return (result*diam/(abs_v));
 		//return result;
 
 }
@@ -338,8 +377,8 @@ double CustomNormFormSurf::value(int n, double *wt, Func<double> *u, Func<double
    double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-		double v_x = (0.5- e->y[i]); 
-		double v_y =(e->x[i]-0.5);
+	double v_x = e->y[i];
+ 			double v_y = 1.-e->x[i]; 
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
     result += wt[i] * u->val[i] * v->val[i] * a_dot_n;
 	}
@@ -352,8 +391,8 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
   double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-	double v_x = (0.5- e->y[i]); 
-	double v_y =(e->x[i]-0.5);
+			double v_x = e->y[i];
+ 			double v_y = 1.-e->x[i]; 
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
     result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i]) * a_dot_n;
 		}

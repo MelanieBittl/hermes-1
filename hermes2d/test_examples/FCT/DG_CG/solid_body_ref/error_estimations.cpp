@@ -1,8 +1,6 @@
 double calc_error_max(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
 {
 
-Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
-
 		// order of integral
 		const int order = 10;
 		double err_max =0.;
@@ -11,7 +9,6 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 		Element *e =NULL;
 		for_all_active_elements(e, space->get_mesh())
 		{
-			if(e->is_triangle()) mode = HERMES_MODE_TRIANGLE;
 		     // set up the solution quadrature
 		     u_1->set_quad_2d(&g_quad_2d_std);
 		     u_1->set_active_element(e);
@@ -21,8 +18,8 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 		     u_2->set_quad_order(order);		    
 
 		     // get the quadrature points
-		     int np = u_1->get_quad_2d()->get_num_points(order,mode);
-		     double3 *pt = g_quad_2d_std.get_points(order,mode);
+		     int np = u_1->get_quad_2d()->get_num_points(order,HERMES_MODE_QUAD);
+		     double3 *pt = g_quad_2d_std.get_points(order,HERMES_MODE_QUAD);
 
 			MeshFunction<double>* sln = u_1->clone();
 			sln->set_active_element(e);
@@ -62,8 +59,8 @@ double calc_error_max(double* u, double* v, int ndof)
 
 double calc_error_test(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
 {
-
-Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
+Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_TRIANGLE;
+//Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 	// order of integral
 	const int order = 10;
 	double err_total =0.;
@@ -75,7 +72,6 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 
 	for_all_active_elements(e, space->get_mesh())
 	{
-						if(e->is_triangle()) mode = HERMES_MODE_TRIANGLE;
 			// set up the solution quadrature
 			u_1->set_quad_2d(&g_quad_2d_std);
 			u_1->set_active_element(e);
@@ -112,8 +108,8 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 		double* y_coord = rm->get_phys_y(order);
 			for( int j = 0; j < np; ++j )
 			{
-				double v_x =1.;// y_coord[j]; 
-				double v_y =1.;// 1.-x_coord[j];
+				double v_x = y_coord[j]; 
+				double v_y = 1.-x_coord[j];
 				err_elem += pt[j][2]*jac*Hermes::sqr(v_x*(u->dx[j]-v->dx[j])+v_y*(u->dy[j]-v->dy[j]));
 				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
 			}
@@ -187,7 +183,6 @@ fclose (pFile);
 MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
 //fview.show(filter);
 lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
-//lin.save_solution_vtk(u_prev_time, "init.vtk", "solution", mode_3D);
 lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
 
 

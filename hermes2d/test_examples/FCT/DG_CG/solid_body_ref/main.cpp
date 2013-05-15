@@ -10,6 +10,7 @@
 #include <list>
 
 
+
 using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -47,7 +48,7 @@ const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time ste
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
-const double THRESHOLD = 0.2;                      // This is a quantitative parameter of the adapt(...) function and
+const double THRESHOLD = 0.7;                      // This is a quantitative parameter of the adapt(...) function and
                                                   // it has different meanings for various adaptive strategies (see below).
 const CandList CAND_LIST = H2D_HP_ANISO;          // Predefined list of element refinement candidates. Possible values are
                                                   // H2D_P_ISO, H2D_P_ANISO, H2D_H_ISO, H2D_H_ANISO, H2D_HP_ISO,
@@ -63,7 +64,7 @@ const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
 
 
 //Visualization
-const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION =true;              // Set to "true" to enable VTK output.
 const int VTK_FREQ = 7000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
@@ -71,7 +72,7 @@ const int VTK_FREQ = 7000;													//Every VTK_FREQth time step the solution
 const std::string BDY_IN = "inlet";
 const std::string BDY_OUT = "outlet";
 
-
+#include "error_estimations.cpp"
 
 int main(int argc, char* argv[])
 {  
@@ -116,8 +117,7 @@ int main(int argc, char* argv[])
 			  	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 
   // Create a refinement selector.
-  L2ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
-
+  H1ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
        selector.set_error_weights(1.0,1.0,1.0); 
 
 	//Initialize
@@ -131,7 +131,6 @@ int main(int argc, char* argv[])
 	int ref_ndof, ndof; double err_est_rel_total;
 	
   DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
-
   Adapt<double> adaptivity(space, &error_calculator);
   adaptivity.set_strategy(AdaptStoppingCriterionCumulative, THRESHOLD);
 
@@ -142,11 +141,15 @@ int main(int argc, char* argv[])
 	Flux_Correction fluxCorrection(theta);
 	Regularity_Estimator regEst(EPS_smooth);
 
+	DiscreteProblem<double> dp_mass(&massmatrix, space);
+	DiscreteProblem<double> dp_convection(&convection, space); 
+	DiscreteProblem<double>  dp_surf(&wf_surf, space);
+
 // Time stepping loop:
 	double current_time = 0.0; 
 	int ts = 1;
 	//Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1);
-	     		 MeshSharedPtr ref_mesh(new Mesh);
+
 	do
 	{ 
   	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
@@ -165,16 +168,17 @@ int main(int argc, char* argv[])
                 space->adjust_element_order(-1, -1, P_INIT, P_INIT);
                 break;
         default: Exceptions::Exception("Wrong global derefinement method.");
-      }      
+      }
+    space->assign_dofs();	      
     }
  
     bool done = false; int as = 1;
-    space->assign_dofs();	
+
 	
     do 
-    	{
-		  		Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i", ts, as);				
-							ndof = space->get_num_dofs(); 
+    	{			ndof = space->get_num_dofs();  
+		  		Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i, dof = %i,", ts, as, ndof);				
+							
 	
 //Unrefinement step
 		/*if(as==1)
@@ -201,7 +205,7 @@ int main(int argc, char* argv[])
 					}
   		}	*/
   		
-			ndof = space->get_num_dofs();  	    		
+				    		
 			double* coeff_vec_smooth = new double[ndof];
 			int* smooth_elem_ref;	
 							
@@ -215,7 +219,7 @@ int main(int argc, char* argv[])
 			smooth_elem_ref =regEst.get_smooth_elems(space,coeff_vec_smooth);
 
       // Construct reference mesh and setup reference space->
-
+	     		 MeshSharedPtr ref_mesh(new Mesh);
       ref_mesh->copy(space->get_mesh());
       Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
       SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
@@ -240,10 +244,11 @@ int main(int argc, char* argv[])
 				//View::wait();
 			}
 
-	DiscreteProblem<double>* dp_mass = new DiscreteProblem<double>(&massmatrix, ref_space);
-	DiscreteProblem<double>* dp_convection = new DiscreteProblem<double>(&convection, ref_space); 
-	DiscreteProblem<double>*  dp_surf = new DiscreteProblem<double>(&wf_surf, ref_space);
+
 	
+      dp_mass.set_space(ref_space);
+      dp_convection.set_space(ref_space);
+ 			dp_surf.set_space(ref_space);
 
 			fluxCorrection.init(ref_space);	
 
@@ -252,9 +257,9 @@ int main(int argc, char* argv[])
 			double* limited_flux = new double[ref_ndof];	
 				
 
-			dp_mass->assemble(mass_matrix); 										//M_c/tau
-			dp_convection->assemble(conv_matrix);		//K
-			dp_surf->assemble(surface_matrix);   //Boundary Integral and DG-edge-boundary-part				
+			dp_mass.assemble(mass_matrix); 										//M_c/tau
+			dp_convection.assemble(conv_matrix);		//K
+			dp_surf.assemble(surface_matrix);   //Boundary Integral and DG-edge-boundary-part				
 		
 		//----------------------MassLumping  & Artificial Diffusion --------------------------------------------------------------------	
 			UMFPackMatrix<double>* lumped_matrix = fluxCorrection.massLumping(mass_matrix); // M_L/tau
@@ -308,8 +313,6 @@ int main(int argc, char* argv[])
     	 //u_prev_time->set_own_mesh(ref_mesh); //ref_mesh can be deleted
     	 }
 
-
-    	 
     	 
 	      // Visualize the solution and mesh->
 	  if(HERMES_VISUALIZATION)
@@ -342,37 +345,7 @@ int main(int argc, char* argv[])
 		ord.save_mesh_vtk(ref_space, "end_ref_mesh.vtk");
 		ord.save_orders_vtk(ref_space, "end_ref_order.vtk");
 
-  ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
-  ErrorCalculator<double> errorCalculator_surf(AbsoluteError);
-  ErrorCalculator<double> errorCalculator_DG(AbsoluteError);
-  ErrorCalculator<double> errorCalculator_sd(AbsoluteError);
-  errorCalculator_l2.add_error_form(new CustomNormFormVol(0,0));
-	errorCalculator_sd.add_error_form(new StreamlineDiffusionNorm(0,0));
-  errorCalculator_surf.add_error_form(new CustomNormFormSurf(0,0));
-  errorCalculator_DG.add_error_form(new CustomNormFormDG(0,0));
-
-  errorCalculator_l2.calculate_errors(u_prev_time, initial_condition);
-	errorCalculator_surf.calculate_errors(u_prev_time, initial_condition);
-	errorCalculator_DG.calculate_errors(u_prev_time,initial_condition);
-	errorCalculator_sd.calculate_errors(u_prev_time, initial_condition);
-
-
-double err_l2_2 = errorCalculator_l2.get_total_error_squared();
-double err_surf_2 = errorCalculator_surf.get_total_error_squared();
-double err_DG_2 = errorCalculator_DG.get_total_error_squared();
-double err_sd_2 = errorCalculator_sd.get_total_error_squared();
-
-
-double total = Hermes::sqrt(err_l2_2+0.5*err_surf_2+0.5*err_DG_2+err_sd_2);
-
-Hermes::Mixins::Loggable::Static::info("l2=%.3e, surf = %.3e, dg = %.3e, sd = %.3e, total= %.3e, ndof = %d",
-Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total , ndof);
-   	
-FILE * pFile;
-pFile = fopen ("error.txt","w");
-    fprintf (pFile, "l2=%.3e, surf = %.3e, dg = %.3e, sd = %.3e, total= %.3e, ndof = %d, ref_ndof= %d",
-Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total , ndof, ref_ndof);
-fclose (pFile); 
+			calc_error_total(u_prev_time, initial_condition,ref_space);
    	
    	}
 		
@@ -382,11 +355,7 @@ fclose (pFile);
 			delete [] coeff_vec_2;
 			delete [] coeff_vec; 
 			delete [] limited_flux; 	
-			//delete ref_mesh; 
-			//delete ref_space; 
-			delete dp_mass;
-			delete dp_convection;
-			delete dp_surf;
+
 
 	  
     }

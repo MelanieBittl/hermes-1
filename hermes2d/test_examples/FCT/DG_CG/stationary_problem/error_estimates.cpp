@@ -1,69 +1,6 @@
-double calc_error_max(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
+
+double calc_error_l2(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
 {
-
-Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
-
-		// order of integral
-		const int order = 10;
-		double err_max =0.;
-
-		// element for the element loop
-		Element *e =NULL;
-		for_all_active_elements(e, space->get_mesh())
-		{
-			if(e->is_triangle()) mode = HERMES_MODE_TRIANGLE;
-		     // set up the solution quadrature
-		     u_1->set_quad_2d(&g_quad_2d_std);
-		     u_1->set_active_element(e);
-		     u_1->set_quad_order(order);		     
-		     u_2->set_quad_2d(&g_quad_2d_std);
-		     u_2->set_active_element(e);
-		     u_2->set_quad_order(order);		    
-
-		     // get the quadrature points
-		     int np = u_1->get_quad_2d()->get_num_points(order,mode);
-		     double3 *pt = g_quad_2d_std.get_points(order,mode);
-
-			MeshFunction<double>* sln = u_1->clone();
-			sln->set_active_element(e);
-			MeshFunction<double>* ref_sln = u_2->clone();
-			ref_sln->set_active_element(e);
-
-			// get the function derivative values
-			Func<double>* u = init_fn( sln, order );
-			Func<double>* v = init_fn( ref_sln, order );
-
-		     // loop over points and determine err_max
-		     for( int j = 0; j < np; ++j ) 
-					if(err_max<	std::abs(u->val[j] - v->val[j]))
-						err_max = std::abs(u->val[j] - v->val[j]);         
-		     
-
-				v->free_fn();
-				u->free_fn();
-				delete v;
-				delete u;
-		  }
-	return err_max;
-}
-
-double calc_error_max(double* u, double* v, int ndof)
-{
-	double max =0;	
-	for(int i =0; i<ndof; i++)
-	{
-		if(max< std::abs(u[i]-v[i]))
-			max = std::abs(u[i]-v[i]);	
-	}
-
-	return max;
-}
-
-
-double calc_error_test(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
-{
-
-Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 	// order of integral
 	const int order = 10;
 	double err_total =0.;
@@ -75,7 +12,8 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 
 	for_all_active_elements(e, space->get_mesh())
 	{
-						if(e->is_triangle()) mode = HERMES_MODE_TRIANGLE;
+Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
+			if(e->is_triangle()) mode = HERMES_MODE_TRIANGLE;
 			// set up the solution quadrature
 			u_1->set_quad_2d(&g_quad_2d_std);
 			u_1->set_active_element(e);
@@ -101,10 +39,6 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 		double diam = e->get_diameter();
 		double area =Hermes::sqrt(e->get_area());
 
-		//double v_x = 0.5; 
-		//double v_y = 1.;
-		//double abs_v = v_x*v_x+v_y*v_y;
-
 		double err_elem = 0.;	
 		double abs_v =0;	
 
@@ -112,12 +46,16 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 		double* y_coord = rm->get_phys_y(order);
 			for( int j = 0; j < np; ++j )
 			{
-				double v_x =1.;// y_coord[j]; 
-				double v_y =1.;// 1.-x_coord[j];
+				//double v_x = 0.5;
+				//double v_y = 1.;
+ 				double v_x = y_coord[j]; 
+				double v_y = 1.-x_coord[j];
 				err_elem += pt[j][2]*jac*Hermes::sqr(v_x*(u->dx[j]-v->dx[j])+v_y*(u->dy[j]-v->dy[j]));
 				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
+//err_elem += pt[j][2]*jac*Hermes::sqr(u->val[j]-v->val[j]);
 			}
 			err_total += (err_elem*diam/Hermes::sqrt(abs_v));
+			//err_total+= err_elem;
 			v->free_fn();
 			u->free_fn();
 			delete v;
@@ -164,10 +102,8 @@ for_all_active_elements(e, space->get_mesh())
 	break;
 }
 
-double test = calc_error_test(u_new, u_prev_time,space);
+double test = calc_error_l2(u_new, u_prev_time,space);
 Hermes::Mixins::Loggable::Static::info("test=%.3e", test);
-
-double err_max = calc_error_max(u_new, u_prev_time,space);
 
 double total = Hermes::sqrt(err_l2_2+0.5*err_surf_2+0.5*err_DG_2+err_sd_2);
 
@@ -176,12 +112,12 @@ Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::
 
 FILE * pFile;
 pFile = fopen ("error.txt","w");
-    fprintf (pFile, "l2=%.4e, surf = %.4e, dg = %.4e, sd = %.4e, total= %.4e, err_max = %.4e, ndof = %d, diam_min =%.4e, diam_max =%.4e",
-Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total,err_max, ndof,diam_min, diam_max);
+    fprintf (pFile, "l2=%.4e, surf = %.4e, dg = %.4e, sd = %.4e, total= %.4e, ndof = %d, diam_min =%.4e, diam_max =%.4e",
+Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total , ndof,diam_min, diam_max);
 fclose (pFile);  
 
 // Output solution in VTK format.
-	Linearizer lin;
+/*	Linearizer lin;
 	bool mode_3D = true;
 
 MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
@@ -190,7 +126,7 @@ lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
 //lin.save_solution_vtk(u_prev_time, "init.vtk", "solution", mode_3D);
 lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
 
-
+*/
 
 
 }
