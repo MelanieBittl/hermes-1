@@ -26,7 +26,9 @@ project(hermes2d)
     set(HERMES2D "hermes2d")              # Base name of the library.
     set(HERMES2D_RELEASE ${HERMES2D})     # Name of the release version.
     set(HERMES2D_DEBUG ${HERMES2D}-debug) # Name of the debug version.
-      
+    if(H2D_DEBUG)
+      set(HERMES2D ${HERMES2D_DEBUG})
+    endif(H2D_DEBUG)
   else(MSVC)
     if(H2D_DEBUG)
       set(HERMES2D_DEBUG "hermes2d-debug")
@@ -56,11 +58,6 @@ project(hermes2d)
     add_definitions(-DNOGLUT)
   endif(H2D_WITH_GLUT)
 
-  if(H2D_WITH_VIEWER_GUI)
-    find_package(ANTTWEAKBAR REQUIRED)
-    include_directories(${ANTTWEAKBAR_INCLUDE_DIR})
-  endif(H2D_WITH_VIEWER_GUI)
-  
   # Mesh format.
   if(WITH_HDF5)
     find_package(HDF5 REQUIRED)
@@ -136,7 +133,9 @@ project(hermes2d)
     src/mesh/mesh_h2d_xml.cpp
     src/mesh/mesh_h1d_xml.cpp
     src/mesh/subdomains_h2d_xml.cpp
+    src/mesh/element.cpp
     src/mesh/mesh.cpp
+    src/mesh/mesh_util.cpp
     src/mesh/traverse.cpp
     src/mesh/mesh_data.cpp
 
@@ -260,7 +259,9 @@ project(hermes2d)
     src/mesh/mesh_h2d_xml.cpp
     src/mesh/mesh_h1d_xml.cpp
     src/mesh/subdomains_h2d_xml.cpp
+    src/mesh/element.cpp
     src/mesh/mesh.cpp
+    src/mesh/mesh_util.cpp
     src/mesh/traverse.cpp
     src/mesh/mesh_data.cpp
   )
@@ -389,7 +390,9 @@ project(hermes2d)
     include/mesh/mesh_h2d_xml.h
     include/mesh/mesh_h1d_xml.h
     include/mesh/subdomains_h2d_xml.h
+    include/mesh/element.h
     include/mesh/mesh.h
+    include/mesh/mesh_util.h
     include/mesh/traverse.h
     include/mesh/mesh_data.h
 
@@ -516,7 +519,9 @@ project(hermes2d)
     include/mesh/mesh_h2d_xml.h
     include/mesh/mesh_h1d_xml.h
     include/mesh/subdomains_h2d_xml.h
+    include/mesh/element.h
     include/mesh/mesh.h
+    include/mesh/mesh_util.h
     include/mesh/traverse.h
     include/mesh/mesh_data.h
   )
@@ -634,13 +639,16 @@ project(hermes2d)
   if(MSVC)
     if(H2D_DEBUG)
       set(FLAGS "${DEBUG_FLAGS}")
-    elseif(H2D_DEBUG)
-      set(FLAGS "${RELEASE_FLAGS}")
+      BUILD_2D_LIB(${HERMES2D_DEBUG} ${HERMES_COMMON_LIB_DEBUG} ${FLAGS})
+      ADD_MSVC_BUILD_FLAGS(${HERMES2D_DEBUG} ${HERMES2D_DEBUG} ${HERMES2D_RELEASE})
+      INSTALL_LIB(${HERMES2D_DEBUG})
     endif(H2D_DEBUG)
-
-    BUILD_2D_LIB(${HERMES2D} ${HERMES_COMMON_LIB} ${FLAGS})
-    ADD_MSVC_BUILD_FLAGS(${HERMES2D} ${HERMES2D_DEBUG} ${HERMES2D_RELEASE})
-    INSTALL_LIB(${HERMES2D})
+    if(H2D_RELEASE)
+      set(FLAGS "${RELEASE_FLAGS}")
+      BUILD_2D_LIB(${HERMES2D_RELEASE} ${HERMES_COMMON_LIB_RELEASE} ${FLAGS})
+      ADD_MSVC_BUILD_FLAGS(${HERMES2D_RELEASE} ${HERMES2D_DEBUG} ${HERMES2D_RELEASE})
+      INSTALL_LIB(${HERMES2D_RELEASE})
+    endif(H2D_RELEASE)
   else(MSVC)
     if(H2D_DEBUG)
       BUILD_2D_LIB(${HERMES2D_DEBUG} ${HERMES_COMMON_LIB_DEBUG} ${DEBUG_FLAGS})

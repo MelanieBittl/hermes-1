@@ -14,10 +14,7 @@ namespace Hermes
       template<typename Scalar>
       OptimumSelector<Scalar>::OptimumSelector(CandList cand_list, int
         max_order, Shapeset* shapeset, const Range& vertex_order, const
-        Range& edge_bubble_order) :
-      Selector<Scalar>(shapeset->get_min_order(), max_order),
-        cand_list(cand_list),
-        shapeset(shapeset)
+        Range& edge_bubble_order) : Selector<Scalar>(shapeset->get_min_order(), max_order), cand_list(cand_list), shapeset(shapeset), dof_score_exponent(1.0)
       {
         if(shapeset == NULL)
           throw Exceptions::NullException(3);
@@ -556,23 +553,28 @@ namespace Hermes
       }
 
       template<typename Scalar>
+      void OptimumSelector<Scalar>::set_dof_score_exponent(double exponent)
+      {
+        this->dof_score_exponent = exponent;
+      }
+
+      template<typename Scalar>
       void OptimumSelector<Scalar>::evaluate_cands_score(Hermes::vector<Cand>& candidates, Element* e)
       {
-        //calculate score of candidates
+        // Original candidate.
         Cand& unrefined = candidates[0];
-        const int num_cands = (int)candidates.size();
+        // Original candidate score is zero.
         unrefined.score = 0;
 
-        for (int i = 1; i < num_cands; i++)
+        for (int i = 1; i < candidates.size(); i++)
         {
-          Cand& cand = candidates[i];
-          if(cand.error < unrefined.error)
-          {
-            double delta_dof = cand.dofs - unrefined.dofs;
-            candidates[i].score = (log10(unrefined.error) - log10(cand.error)) / delta_dof;
-          }
+          Cand& candidate = candidates[i];
+
+          // We are only interested in candidates decreasing the error.
+          if(candidate.error < unrefined.error)
+            candidate.score = (log(unrefined.error / candidate.error)) / std::pow(candidate.dofs - unrefined.dofs, this->dof_score_exponent);
           else
-            candidates[i].score = 0;
+            candidate.score = 0;
         }
       }
 
@@ -637,11 +639,8 @@ namespace Hermes
       }
 
       template<typename Scalar>
-      bool OptimumSelector<Scalar>::select_refinement(Element* element, int quad_order, MeshFunction<Scalar>* rsln, ElementToRefine& refinement, CalculatedErrorType errorType)
+      bool OptimumSelector<Scalar>::select_refinement(Element* element, int quad_order, MeshFunction<Scalar>* rsln, ElementToRefine& refinement)
       {
-        // Very important - set the current error type.
-        this->errorType = errorType;
-
         //make an uniform order in a case of a triangle
         int order_h = H2D_GET_H_ORDER(quad_order), order_v = H2D_GET_V_ORDER(quad_order);
         if(element->is_triangle())
@@ -694,6 +693,9 @@ namespace Hermes
               throw Exceptions::Exception("Triangle processed but the resulting order (%d, %d) of son %d is not uniform", H2D_GET_H_ORDER(refinement.refinement_polynomial_order[i]), H2D_GET_V_ORDER(refinement.refinement_polynomial_order[i]), i);
 #endif
             refinement.refinement_polynomial_order[i] = H2D_MAKE_QUAD_ORDER(H2D_GET_H_ORDER(refinement.refinement_polynomial_order[i]), 0);
+
+            for(int poly_order_type_i = 1; poly_order_type_i < 4; poly_order_type_i++)
+              refinement.best_refinement_polynomial_order_type[poly_order_type_i][i] = H2D_MAKE_QUAD_ORDER(H2D_GET_H_ORDER(refinement.best_refinement_polynomial_order_type[poly_order_type_i][i]), 0);
           }
         }
 

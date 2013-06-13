@@ -300,7 +300,7 @@ namespace Hermes
           }
         }
 
-        return result;
+        return result * this->coeff->value(0.);
       }
 
       template<typename Scalar>
@@ -1080,6 +1080,11 @@ namespace Hermes
 
         // Residual.
         this->add_vector_form(new DefaultResidualDiffusion<Scalar>(0, area, coeff, gt));
+      };
+
+      template<typename Scalar>
+      DefaultWeakFormPoisson<Scalar>::DefaultWeakFormPoisson() : WeakForm<Scalar>()
+      {
       };
 
       template<typename Scalar>

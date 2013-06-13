@@ -607,7 +607,7 @@ namespace Hermes
           double tolerance = min_elem_area/100.;
 
           if(min_elem_area < 0)
-            throw Exceptions::ValueException("min_elem_area", 0.0, 1e-10);
+            throw Exceptions::ValueException("min_elem_area", 0.0, Hermes::epsilon);
 
           for (int i = 1; i < n; i++)
           {
@@ -615,7 +615,7 @@ namespace Hermes
             for_all_base_elements_incl_inactive(e, meshes[i])
             {
               if(e->used)
-                if(fabs(areas[counter] - e->get_area()) > tolerance && areas[counter] > 1e-15)
+                if(fabs(areas[counter] - e->get_area()) > tolerance && areas[counter] > Hermes::epsilon)
                 {
                   throw Hermes::Exceptions::Exception("Meshes not compatible in Traverse::begin().");
                 }
@@ -856,6 +856,8 @@ namespace Hermes
       // Calculation.
       for (int id = 0; id < meshes[0]->get_num_base_elements(); id++)
       {
+        if(!meshes[0]->get_element(id)->used)
+          continue;
         for (i = 0; i < num; i++)
         {
           e[i] = meshes[i]->get_element(id);

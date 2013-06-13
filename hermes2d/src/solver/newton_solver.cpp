@@ -78,6 +78,8 @@ namespace Hermes
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_sufficient_improvement_factor_jacobian(double ratio)
     {
+      if(ratio < 0.0)
+        throw Exceptions::ValueException("sufficient_improvement_factor_jacobian", sufficient_improvement_factor_jacobian, 0.0);
       this->sufficient_improvement_factor_jacobian = ratio;
     }
 
@@ -90,13 +92,15 @@ namespace Hermes
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_tolerance(double tolerance_)
     {
+      if(tolerance_ < 0.0)
+        throw Exceptions::ValueException("newton_tolerance", newton_tolerance, 0.0);
       this->newton_tolerance = tolerance_;
     }
 
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_max_allowed_residual_norm(double max_allowed_residual_norm_to_set)
     {
-      if(max_allowed_residual_norm_to_set <= 0.0)
+      if(max_allowed_residual_norm_to_set < 0.0)
         throw Exceptions::ValueException("max_allowed_residual_norm_to_set", max_allowed_residual_norm_to_set, 0.0);
       this->max_allowed_residual_norm = max_allowed_residual_norm_to_set;
     }
@@ -104,7 +108,7 @@ namespace Hermes
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_min_allowed_damping_coeff(double min_allowed_damping_coeff_to_set)
     {
-      if(min_allowed_damping_coeff_to_set <= 0.0)
+      if(min_allowed_damping_coeff_to_set < 0.0)
         throw Exceptions::ValueException("min_allowed_damping_coeff_to_set", min_allowed_damping_coeff_to_set, 0.0);
       this->min_allowed_damping_coeff = min_allowed_damping_coeff_to_set;
     }
@@ -148,8 +152,8 @@ namespace Hermes
     template<typename Scalar>
     void NewtonSolver<Scalar>::set_auto_damping_ratio(double ratio)
     {
-      if(ratio <= 0.0 || ratio >= 1.0)
-        throw Exceptions::ValueException("ratio", ratio, 0.0, 1.0);
+      if(ratio <= 1.0)
+        throw Exceptions::ValueException("ratio", ratio, 1.0);
       if(this->manual_damping)
         this->warn("Manual damping is turned on and you called set_initial_auto_damping_coeff(), turn off manual damping first by set_manual_damping_coeff(false);");
       this->auto_damping_ratio = ratio;
@@ -182,11 +186,10 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    typename NewtonSolver<Scalar>::ConvergenceState NewtonSolver<Scalar>::get_convergence_state(Scalar* coeff_vec)
+    typename NewtonSolver<Scalar>::ConvergenceState NewtonSolver<Scalar>::get_convergence_state()
     {
       unsigned int iteration = this->get_parameter_value(this->p_iteration);
       double residual_norm = this->get_parameter_value(p_residual_norms)[iteration - 1];
-      double current_damping_coefficient = this->get_parameter_value(p_current_damping_coefficient);
 
       if(residual_norm > this->max_allowed_residual_norm)
         return AboveMaxAllowedResidualNorm;
@@ -216,7 +219,7 @@ namespace Hermes
       switch(state)
       {
       case Converged:
-        this->info("\tNewton: done.");
+        this->info("\tNewton: done.\n");
         break;
       case AboveMaxIterations:
         throw NewtonException(AboveMaxIterations);
@@ -272,50 +275,57 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    double NewtonSolver<Scalar>::calculate_damping_coefficient(bool& residual_norm_drop, unsigned int& successful_steps)
+    bool NewtonSolver<Scalar>::calculate_damping_coefficient(unsigned int& successful_steps)
     {
+      Hermes::vector<double>& damping_coefficients = this->get_parameter_value(p_damping_coefficients);
+
       if(this->manual_damping)
-        return this->manual_damping_coefficient;
+      {
+        damping_coefficients.push_back(this->manual_damping_coefficient);
+        return true;
+      }
 
       int iteration = this->get_parameter_value(p_iteration);
       double residual_norm = this->get_parameter_value(p_residual_norms)[iteration - 1];
       double previous_residual_norm = this->get_parameter_value(p_residual_norms)[iteration - 2];
-      double current_damping_coefficient = this->get_parameter_value(p_current_damping_coefficient);
 
       if(residual_norm < previous_residual_norm * this->sufficient_improvement_factor)
       {
-        residual_norm_drop = true;
         if(++successful_steps >= this->necessary_successful_steps_to_increase)
         {
-          current_damping_coefficient = std::min(this->initial_auto_damping_coefficient, this->auto_damping_ratio * current_damping_coefficient);
-          this->info("\tNewton: step successful, damping coefficient: %g.", current_damping_coefficient);
-          return current_damping_coefficient;
+          double new_damping_coefficient = std::min(this->initial_auto_damping_coefficient, this->auto_damping_ratio * damping_coefficients.back());
+          this->info("\tNewton: step successful, new damping coefficient: %g.", new_damping_coefficient);
+          damping_coefficients.push_back(new_damping_coefficient);
         }
-        if(residual_norm < previous_residual_norm)
+        else
         {
-          this->info("\tNewton: step successful, damping coefficient: %g.", current_damping_coefficient);
-          return current_damping_coefficient;
+          this->info("\tNewton: step successful, stay at damping coefficient: %g.", damping_coefficients.back());
+          damping_coefficients.push_back(damping_coefficients.back());
         }
+
+        return true;
       }
       else
       {
+        double current_damping_coefficient = damping_coefficients.back();
+        damping_coefficients.pop_back();
         successful_steps = 0;
-        residual_norm_drop = false;
         if(current_damping_coefficient <= this->min_allowed_damping_coeff)
         {
           this->warn("\tNewton: results NOT improved, current damping coefficient is at the minimum possible level: %g.", min_allowed_damping_coeff);
           this->info("\t  If you want to decrease the minimum level, use the method set_min_allowed_damping_coeff()");
           throw NewtonException(BelowMinDampingCoeff);
-          return this->min_allowed_damping_coeff;
         }
         else
         {
-          current_damping_coefficient = (1. / this->auto_damping_ratio) * current_damping_coefficient;
-          this->warn("\tNewton: results NOT improved, step restarted with damping coefficient: %g.", current_damping_coefficient);
-          return current_damping_coefficient;
+          double new_damping_coefficient = (1. / this->auto_damping_ratio) * current_damping_coefficient;
+          this->warn("\tNewton: results NOT improved, step restarted with damping coefficient: %g.", new_damping_coefficient);
+          damping_coefficients.push_back(new_damping_coefficient);
         }
+
+        return false;
       }
-      return current_damping_coefficient;
+
     }
 
     template<typename Scalar>
@@ -351,6 +361,10 @@ namespace Hermes
       // Optionally zero cache hits and misses.
       if(this->report_cache_hits_and_misses)
         this->zero_cache_hits_and_misses();
+
+      // UMFPACK reporting.
+      if(this->do_UMFPACK_reporting)
+        memset(this->UMFPACK_reporting_data, 0, 3 * sizeof(double));
     }
 
     template<typename Scalar>
@@ -378,19 +392,7 @@ namespace Hermes
     template<typename Scalar>
     bool NewtonSolver<Scalar>::force_reuse_jacobian_values(unsigned int& successful_steps_with_reused_jacobian)
     {
-      int iteration = this->get_parameter_value(p_iteration);
-      if(iteration == 1)
-        return false;
-
-      double residual_norm = this->get_parameter_value(p_residual_norms)[iteration - 1];
-      double previous_residual_norm = this->get_parameter_value(p_residual_norms)[iteration - 2];
-
       if(successful_steps_with_reused_jacobian >= this->max_steps_with_reused_jacobian)
-      {
-        successful_steps_with_reused_jacobian = 0;
-        return false;
-      }
-      if((residual_norm / previous_residual_norm) > this->sufficient_improvement_factor_jacobian)
       {
         successful_steps_with_reused_jacobian = 0;
         return false;
@@ -419,10 +421,12 @@ namespace Hermes
       // Assemble the system.
       if(this->jacobian_reusable && this->reuse_jacobian_values())
       {
+        this->matrix_solver->set_factorization_scheme(HERMES_REUSE_FACTORIZATION_COMPLETELY);
         this->dp->assemble(coeff_vec, this->residual);
       }
       else
       {
+        this->matrix_solver->set_factorization_scheme(HERMES_FACTORIZE_FROM_SCRATCH);
         this->dp->assemble(coeff_vec, this->jacobian, this->residual);
         this->jacobian_reusable = true;
       }
@@ -459,7 +463,7 @@ namespace Hermes
       this->dp->assemble(coeff_vec, this->residual);
       if(this->report_cache_hits_and_misses)
         this->add_cache_hits_and_misses(this->dp);
-
+      
       this->residual->change_sign();
 
       double residual_norm = this->calculate_residual_norm();
@@ -468,31 +472,65 @@ namespace Hermes
 
       // Output to disk.
       this->process_vector_output(this->residual, this->get_parameter_value(p_iteration));
-      // Current residual norm && current_damping_coefficient.
+      // Current residual norm.
       this->get_parameter_value(p_residual_norms).push_back(this->calculate_residual_norm());
     }
 
     template<typename Scalar>
     void NewtonSolver<Scalar>::solve_linear_system(Scalar* coeff_vec)
     {
-      if(this->matrix_solver->solve())
+      // store the previous coeff_vec to coeff_vec_back.
+      memcpy(coeff_vec_back, coeff_vec, sizeof(Scalar)*ndof);
+
+      // If the solver is iterative, give him the initial guess.
+      Hermes::Solvers::IterSolver<Scalar>* iter_solver = dynamic_cast<Hermes::Solvers::IterSolver<Scalar>*>(this->matrix_solver);
+      bool solved = iter_solver ? iter_solver->solve(coeff_vec) : this->matrix_solver->solve();
+
+      if(solved)
       {
-        // store the previous coeff_vec to coeff_vec_back.
-        memcpy(coeff_vec_back, coeff_vec, sizeof(Scalar)*ndof);
+        if(this->do_UMFPACK_reporting)
+        {
+          UMFPackLinearMatrixSolver<Scalar>* umfpack_matrix_solver = (UMFPackLinearMatrixSolver<Scalar>*)this->matrix_solver;
+          if(this->matrix_solver->get_used_factorization_scheme() != HERMES_REUSE_FACTORIZATION_COMPLETELY)
+          {
+            this->UMFPACK_reporting_data[this->FactorizationSize] = std::max(this->UMFPACK_reporting_data[this->FactorizationSize], umfpack_matrix_solver->Info[UMFPACK_NUMERIC_SIZE] / umfpack_matrix_solver->Info[UMFPACK_SIZE_OF_UNIT]);
+            this->UMFPACK_reporting_data[this->PeakMemoryUsage] += umfpack_matrix_solver->Info[UMFPACK_PEAK_MEMORY] / umfpack_matrix_solver->Info[UMFPACK_SIZE_OF_UNIT];
+            this->UMFPACK_reporting_data[this->Flops] += umfpack_matrix_solver->Info[UMFPACK_FLOPS];
+          }
+        }
 
-        // obtain the solution increment.
-        Scalar* sln_vector_local = this->matrix_solver->get_sln_vector();
-
-        double damping_coeff = this->get_parameter_value(p_current_damping_coefficient);
+        // Get current damping factor.
+        double current_damping_coefficient = this->get_parameter_value(this->p_damping_coefficients).back();
 
         // store the solution norm change.
-        this->get_parameter_value(p_solution_change_norm) = damping_coeff * get_l2_norm(sln_vector_local, ndof);
+        // Iterative solvers directly use coeff_vec, so we have to take this into account.
+        if(iter_solver)
+        {
+          // 1. store the solution.
+          for (int i = 0; i < ndof; i++)
+            coeff_vec[i] *= current_damping_coefficient;
 
-        // add the increment to the solution.
-        for (int i = 0; i < ndof; i++)
-          coeff_vec[i] += damping_coeff * sln_vector_local[i];
+          // 2. store the solution change.
+          Scalar* difference = new Scalar[ndof];
+          for(int i = 0; i < ndof; i++)
+            difference[i] = coeff_vec[i] - coeff_vec_back[i];
+          this->get_parameter_value(p_solution_change_norm) = current_damping_coefficient * get_l2_norm(difference, ndof);
+          delete [] difference;
+        }
+        else
+        {
+          // obtain the solution increment.
+          Scalar* sln_vector_local = this->matrix_solver->get_sln_vector();
 
-        // store the solution norm.
+          // 1. store the solution.
+          for (int i = 0; i < ndof; i++)
+            coeff_vec[i] += current_damping_coefficient * sln_vector_local[i];
+
+          // 2. store the solution change.
+          this->get_parameter_value(p_solution_change_norm) = current_damping_coefficient * get_l2_norm(sln_vector_local, ndof);
+        }
+
+        // 3. store the solution norm.
         this->get_parameter_value(p_solution_norms).push_back(get_l2_norm(coeff_vec, this->ndof));
       }
       else
@@ -515,8 +553,12 @@ namespace Hermes
       unsigned int successful_steps_jacobian = 0;
       Hermes::vector<double> residual_norms;
       Hermes::vector<double> solution_norms;
+      Hermes::vector<double> damping_coefficients;
+
+      // Initial damping coefficient.
+      damping_coefficients.push_back(this->manual_damping ? manual_damping_coefficient : initial_auto_damping_coefficient);
+      
       double solution_change_norm;
-      double current_damping_coefficient = this->manual_damping ? manual_damping_coefficient : initial_auto_damping_coefficient;
       bool residual_norm_drop = true;
 
       this->set_parameter_value(this->p_residual_norms, &residual_norms);
@@ -526,7 +568,7 @@ namespace Hermes
       this->set_parameter_value(this->p_successful_steps_jacobian, &successful_steps_jacobian);
       this->set_parameter_value(this->p_iteration, &it);
       this->set_parameter_value(this->p_residual_norm_drop, &residual_norm_drop);
-      this->set_parameter_value(this->p_current_damping_coefficient, &current_damping_coefficient);
+      this->set_parameter_value(this->p_damping_coefficients, &damping_coefficients);
 #pragma endregion
 
       if(this->do_initial_step_return_finished(coeff_vec))
@@ -541,9 +583,10 @@ namespace Hermes
       // Main Newton loop 
       while (true)
       {
-        // User method.
+        // Handle the event of step beginning.
         this->on_step_begin();
 
+#pragma region damping_factor_loop
         // Loop searching for the damping coefficient.
         do
         {
@@ -551,13 +594,14 @@ namespace Hermes
           this->assemble_residual(coeff_vec);
 
           // Test convergence - if in this loop we found a solution.
-          if(this->handle_convergence_state_return_finished(this->get_convergence_state(coeff_vec), coeff_vec))
+          if(this->handle_convergence_state_return_finished(this->get_convergence_state(), coeff_vec))
             return;
 
           // Inspect the damping coefficient.
           try
           {
-            current_damping_coefficient = this->calculate_damping_coefficient(residual_norm_drop, successful_steps_damping);
+            // Calculate damping coefficient, and return whether or not was this a successful step.
+            residual_norm_drop = this->calculate_damping_coefficient(successful_steps_damping);
           }
           catch (NewtonException& e)
           {
@@ -568,26 +612,55 @@ namespace Hermes
 
           if(!residual_norm_drop)
           {
-            // Delete the previous residual norm.
+            // Delete the previous residual and solution norm.
             residual_norms.pop_back();
+            solution_norms.pop_back();
 
             // Try with the different damping coefficient.
+            // Important thing here is the factor used that must be calculated from the current one and the previous one.
+            // This results in the following relation (since the damping coefficient is only updated one way).
+            double factor = damping_coefficients.back() * (1 - this->auto_damping_ratio);
             for (int i = 0; i < ndof; i++)
-              coeff_vec[i] = coeff_vec_back[i] + current_damping_coefficient * (coeff_vec[i] - coeff_vec_back[i]);
+              coeff_vec[i] = coeff_vec_back[i] + factor * (coeff_vec[i] - coeff_vec_back[i]);
+
+            // Add new solution norm.
+            solution_norms.push_back(get_l2_norm(coeff_vec, this->ndof));
           }
         }
         while (!residual_norm_drop);
+#pragma endregion
 
-        // Loop until jacobian is reusable.
+        // Damping factor was updated, handle the event.
+        this->on_damping_factor_updated();
+
+#pragma region jacobian_reusage_loop
+        // Loop until jacobian is not reusable anymore.
+        // The whole loop is skipped if the jacobian is not suitable for being reused at all.
         while(this->jacobian_reusable && (this->reuse_jacobian_values() || force_reuse_jacobian_values(successful_steps_jacobian)))
         {
+          // Info & handle the situation as necessary.
           this->info("\tNewton: reusing Jacobian.");
+          this->on_reused_jacobian_step_begin();
 
           // Solve the system.
           this->matrix_solver->set_factorization_scheme(HERMES_REUSE_FACTORIZATION_COMPLETELY);
           this->solve_linear_system(coeff_vec);
+          // Assemble next residual for both reusage and convergence test.
+          this->assemble_residual(coeff_vec);
+          // Test whether it was okay to reuse the jacobian.
+          if(!this->jacobian_reused_okay(successful_steps_jacobian))
+          {
+            this->info("\tNewton: Reused Jacobian brought residual norm increase - will be recalculated.");
+            this->get_parameter_value(p_residual_norms).pop_back();
+            this->get_parameter_value(p_solution_norms).pop_back();
+            break;
+          }
 
-          // User method call.
+          // Increase the iteration count.
+          it++;
+
+          // Handle the event of end of a step.
+          this->on_reused_jacobian_step_end();
           if(!this->on_step_end())
           {
             this->info("\tNewton: aborted.");
@@ -595,16 +668,11 @@ namespace Hermes
             return;
           }
 
-          // Increase the iteration count.
-          it++;
-
-          // Assemble next residual for convergence test.
-          this->assemble_residual(coeff_vec);
-
           // Test convergence - if in this loop we found a solution.
-          if(this->handle_convergence_state_return_finished(this->get_convergence_state(coeff_vec), coeff_vec))
+          if(this->handle_convergence_state_return_finished(this->get_convergence_state(), coeff_vec))
             return;
         }
+#pragma endregion
 
         // Reassemble the jacobian once not reusable anymore.
         this->info("\tNewton: re-calculating Jacobian.");
@@ -618,9 +686,11 @@ namespace Hermes
         else
           this->matrix_solver->set_factorization_scheme(HERMES_FACTORIZE_FROM_SCRATCH);
 
+        // Solve the system, state that the jacobian is reusable should it be desirable.
         this->solve_linear_system(coeff_vec);
         this->jacobian_reusable = true;
 
+        // Handle the event of end of a step.
         if(!this->on_step_end())
         {
           this->info("\tNewton: aborted.");
@@ -631,6 +701,41 @@ namespace Hermes
         // Increase the iteration count.
         it++;
       }
+    }
+
+    template<typename Scalar>
+    bool NewtonSolver<Scalar>::jacobian_reused_okay(unsigned int& successful_steps_with_reused_jacobian)
+    {
+      int iteration = this->get_parameter_value(p_iteration);
+      if(iteration == 1)
+        return false;
+
+      double residual_norm = this->get_parameter_value(p_residual_norms)[iteration - 1];
+      double previous_residual_norm = this->get_parameter_value(p_residual_norms)[iteration - 2];
+
+      
+      if((residual_norm / previous_residual_norm) > this->sufficient_improvement_factor_jacobian)
+      {
+        successful_steps_with_reused_jacobian = 0;
+        return false;
+      }
+      else
+        return true;
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::on_damping_factor_updated()
+    {
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::on_reused_jacobian_step_begin()
+    {
+    }
+
+    template<typename Scalar>
+    void NewtonSolver<Scalar>::on_reused_jacobian_step_end()
+    {
     }
 
     template class HERMES_API NewtonSolver<double>;

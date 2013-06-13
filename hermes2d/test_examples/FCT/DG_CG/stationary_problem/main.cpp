@@ -6,9 +6,8 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
-const int P_INIT =2;       						// Initial polynomial degree.
-
+const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int P_INIT =1;       						// Initial polynomial degree.
 
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
@@ -123,7 +122,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 			for(int i=0; i<ndof; i++) coeff_vec_2[i] = vec_new[i];
 		}
     else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
-		sview.show(u_new);
+		//sview.show(u_new);
 
 
 /*

@@ -46,8 +46,7 @@ public:
 
   void operator=(const SpaceSharedPtr<Scalar>& other);
 
-  virtual ~SpaceSharedPtr();
-
+  ~SpaceSharedPtr();
 };
 
 namespace Hermes
@@ -240,6 +239,9 @@ namespace Hermes
       {
       public:
         /// Constructor.
+        /// \param[in] order_increase Increase of the polynomial order.
+        ReferenceSpaceCreator(unsigned int order_increase = 1);
+        /// Constructor.
         /// \param[in] coarse_space The coarse (original) space.
         /// \param[in] ref_mesh The refined mesh.
         /// \param[in] order_increase Increase of the polynomial order.
@@ -251,6 +253,7 @@ namespace Hermes
 
         /// Methods that user calls to get the reference space pointer (has to be properly casted if necessary).
         virtual SpaceSharedPtr<Scalar> create_ref_space(bool assign_dofs = true);
+        virtual SpaceSharedPtr<Scalar> create_ref_space(SpaceSharedPtr<Scalar> coarse_space, MeshSharedPtr ref_mesh, bool assign_dofs = true);
 
       private:
         /// Construction initialization.
@@ -324,15 +327,11 @@ namespace Hermes
       int get_edge_functions_count();
       /// Returns the total (global) number of bubble functions.
       int get_bubble_functions_count();
-
-      static unsigned int get_instance_count();
       
       /// Internal. Used by DiscreteProblem to detect changes in the space.
       int get_seq() const;
 
     protected:
-      static unsigned int instance_count;
-
       /// Number of degrees of freedom (dimension of the space).
       int ndof;
 

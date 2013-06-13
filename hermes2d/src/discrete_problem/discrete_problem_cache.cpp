@@ -62,7 +62,7 @@ namespace Hermes
         }
       }
 
-      this->n_quadrature_points = init_geometry_points(current_refmaps[rep_space_i], this->order, this->geometry, this->jacobian_x_weights);
+      this->n_quadrature_points = init_geometry_points(current_refmaps, this->spaceCnt, this->order, this->geometry, this->jacobian_x_weights);
 
       if(current_state->isBnd && (current_wf->mfsurf.size() > 0 || current_wf->vfsurf.size() > 0))
       {
@@ -85,7 +85,7 @@ namespace Hermes
             this->fnsSurface[current_state->isurf] = NULL;
             continue;
           }
-          this->n_quadrature_pointsSurface[current_state->isurf] = init_surface_geometry_points(current_refmaps[rep_space_i], order, current_state->isurf, current_state->rep->marker, this->geometrySurface[current_state->isurf], this->jacobian_x_weightsSurface[current_state->isurf]);
+          this->n_quadrature_pointsSurface[current_state->isurf] = init_surface_geometry_points(current_refmaps, this->spaceCnt, order, current_state->isurf, current_state->rep->marker, this->geometrySurface[current_state->isurf], this->jacobian_x_weightsSurface[current_state->isurf]);
           this->orderSurface[current_state->isurf] = order;
           order = this->order;
 
@@ -220,6 +220,7 @@ namespace Hermes
         if(!this->hashTableUsed[i] && this->hashTable[i])
         {
           delete this->recordTable[this->hashTable[i]->cache_record_index];
+          this->recordTable[this->hashTable[i]->cache_record_index] = NULL;
           delete this->hashTable[i];
           this->hashTable[i] = NULL;
         }
@@ -239,7 +240,7 @@ namespace Hermes
     int DiscreteProblemCache<Scalar>::get_hash_record(int rep_id, int parent_son, int rep_sub_idx, int rep_i)
     {
       int hash = this->hashFunction(rep_id, parent_son, rep_sub_idx, rep_i);
-      while (hashTable[hash] && (hashTable[hash]->rep_id != rep_id || hashTable[hash]->parent_son != parent_son || hashTable[hash]->rep_sub_idx != rep_sub_idx || hashTable[hash]->rep_i != rep_i))
+      while (hashTable[hash] && (hashTable[hash]->rep_id != rep_id || hashTable[hash]->parent_son != parent_son || hashTable[hash]->rep_sub_idx != rep_sub_idx || hashTable[hash]->rep_i != rep_i || this->recordTable[hashTable[hash]->cache_record_index] == NULL))
         hash = (hash + 1) % hash_table_size;
       hashTableUsed[hash] = true;
       return hash;

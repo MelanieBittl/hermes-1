@@ -50,6 +50,23 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    MeshFunctionSharedPtr<double> ErrorCalculator<Scalar>::get_errorMeshFunction(int component)
+    {
+      if(component >= this->component_count)
+        throw Exceptions::ValueException("component", component, this->component_count);
+
+      // The value is ready to be returned if it has been initialized and no other error calculation has been
+      // performed since.
+      if(this->errorMeshFunction[component])
+        return this->errorMeshFunction[component];
+      else
+      {
+        this->errorMeshFunction[component].reset(new ExactSolutionConstantArray<double, double>(coarse_solutions[component]->get_mesh(), this->errors[component]));
+        return this->errorMeshFunction[component];
+      }
+    }
+
+    template<typename Scalar>
     void ErrorCalculator<Scalar>::init_data_storage()
     {
       this->num_act_elems = 0;
@@ -61,7 +78,7 @@ namespace Hermes
       // calculate the total number of elements.
       for(int i = 0; i < this->component_count; i++)
       {
-        int num_elements_i = this->coarse_solutions[i]->get_mesh()->get_num_elements();
+        int num_elements_i = this->coarse_solutions[i]->get_mesh()->get_max_element_id();
 
         if(errors[i] == NULL)
           errors[i] = (double*)calloc(num_elements_i, sizeof(double));
@@ -101,6 +118,11 @@ namespace Hermes
           this->element_references[running_count_total++] = ErrorCalculator<Scalar>::ElementReference(i, e->id, &this->errors[i][e->id], &this->norms[i][e->id]);
         }
       }
+
+      // Also handle the errorMeshFunction.
+      for(int i = 0; i < this->component_count; i++)
+        if(this->errorMeshFunction[i])
+          this->errorMeshFunction[i].reset();
     }
 
     template<typename Scalar>
@@ -172,6 +194,10 @@ namespace Hermes
           errorThreadCalculator.evaluate_one_state(states[state_i]);
       }
 
+      for(int i = 0; i < num_states; i++)
+        delete states[i];
+      free(states);
+
       // Clean after ourselves.
       for(int i = 0; i < this->component_count; i++)
       {
@@ -205,7 +231,7 @@ namespace Hermes
         {
           component_errors[i] += *(this->element_references[running_indexer + j].error);
           component_norms[i] += *(this->element_references[running_indexer + j].norm);
-
+          
           if(this->errorType == RelativeErrorToElementNorm)
 					   *(this->element_references[running_indexer + j].error) /= *(this->element_references[running_indexer + j].norm);
         }
@@ -255,6 +281,12 @@ namespace Hermes
       }
 
       return true;
+    }
+
+    template<typename Scalar>
+    const typename ErrorCalculator<Scalar>::ElementReference& ErrorCalculator<Scalar>::get_element_reference(unsigned int id) const
+    {
+      return this->element_references[id];
     }
 
     template<typename Scalar>

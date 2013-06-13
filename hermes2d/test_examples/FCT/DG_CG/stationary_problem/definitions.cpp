@@ -10,7 +10,6 @@ double calc_abs_v(Element* e)
 	// refmap for computing Jacobian
 	RefMap* rm = new RefMap;
 	rm->set_quad_2d(&g_quad_2d_std);
-
 			// get the quadrature points
 			int np = g_quad_2d_std.get_num_points(order,mode);
 			double3 *pt = g_quad_2d_std.get_points(order, mode);
@@ -25,15 +24,14 @@ double calc_abs_v(Element* e)
 		double* y_coord = rm->get_phys_y(order);
 			for( int j = 0; j < np; ++j )
 			{
-				double v_x = y_coord[j]; 
-				double v_y = 1.-x_coord[j];	
+				double v_x = 0.5; //y_coord[j]; 
+				double v_y = 1.; //1.-x_coord[j];	
 				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
-			}
-	
+			}	
 	delete rm;
-	return Hermes::sqrt(abs_v);
+return Hermes::sqrt(1.25);
+	//return Hermes::sqrt(abs_v);
 }
-
 
 CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,bool all, bool DG, bool SD) : WeakForm<double>(1)
 {
@@ -46,9 +44,8 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshS
   } 
    if(DG) add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
 	 if(SD)
-	{	
-		add_matrix_form(new Streamline(0,0,mesh));
-		//add_vector_form(new RHS_sd(0,mesh));
+	{	add_matrix_form(new Streamline(0,0,mesh));
+		add_vector_form(new RHS_sd(0,mesh));
 		}
    
 	   add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));   
@@ -69,8 +66,8 @@ WeakForm<double>* CustomWeakForm::clone() const
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
 {
-	Real v_x = e->y[i];
-	Real v_y = Real(1.)-e->x[i]; 
+	double v_x =0.5;//e->y[i];
+ 	double v_y =1.;//1.-e->x[i]; 
 		//result += wt[i] * (v->val[i] *((u->dx[i]+ u->dy[i])));
 		//result -= wt[i] * (u->val[i] *((v->dx[i]*v_x+ v->dy[i]*v_y)));
 		result += wt[i] * (u->val[i] *(v->val[i]-(v->dx[i]*v_x+ v->dy[i]*v_y)));
@@ -102,17 +99,18 @@ Scalar CustomWeakForm::Streamline::matrix_form(int n, double *wt, Func<Scalar> *
                                                   Geom<Real> *e, Func<Scalar> **ext) const
 {
   Scalar result = Scalar(0);
+
 		Real diam = e->diam;
 		//Real area = Hermes::sqrt(e->area);
 		Element* elem = mesh->get_element(e->id);
 		double abs_v =calc_abs_v(elem);
 for (int i = 0; i < n; i++)
 {
-	Real v_x = e->y[i];
-	Real v_y = Real(1.)-e->x[i]; 
+	Real v_x = Real(0.5);// e->y[i];
+	Real v_y = Real(1.);// 1.-e->x[i]; 
 		//Real abs_v = Hermes::sqrt(v_x*v_x+v_y*v_y);
-	Real tau = diam/(Real(2.)*abs_v);
-  result += wt[i] *(tau*(u->dx[i] * v_x + u->dy[i] * v_y) *(v->dx[i] * v_x + v->dy[i] * v_y ));
+	Real tau = diam/(2.*abs_v);
+  result += wt[i] *(tau*(u->dx[i] * v_x + u->dy[i] * v_y + u->val[i] ) *(v->dx[i] * v_x + v->dy[i] * v_y ));
 
 }
 
@@ -129,8 +127,7 @@ double CustomWeakForm::Streamline::value(int n, double *wt, Func<double> *u_ext[
 Ord CustomWeakForm::Streamline::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
                                        Geom<Ord> *e, Func<Ord> **ext) const
 {
-		return Ord(10);
- // return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+  return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
 }
 
 MatrixFormVol<double>* CustomWeakForm::Streamline::clone() const
@@ -151,12 +148,12 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
 	{
 
 	//outlet
-	if((e->y[i]==1)||(e->x[i]==1))
-		{	
-		double v_x =e->y[i];
-	 	double v_y =1.-e->x[i]; 
-  	 double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-  	 result += wt[i] *static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
+if((e->y[i]==1)||(e->x[i]==1))
+	{	
+	double v_x =0.5;//e->y[i];
+ 	double v_y =1.;//1.-e->x[i]; 
+   double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
+   result += wt[i] *static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
 
 		}
 	}
@@ -184,8 +181,8 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
   Scalar result = Scalar(0);
   for (int i = 0; i < n; i++) 
   {
-		Real v_x = e->y[i];
-		Real v_y = 1.-e->x[i]; 
+	Real v_x = Real(0.5);// e->y[i];
+	Real v_y = Real(1.);// 1.-e->x[i]; 
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
     if(u->fn_central == NULL)
@@ -223,8 +220,8 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
 		//if((e->y[i]==0)||(e->x[i]==0))
 			if(e->y[i]==0)
 				{
-					double v_x =e->y[i];
-				 	double v_y =1.-e->x[i]; 
+	double v_x =0.5;//e->y[i];
+ 	double v_y =1.;//1.-e->x[i]; 
 					double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 					result -= wt[i] * exact->val[i] * v->val[i] * a_dot_n;
 				}
@@ -254,8 +251,9 @@ double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Fun
  	Func<double>* exact = ext[0];
    for (int i = 0; i < n; i++)
 		{ 	
-	double v_x =e->y[i];
- 	double v_y =1.-e->x[i]; 
+double v_x =0.5;//e->y[i];
+ 	double v_y =1.;//1.-e->x[i]; 
+			double x = e->x[i]; double y = e->y[i];
 			result += wt[i] * (exact->val[i] + v_x*exact->dx[i] + v_y*exact->dy[i]) * v->val[i];
 		}
  return result;
@@ -283,8 +281,8 @@ double  CustomWeakForm::RHS_sd::value(int n, double *wt, Func<double> *u_ext[], 
 		double abs_v =calc_abs_v(elem);
    for (int i = 0; i < n; i++)
 		{ 	
-		double v_x =e->y[i];
-		 	double v_y =1.-e->x[i]; 
+		double v_x =0.5;//e->y[i];
+		 	double v_y =1.;//1.-e->x[i]; 
 			double tau = diam/(2.*abs_v);
 			result += wt[i] * (exact->val[i] + v_x*exact->dx[i] + v_y*exact->dy[i]) * tau* (v->dx[i] * v_x + v->dy[i] * v_y );
 		}
@@ -369,8 +367,8 @@ double StreamlineDiffusionNorm::value(int n, double *wt, Func<double> *u, Func<d
 
    double result = double(0);
   for (int i = 0; i < n; i++)
-	{				double v_x =e->y[i];
- 	double v_y =1.-e->x[i]; 
+	{				double v_x =0.5;//e->y[i];
+ 	double v_y =1.;//1.-e->x[i]; 
     result += wt[i] * (v_x*u->dx[i] + v_y*u->dy[i]) * (v_x*v->dx[i] + v_y*v->dy[i]);
 	}
   return (result*diam/(abs_v));
@@ -383,8 +381,8 @@ double CustomNormFormSurf::value(int n, double *wt, Func<double> *u, Func<double
    double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-	double v_x =e->y[i];
- 	double v_y =1.-e->x[i]; 
+	double v_x =0.5;//e->y[i];
+ 	double v_y =1.;//1.-e->x[i]; 
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
     result += wt[i] * u->val[i] * v->val[i] * a_dot_n;
 	}
@@ -397,8 +395,8 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
   double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-			double v_x = e->y[i];
- 			double v_y = 1.-e->x[i]; 
+			double v_x = 0.5; //e->y[i];
+ 			double v_y = 1.; //1.-e->x[i]; 
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
     result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i]) * a_dot_n;
 		}
@@ -409,7 +407,7 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
 
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
       
-	double radius = Hermes::sqrt((x-1)*(x-1)+y*y);
+/*	double radius = Hermes::sqrt((x-1)*(x-1)+y*y);
 		if((radius>= 0.5)&&(radius<=0.8)){		
 		double arg = PI*(radius-0.65)/0.15;
 		dx = -0.25*Hermes::sin(arg)*(PI/0.15)*(x-1)/radius;
@@ -424,16 +422,16 @@ if((x-y>0)&&(x-y<0.5))
 	int k =4;
 	dx*= k*std::pow(std::cos(arg),k-1);
 	dy *=k*std::pow(std::cos(arg),k-1);
-}*/
+}
 		else 
 	{
 		dx =0;
 		dy =0;
 	}
-
+*/
 //-----------sinusoidal profile
-//dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
-//dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
+dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
+dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 
 
 };
@@ -441,12 +439,12 @@ if((x-y>0)&&(x-y<0.5))
  double CustomInitialCondition::value(double x, double y) const {
        
   double result = 0.0;
-			double radius = Hermes::sqrt((x-1)*(x-1)+y*y);
+	/*		double radius = Hermes::sqrt((x-1)*(x-1)+y*y);
 		if((radius>= 0.5)&&(radius<=0.8)){		
 			double arg = PI*(radius-0.65)/0.15;
 			result = 0.25*(1+Hermes::cos(arg));
 		}
-		else if((radius>= 0.2)&&(radius<=0.4))		
+		/*else if((radius>= 0.2)&&(radius<=0.4))		
 				result =0.5;	
 
 /*
@@ -465,7 +463,7 @@ if((x-y>0)&&(x-y<0.5))
 	
 
 //-----------sinusoidal profile	
-		//result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);
+		result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);
 
 
 
