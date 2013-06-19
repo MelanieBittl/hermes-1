@@ -89,7 +89,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	int ref_ndof = space->get_num_dofs();	
 	//Hermes::Mixins::Loggable::Static::info(" ndof = %d ", ref_ndof); 
 
-	Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,2);
+
 
 
 CustomWeakForm wf(u_prev_time, mesh,time_step, theta, all, DG, SD, false);

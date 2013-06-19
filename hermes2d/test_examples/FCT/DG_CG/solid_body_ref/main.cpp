@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
 	
   DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
   Adapt<double> adaptivity(space, &error_calculator);
-  adaptivity.set_strategy(AdaptStoppingCriterionCumulative, THRESHOLD);
+//  adaptivity.set_strategy(AdaptStoppingCriterionCumulative, THRESHOLD);
 
 	OGProjection<double> ogProjection;	
 	Lumped_Projection lumpedProjection;	
