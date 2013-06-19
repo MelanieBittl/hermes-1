@@ -81,10 +81,10 @@ int ndof = space->get_num_dofs();
   errorCalculator_surf.add_error_form(new CustomNormFormSurf(0,0));
   errorCalculator_DG.add_error_form(new CustomNormFormDG(0,0));
 
-  errorCalculator_l2.calculate_errors(u_new, u_prev_time);
-	errorCalculator_surf.calculate_errors(u_new, u_prev_time);
-	errorCalculator_DG.calculate_errors(u_new,sln_zero);
-	errorCalculator_sd.calculate_errors(u_new, u_prev_time);
+  errorCalculator_l2.calculate_errors(u_new, u_prev_time,false);
+	errorCalculator_surf.calculate_errors(u_new, u_prev_time,false);
+	errorCalculator_DG.calculate_errors(u_new,sln_zero, false);
+	errorCalculator_sd.calculate_errors(u_new, u_prev_time, false);
 
 
 double err_l2_2 = errorCalculator_l2.get_total_error_squared();

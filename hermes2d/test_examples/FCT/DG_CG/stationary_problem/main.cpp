@@ -19,7 +19,7 @@ const std::string BDY_OUT = "outlet";
 
 bool all = true;
 bool DG = false;
-bool SD = true;
+bool SD = false;
 
 #include "error_estimates.cpp"
 

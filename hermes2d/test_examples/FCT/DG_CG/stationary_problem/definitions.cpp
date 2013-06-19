@@ -364,6 +364,7 @@ double StreamlineDiffusionNorm::value(int n, double *wt, Func<double> *u, Func<d
 	//	double v_y = 1.;
 		Element* elem = mesh->get_element(e->id);
 		double abs_v =calc_abs_v(elem); //Hermes::sqrt(v_x*v_x+v_y*v_y);
+diam =  elem->get_diameter();
 
    double result = double(0);
   for (int i = 0; i < n; i++)
