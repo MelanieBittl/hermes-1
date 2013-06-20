@@ -869,6 +869,7 @@ namespace Hermes
       // H1 space
       //if(space_type == HERMES_H1_SPACE)
 if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_type == HERMES_L2_SPACE) 
+
       {
 #ifdef H2D_USE_SECOND_DERIVATIVES
         if(((newmask & H2D_SECOND) == H2D_SECOND && (oldmask & H2D_SECOND) != H2D_SECOND))
