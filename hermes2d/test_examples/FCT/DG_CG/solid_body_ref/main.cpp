@@ -92,7 +92,8 @@ int main(int argc, char* argv[])
   SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
 
  // Initialize solution of lower & higher order
-    MeshFunctionSharedPtr<double>u_prev_time(new PrevSolution);
+   // MeshFunctionSharedPtr<double>u_prev_time(new PrevSolution);
+MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
   
   MeshFunctionSharedPtr<double> low_sln(new Solution<double>),ref_sln(new Solution<double>),high_sln(new Solution<double>),sln(new Solution<double>);
 
@@ -131,8 +132,10 @@ int main(int argc, char* argv[])
 	int ref_ndof, ndof; double err_est_rel_total;
 	
   DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
+  
   Adapt<double> adaptivity(space, &error_calculator);
-//  adaptivity.set_strategy(AdaptStoppingCriterionCumulative, THRESHOLD);
+  AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
+  adaptivity.set_strategy(&stoppingCriterion);
 
 	OGProjection<double> ogProjection;	
 	Lumped_Projection lumpedProjection;	

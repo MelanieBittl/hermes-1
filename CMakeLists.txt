@@ -122,8 +122,7 @@ project(hermes)
   #  /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\   /\
 	################################## CURRENTLY NOT SUPPORTED ###################################
   
-	# Allow to override the default values in CMake.vars:
-	include(CMake.vars OPTIONAL)
+
   
   ### END DEFAULT CONFIGURATION ###
     
@@ -202,7 +201,9 @@ project(hermes)
       set(NUM_THREADS 1)
     endif()
   endif()
-  
+  	# Allow to override the default values in CMake.vars:
+	include(CMake.vars OPTIONAL)
+
   if(NOT(WITH_OPENMP))
 	set(NUM_THREADS 1)
   endif(NOT(WITH_OPENMP))
@@ -280,6 +281,8 @@ project(hermes)
     enable_testing()
     add_custom_target(test COMMAND ctest)
   endif(H2D_WITH_TESTS OR HERMES_COMMON_WITH_TESTS)
+
+
 
   #------------------------------------------------------------------------------
   # Find necessary packages according to the settings above.

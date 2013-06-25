@@ -11,7 +11,7 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 4;                   // Number of initial refinements.
+const int INIT_REF_NUM = 3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
 const double time_step = 1e-5;                           // Time step.
@@ -21,7 +21,7 @@ const double T_FINAL = 1.;
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
 
 const bool all = true;
-const bool DG = false;
+const bool DG = true;
 const bool SD = false;
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
@@ -55,10 +55,9 @@ mloader.load("unit.mesh", basemesh);
  // EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
-
   //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
-  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
- SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
+  SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
+ //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();
   
@@ -105,6 +104,12 @@ CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta, false, false, false, t
 	dp_rhs->set_linear(true,false);
 
 
+FILE * matFile;
+matFile = fopen ("test.m","w");
+if(matrix->dump(matFile, "mat_t")) printf("print matrix\n");
+fclose (matFile);  
+
+/*
   do
   {
 	Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ref_ndof); 
@@ -157,7 +162,7 @@ CustomWeakForm wf(u_prev_time, mesh,time_step, theta, all, DG, SD, true);
   while (current_time<T_FINAL);
  */
 
-calc_error_total(u_new, u_prev_time,space);
+//calc_error_total(u_new, u_prev_time,space);
 
 
   // Wait for the view to be closed.

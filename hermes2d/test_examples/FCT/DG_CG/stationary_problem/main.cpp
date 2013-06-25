@@ -6,8 +6,8 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
-const int P_INIT =1;       						// Initial polynomial degree.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int P_INIT =2;       						// Initial polynomial degree.
 
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
@@ -124,6 +124,11 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
     else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 		//sview.show(u_new);
 
+/*
+FILE * matFile;
+matFile = fopen ("test.m","w");
+if(dg_surface_matrix->dump(matFile, "mat_t")) printf("print matrix\n");
+fclose (matFile);  
 
 /*
 CustomWeakForm wf(u_prev_time,mesh,true, false);

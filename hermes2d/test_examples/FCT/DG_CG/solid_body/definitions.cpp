@@ -216,11 +216,12 @@ MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
   return new CustomWeakForm::CustomMatrixFormInterface(*this);
 }
 
-/*
+
 //------------DG Vector Form--------------
-      double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
+/*      double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
         Geom<double> *e, DiscontinuousFunc<double> **ext) const
 {
+ Discontinuous<double>* exact = ext[0];		
   double result = double(0);
   for (int i = 0; i < n; i++) 
   {
@@ -229,9 +230,9 @@ MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
     if(u->fn_central == NULL)
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(Real(0), u->val_neighbor[i], a_dot_n) * jump_v;
+      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(Real(0), exact->val_neighbor[i], a_dot_n) * jump_v;
     else
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], Real(0), a_dot_n) * jump_v;
+      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(exact->val[i], Real(0), a_dot_n) * jump_v;
       
   }
   return result;
