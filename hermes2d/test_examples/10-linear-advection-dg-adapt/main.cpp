@@ -20,7 +20,7 @@ const int INIT_REF = 2;
 const int P_INIT = 1;
 // This is a quantitative parameter of the adapt(...) function and
 // it has different meanings for various adaptive strategies.
-const double THRESHOLD = 0.9;
+const double THRESHOLD = 0.5;
 
 // Error calculation & adaptivity.
 DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(RelativeErrorToGlobalNorm, 1);
@@ -29,7 +29,7 @@ AdaptStoppingCriterionSingleElement<double> stoppingCriterion(THRESHOLD);
 // Adaptivity processor class.
 Adapt<double> adaptivity(&errorCalculator, &stoppingCriterion);
 // Predefined list of element refinement candidates.
-const CandList CAND_LIST = H2D_HP_ANISO;
+const CandList CAND_LIST = H2D_H_ANISO;
 // Stopping criterion for adaptivity.
 const double ERR_STOP = 1e-1;
 
@@ -45,10 +45,11 @@ int main(int argc, char* args[])
     mesh->refine_all_elements();
 
   // Create an L2 space->
-  SpaceSharedPtr<double> space(new L2Space<double>(mesh, P_INIT));
+  SpaceSharedPtr<double> space(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
 
   // Initialize refinement selector.
   L2ProjBasedSelector<double> selector(CAND_LIST);
+  selector.set_error_weights(1.,1.,1.);
 
   // DOF and CPU convergence graphs.
   SimpleGraph graph_dof_est, graph_cpu_est;
@@ -69,6 +70,8 @@ int main(int argc, char* args[])
   // Initialize linear solver.
   Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
 
+  adaptivity.set_space(space);
+
   int as = 1; bool done = false;
   do
   {
@@ -76,7 +79,7 @@ int main(int argc, char* args[])
     // and setup reference space->
     Mesh::ReferenceMeshCreator ref_mesh_creator(mesh);
     MeshSharedPtr ref_mesh = ref_mesh_creator.create_ref_mesh();
-    Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh);
+    Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
     SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
 
     linear_solver.set_space(ref_space);
@@ -95,17 +98,13 @@ int main(int argc, char* args[])
     OGProjection<double> ogProjection;
     ogProjection.project_global(space, ref_sln, sln, HERMES_L2_NORM);
 
-    MeshFunctionSharedPtr<double> val_filter(new ValFilter(ref_sln, 0.0, 1.0));
-
     // View the coarse mesh solution.
-    view1.show(val_filter);
+    view1.show(ref_sln);
     oview.show(space);
 
     // Calculate element errors and total error estimate.
     errorCalculator.calculate_errors(sln, ref_sln);
     double err_est_rel = errorCalculator.get_total_error_squared() * 100;
-
-    adaptivity.set_space(space);
 
     std::cout << "Error: " << err_est_rel << "%." << std::endl;
 

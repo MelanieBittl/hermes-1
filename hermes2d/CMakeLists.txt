@@ -147,6 +147,7 @@ project(hermes2d)
     src/shapeset/shapeset_hc_gradleg.cpp
     src/shapeset/shapeset_hd_legendre.cpp
     src/shapeset/shapeset_l2_legendre.cpp
+    src/shapeset/shapeset_l2_taylor.cpp
     src/shapeset/precalc.cpp
 
     src/space/space.cpp
@@ -293,6 +294,7 @@ project(hermes2d)
     src/shapeset/shapeset_hc_gradleg.cpp
     src/shapeset/shapeset_hd_legendre.cpp
     src/shapeset/shapeset_l2_legendre.cpp
+    src/shapeset/shapeset_l2_taylor.cpp
     src/shapeset/precalc.cpp
 
     src/space/space.cpp

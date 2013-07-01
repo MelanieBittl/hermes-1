@@ -113,10 +113,10 @@ namespace Hermes
 
     protected:
       /// Returns a complete set of indices of bubble functions for an element of the given order.
-      int* get_bubble_indices(int order, ElementMode2D mode) const;
+      virtual int* get_bubble_indices(int order, ElementMode2D mode) const;
 
       /// Returns the number of bubble functions for an element of the given order.
-      int get_num_bubbles(int order, ElementMode2D mode) const;
+      virtual int get_num_bubbles(int order, ElementMode2D mode) const;
 
       /// Returns the index of a constrained edge function. 'part' is 0 or 1 for edge
       /// halves, 2, 3, 4, 5 for edge quarters, etc. See shapeset.cpp.
