@@ -148,6 +148,8 @@ namespace Hermes
           this->level_map[e->id] = std::min<int>(LIN_MAX_LEVEL, (int)ratio);
         }
 
+        if(e->is_quad() && polynomial_order == 1)
+          this->level_map[e->id] = 2;
         return this->level_map[e->id];
       }
 
