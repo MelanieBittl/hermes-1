@@ -22,7 +22,13 @@ namespace Hermes
 {
   namespace Hermes2D
   {
-    // Triangles and Quads.
+
+#define minus_triangle_x_c 0.33333333333333
+#define minus_triangle_y_c 0.33333333333333
+
+#define element_delta_x 2.0
+#define element_delta_y 2.0
+
 #pragma region taylor_0
     static double taylor_fn_0(double x, double y)
     {
@@ -56,9 +62,19 @@ namespace Hermes
 #pragma endregion
 
 #pragma region taylor_1
+    static double taylor_fn_1_tri(double x, double y)
+    {
+      return (x + minus_triangle_x_c) / element_delta_x;
+    }
+
+    static double taylor_fn_1_quad(double x, double y)
+    {
+      return x / element_delta_x;
+    }
+
     static double taylor_dx_1(double x, double y)
     {
-      return 1. / 2.;
+      return 1. / element_delta_x;
     }
 
     static double taylor_dy_1(double x, double y)
@@ -83,6 +99,16 @@ namespace Hermes
 #pragma endregion
 
 #pragma region taylor_2
+    static double taylor_fn_2_tri(double x, double y)
+    {
+      return (y + minus_triangle_y_c) / element_delta_y;
+    }
+
+    static double taylor_fn_2_quad(double x, double y)
+    {
+      return y / element_delta_y;
+    }
+
     static double taylor_dx_2(double x, double y)
     {
       return 0.;
@@ -90,7 +116,7 @@ namespace Hermes
 
     static double taylor_dy_2(double x, double y)
     {
-      return 1. / 2.;
+      return 1. / element_delta_y;
     }
 
     static double taylor_dxx_2(double x, double y)
@@ -109,77 +135,208 @@ namespace Hermes
     }
 #pragma endregion
 
-    // Triangles - functions.
-    static double taylor_fn_1_tri(double x, double y)
+#pragma region taylor_3
+    static double taylor_fn_3_tri(double x, double y)
     {
-      return (x + 0.33333333333333) / 2.;
+      // Mean value: 0.5 * 0.125 * Integrate[(x+c)*(x+c), {y, -1, 1}, {x, -1, -y}] = 2/3 (1 - 2c + 3c^2)
+      // = 0.25 / 9.
+      return ((x + minus_triangle_x_c) * (x + minus_triangle_x_c) / (2. * element_delta_x * element_delta_x)) - (0.25 / 9.);
     }
 
-    static double taylor_fn_2_tri(double x, double y)
+    static double taylor_fn_3_quad(double x, double y)
     {
-      return (y + 0.33333333333333) / 2.;
+      // (1/24) is the mean value.
+      return (x * x / (2. * element_delta_x * element_delta_x)) - (1. / 24.);
+    }
+
+    static double taylor_dx_3_tri(double x, double y)
+    {
+      return ((2. * x) + (2. * minus_triangle_x_c)) / (2. * element_delta_x * element_delta_x);
+    }
+
+    static double taylor_dx_3_quad(double x, double y)
+    {
+      return (2. * x) / (2. * element_delta_x * element_delta_x);
+    }
+
+    static double taylor_dy_3(double x, double y)
+    {
+      return 0.;
+    }
+
+    static double taylor_dxx_3(double x, double y)
+    {
+      return 0.;
+    }
+
+    static double taylor_dxy_3(double x, double y)
+    {
+      return 0.;
+    }
+
+    static double taylor_dyy_3(double x, double y)
+    {
+      return 0.;
+    }
+#pragma endregion
+
+#pragma region taylor_4
+    static double taylor_fn_4_tri(double x, double y)
+    {
+      // Mean value: 0.5 * 0.125 * Integrate[(x+c)*(x+c), {y, -1, 1}, {x, -1, -y}] = 2/3 (1 - 2c + 3c^2)
+      // = 0.25 / 9.
+      return ((y + minus_triangle_y_c) * (y + minus_triangle_y_c) / (2. * element_delta_y * element_delta_y)) - (0.25 / 9.);
+    }
+
+    static double taylor_fn_4_quad(double x, double y)
+    {
+      // (1/24) is the mean value.
+      return (y * y / (2. * element_delta_y * element_delta_y)) - (1. / 24.);
+    }
+
+    static double taylor_dx_4(double x, double y)
+    {
+      return 0.;
     }
     
-    // Quads - functions.
-    static double taylor_fn_1_quad(double x, double y)
+    static double taylor_dy_4_tri(double x, double y)
     {
-      return x / 2.;
+      return ((2. * y) + (2. * minus_triangle_y_c)) / (2. * element_delta_y * element_delta_y);
     }
 
-    static double taylor_fn_2_quad(double x, double y)
+    static double taylor_dy_4_quad(double x, double y)
     {
-      return y / 2.;
+      return (2. * y) / (2. * element_delta_y * element_delta_y);
     }
+
+    static double taylor_dxx_4(double x, double y)
+    {
+      return 0.;
+    }
+
+    static double taylor_dxy_4(double x, double y)
+    {
+      return 0.;
+    }
+
+    static double taylor_dyy_4(double x, double y)
+    {
+      return 0.;
+    }
+#pragma endregion
+
+#pragma region taylor_5
+    static double taylor_fn_5_tri(double x, double y)
+    {
+      // Mean value: 0.5 * 0.125 * Integrate[(x+c)*(y+c), {y, -1, 1}, {x, -1, -y}] = 2/3 (c * (-2 + 3c))
+      // = - 0.125 / 9.
+      return ((x + minus_triangle_x_c) * (y + minus_triangle_y_c) / (2. * element_delta_x * element_delta_y)) + (0.125 / 9.);
+    }
+
+    static double taylor_fn_5_quad(double x, double y)
+    {
+      // (0.) is the mean value.
+      return (x * y / (2. * element_delta_x * element_delta_y));
+    }
+
+    static double taylor_dx_5_tri(double x, double y)
+    {
+      return (y + minus_triangle_y_c) / (2 * element_delta_x * element_delta_y);
+    }
+
+    static double taylor_dx_5_quad(double x, double y)
+    {
+      return y / (2 * element_delta_x * element_delta_y);
+    }
+    
+    static double taylor_dy_5_tri(double x, double y)
+    {
+      return (x + minus_triangle_x_c) / (2 * element_delta_x * element_delta_y);
+    }
+
+    static double taylor_dy_5_quad(double x, double y)
+    {
+      return x / (2 * element_delta_x * element_delta_y);
+    }
+
+    static double taylor_dxx_5(double x, double y)
+    {
+      return 0.;
+    }
+
+    static double taylor_dxy_5(double x, double y)
+    {
+      return 1. / (2 * element_delta_x * element_delta_y);
+    }
+
+    static double taylor_dyy_5(double x, double y)
+    {
+      return 0.;
+    }
+#pragma endregion
 
     static Shapeset::shape_fn_t fn_tri[] =
     {
-      taylor_fn_0, taylor_fn_1_tri, taylor_fn_2_tri
+      taylor_fn_0, taylor_fn_1_tri, taylor_fn_2_tri, taylor_fn_3_tri, taylor_fn_4_tri, taylor_fn_5_tri
     };
 
     static Shapeset::shape_fn_t fn_quad[] =
     {
-      taylor_fn_0, taylor_fn_1_quad, taylor_fn_2_quad
+      taylor_fn_0, taylor_fn_1_quad, taylor_fn_2_quad, taylor_fn_3_quad, taylor_fn_4_quad, taylor_fn_5_quad
     };
 
-    static Shapeset::shape_fn_t fn_dx[] =
+    static Shapeset::shape_fn_t dx_tri[] =
     {
-      taylor_dx_0, taylor_dx_1, taylor_dx_2
+      taylor_dx_0, taylor_dx_1, taylor_dx_2, taylor_dx_3_tri, taylor_dx_4, taylor_dx_5_tri
     };
 
-    static Shapeset::shape_fn_t fn_dy[] =
+    static Shapeset::shape_fn_t dx_quad[] =
     {
-      taylor_dy_0, taylor_dy_1, taylor_dy_2
+      taylor_dx_0, taylor_dx_1, taylor_dx_2, taylor_dx_3_quad, taylor_dx_4, taylor_dx_5_quad
+    };
+
+    static Shapeset::shape_fn_t dy_tri[] =
+    {
+      taylor_dy_0, taylor_dy_1, taylor_dy_2, taylor_dy_3, taylor_dy_4_tri, taylor_dy_5_tri
+    };
+
+    static Shapeset::shape_fn_t dy_quad[] =
+    {
+      taylor_dy_0, taylor_dy_1, taylor_dy_2, taylor_dy_3, taylor_dy_4_quad, taylor_dy_5_quad
     };
 
     static Shapeset::shape_fn_t fn_dxx[] =
     {
-      taylor_dxx_0, taylor_dxx_1, taylor_dxx_2
+      taylor_dxx_0, taylor_dxx_1, taylor_dxx_2, taylor_dxx_3, taylor_dxx_4, taylor_dxx_5
     };
 
     static Shapeset::shape_fn_t fn_dxy[] =
     {
-      taylor_dxy_0, taylor_dxy_1, taylor_dxy_2
+      taylor_dxy_0, taylor_dxy_1, taylor_dxy_2, taylor_dxy_3, taylor_dxy_4, taylor_dxy_5
     };
 
     static Shapeset::shape_fn_t fn_dyy[] =
     {
-      taylor_dyy_0, taylor_dyy_1, taylor_dyy_2
+      taylor_dyy_0, taylor_dyy_1, taylor_dyy_2, taylor_dyy_3, taylor_dyy_4, taylor_dyy_5
     };
 
     Shapeset::shape_fn_t* shape_fn_table_tri[1]     = { fn_tri };
     Shapeset::shape_fn_t* shape_fn_table_quad[1]     = { fn_quad };
-    Shapeset::shape_fn_t* mode_shape_fn_table_dx[1]  = { fn_dx };
-    Shapeset::shape_fn_t* mode_shape_fn_table_dy[1]  = { fn_dy };
+    Shapeset::shape_fn_t* shape_fn_table_dx_tri[1]  = { dx_tri };
+    Shapeset::shape_fn_t* shape_fn_table_dx_quad[1]  = { dx_quad };
+    Shapeset::shape_fn_t* shape_fn_table_dy_tri[1]  = { dy_tri };
+    Shapeset::shape_fn_t* shape_fn_table_dy_quad[1]  = { dy_quad };
     Shapeset::shape_fn_t* mode_shape_fn_table_dxx[1]  = { fn_dxx };
     Shapeset::shape_fn_t* mode_shape_fn_table_dxy[1]  = { fn_dxy };
     Shapeset::shape_fn_t* mode_shape_fn_table_dyy[1]  = { fn_dyy };
 
     static int qb_0[] = { 0, };
     static int qb_1[] = { 0, 1, 2, };
+    static int qb_2[] = { 0, 1, 2, 3, 4, 5 };
 
-    int* mode_bubble_indices[2] = {  qb_0,   qb_1 };
+    int* mode_bubble_indices[3] = {  qb_0,   qb_1,  qb_2 };
 
-    int mode_bubble_count[2] = { 1,  3 };
+    int mode_bubble_count[3] = { 1,  3,  6 };
 
     int mode_vertex_indices[4] = { -1, -1, -1, -1 };
 
@@ -198,7 +355,7 @@ namespace Hermes
 
     int mode_index_to_order[] =
     {
-      0, 1, 1, 
+      0, 1, 1, 2, 2, 2
     };
 
     static Shapeset::shape_fn_t** shape_fn_table[2] =
@@ -209,14 +366,14 @@ namespace Hermes
 
     static Shapeset::shape_fn_t** shape_fn_table_dx[2] =
     {
-      mode_shape_fn_table_dx,
-      mode_shape_fn_table_dx
+      shape_fn_table_dx_tri,
+      shape_fn_table_dx_quad
     };
 
     static Shapeset::shape_fn_t** shape_fn_table_dy[2] =
     {
-      mode_shape_fn_table_dy,
-      mode_shape_fn_table_dy
+      shape_fn_table_dy_tri,
+      shape_fn_table_dy_quad
     };
 
     static Shapeset::shape_fn_t** shape_fn_table_dxx[2] =
@@ -298,7 +455,7 @@ namespace Hermes
       ref_vert[1][3][0] = -1.0;
       ref_vert[1][3][1] =  1.0;
 
-      max_order = 1;
+      max_order = 2;
       min_order = 0;
       num_components = 1;
 
@@ -329,7 +486,7 @@ namespace Hermes
         return Shapeset::get_num_bubbles(order, mode);
     }
     
-    const int L2ShapesetTaylor::max_index[2] = { 2, 2 };
+    const int L2ShapesetTaylor::max_index[2] = { 5, 5 };
     int L2ShapesetTaylor::get_max_index(ElementMode2D mode) { return max_index[mode]; }
   }
 }
