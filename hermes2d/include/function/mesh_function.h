@@ -18,7 +18,7 @@
 
 #include "function.h"
 #include "../mesh/refmap.h"
-#include "../mesh/mesh.h"
+#include "../space/space.h"
 #include "exceptions.h"
 
 namespace Hermes
@@ -42,7 +42,7 @@ public:
   MeshFunctionSharedPtr(const MeshFunctionSharedPtr<Scalar>& other);
 
   void operator=(const MeshFunctionSharedPtr<Scalar>& other);
-
+      
   ~MeshFunctionSharedPtr();
 };
 
@@ -102,6 +102,10 @@ namespace Hermes
       
       /// Multiplies the function represented by this class by the given coefficient.
       virtual void multiply(Scalar coef);
+
+      /// Adds another mesh function on the given space.
+      /// ! Resulting mesh function is a solution.
+      virtual void add(MeshFunctionSharedPtr<Scalar> other_mesh_function, SpaceSharedPtr<Scalar> target_space);
 
       /// Return the approximate maximum value of this instance.
       virtual Scalar get_approx_max_value(int item = H2D_FN_VAL_0);

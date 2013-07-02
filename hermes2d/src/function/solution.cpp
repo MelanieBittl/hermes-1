@@ -717,6 +717,20 @@ namespace Hermes
         free_tables();
       transform = enable;
     }
+    
+    template<typename Scalar>
+    void Solution<Scalar>::add(MeshFunctionSharedPtr<Scalar> other_mesh_function, SpaceSharedPtr<Scalar> target_space)
+    {
+      Scalar* base_vector = new Scalar[target_space->get_num_dofs()];
+      Scalar* added_vector = new Scalar[target_space->get_num_dofs()];
+      OGProjection<Scalar>::project_global(target_space, this, base_vector);
+      OGProjection<Scalar>::project_global(target_space, other_mesh_function, added_vector);
+      
+      for(int i = 0; i < target_space->get_num_dofs(); i++)
+        base_vector[i] += added_vector[i];
+
+      this->set_coeff_vector(target_space, base_vector, true, 0);
+    }
 
     template<typename Scalar>
     void Solution<Scalar>::multiply(Scalar coef)

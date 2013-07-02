@@ -124,6 +124,10 @@ namespace Hermes
       /// slow. Prefer Solution::get_ref_value if possible.
       virtual Func<Scalar>* get_pt_value(double x, double y, bool use_MeshHashGrid = false, Element* e = NULL);
 
+      /// Adds another mesh function on the given space.
+      /// See method of parent class.
+      virtual void add(MeshFunctionSharedPtr<Scalar> other_mesh_function, SpaceSharedPtr<Scalar> target_space);
+
       /// Multiplies the function represented by this class by the given coefficient.
       virtual void multiply(Scalar coef);
 
