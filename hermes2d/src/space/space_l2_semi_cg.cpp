@@ -21,8 +21,9 @@ namespace Hermes
   namespace Hermes2D
   {
     template<typename Scalar>
-    L2_SEMI_CG_Space<Scalar>::L2_SEMI_CG_Space() : Space<Scalar>()
+    L2_SEMI_CG_Space<Scalar>::L2_SEMI_CG_Space(bool serendipity) : Space<Scalar>(), serendipity(serendipity)
     {
+			
     }
 
     template<typename Scalar>
@@ -33,7 +34,6 @@ namespace Hermes
         this->shapeset = new L2SEMIShapeset;
         this->own_shapeset = true;
       }
-
       this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
 
       // set uniform poly order in elements
@@ -47,15 +47,15 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    L2_SEMI_CG_Space<Scalar>::L2_SEMI_CG_Space(MeshSharedPtr mesh, EssentialBCs<Scalar>* essential_bcs, int p_init, Shapeset* shapeset)
-      : Space<Scalar>(mesh, shapeset, essential_bcs)
+    L2_SEMI_CG_Space<Scalar>::L2_SEMI_CG_Space(MeshSharedPtr mesh,EssentialBCs<Scalar>* essential_bcs, int p_init,bool serendipity,  Shapeset* shapeset)
+      : Space<Scalar>(mesh, shapeset, essential_bcs), serendipity(serendipity)
     {
       init(shapeset, p_init);
     }
 
     template<typename Scalar>
-    L2_SEMI_CG_Space<Scalar>::L2_SEMI_CG_Space(MeshSharedPtr mesh, int p_init, Shapeset* shapeset)
-      : Space<Scalar>(mesh, shapeset, NULL)
+    L2_SEMI_CG_Space<Scalar>::L2_SEMI_CG_Space(MeshSharedPtr mesh, int p_init,bool serendipity, Shapeset* shapeset)
+      : Space<Scalar>(mesh, shapeset, NULL), serendipity(serendipity)
     {
       init(shapeset, p_init);
     }
@@ -153,8 +153,10 @@ namespace Hermes
 							}
           }
           
-          ndofs = this->shapeset->get_num_bubbles(ed->order, e->get_mode()) ;
-          ndofs_total += ndofs;
+				if(!serendipity)
+        { ndofs = this->shapeset->get_num_bubbles(ed->order, e->get_mode()) ;
+         ndofs_total += ndofs;
+				}
           ed->n = ndofs_total;
           this->next_dof += ed->n * this->stride;
           this->bubble_functions_count += ed->n;
@@ -239,10 +241,11 @@ namespace Hermes
 						ndofs_start +=ndofs;
 						}
 					}
-
-      int* indices = this->shapeset->get_bubble_indices(ed->order, e->get_mode());
+				if(!serendipity)
+    { int* indices = this->shapeset->get_bubble_indices(ed->order, e->get_mode());
       for (int i = 0, dof = ndofs_start; i < (ed->n - ndofs_total); i++, dof += this->stride)
         al->add_triplet(*indices++, dof, 1.0);
+		}
       
     }
     

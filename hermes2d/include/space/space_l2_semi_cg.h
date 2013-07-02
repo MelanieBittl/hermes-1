@@ -14,11 +14,11 @@ template<typename Scalar>
 class HERMES_API L2_SEMI_CG_Space : public Space<Scalar>
 {
 public:
-L2_SEMI_CG_Space();
-L2_SEMI_CG_Space(MeshSharedPtr mesh, EssentialBCs<Scalar>* boundary_conditions, int p_init = 1,
+L2_SEMI_CG_Space(bool serendipity= false);
+L2_SEMI_CG_Space(MeshSharedPtr mesh, EssentialBCs<Scalar>* boundary_conditions, int p_init = 1,bool serendipity= false,
 Shapeset* shapeset = NULL);
 
-L2_SEMI_CG_Space(MeshSharedPtr mesh, int p_init = 1,Shapeset* shapeset = NULL);
+L2_SEMI_CG_Space(MeshSharedPtr mesh, int p_init = 1,bool serendipity = false,Shapeset* shapeset = NULL);
 
 virtual ~L2_SEMI_CG_Space();
 
@@ -46,7 +46,7 @@ virtual int get_edge_order(Element* e, int edge) const {
 return H2D_MAKE_EDGE_ORDER(e->get_mode(), edge, this->edata[e->id].order);
 }
 
-
+bool serendipity; 
 virtual SpaceType get_type() const { return HERMES_L2_SEMI_SPACE; }
 
 /// Common code for the constructors.
@@ -81,6 +81,7 @@ void update_constrained_nodes(Element* e, EdgeInfo* ei0, EdgeInfo* ei1, EdgeInfo
 virtual void update_constraints();
 
 friend class Space<Scalar>;
+
 };
 }
 }

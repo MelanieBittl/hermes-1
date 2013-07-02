@@ -148,6 +148,7 @@ project(hermes2d)
     src/shapeset/shapeset_hd_legendre.cpp
     src/shapeset/shapeset_l2_legendre.cpp
     src/shapeset/precalc.cpp
+    src/shapeset/shapeset_serendipity.cpp
 
     src/space/space.cpp
     src/space/space_h1.cpp
@@ -294,6 +295,7 @@ project(hermes2d)
     src/shapeset/shapeset_hc_gradleg.cpp
     src/shapeset/shapeset_hd_legendre.cpp
     src/shapeset/shapeset_l2_legendre.cpp
+    src/shapeset/shapeset_serendipity.cpp
     src/shapeset/precalc.cpp
 
     src/space/space.cpp
@@ -404,6 +406,7 @@ project(hermes2d)
     include/shapeset/shapeset_l2_all.h
     include/shapeset/precalc.h
 		include/shapeset/shapeset_l2_semi.h
+    include/shapeset/shapeset_serendipity.h
 
     include/space/space.h
     include/space/space_h1.h
@@ -551,7 +554,10 @@ project(hermes2d)
     include/shapeset/shapeset_hc_all.h
     include/shapeset/shapeset_hd_all.h
     include/shapeset/shapeset_l2_all.h
+		include/shapeset/shapeset_serendipity.h
+	  include/shapeset/shapeset_l2_semi.h
     include/shapeset/precalc.h
+
 
     include/space/space.h
     include/space/space_h1.h
