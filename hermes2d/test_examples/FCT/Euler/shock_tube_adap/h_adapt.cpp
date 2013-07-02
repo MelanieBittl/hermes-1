@@ -9,7 +9,7 @@ int max(int a, int b){
 
 
 	template<typename Scalar>
-void calc_elem_error(Space<Scalar>* space, Solution<Scalar>* sln,Solution<Scalar>* R_h_1,Solution<Scalar>* R_h_2,  HPAdapt* adapt,double h_min, double h_max, 	int* elements_to_refine,	int* no_of_refinement_steps,double* elem_error)
+void calc_elem_error(SpaceSharedPtr<Scalar> space, MeshFunctionSharedPtr<Scalar> sln,MeshFunctionSharedPtr<Scalar> R_h_1,MeshFunctionSharedPtr<Scalar> R_h_2,  HPAdapt* adapt,double h_min, double h_max, 	int* elements_to_refine,	int* no_of_refinement_steps,double* elem_error)
 {		
 
 	int ndof = space->get_num_dofs();

@@ -1,6 +1,6 @@
 #include "hp_adapt.h"
 
-bool refine_elem(Space<double>* space, Element* e, int ref, double h_min){
+bool refine_elem(SpaceSharedPtr<double> space, Element* e, int ref, double h_min){
 			bool refined = true;
 			int order = space->get_element_order(e->id);
 			if(e->get_diameter()>h_min){
@@ -17,7 +17,7 @@ bool refine_elem(Space<double>* space, Element* e, int ref, double h_min){
 		return refined;
 }
 
-bool refine_elem(Hermes::vector<Space<double>*> spaces, int num, Element* e, int ref, double h_min){
+bool refine_elem(Hermes::vector<SpaceSharedPtr<double> > spaces, int num, Element* e, int ref, double h_min){
 			bool refined = true;
 			int order = spaces[0]->get_element_order(e->id);
 			if(e->get_diameter()>h_min){
@@ -36,7 +36,7 @@ bool refine_elem(Hermes::vector<Space<double>*> spaces, int num, Element* e, int
 }
 
 
-bool refine_elem_order(Space<double>* space, Element* e, int ref, int order, double h_min){
+bool refine_elem_order(SpaceSharedPtr<double> space, Element* e, int ref, int order, double h_min){
 			bool refined = true;
 			if(e->get_diameter()>h_min){			
 				if (e->active)
@@ -53,7 +53,7 @@ bool refine_elem_order(Space<double>* space, Element* e, int ref, int order, dou
 }
 
 
-bool coarse_elem(Space<double>* space, Element* e, int ref, int order, double h_max, int* elements_to_refine){
+bool coarse_elem(SpaceSharedPtr<double> space, Element* e, int ref, int order, double h_max, int* elements_to_refine){
 				bool coarsed =true;
 				Element* parent = e->parent;				
 				if(parent!=NULL) {	
@@ -81,7 +81,7 @@ bool coarse_elem(Space<double>* space, Element* e, int ref, int order, double h_
 			return coarsed;
 }
 /*
-bool coarse_elem(Hermes::vector<Space<double>*> spaces, int num, Element* e, int ref, int order, double h_max, int* elements_to_refine){
+bool coarse_elem(Hermes::vector<SpaceSharedPtr<double>> spaces, int num, Element* e, int ref, int order, double h_max, int* elements_to_refine){
 				bool coarsed =true;
 				Element* parent = e->parent;				
 				if(parent!=NULL) {	
@@ -109,7 +109,7 @@ bool coarse_elem(Hermes::vector<Space<double>*> spaces, int num, Element* e, int
 }
 */
 
-bool coarse_elem(Hermes::vector<Space<double>*> spaces, Element* e, int ref, int order, double h_max, int* elements_to_refine){
+bool coarse_elem(Hermes::vector<SpaceSharedPtr<double> > spaces, Element* e, int ref, int order, double h_max, int* elements_to_refine){
 				bool coarsed =true;
 				Element* parent = e->parent;				
 				if(parent!=NULL) {	
@@ -143,7 +143,7 @@ bool HPAdapt::adapt(int* elements_to_refine,int* no_of_refinement_steps, double 
 { 
 	if(elements_to_refine==NULL) return false;
 	bool changed = false;
-	Space<double>* space = this->spaces[0];
+	SpaceSharedPtr<double> space = this->spaces[0];
 	int order, v_ord, h_ord,ref;
 	int n_dof = space->get_num_dofs();
 	//apply refinements

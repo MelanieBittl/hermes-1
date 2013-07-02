@@ -8,7 +8,7 @@ UMFPackMatrix<double>* massLumping(UMFPackMatrix<double>* mass_matrix){
 	int col[size+1];
 int i;
 	 for(i = 0; i<size; i++){    
-	    diag[i] = 0;
+	    diag[i] = 0.;
 	    row[i]= i;
 	    col[i]=i;
 	 }
@@ -16,6 +16,7 @@ int i;
 	 for(i = 0; i<nnz; i++){    
 	    diag[mass_matrix->get_Ai()[i]] += mass_matrix->get_Ax()[i]; 
 	 }
+
 	 lumped_matrix->create(size, size, col, row, diag);  //lumped Matrix aufstellen
 	return lumped_matrix;
 }

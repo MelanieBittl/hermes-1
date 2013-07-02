@@ -209,14 +209,7 @@ bool mirror_condition= true , int num_of_equations = 4);
 	RiemannInvariants* riemann_invariants;
 	bool mirror_condition;
 
-
 };
-
-
-
-
-
-
 
 
 

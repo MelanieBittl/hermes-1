@@ -11,13 +11,7 @@ public:
 
 
 	};
-//Destructor
-	~ConvectionOperator_x()	{
-		for(int i=0; i<this->mfvol.size();i++){
-			delete get_mfvol()[i];
-		}
-		WeakForm<double>::delete_all();
-	}
+
 	
 		WeakForm<double>* clone() const
     {
@@ -70,12 +64,6 @@ public:
 
 
 	};
-	~ConvectionOperator_y()	{
-		for(int i=0; i<this->mfvol.size();i++){
-			delete get_mfvol()[i];
-		}
-		WeakForm<double>::delete_all();
-	}
 	
 	WeakForm<double>* clone() const
     {
@@ -201,7 +189,7 @@ for(int k=0;k<4;k++)
 
 
 //artificial Diffusion
-UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,H1Space<double>* space_rho,H1Space<double>* space_rho_v_x, H1Space<double>* space_rho_v_y,H1Space<double>* space_e,int dof_rho, int dof_vel_x, int dof_vel_y, int dof_energy,UMFPackMatrix<double>* matrix_K){
+UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,Hermes::vector<SpaceSharedPtr<double> >  spaces,int dof_rho, int dof_vel_x, int dof_vel_y, int dof_energy,UMFPackMatrix<double>* matrix_K){
 
  	ConvectionOperator_x conv_1;
 	ConvectionOperator_y conv_2;
@@ -209,13 +197,13 @@ UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,H1Space<do
 	UMFPackMatrix<double>* c_matrix_1 = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double>* c_matrix_2 = new UMFPackMatrix<double> ; 
 
-  DiscreteProblem<double> dp_1(&conv_1, Hermes::vector<const Space<double>*>(space_rho, space_rho_v_x, space_rho_v_y, space_e));
-  DiscreteProblem<double> dp_2(&conv_2, Hermes::vector<const Space<double>*>(space_rho, space_rho_v_x, space_rho_v_y, space_e));
-  dp_1.assemble(c_matrix_1,NULL,true);
+  DiscreteProblem<double> dp_1(&conv_1, spaces);
+  DiscreteProblem<double> dp_2(&conv_2, spaces);
+  dp_1.assemble(c_matrix_1);
 	dp_2.assemble(c_matrix_2);
 
 
-		int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(space_rho, space_rho_v_x, space_rho_v_y, space_e));
+		int ndof = Space<double>::get_num_dofs(spaces);
 
 		double* coeff_rho = new double[dof_rho];
 		double* coeff_vel_x = new double[dof_rho];

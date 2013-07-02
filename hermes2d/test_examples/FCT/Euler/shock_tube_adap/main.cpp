@@ -33,6 +33,8 @@ const double V2_EXT = 0.0;
 // Kappa.
 const double KAPPA = 1.4;  
 
+const double THRESHOLD = 0.3;
+
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
 
@@ -56,50 +58,64 @@ const int  UNREF_METHOD =1;
 
 int main(int argc, char* argv[])
 {
-   // Load the mesh.
-  Mesh mesh, basemesh;
+   // Load the mesh->
+  MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", &basemesh);
+  mloader.load("domain.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
-  for (int i=0; i < INIT_REF_NUM; i++) basemesh.refine_all_elements();
-  mesh.copy(&basemesh);
+  for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
+ 	 mesh->copy(basemesh);
 
 	 double diag;			
 	Element* e =NULL;
-	for_all_active_elements(e, &mesh){diag = e->get_diameter(); break;}
+	for_all_active_elements(e, mesh){diag = e->get_diameter(); break;}
 	const double h_min = diag/8.;
 
-	H1Space<double> space_rho(&mesh,P_INIT);
-  H1Space<double> space_rho_v_x(&mesh,P_INIT);
-  H1Space<double> space_rho_v_y(&mesh,P_INIT);
-  H1Space<double> space_e(&mesh, P_INIT);
+SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));	
 
-	int dof_rho = space_rho.get_num_dofs();
-	int dof_v_x = space_rho_v_x.get_num_dofs();
-	int dof_v_y = space_rho_v_y.get_num_dofs();
-	int dof_e = space_e.get_num_dofs();
+	int dof_rho = space_rho->get_num_dofs();
+	int dof_v_x = space_rho_v_x->get_num_dofs();
+	int dof_v_y = space_rho_v_y->get_num_dofs();
+	int dof_e = space_e->get_num_dofs();
 
 
-  int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
- // printf("ndof: %d \n", ndof);
+    Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho, space_rho_v_x, space_rho_v_y, space_e);
+Space<double>::assign_dofs(spaces);
+   int ndof = Space<double>::get_num_dofs(spaces);
 
   // Initialize solutions, set initial conditions.
-	CustomInitialCondition_rho init_rho(&mesh);
-  ConstantSolution<double> init_rho_v_x(&mesh,  V1_EXT);
-  ConstantSolution<double> init_rho_v_y(&mesh, V2_EXT);
-	CustomInitialCondition_e init_e(&mesh, KAPPA);
+  MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh));	
+  MeshFunctionSharedPtr<double> init_rho_v_x(new   ConstantSolution<double>(mesh,  V1_EXT));	
+  MeshFunctionSharedPtr<double> init_rho_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
+  MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));	
 
-	PrevSolution prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e;
-	Solution<double> new_rho, new_rho_v_x,new_rho_v_y, new_e;
+    MeshFunctionSharedPtr<double> prev_rho(new PrevSolution);
+    MeshFunctionSharedPtr<double> prev_rho_v_x(new PrevSolution);
+    MeshFunctionSharedPtr<double> prev_rho_v_y(new PrevSolution);
+    MeshFunctionSharedPtr<double> prev_e(new PrevSolution);
+
+    MeshFunctionSharedPtr<double> new_rho(new Solution<double>);
+    MeshFunctionSharedPtr<double> new_rho_v_x(new Solution<double>);
+    MeshFunctionSharedPtr<double> new_rho_v_y(new Solution<double>);
+    MeshFunctionSharedPtr<double> new_e(new Solution<double>);
+
 	
-	CustomInitialCondition_rho boundary_rho(&mesh);
-  ConstantSolution<double> boundary_v_x(&mesh,  V1_EXT);
-  ConstantSolution<double> boundary_v_y(&mesh, V2_EXT);
-	CustomInitialCondition_e boundary_e(&mesh,KAPPA);
+  MeshFunctionSharedPtr<double> boundary_rho(new CustomInitialCondition_rho(mesh));	
+  MeshFunctionSharedPtr<double> boundary_v_x(new   ConstantSolution<double>(mesh,  V1_EXT));	
+  MeshFunctionSharedPtr<double> boundary_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
+  MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(mesh,KAPPA));	
 	
-	Solution<double> low_rho, low_rho_v_x,low_rho_v_y, low_rho_e;
-		Solution<double> R_h_1, R_h_2;
+    MeshFunctionSharedPtr<double> low_rho(new Solution<double>);
+    MeshFunctionSharedPtr<double> low_rho_v_x(new Solution<double>);
+    MeshFunctionSharedPtr<double> low_rho_v_y(new Solution<double>);
+    MeshFunctionSharedPtr<double>	low_rho_e(new Solution<double>);
+
+  MeshFunctionSharedPtr<double>  R_h_1(new Solution<double>);
+  MeshFunctionSharedPtr<double>  R_h_2(new Solution<double>);
 
 
  //--------- Visualization of pressure & velocity
@@ -116,14 +132,14 @@ int main(int argc, char* argv[])
 //------------
 
 
-  EulerEquationsWeakForm_K  wf_K_init(KAPPA, time_step, &init_rho, &init_rho_v_x, &init_rho_v_y, &init_e);
-  EulerBoundary wf_boundary_init(KAPPA, &boundary_rho, &boundary_v_x, &boundary_v_y,  &boundary_e, &init_rho, &init_rho_v_x, &init_rho_v_y, &init_e);
+  EulerEquationsWeakForm_K  wf_K_init(KAPPA, time_step, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+  EulerBoundary wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
 
   EulerEquationsWeakForm_Mass wf_mass(time_step);
-  EulerEquationsWeakForm_K  wf_K(KAPPA, time_step, &prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e);
-  EulerEquationsWeakForm_K  wf_K_low(KAPPA, time_step, &low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e);
-  EulerBoundary wf_boundary(KAPPA, &boundary_rho, &boundary_v_x, &boundary_v_y,  &boundary_e, &prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e);
-  EulerBoundary wf_boundary_low(KAPPA, &boundary_rho, &boundary_v_x, &boundary_v_y,  &boundary_e, &low_rho, &low_rho_v_x, &low_rho_v_y, &low_rho_e);
+  EulerEquationsWeakForm_K  wf_K(KAPPA, time_step, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+  EulerEquationsWeakForm_K  wf_K_low(KAPPA, time_step, low_rho, low_rho_v_x, low_rho_v_y, low_rho_e);
+  EulerBoundary wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+  EulerBoundary wf_boundary_low(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, low_rho, low_rho_v_x, low_rho_v_y, low_rho_e);
 
 
 
@@ -147,38 +163,40 @@ int main(int argc, char* argv[])
 	AsmList<double>*  al = new AsmList<double>;	
 	 DiscreteProblem<double> *dp_boundary; 
    DiscreteProblem<double>* dp_K;
+
+  DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
+  AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
+
 //Timestep loop
 do
 {	 
- // 	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
- 	    Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1);  
+ 	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
 
-	if ((ts > 1 && ts % UNREF_FREQ == 0)||(space_rho.get_num_dofs() >= NDOF_STOP)) 
+
+	if ((ts > 1 && ts % UNREF_FREQ == 0)||(space_rho->get_num_dofs() >= NDOF_STOP)) 
     { 
     	Hermes::Mixins::Loggable::Static::info("Global mesh derefinement.");
       switch (UNREF_METHOD) {
-        case 1: mesh.copy(&basemesh);
-								space_rho.set_mesh(&mesh);			space_rho.set_uniform_order(P_INIT); 
-								space_rho_v_x.set_mesh(&mesh);	space_rho_v_x.set_uniform_order(P_INIT);  
-								space_rho_v_y.set_mesh(&mesh);	space_rho_v_y.set_uniform_order(P_INIT);  
-								space_e.set_mesh(&mesh);	space_e.set_uniform_order(P_INIT);   
+        case 1:  	 mesh->copy(basemesh);
+								space_rho->set_mesh(mesh);			space_rho->set_uniform_order(P_INIT); 
+								space_rho_v_x->set_mesh(mesh);	space_rho_v_x->set_uniform_order(P_INIT);  
+								space_rho_v_y->set_mesh(mesh);	space_rho_v_y->set_uniform_order(P_INIT);  
+								space_e->set_mesh(mesh);	space_e->set_uniform_order(P_INIT);   
                 break;
-        case 2: mesh.unrefine_all_elements();
-								space_rho.set_mesh(&mesh);			space_rho.set_uniform_order(P_INIT); 
-								space_rho_v_x.set_mesh(&mesh);	space_rho_v_x.set_uniform_order(P_INIT);  
-								space_rho_v_y.set_mesh(&mesh);	space_rho_v_y.set_uniform_order(P_INIT);  
-								space_e.set_mesh(&mesh);	space_e.set_uniform_order(P_INIT);   
+        case 2: mesh->unrefine_all_elements();
+								space_rho->set_mesh(mesh);			space_rho->set_uniform_order(P_INIT); 
+								space_rho_v_x->set_mesh(mesh);	space_rho_v_x->set_uniform_order(P_INIT);  
+								space_rho_v_y->set_mesh(mesh);	space_rho_v_y->set_uniform_order(P_INIT);  
+								space_e->set_mesh(mesh);	space_e->set_uniform_order(P_INIT);   
                 break;
-        case 3: mesh.unrefine_all_elements();
-								space_rho.set_mesh(&mesh);			space_rho.set_uniform_order(P_INIT); 
-								space_rho_v_x.set_mesh(&mesh);	space_rho_v_x.set_uniform_order(P_INIT);  
-								space_rho_v_y.set_mesh(&mesh);	space_rho_v_y.set_uniform_order(P_INIT);  
-								space_e.set_mesh(&mesh);	space_e.set_uniform_order(P_INIT);   
+        case 3: mesh->unrefine_all_elements();
+								space_rho->set_mesh(mesh);			space_rho->set_uniform_order(P_INIT); 
+								space_rho_v_x->set_mesh(mesh);	space_rho_v_x->set_uniform_order(P_INIT);  
+								space_rho_v_y->set_mesh(mesh);	space_rho_v_y->set_uniform_order(P_INIT);  
+								space_e->set_mesh(mesh);	space_e->set_uniform_order(P_INIT);   
                 break;
         default: Exceptions::Exception("Wrong global derefinement method.");
       }
-//Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1); //sonst Segfault
-       	  //numThreads>1 kommt anscheinend nicht mit Gittern zurecht die groeber sind als im vorherigen Schritt? 
        	       
     }
     
@@ -187,11 +205,15 @@ do
 	//Adaptivity loop
 	do{
 	  	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f, adap: %i", ts, current_time,as);
-		ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
-		dof_rho = space_rho.get_num_dofs();
-		dof_v_x = space_rho_v_x.get_num_dofs();
-		dof_v_y = space_rho_v_y.get_num_dofs();
-		dof_e = space_e.get_num_dofs();
+
+	Space<double>::assign_dofs(spaces);
+
+	ndof = Space<double>::get_num_dofs(spaces);
+
+		dof_rho = space_rho->get_num_dofs();
+		dof_v_x = space_rho_v_x->get_num_dofs();
+		dof_v_y = space_rho_v_y->get_num_dofs();
+		dof_e = space_e->get_num_dofs();
 	
 
 			double* coeff_vec = new double[ndof];
@@ -205,16 +227,16 @@ do
 
 
   // Initialize the FE problem.
-    DiscreteProblem<double>* dp_mass = new DiscreteProblem<double>(&wf_mass, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
+    DiscreteProblem<double>* dp_mass = new DiscreteProblem<double>(&wf_mass, spaces);
   if(ts==1){
- 	 dp_boundary = new DiscreteProblem<double>(&wf_boundary_init, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
- 		dp_K = new DiscreteProblem<double>(&wf_K_init, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));	  
+ 	 dp_boundary = new DiscreteProblem<double>(&wf_boundary_init, spaces);
+ 		dp_K = new DiscreteProblem<double>(&wf_K_init, spaces);	  
   }else{
- 		dp_boundary = new DiscreteProblem<double>(&wf_boundary, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
- 		dp_K = new DiscreteProblem<double>(&wf_K, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));		  
+ 		dp_boundary = new DiscreteProblem<double>(&wf_boundary, spaces);
+ 		dp_K = new DiscreteProblem<double>(&wf_K, spaces);		  
 		}
 
-	  
+	 Space<double>::assign_dofs(spaces); 
 
     dp_mass->assemble(mass_matrix);
 
@@ -225,24 +247,23 @@ do
 //Projection of previous timestep solution / initial data
 
 if(ts==1){
-	lumpedProjection.project_lumped(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&init_rho, &init_rho_v_x, &init_rho_v_y, &init_e), coeff_vec, matrix_solver);
-   ogProjection.project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&init_rho, &init_rho_v_x, &init_rho_v_y, &init_e), coeff_vec_2,  HERMES_L2_NORM);
+	lumpedProjection.project_lumped(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec, matrix_solver);
+   ogProjection.project_global(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec_2,  HERMES_L2_NORM);
    }else{
-   	lumpedProjection.project_lumped(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec, matrix_solver);
-   ogProjection.project_global(Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e),Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), coeff_vec_2,  HERMES_L2_NORM);   
+   	lumpedProjection.project_lumped(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), coeff_vec, matrix_solver);
+   ogProjection.project_global(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), coeff_vec_2,  HERMES_L2_NORM);   
    }
-
 
 		lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 
+Space<double>::assign_dofs(spaces);
+
 			dp_boundary->assemble(matrix_dS);
 		  dp_K->assemble(lowmat_rhs);
-		  
-
 
 					//------------------------artificial DIFFUSION D---------------------------------------		
 					// 	Hermes::Mixins::Loggable::Static::info("artificial Diffusion");
-			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
+			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
 
 			lowmat_rhs->add_matrix(diffusion); //L(U)=K+D
 			lowmat_rhs->add_matrix(matrix_dS); //L(U)+dS(U) 
@@ -263,27 +284,25 @@ if(ts==1){
 			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
 			if(lowOrd->solve()){ 
 				u_L = lowOrd->get_sln_vector();  
-        Solution<double>::vector_to_solutions(u_L, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, 
-          &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&low_rho,&low_rho_v_x,&low_rho_v_y,&low_rho_e));
+        Solution<double>::vector_to_solutions(u_L, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(low_rho,low_rho_v_x,low_rho_v_y,low_rho_e));
 			  }else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 	
-	
+	Space<double>::assign_dofs(spaces);
 	
 	if(as==1){
-								//  	Hermes::Mixins::Loggable::Static::info("Adapt-step 1");
-		HPAdapt * adapting = new HPAdapt(Hermes::vector<Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
-		int* elements_to_refine = new int[space_rho.get_mesh()->get_max_element_id()]; 
-		int* no_of_refinement_steps = new int[space_rho.get_mesh()->get_max_element_id()];	
-		double* elem_error = new double[space_rho.get_mesh()->get_max_element_id()];
+								//Hermes::Mixins::Loggable::Static::info("Adapt-step 1");
+		HPAdapt * adapting = new HPAdapt(spaces, &error_calculator);
+		int* elements_to_refine = new int[space_rho->get_mesh()->get_max_element_id()]; 
+		int* no_of_refinement_steps = new int[space_rho->get_mesh()->get_max_element_id()];	
+		double* elem_error = new double[space_rho->get_mesh()->get_max_element_id()];
 						 // 	Hermes::Mixins::Loggable::Static::info("calc error");
-		for_all_active_elements(e, space_rho.get_mesh()){	elements_to_refine[e->id] = 2; no_of_refinement_steps[e->id]=0;	}
-		calc_elem_error(&space_rho, &low_rho,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-		//calc_elem_error(&space_rho_v_x, &low_rho_v_x,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-		//calc_elem_error(&space_rho_v_y, &low_rho_v_y,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-		//calc_elem_error(&space_e, &low_rho_e,&R_h_1, &R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
-						  //	Hermes::Mixins::Loggable::Static::info("adapt mesh");
+		for_all_active_elements(e, space_rho->get_mesh()){	elements_to_refine[e->id] = 2; no_of_refinement_steps[e->id]=0;	}
+		calc_elem_error(space_rho, low_rho,R_h_1, R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		//calc_elem_error(space_rho_v_x, low_rho_v_x,R_h_1, R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		//calc_elem_error(space_rho_v_y, low_rho_v_y,R_h_1, R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
+		//calc_elem_error(space_e, low_rho_e,R_h_1, R_h_2,adapting,h_min,h_max,elements_to_refine,	no_of_refinement_steps,elem_error);
 		adapting->adapt(elements_to_refine,no_of_refinement_steps, h_min,h_max,NDOF_STOP);
-
+	Space<double>::assign_dofs(spaces);
 			delete adapting;
 			delete [] elements_to_refine;
 			delete [] no_of_refinement_steps;
@@ -292,12 +311,12 @@ if(ts==1){
 	}else{
 
  //	Hermes::Mixins::Loggable::Static::info("Adapt-step 2");
-			 	 DiscreteProblem<double>* dp_boundary_low = new DiscreteProblem<double>(&wf_boundary_low, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));
-				DiscreteProblem<double>* dp_K_low = new DiscreteProblem<double>(&wf_K_low, Hermes::vector<const Space<double>*>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e));	
-	
+			 	 DiscreteProblem<double>* dp_boundary_low = new DiscreteProblem<double>(&wf_boundary_low, spaces);
+				DiscreteProblem<double>* dp_K_low = new DiscreteProblem<double>(&wf_K_low, spaces);	
+
 				dp_boundary_low->assemble(matrix_dS_low);	
 		 	dp_K_low->assemble(matrix_L_low);
-				UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,&space_rho,&space_rho_v_x, &space_rho_v_y,&space_e, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
+				UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
 				matrix_L_low->add_matrix(diffusion_low); //L(U)
 				matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
 
@@ -308,26 +327,26 @@ if(ts==1){
 			for(int i=0; i<ndof;i++)
 							 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);					
 
-					Solution<double>::vector_to_solutions(coeff_vec, Hermes::vector<const Space<double> *>(&space_rho, &space_rho_v_x, &space_rho_v_y, &space_e), Hermes::vector<Solution<double> *>(&new_rho, &new_rho_v_x, &new_rho_v_y, &new_e));	
+					Solution<double>::vector_to_solutions(coeff_vec, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(new_rho, new_rho_v_x, new_rho_v_y, new_e));	
 
-				 prev_rho.copy(&new_rho); 
-				 prev_rho.set_own_mesh(new_rho.get_mesh());
-				 prev_rho_v_x.copy(&new_rho_v_x); 
-				 prev_rho_v_x.set_own_mesh(new_rho_v_x.get_mesh());
-				 prev_rho_v_y.copy(&new_rho_v_y); 
-				 prev_rho_v_y.set_own_mesh(new_rho_v_y.get_mesh());
-				 prev_e.copy(&new_e); 
-				 prev_e.set_own_mesh(new_e.get_mesh()); 
+				 prev_rho->copy(new_rho); 
+				 prev_rho->set_own_mesh(new_rho->get_mesh());
+				 prev_rho_v_x->copy(new_rho_v_x); 
+				 prev_rho_v_x->set_own_mesh(new_rho_v_x->get_mesh());
+				 prev_rho_v_y->copy(new_rho_v_y); 
+				 prev_rho_v_y->set_own_mesh(new_rho_v_y->get_mesh());
+				 prev_e->copy(new_e); 
+				 prev_e->set_own_mesh(new_e->get_mesh()); 
 				 
 
 				if(HERMES_VISUALIZATION){
-		PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
-	VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
-	  VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
+		PressureFilter pressure(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), KAPPA);
+	VelocityFilter vel_x(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 1);
+	  VelocityFilter vel_y(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 2);
 
 					sprintf(title, "pressure: ts=%i",ts);
 					pressure_view.set_title(title);
-					s1.show(&prev_rho);
+					s1.show(prev_rho);
 				s2.show(&vel_x);
 					s3.show(&vel_y);
 					pressure_view.show(&pressure);
@@ -335,22 +354,21 @@ if(ts==1){
 	  		}
 
 			  		      // Output solution in VTK format.
-		 if((VTK_VISUALIZATION)&&(ts  % VTK_FREQ == 0)) 
+/*		 if((VTK_VISUALIZATION)&&(ts  % VTK_FREQ == 0)) 
 		 {
-		 		PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
-	VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
+		 		PressureFilter pressure(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), KAPPA);
+	VelocityFilter vel_x(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 1);
     	Linearizer lin_p,lin_rho,lin_v_x; 	Orderizer ord_p;		
       sprintf(filename, "pressure-%i.vtk", ts);
       lin_p.save_solution_vtk(&pressure, filename, "Pressure", true);  
       sprintf(filename, "density-%i.vtk", ts);
-      lin_rho.save_solution_vtk(&prev_rho, filename, "density", true); 
+      lin_rho.save_solution_vtk(prev_rho, filename, "density", true); 
       sprintf(filename, "mesh-%i.vtk", ts); 
-     	ord_p.save_mesh_vtk(&space_rho, filename);  
+     	ord_p.save_mesh_vtk(space_rho, filename);  
          sprintf(filename, "vel_x-%i.vtk", ts); 	
      		lin_v_x.save_solution_vtk(&vel_x,filename, "velocity_x", true);
 
-		 }
-		
+		 }*/
 
 					delete diffusion_low;
 					delete dp_boundary_low;
@@ -394,21 +412,21 @@ if(ts==1){
 while (current_time < T_FINAL);
 
 
-     if(VTK_VISUALIZATION)
+ 	/*if(VTK_VISUALIZATION)
      {
-       PressureFilter pressure(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), KAPPA);
-  VelocityFilter vel_x(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 1);
-  VelocityFilter vel_y(Hermes::vector<MeshFunction<double>*>(&prev_rho, &prev_rho_v_x, &prev_rho_v_y, &prev_e), 2);
+       PressureFilter pressure(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), KAPPA);
+  VelocityFilter vel_x(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 1);
+  VelocityFilter vel_y(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 2);
         Linearizer lin_p, lin_v_x, lin_v_y, lin_rho; 	Orderizer ord_p;		
 			lin_p.save_solution_vtk(&pressure, "p_end.vtk", "pressure", true);
 			lin_v_x.save_solution_vtk(&vel_x, "vx_end.vtk", "velocity_x", true);
 			lin_v_y.save_solution_vtk(&vel_y, "vy_end.vtk", "velocity_y",true);
 			
-		/*	Linearizer lin_rho; 	Orderizer ord_p;	
-			lin_rho.save_solution_vtk(&prev_rho, "rho_end.vtk", "density", true);
-			     ord_p.save_mesh_vtk(&space_rho, "mesh_end.vtk"); */ 
+		Linearizer lin_rho; 	Orderizer ord_p;	
+			lin_rho.save_solution_vtk(prev_rho, "rho_end.vtk", "density", true);
+			     ord_p.save_mesh_vtk(space_rho, "mesh_end.vtk"); 
 		}
-
+ */
 
 		//Cleanup
 			delete mass_matrix;

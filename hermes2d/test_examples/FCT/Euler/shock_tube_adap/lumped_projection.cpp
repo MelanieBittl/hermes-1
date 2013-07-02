@@ -1,32 +1,39 @@
 #include "lumped_projection.h"
-#include "discrete_problem_linear.h"
+#include "discrete_problem.h"
 
 
 
 
 ////template<typename double>
-void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<double>* wf, double* target_vec,
-                               MatrixSolverType matrix_solver)
+void Lumped_Projection::project_internal( SpaceSharedPtr<double> space, WeakForm<double>* wf, double* target_vec,
+                               MatrixSolverType matrix_solver, UMFPackMatrix<double>*  mat)
 {
-
-      // Sanity check.
+            // Sanity check.
+      if(wf == NULL)
+        throw Hermes::Exceptions::NullException(1);
+      if(target_vec == NULL)
+        throw Exceptions::NullException(2);
     if(space == NULL)  throw Hermes::Exceptions::Exception("this->space == NULL in project_internal().");
+
 
       // Get dimension of the space.
       int ndof = space->get_num_dofs();
 
+if(mat!=NULL) if(mat->get_size()!=ndof) printf("lumped_projection: matrixsize =%i !=  ndof=%i", mat->get_size(),ndof);
+
   // Initialize DiscreteProblem.
-  DiscreteProblemLinear<double>* dp = new DiscreteProblemLinear<double>(wf, space);
-        dp->set_do_not_use_cache();
-        
-   UMFPackMatrix<double>* matrix = new UMFPackMatrix<double>;	
+  DiscreteProblem<double>* dp = new DiscreteProblem<double>(wf, space);
+      dp->set_linear();
+      dp->set_do_not_use_cache();
+
+    	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double>;	
   	UMFPackVector<double>* rhs = new UMFPackVector<double>(ndof);
 	double* coeff_vec =NULL; 
 
+	if(mat==NULL) 
+	{ 
 		UMFPackMatrix<double>* lumped_matrix = new UMFPackMatrix<double>;   //M_L 
-
 		dp->assemble(matrix, rhs);  
-
 			//Masslumping		 
 		 int size = matrix->get_size();
 		 double diag[size];
@@ -45,6 +52,7 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 		 }
 
 		 lumped_matrix->create(size, size, col, row, diag);  //lumped Matrix aufstellen
+   
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(lumped_matrix,rhs);		
 		if(solver->solve()){ 
 			coeff_vec = solver->get_sln_vector();		
@@ -55,6 +63,16 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 		delete solver;
 		delete lumped_matrix;
 
+	}else{ 
+		dp->assemble(rhs);
+		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(mat,rhs);		
+		if(solver->solve()) 
+			coeff_vec = solver->get_sln_vector();			
+	 	 else{  throw Hermes::Exceptions::Exception("Matrix solver failed.\n");}
+		 if (target_vec != NULL)
+    		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
+		delete solver;
+	}
   
   
   delete matrix;
@@ -65,9 +83,9 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
 }
 
 
-  void Lumped_Projection::project_lumped(Hermes::vector<const Space<double>*> spaces, 
-        Hermes::vector<MeshFunction<double>*> source_meshfns,
-        double* target_vec, Hermes::MatrixSolverType matrix_solver)
+  void Lumped_Projection::project_lumped(Hermes::vector<SpaceSharedPtr<double> >  spaces, 
+        Hermes::vector<MeshFunctionSharedPtr<double> > source_meshfns,
+        double* target_vec, Hermes::MatrixSolverType matrix_solver, UMFPackMatrix<double>*  mat)
     {
      
       int n = spaces.size();
@@ -78,17 +96,17 @@ void Lumped_Projection::project_internal( const Space<double>* space, WeakForm<d
   
       int start_index = 0;
       for (int i = 0; i < n; i++) 
-      {      
-        project_lumped(spaces[i], source_meshfns[i], target_vec + start_index, matrix_solver);
-        spaces[i]->assign_dofs(start_index);
+			{     
+				spaces[i]->assign_dofs();
+          project_lumped(spaces[i], source_meshfns[i], target_vec + start_index, matrix_solver, mat);
         start_index += spaces[i]->get_num_dofs();
-		}
-
+			}
+		Space<double>::assign_dofs(spaces);
     }
 
 
-void Lumped_Projection::project_lumped( const  Space<double>* space, MeshFunction<double>* source_meshfn,
-                             double* target_vec, MatrixSolverType matrix_solver )
+void Lumped_Projection::project_lumped( SpaceSharedPtr<double> space, MeshFunctionSharedPtr<double>  source_meshfn,
+                             double* target_vec, MatrixSolverType matrix_solver ,UMFPackMatrix<double>*  mat )
 {
 			
 
@@ -97,19 +115,14 @@ void Lumped_Projection::project_lumped( const  Space<double>* space, MeshFunctio
 
       // Define temporary projection weak form.
       WeakForm<double>* proj_wf = new WeakForm<double>(1);
-      proj_wf->warned_nonOverride = true;
       proj_wf->set_ext(source_meshfn);
-
-      
-			ProjectionLumpedMatrixFormVol* matrix_form =	new ProjectionLumpedMatrixFormVol(0, 0);
-			ProjectionLumpedVectorFormVol* vector_form = new ProjectionLumpedVectorFormVol(0);
       // Add Jacobian.
-      proj_wf->add_matrix_form(matrix_form);
+      proj_wf->add_matrix_form(new MatrixDefaultNormFormVol<double>(0, 0, HERMES_L2_NORM));
       // Add Residual.
-      proj_wf->add_vector_form(vector_form);
+      proj_wf->add_vector_form(new VectorDefaultNormFormVol<double>(0, HERMES_L2_NORM));
 
       // Call main function.
-      project_internal(space, proj_wf, target_vec, matrix_solver);
+      project_internal(space, proj_wf, target_vec, matrix_solver, mat);
 
       // Clean up.
       delete proj_wf;

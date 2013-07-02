@@ -3,8 +3,9 @@
 #include "definitions.h"
 #include "initial_condition.h"
 #include "boundary_condition.h"
+#include "interface.h"
 #include "lumped_projection.h"
-#include <list>
+//#include <list>
 
 
 using namespace RefinementSelectors;
@@ -15,7 +16,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
-const int P_INIT = 1;       						// Initial polynomial degree.
+const int P_INIT = 2;       						// Initial polynomial degree.
 const double time_step = 1e-3;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
@@ -34,11 +35,6 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 
 
-//FCT & p-Adaptivity
-#include "mass_lumping.cpp"
-#include "artificial_diffusion.cpp"
-#include "fct.cpp"
-
 
      
 
@@ -52,17 +48,29 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain2.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
  	 mesh->copy(basemesh);
 
-
+/*
 SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));	
+
+
+SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
+
+
+SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT));
 
 
 	int dof_rho = space_rho->get_num_dofs();
@@ -93,12 +101,6 @@ Space<double>::assign_dofs(spaces);
   MeshFunctionSharedPtr<double> boundary_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
   MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(mesh,KAPPA));	
 
-    MeshFunctionSharedPtr<double> low_rho(new Solution<double>);
-    MeshFunctionSharedPtr<double> low_rho_v_x(new Solution<double>);
-    MeshFunctionSharedPtr<double> low_rho_v_y(new Solution<double>);
-    MeshFunctionSharedPtr<double>	low_e(new Solution<double>);
-
-
 
 
 
@@ -121,9 +123,11 @@ Space<double>::assign_dofs(spaces);
 
   EulerEquationsWeakForm_Mass wf_mass(time_step);
   EulerEquationsWeakForm_K  wf_K(KAPPA, time_step, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-  EulerEquationsWeakForm_K  wf_K_low(KAPPA, time_step, low_rho, low_rho_v_x, low_rho_v_y, low_e);
   EulerBoundary wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-  EulerBoundary wf_boundary_low(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, low_rho, low_rho_v_x, low_rho_v_y, low_e);
+
+
+EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
   // Initialize the FE problem.
   DiscreteProblem<double> dp_boundary_init(&wf_boundary_init,spaces);
@@ -131,18 +135,19 @@ Space<double>::assign_dofs(spaces);
     
   DiscreteProblem<double> dp_mass(&wf_mass,spaces);
   DiscreteProblem<double> dp_boundary(&wf_boundary, spaces);
-  DiscreteProblem<double> dp_boundary_low(&wf_boundary_low, spaces);
-
   DiscreteProblem<double> dp_K(&wf_K, spaces);
-  DiscreteProblem<double> dp_K_low(&wf_K_low, spaces);
+
+  DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
+  DiscreteProblem<double> dp_DG(&wf_DG, spaces);
+
 
   // Set up the solver, matrix, and rhs according to the solver selection.
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   
-	UMFPackMatrix<double> * matrix_L_low = new UMFPackMatrix<double> ; 
-	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double> ;  
-	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double> ; 
+	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;
+	UMFPackMatrix<double> * matrix = new UMFPackMatrix<double> ;  
+	UMFPackMatrix<double> * mat_rhs = new UMFPackMatrix<double> ; 
 	UMFPackMatrix<double> * matrix_dS = new UMFPackMatrix<double> ; 
-	UMFPackMatrix<double> * matrix_dS_low = new UMFPackMatrix<double> ; 
+	UMFPackMatrix<double> * matrix_DG = new UMFPackMatrix<double> ; 
+
 
 
 			double* coeff_vec = new double[ndof];
@@ -155,34 +160,46 @@ Space<double>::assign_dofs(spaces);
 			double* R_plus = new double[ndof]; double* R_minus = new double[ndof];	
 
     OGProjection<double> ogProjection;
-		Lumped_Projection lumpedProjection;
-		
-    dp_mass.assemble(mass_matrix);
+	Lumped_Projection lumpedProjection;
 
-	//----------------------MassLumping M_L--------------------------------------------------------------------
-		UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
+
 
 //Projection of the initial condition
-	lumpedProjection.project_lumped(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec, matrix_solver);
+ ogProjection.project_global(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec, Hermes::vector<NormType> (HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM));
+//	lumpedProjection.project_lumped(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec, matrix_solver);
 
-   ogProjection.project_global(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec_2,  HERMES_L2_NORM);
+/*
+SpaceSharedPtr<double> space_rho_proj(new H1Space<double>(mesh, 1));	
+SpaceSharedPtr<double> space_rho_v_x_proj(new H1Space<double>(mesh, 1));	
+SpaceSharedPtr<double> space_rho_v_y_proj(new H1Space<double>(mesh, 1));	
+SpaceSharedPtr<double> space_e_proj(new H1Space<double>(mesh, 1));
+    Hermes::vector<SpaceSharedPtr<double> > spaces_proj(space_rho_proj, space_rho_v_x_proj, space_rho_v_y_proj, space_e_proj);
+Space<double>::assign_dofs(spaces_proj);
+   int ndof_proj = Space<double>::get_num_dofs(spaces_proj);
+			double* coeff_vec_proj = new double[ndof];
+	lumpedProjection.project_lumped(spaces_proj,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec_proj, matrix_solver);
 
-		lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
+				Solution<double>::vector_to_solutions(coeff_vec_proj, spaces_proj, Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e));	
+
+ogProjection.project_global(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), coeff_vec, Hermes::vector<NormType> (HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM));*/
 
 				Solution<double>::vector_to_solutions(coeff_vec, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e));	
 
-
-
 			 // Visualize the solution.
-			//s1.show(prev_rho);
-//View::wait(HERMES_WAIT_KEYPRESS);
+			s1.show(prev_rho);
+View::wait(HERMES_WAIT_KEYPRESS);
 
 // Time stepping loop:
 	double current_time = 0.0; 
 	int ts = 1;
 	char title[100];
+ PressureFilter pressure(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), KAPPA);
+VelocityFilter vel_x(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 1);
+  VelocityFilter vel_y(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 2);
 
 
+Space<double>::assign_dofs(spaces);
+    dp_mass.assemble(mass_matrix);
 //Timestep loop
 do
 {	 
@@ -195,78 +212,61 @@ Space<double>::assign_dofs(spaces);
 	 	  //Hermes::Mixins::Loggable::Static::info("assemble dS");
 			dp_boundary.assemble(matrix_dS);
 	 		//Hermes::Mixins::Loggable::Static::info("assemble K");
-		  dp_K.assemble(lowmat_rhs);
+		  dp_K.assemble(mat_rhs);
+		  dp_DG.assemble(matrix_DG);	
 		}else{
 			//Hermes::Mixins::Loggable::Static::info("assemble dS");
 			dp_boundary_init.assemble(matrix_dS);
 	 		//Hermes::Mixins::Loggable::Static::info("assemble K");
-		  dp_K_init.assemble(lowmat_rhs);		
+		  dp_K_init.assemble(mat_rhs);	
+		  dp_DG_init.assemble(matrix_DG);	
 		}
 
 
 					//------------------------artificial DIFFUSION D---------------------------------------		
-					  //	Hermes::Mixins::Loggable::Static::info("artificial Diffusion");
-			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
 
-//	Hermes::Mixins::Loggable::Static::info("K+D");
-			lowmat_rhs->add_matrix(diffusion); //L(U)=K+D
-	//Hermes::Mixins::Loggable::Static::info("L+S");
-			lowmat_rhs->add_matrix(matrix_dS); //L(U)+dS(U) 
+			mat_rhs->add_matrix(matrix_dS); //L(U)+dS(U) 
+			mat_rhs->add_matrix(matrix_DG);
 
-			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
-			low_matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
-			low_matrix->add_matrix(lumped_matrix); 				//M_L/t - theta L(U)
+			matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());
+			matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
+			matrix->add_matrix(mass_matrix); 				//M/t - theta L(U)
 
-			lowmat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
-			lowmat_rhs->add_matrix(lumped_matrix);  //M_L/t+(1-theta)L(U)
+			mat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
+			mat_rhs->add_matrix(mass_matrix);  //M_L/t+(1-theta)L(U)
 
 
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(L) u^n------------		
-			lowmat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
+			mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
 
 
 	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
 				//		  	Hermes::Mixins::Loggable::Static::info("Solution low order ");
-			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
-			if(lowOrd->solve()){ 
-				u_L = lowOrd->get_sln_vector();  
-        Solution<double>::vector_to_solutions(u_L, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(low_rho,low_rho_v_x,low_rho_v_y,low_e));
+			UMFPackLinearMatrixSolver<double> * solver = new UMFPackLinearMatrixSolver<double> (matrix,vec_rhs);	
+			if(solver->solve()){ 
+				u_L = solver->get_sln_vector();  
+        Solution<double>::vector_to_solutions(u_L, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e));
 			  }else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 	
-			dp_boundary_low.assemble(matrix_dS_low);	
-    	dp_K_low.assemble(matrix_L_low);
-			UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
-			matrix_L_low->add_matrix(diffusion_low); //L(U)
-			matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
-
-		//---------------------------------------antidiffusive fluxes-----------------------------------	
-		//Hermes::Mixins::Loggable::Static::info("antidiffusive fluxes ");
-		antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
-
-		for(int i=0; i<ndof;i++)
-						 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);					
-
-				Solution<double>::vector_to_solutions(coeff_vec, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e));	
+for(int i=0; i<ndof; i++) coeff_vec[i] = u_L[i];
 
 
 
-// PressureFilter pressure(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), KAPPA);
-//VelocityFilter vel_x(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 1);
- // VelocityFilter vel_y(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 2);
+
 
 			 // Visualize the solution.
 			 sprintf(title, " ts=%i",ts);
 			// pressure_view.set_title(title);
 			 s1.set_title(title);
 			s1.show(prev_rho);
-			//s2.show(&vel_x);
-			//s3.show(&vel_y);
-  		//pressure_view.show(&pressure);
+		//	s2.show(&vel_x);
+		//	s3.show(&vel_y);
+  	//	pressure_view.show(&pressure);
   		
 
-//	View::wait(HERMES_WAIT_KEYPRESS);
+	View::wait(HERMES_WAIT_KEYPRESS);
 
 
 
@@ -289,10 +289,8 @@ Space<double>::assign_dofs(spaces);
 
 
 
-		delete lowOrd;
-		delete diffusion;
-		delete diffusion_low;
-		low_matrix->free();
+		delete solver;
+		matrix->free();
 
 
 	  // Update global time.
@@ -321,12 +319,9 @@ while (current_time < T_FINAL);
 
 		//Cleanup
 		delete mass_matrix;
-			delete matrix_L_low;
-			delete matrix_dS;			
-			delete matrix_dS_low;	
-			delete lumped_matrix;
-			delete low_matrix;
-			delete lowmat_rhs;
+			delete matrix_dS;	
+			delete matrix;
+			delete mat_rhs;
 			delete vec_rhs;
 			  // Clean up.
  			delete [] P_plus;

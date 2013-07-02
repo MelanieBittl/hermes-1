@@ -7,21 +7,17 @@ using namespace Hermes::Hermes2D;
     class PrevSolution : public Solution<double>
     {
     public:
-      PrevSolution() : Solution<double>()
-      {
-      	this->mesh = NULL;
-      	own_mesh =false; 
-      };
-
+      PrevSolution() : Solution<double>(){ };
+       PrevSolution(MeshSharedPtr mesh): Solution<double>(mesh){
+						own_mesh = false;     
+       };
     
     ~PrevSolution()
     {
-      if((own_mesh == true)&&(mesh!=NULL)) { own_mesh = false; delete mesh; }		
-      mesh = NULL;
     }
     
     virtual MeshFunction<double>* clone();      
-		void set_own_mesh(const Mesh* mesh);					
+		void set_own_mesh(const MeshSharedPtr mesh);					
 
     
     
