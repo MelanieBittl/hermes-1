@@ -227,7 +227,7 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
       Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
       SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
 
-      HPAdapt* adapting = new HPAdapt(ref_space,&error_calculator);	
+      HPAdapt* adapting = new HPAdapt(ref_space);	
 							// increase p in smooth regions, h refine in non-smooth regions 
       Hermes::Mixins::Loggable::Static::info("Calling adapt_smooth()...");
 			if(adapting->adapt_smooth(smooth_elem_ref, P_MAX)==false) 

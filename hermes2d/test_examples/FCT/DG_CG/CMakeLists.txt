@@ -1,6 +1,7 @@
 add_subdirectory("solid_body")
-#add_subdirectory("solid_body_FCT")
+add_subdirectory("solid_body_slope_limiter")
 add_subdirectory("solid_body_ref")
 add_subdirectory("stationary_problem")
+add_subdirectory("shock_tube_CGDG")
 
 

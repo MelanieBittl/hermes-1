@@ -29,8 +29,7 @@ double calc_abs_v(Element* e)
 				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
 			}	
 	delete rm;
-return Hermes::sqrt(1.25);
-	//return Hermes::sqrt(abs_v);
+	return Hermes::sqrt(abs_v);
 }
 
 CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,bool all, bool DG, bool SD) : WeakForm<double>(1)

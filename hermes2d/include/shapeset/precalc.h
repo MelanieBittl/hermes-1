@@ -53,17 +53,19 @@ namespace Hermes
       /// \param index[in] Shape index.
       void set_active_shape(int index);
 
-    private:
+      /// Returns a pointer to the shapeset which is being precalculated.
+      Shapeset* get_shapeset() const;
+
       virtual void set_quad_2d(Quad2D* quad_2d);
+
+    private:
+
 
       /// \brief Frees all precalculated tables.
       virtual void free();
 
       /// Returns the index of the active shape (can be negative if the shape is constrained).
       int get_active_shape() const;
-
-      /// Returns a pointer to the shapeset which is being precalculated.
-      Shapeset* get_shapeset() const;
 
       /// Returns the polynomial order of the active shape function on given edge.
       virtual int get_edge_fn_order(int edge);

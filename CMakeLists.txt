@@ -44,7 +44,7 @@ project(hermes)
 	#  This number has to be smaller than 21.
 	set(H2D_MAX_HANGING_NODES_LEVEL 15)
 	#  Use second derivatives (that are turned off by default).
-	set(H2D_USE_SECOND_DERIVATIVES NO)
+	set(H2D_USE_SECOND_DERIVATIVES YES)
   
   set(WITH_TC_MALLOC YES)
 
@@ -56,7 +56,8 @@ project(hermes)
     # UMFPACK is chosen by default.
     set(WITH_UMFPACK YES)
     # PARALUTION is chosen by default.
-    set(WITH_PARALUTION NO)
+    set(WITH_PARALUTION YES)
+		set(PARALUTION_ROOT /home/staff/bittl/solvers/paralution-0.3.0/build)
     
   ################################## CURRENTLY NOT SUPPORTED ###################################
   #  \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/
@@ -237,7 +238,7 @@ project(hermes)
 
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # Disable all warnings and turn on only important ones:
-    set(CMAKE_CXX_FLAGS "-w ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-w ${CMAKE_CXX_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "-Wuninitialized -Wvla -Wsign-compare ${CMAKE_CXX_FLAGS}")
 
     set(RELEASE_FLAGS "-DNDEBUG -O3")
