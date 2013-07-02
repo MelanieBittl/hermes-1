@@ -122,6 +122,7 @@ project(hermes2d)
     src/function/filter.cpp
     src/function/mesh_function.cpp
     src/function/solution_h2d_xml.cpp
+    src/function/postprocessing.cpp
 
     src/mesh/refmap.cpp
     src/mesh/curved.cpp
@@ -244,7 +245,8 @@ project(hermes2d)
     src/function/solution.cpp
     src/function/filter.cpp
     src/function/mesh_function.cpp
-    src/function/solution_h2d_xml.cpp 
+    src/function/solution_h2d_xml.cpp
+    src/function/postprocessing.cpp
   )
   
   SOURCE_GROUP(
@@ -380,6 +382,7 @@ project(hermes2d)
     include/function/filter.h
     include/function/mesh_function.h
     include/function/solution_h2d_xml.h
+    include/function/postprocessing.h
 
     include/mesh/refmap.h
     include/mesh/curved.h
@@ -503,6 +506,7 @@ project(hermes2d)
     include/function/filter.h
     include/function/mesh_function.h
     include/function/solution_h2d_xml.h
+    include/function/postprocessing.h
   )
     
   SOURCE_GROUP(
