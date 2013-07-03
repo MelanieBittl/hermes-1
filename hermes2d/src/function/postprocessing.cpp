@@ -1,6 +1,7 @@
 #include "postprocessing.h"
 #include "../space/space.h"
 #include "../function/solution.h"
+#include <limits>
 
 namespace Hermes
 {
