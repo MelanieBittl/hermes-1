@@ -8,7 +8,7 @@ using namespace Hermes::Hermes2D::WeakFormsH1;
 class CustomWeakForm  : public WeakForm<double>     
 {
 public:
-  CustomWeakForm();
+  CustomWeakForm(bool implicit = false);
 
   class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
   {
@@ -20,6 +20,18 @@ public:
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord>  **ext) const;  
 
     MatrixFormVol<double>* clone() const;
+  };
+
+  class CustomVectorFormVolConvection : public VectorFormVol<double>   
+  {
+  public:
+    CustomVectorFormVolConvection(int i);
+
+    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>  **ext) const;
+
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>  **ext) const;  
+
+    VectorFormVol<double>* clone() const;
   };
 
   class CustomVectorFormVol : public VectorFormVol<double>   
@@ -46,6 +58,26 @@ public:
     virtual Ord ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, DiscontinuousFunc<Ord> *u, DiscontinuousFunc<Ord> *v, Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const;
 
     MatrixFormDG<double>* clone() const;
+
+    double upwind_flux(double u_cent, double u_neib, double a_dot_n) const;
+
+    Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
+
+    double scalar_product_with_advection_direction(double vx, double vy) const;
+  };
+
+  class CustomVectorFormInterface : public VectorFormDG<double>
+  {
+  public:
+    CustomVectorFormInterface(int i) : VectorFormDG<double>(i) 
+    {
+    };
+
+    virtual double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v, Geom<double> *e, DiscontinuousFunc<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, Func<Ord> *v, Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const;
+
+    VectorFormDG<double>* clone() const;
 
     double upwind_flux(double u_cent, double u_neib, double a_dot_n) const;
 

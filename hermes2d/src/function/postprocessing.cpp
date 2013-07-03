@@ -65,7 +65,7 @@ namespace Hermes
       {
         return this->changed_element_ids;
       }
-      
+
       template<typename Scalar>
       bool Limiter<Scalar>::isOkay() const
       {
@@ -74,18 +74,19 @@ namespace Hermes
         return true;
       }
 
-      VertexBasedLimiter::VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector)
+      VertexBasedLimiter::VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order)
         : Limiter<double>(space, solution_vector)
       {
-        this->init();
+        this->init(maximum_polynomial_order);
       }
 
-      VertexBasedLimiter::VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector) : Limiter<double>(spaces, solution_vector)
+      VertexBasedLimiter::VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int maximum_polynomial_order)
+        : Limiter<double>(spaces, solution_vector)
       {
-        this->init();
+        this->init(maximum_polynomial_order);
       }
 
-      void VertexBasedLimiter::init()
+      void VertexBasedLimiter::init(int maximum_polynomial_order)
       {
         // Checking that this is the Taylor shapeset.
         for(int i = 0; i < this->component_count; i++)
@@ -96,6 +97,8 @@ namespace Hermes
 
         vertex_min_values = NULL;
         vertex_max_values = NULL;
+
+        this->mixed_derivatives_count = (maximum_polynomial_order + 1)*(maximum_polynomial_order + 2)/2;
       }
 
       VertexBasedLimiter::~VertexBasedLimiter()
@@ -105,6 +108,11 @@ namespace Hermes
 
       void VertexBasedLimiter::process()
       {
+        // Start by creating temporary solutions.  
+        for(int component = 0; component < this->component_count; component++)
+          this->limited_solutions.push_back(MeshFunctionSharedPtr<double>(new Solution<double>(this->spaces[component]->get_mesh())));
+        Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
+        
         // Prepare the vertex values.
         prepare_min_max_vertex_values();
 
@@ -116,19 +124,20 @@ namespace Hermes
 
           for_all_active_elements(e, mesh)
           {
-            this->impose_correction_factor(e, component);
+            if(this->impose_quadratic_correction_factor(e, component))
+              this->impose_linear_correction_factor(e, component);
           }
-
-          this->limited_solutions.push_back(MeshFunctionSharedPtr<double>(new Solution<double>(this->spaces[component]->get_mesh())));
-          Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
         }
+
+        // Create the final solutions.
+        Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
       }
 
-      void VertexBasedLimiter::impose_correction_factor(Element* e, int component)
+      void VertexBasedLimiter::impose_linear_correction_factor(Element* e, int component)
       {
         double correction_factor = std::numeric_limits<double>::infinity();
 
-        double mean_value = this->get_mean_value(e, component);
+        double mean_value = this->get_mean_value(e, component, 0);
 
         AsmList<double> al;
         this->spaces[component]->get_element_assembly_list(e, &al);
@@ -137,18 +146,19 @@ namespace Hermes
           Node* vertex = e->vn[i_vertex];
           double x, y;
           RefMap::untransform(e, vertex->x, vertex->y, x, y);
+
           double vertex_value = 0.;
           for(int i_basis_fn = 0; i_basis_fn < al.cnt; i_basis_fn++)
             vertex_value += this->solution_vector[al.dof[i_basis_fn]] * this->spaces[component]->get_shapeset()->get_fn_value(al.idx[i_basis_fn], x, y, 0, e->get_mode());
 
           double fraction;
           if(vertex_value > mean_value)
-            fraction = std::min(1., (this->vertex_max_values[component][vertex->id] - mean_value) / (vertex_value - mean_value));
+            fraction = std::min(1., (this->vertex_max_values[component][vertex->id][0] - mean_value) / (vertex_value - mean_value));
           else
             if(vertex_value == mean_value)
               fraction = 1.;
             else
-              fraction = std::min(1., (this->vertex_min_values[component][vertex->id] - mean_value) / (vertex_value - mean_value));
+              fraction = std::min(1., (this->vertex_min_values[component][vertex->id][0] - mean_value) / (vertex_value - mean_value));
 
           correction_factor = std::min(correction_factor, fraction);
         }
@@ -158,6 +168,50 @@ namespace Hermes
           if(H2D_GET_H_ORDER(order) == 1 || H2D_GET_V_ORDER(order) == 1)
             this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
         }
+      }
+
+      bool VertexBasedLimiter::impose_quadratic_correction_factor(Element* e, int component)
+      {
+        double correction_factor = std::numeric_limits<double>::infinity();
+        AsmList<double> al;
+        this->spaces[component]->get_element_assembly_list(e, &al);
+
+        for(int i_derivative = 1; i_derivative <= 2; i_derivative++)
+        {
+          double mean_value = this->get_mean_value(e, component, i_derivative);
+
+          for(int i_vertex = 0; i_vertex < e->get_nvert(); i_vertex++)
+          {
+            Node* vertex = e->vn[i_vertex];
+            double x, y;
+            RefMap::untransform(e, vertex->x, vertex->y, x, y);
+
+            double vertex_value = 0.;
+            for(int i_basis_fn = 0; i_basis_fn < al.cnt; i_basis_fn++)
+              vertex_value += this->solution_vector[al.dof[i_basis_fn]] * this->spaces[component]->get_shapeset()->get_value(i_derivative, al.idx[i_basis_fn], x, y, 0, e->get_mode());
+
+            double fraction;
+            if(vertex_value > mean_value)
+              fraction = std::min(1., (this->vertex_max_values[component][vertex->id][i_derivative] - mean_value) / (vertex_value - mean_value));
+            else
+              if(vertex_value == mean_value)
+                fraction = 1.;
+              else
+                fraction = std::min(1., (this->vertex_min_values[component][vertex->id][i_derivative] - mean_value) / (vertex_value - mean_value));
+
+            correction_factor = std::min(correction_factor, fraction);
+          }
+        }
+        for(int i_basis_fn = 0; i_basis_fn < al.cnt; i_basis_fn++)
+        {
+          int order = this->spaces[component]->get_shapeset()->get_order(al.idx[i_basis_fn], e->get_mode());
+          if(H2D_GET_H_ORDER(order) == 2 || H2D_GET_V_ORDER(order) == 2)
+            this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+        }
+        if(correction_factor < (1 - 1e-3))
+          return true;
+        else
+          return false;
       }
 
       void VertexBasedLimiter::prepare_min_max_vertex_values()
@@ -177,46 +231,77 @@ namespace Hermes
             for(int i_vertex = 0; i_vertex < e->get_nvert(); i_vertex++)
             {
               Node* vertex = e->vn[i_vertex];
-              double element_mean_value = this->get_mean_value(e, component);
-              this->vertex_min_values[component][vertex->id] = std::min(this->vertex_min_values[component][vertex->id], element_mean_value);
-              this->vertex_max_values[component][vertex->id] = std::max(this->vertex_max_values[component][vertex->id], element_mean_value);
+              double* element_mean_value = new double[this->mixed_derivatives_count];
+              for(int i_derivative = 0; i_derivative < this->mixed_derivatives_count; i_derivative++)
+              {
+                double element_mean_value = this->get_mean_value(e, component, i_derivative);
+                this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_mean_value);
+                this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_mean_value);
+              }
             }
           }
         }
       }
 
-      double VertexBasedLimiter::get_mean_value(Element* e, int component)
+      double VertexBasedLimiter::get_mean_value(Element* e, int component, int mixed_derivative_index)
       {
-        AsmList<double> al;
-        this->spaces[component]->get_element_assembly_list(e, &al);
-        for(int i = 0; i < al.cnt; i++)
+        if(mixed_derivative_index > 5)
         {
-          int order = spaces[component]->get_shapeset()->get_order(al.idx[i], e->get_mode());
-          if(H2D_GET_H_ORDER(order) == 0 && e->is_triangle())
-            return this->solution_vector[al.dof[i]];
-          if(H2D_GET_H_ORDER(order) == 0 && H2D_GET_V_ORDER(order) == 0 && e->is_quad())
-            return this->solution_vector[al.dof[i]];
+          throw Exceptions::MethodNotImplementedException("VertexBasedLimiter::get_mean_value only works for first and second derivatives.");
+          return 0.;
+        }
+
+        // Special treatment of the function value.
+        if(mixed_derivative_index == 0)
+        {
+          AsmList<double> al;
+          this->spaces[component]->get_element_assembly_list(e, &al);
+          for(int i = 0; i < al.cnt; i++)
+          {
+            int order = spaces[component]->get_shapeset()->get_order(al.idx[i], e->get_mode());
+            if(H2D_GET_H_ORDER(order) == 0 && e->is_triangle())
+              return this->solution_vector[al.dof[i]];
+            if(H2D_GET_H_ORDER(order) == 0 && H2D_GET_V_ORDER(order) == 0 && e->is_quad())
+              return this->solution_vector[al.dof[i]];
+          }
+        }
+        else
+        {
+          Solution<double>* sln = dynamic_cast<Solution<double>*>(this->limited_solutions[component].get());
+          sln->set_active_element(e);
+          if(e->get_mode() == HERMES_MODE_TRIANGLE)
+            return sln->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, mixed_derivative_index);
+          else
+            return sln->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, mixed_derivative_index);
         }
       }
 
       void VertexBasedLimiter::allocate_vertex_values()
       {
-        this->vertex_min_values = new double*[this->component_count];
+        this->vertex_min_values = new double**[this->component_count];
         for(int i = 0; i < this->component_count; i++)
         {
-          this->vertex_min_values[i] = new double[this->spaces[i]->get_mesh()->get_max_node_id()];
+          this->vertex_min_values[i] = new double*[this->spaces[i]->get_mesh()->get_max_node_id()];
 
           for(int j = 0; j < this->spaces[i]->get_mesh()->get_max_node_id(); j++)
-            this->vertex_min_values[i][j] = std::numeric_limits<double>::infinity();
+          {
+            this->vertex_min_values[i][j] = new double[this->spaces[i]->get_mesh()->get_max_node_id()];
+            for(int k = 0; k < this->mixed_derivatives_count; k++)
+              this->vertex_min_values[i][j][k] = std::numeric_limits<double>::infinity();
+          }
         }
 
-        this->vertex_max_values = new double*[this->component_count];
+        this->vertex_max_values = new double**[this->component_count];
         for(int i = 0; i < this->component_count; i++)
         {
-          this->vertex_max_values[i] = new double[this->spaces[i]->get_mesh()->get_max_node_id()];
+          this->vertex_max_values[i] = new double*[this->spaces[i]->get_mesh()->get_max_node_id()];
 
           for(int j = 0; j < this->spaces[i]->get_mesh()->get_max_node_id(); j++)
-            this->vertex_max_values[i][j] = -std::numeric_limits<double>::infinity();
+          {
+            this->vertex_max_values[i][j] = new double[this->spaces[i]->get_mesh()->get_max_node_id()];
+            for(int k = 0; k < this->mixed_derivatives_count; k++)
+              this->vertex_max_values[i][j][k] = -std::numeric_limits<double>::infinity();
+          }
         }
       }
 
@@ -226,6 +311,12 @@ namespace Hermes
         {
           for(int i = 0; i < this->component_count; i++)
           {
+            for(int j = 0; j < this->spaces[i]->get_mesh()->get_max_node_id(); j++)
+            {
+              delete [] this->vertex_min_values[i][j];
+              delete [] this->vertex_max_values[i][j];
+            }
+            
             delete [] this->vertex_min_values[i];
             delete [] this->vertex_max_values[i];
           }

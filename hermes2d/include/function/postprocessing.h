@@ -61,27 +61,33 @@ namespace Hermes
         : public Limiter<double>
       {
       public:
-        VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector);
-        VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector);
+        VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order);
+        VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int maximum_polynomial_order);
         ~VertexBasedLimiter();
 
       private:
 
-        void init();
+        void init(int maximum_polynomial_order);
 
         void process();
 
         void prepare_min_max_vertex_values();
 
-        /// This method ASSUMES that all the shapeset's basis functions of order > 0 HAVE ZERO MEAN.
-        double get_mean_value(Element* e, int component);
+        /// Get mean value of the mixed derivative (mixed_derivative_index) on element e, of the "component" - component
+        /// of the solution.
+        double get_mean_value(Element* e, int component, int mixed_derivative_index);
 
-        void impose_correction_factor(Element* e, int component);
+        void impose_linear_correction_factor(Element* e, int component);
 
-        double** vertex_min_values;
-        double** vertex_max_values;
+        /// Return if there was a need to limit the second derivatives.
+        bool impose_quadratic_correction_factor(Element* e, int component);
+
+        double*** vertex_min_values;
+        double*** vertex_max_values;
         void allocate_vertex_values();
         void deallocate_vertex_values();
+
+        int mixed_derivatives_count;
       };
     }
   }

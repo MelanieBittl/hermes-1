@@ -1,10 +1,18 @@
 #include "definitions.h"
 
-CustomWeakForm::CustomWeakForm() : WeakForm<double>(1) 
+CustomWeakForm::CustomWeakForm(bool implicit) : WeakForm<double>(1) 
 {
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
+if(implicit)
+{
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
+}
+else
+{
+  add_vector_form(new CustomVectorFormVolConvection(0));
+  add_vector_form_DG(new CustomVectorFormInterface(0));
+}
   add_vector_form(new CustomVectorFormVol(0));
 }
 
@@ -30,6 +38,28 @@ Ord CustomWeakForm::CustomMatrixFormVolConvection::ord(int n, double *wt, Func<O
 MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVolConvection::clone() const
 {
   return new CustomMatrixFormVolConvection(*this);
+}
+
+CustomWeakForm::CustomVectorFormVolConvection::CustomVectorFormVolConvection(int i) : VectorFormVol<double>(i)
+{
+}
+
+double CustomWeakForm::CustomVectorFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>  **ext) const                  
+{
+  double result = 0.;
+  for (int i = 0; i < n; i++)
+    result += wt[i] * ext[0]->val[i] * (v->dx[i] + v->dy[i]);
+  return result * wf->get_current_time_step();
+}
+
+Ord CustomWeakForm::CustomVectorFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const 
+{
+  return v->val[0] * v->val[0] * (ext[0]->dx[0] + ext[0]->dy[0]);
+}
+
+VectorFormVol<double>* CustomWeakForm::CustomVectorFormVolConvection::clone() const
+{
+  return new CustomVectorFormVolConvection(*this);
 }
 
 CustomWeakForm::CustomVectorFormVol::CustomVectorFormVol(int i) : VectorFormVol<double>(i)
@@ -98,6 +128,46 @@ Ord CustomWeakForm::CustomMatrixFormInterface::upwind_flux(Ord u_cent, Ord u_nei
 }
 
 
+double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
+                                                        Geom<double> *e, DiscontinuousFunc<double> **ext) const
+{
+  double result = 0.;
+  for (int i = 0; i < n; i++) 
+  {
+    double a_dot_n = scalar_product_with_advection_direction(e->nx[i], e->ny[i]);
+
+    double jump_v = -v->val[i];
+    result += wt[i] * upwind_flux(ext[0]->val[i], ext[0]->val_neighbor[i], a_dot_n) * jump_v;
+  }
+  return result * wf->get_current_time_step();
+}
+
+Ord CustomWeakForm::CustomVectorFormInterface::ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, Func<Ord> *v,
+                                                   Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const
+{
+  return ext[0]->val[0] * ext[0]->val_neighbor[0] * v->val[0] * v->val[0];
+}
+
+VectorFormDG<double>* CustomWeakForm::CustomVectorFormInterface::clone() const
+{
+  return new CustomWeakForm::CustomVectorFormInterface(*this);
+}
+
+double CustomWeakForm::CustomVectorFormInterface::scalar_product_with_advection_direction(double vx, double vy) const
+{
+  return vx + vy;
+}
+
+double CustomWeakForm::CustomVectorFormInterface::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
+{
+  return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
+}
+
+Ord CustomWeakForm::CustomVectorFormInterface::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
+{
+  return a_dot_n * (u_cent + u_neib);
+}
+
 
 CustomInitialCondition::CustomInitialCondition(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh)
 {
@@ -109,7 +179,7 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
   dy = 0.;
 }
 
-double CustomInitialCondition::value(double x, double y) const 
+double CustomInitialCondition::value(double x, double y) const
 {
   if(x < 0. && y < 0.0 && x > -1. && y > -1.)
     return 1.0;
