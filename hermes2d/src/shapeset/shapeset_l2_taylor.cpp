@@ -23,8 +23,8 @@ namespace Hermes
   namespace Hermes2D
   {
 
-#define minus_triangle_x_c 0.33333333333333
-#define minus_triangle_y_c 0.33333333333333
+#define minus_triangle_x_c 0.3333333333333333333333333
+#define minus_triangle_y_c 0.3333333333333333333333333
 
 #define element_delta_x 2.0
 #define element_delta_y 2.0

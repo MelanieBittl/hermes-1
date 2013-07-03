@@ -747,10 +747,11 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    static void make_dx_coeffs(int mode, int o, Scalar* mono, Scalar* result)
+    void Solution<Scalar>::make_dx_coeffs(int mode, int o, Scalar* mono, Scalar* result)
     {
       int i, j, k;
-      for (i = 0; i <= o; i++) {
+      for (i = 0; i <= o; i++)
+      {
         *result++= 0.0;
         k = mode ? o : i;
         for (j = 0; j < k; j++)
@@ -760,10 +761,11 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    static void make_dy_coeffs(int mode, int o, Scalar* mono, Scalar* result)
+    void Solution<Scalar>::make_dy_coeffs(int mode, int o, Scalar* mono, Scalar* result)
     {
       int i, j;
-      if(mode) {
+      if(mode)
+      {
         for (j = 0; j <= o; j++)
           *result++= 0.0;
         for (i = 0; i < o; i++)
@@ -771,7 +773,8 @@ namespace Hermes
             *result++= (Scalar) (o-i) * (*mono++);
       }
       else {
-        for (i = 0; i <= o; i++) {
+        for (i = 0; i <= o; i++)
+        {
           *result++= 0.0;
           for (j = 0; j < i; j++)
             *result++= (Scalar) (o + 1-i) * (*mono++);
@@ -1500,7 +1503,6 @@ namespace Hermes
         }
         else
         {
-#ifdef H2D_USE_SECOND_DERIVATIVES
           double2x2 mat;
           double3x2 mat2;
           double xx, yy;
@@ -1519,7 +1521,6 @@ namespace Hermes
             return sqr(mat[1][0])*vxx + 2*mat[1][1]*mat[1][0]*vxy + sqr(mat[1][1])*vyy + mat2[2][0]*vx + mat2[2][1]*vy;   // dyy
           if(b == 5)
             return mat[0][0]*mat[1][0]*vxx + (mat[0][0]*mat[1][1] + mat[1][0]*mat[0][1])*vxy + mat[0][1]*mat[1][1]*vyy + mat2[1][0]*vx + mat2[1][1]*vy;   //dxy
-#endif
         }
       }
       else // vector solution
@@ -1537,8 +1538,9 @@ namespace Hermes
         else
           throw Hermes::Exceptions::Exception("Getting derivatives of the vector solution: Not implemented yet.");
       }
-      throw Hermes::Exceptions::Exception("internal error: reached end of non-void function");
-      return 0;
+
+      throw Hermes::Exceptions::Exception("Internal error: reached end of non-void function");
+      return 0.;
     }
 
     template<typename Scalar>
