@@ -1,23 +1,23 @@
 #include "definitions.h"
 
-const int polynomialDegree = 1;
+const int polynomialDegree = 2;
 const int initialRefinementsCount = 5;
 const double time_step_length = 0.01;
 const double time_interval_length = 1.;
-const double logPercentTimeSteps = 0.1;
+const double logPercentTimeSteps = 1.;
 int logPeriod = (int)std::max<double>(1., ((logPercentTimeSteps / 100.) * (time_interval_length / time_step_length)));
 
 Hermes::Mixins::Loggable logger(true);
-
 
 //int main(int argc, char* argv[])
 //{
 //  return test();
 //}
 
-
 int main(int argc, char* argv[])
 {
+  // test();
+
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
   MeshReaderH2DXML mloader;
@@ -61,9 +61,9 @@ int main(int argc, char* argv[])
     }
 
     solver.solve();
-    Solution<double>::vector_to_solution(solver.get_sln_vector(), space, solution);
-    //PostProcessing::VertexBasedLimiter limiter(space, solver.get_sln_vector(), polynomialDegree);
-    //solution = limiter.get_solution();
+    //Solution<double>::vector_to_solution(solver.get_sln_vector(), space, solution);
+    PostProcessing::VertexBasedLimiter limiter(space, solver.get_sln_vector(), polynomialDegree);
+    solution = limiter.get_solution();
     
     if((!(time_step % logPeriod)) || (time_step == number_of_steps))
     {

@@ -64,6 +64,7 @@ namespace Hermes
         VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order);
         VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int maximum_polynomial_order);
         ~VertexBasedLimiter();
+        Hermes::vector<std::pair<int, double> > get_correction_factors() const;
 
       private:
 
@@ -71,7 +72,7 @@ namespace Hermes
 
         void process();
 
-        void prepare_min_max_vertex_values();
+        void prepare_min_max_vertex_values(bool quadratic);
 
         /// Get mean value of the mixed derivative (mixed_derivative_index) on element e, of the "component" - component
         /// of the solution.
@@ -88,6 +89,7 @@ namespace Hermes
         void deallocate_vertex_values();
 
         int mixed_derivatives_count;
+        Hermes::vector<std::pair<int, double> > correction_factors;
       };
     }
   }
