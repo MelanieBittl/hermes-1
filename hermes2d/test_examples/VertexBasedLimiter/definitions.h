@@ -100,3 +100,5 @@ public:
 
   MeshFunction<double>* clone() const;
 };
+
+int test();

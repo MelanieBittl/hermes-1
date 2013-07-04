@@ -98,7 +98,7 @@ namespace Hermes
         vertex_min_values = NULL;
         vertex_max_values = NULL;
 
-        this->mixed_derivatives_count = (maximum_polynomial_order + 1)*(maximum_polynomial_order + 2)/2;
+        this->mixed_derivatives_count = (maximum_polynomial_order)*(maximum_polynomial_order + 1) / 2;
       }
 
       VertexBasedLimiter::~VertexBasedLimiter()
@@ -112,7 +112,7 @@ namespace Hermes
         for(int component = 0; component < this->component_count; component++)
           this->limited_solutions.push_back(MeshFunctionSharedPtr<double>(new Solution<double>(this->spaces[component]->get_mesh())));
         Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
-        
+
         // Prepare the vertex values.
         prepare_min_max_vertex_values();
 
@@ -137,7 +137,7 @@ namespace Hermes
       {
         double correction_factor = std::numeric_limits<double>::infinity();
 
-        double mean_value = this->get_mean_value(e, component, 0);
+        double centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, 0);
 
         AsmList<double> al;
         this->spaces[component]->get_element_assembly_list(e, &al);
@@ -152,13 +152,13 @@ namespace Hermes
             vertex_value += this->solution_vector[al.dof[i_basis_fn]] * this->spaces[component]->get_shapeset()->get_fn_value(al.idx[i_basis_fn], x, y, 0, e->get_mode());
 
           double fraction;
-          if(vertex_value > mean_value)
-            fraction = std::min(1., (this->vertex_max_values[component][vertex->id][0] - mean_value) / (vertex_value - mean_value));
+          if(vertex_value > centroid_value_multiplied)
+            fraction = std::min(1., (this->vertex_max_values[component][vertex->id][0] - centroid_value_multiplied) / (vertex_value - centroid_value_multiplied));
           else
-            if(vertex_value == mean_value)
+            if(vertex_value == centroid_value_multiplied)
               fraction = 1.;
             else
-              fraction = std::min(1., (this->vertex_min_values[component][vertex->id][0] - mean_value) / (vertex_value - mean_value));
+              fraction = std::min(1., (this->vertex_min_values[component][vertex->id][0] - centroid_value_multiplied) / (vertex_value - centroid_value_multiplied));
 
           correction_factor = std::min(correction_factor, fraction);
         }
@@ -178,7 +178,7 @@ namespace Hermes
 
         for(int i_derivative = 1; i_derivative <= 2; i_derivative++)
         {
-          double mean_value = this->get_mean_value(e, component, i_derivative);
+          double centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
 
           for(int i_vertex = 0; i_vertex < e->get_nvert(); i_vertex++)
           {
@@ -191,13 +191,13 @@ namespace Hermes
               vertex_value += this->solution_vector[al.dof[i_basis_fn]] * this->spaces[component]->get_shapeset()->get_value(i_derivative, al.idx[i_basis_fn], x, y, 0, e->get_mode());
 
             double fraction;
-            if(vertex_value > mean_value)
-              fraction = std::min(1., (this->vertex_max_values[component][vertex->id][i_derivative] - mean_value) / (vertex_value - mean_value));
+            if(vertex_value > centroid_value_multiplied)
+              fraction = std::min(1., (this->vertex_max_values[component][vertex->id][i_derivative] - centroid_value_multiplied) / (vertex_value - centroid_value_multiplied));
             else
-              if(vertex_value == mean_value)
+              if(vertex_value == centroid_value_multiplied)
                 fraction = 1.;
               else
-                fraction = std::min(1., (this->vertex_min_values[component][vertex->id][i_derivative] - mean_value) / (vertex_value - mean_value));
+                fraction = std::min(1., (this->vertex_min_values[component][vertex->id][i_derivative] - centroid_value_multiplied) / (vertex_value - centroid_value_multiplied));
 
             correction_factor = std::min(correction_factor, fraction);
           }
@@ -231,48 +231,53 @@ namespace Hermes
             for(int i_vertex = 0; i_vertex < e->get_nvert(); i_vertex++)
             {
               Node* vertex = e->vn[i_vertex];
-              double* element_mean_value = new double[this->mixed_derivatives_count];
+              double* element_centroid_value_multiplied = new double[this->mixed_derivatives_count];
               for(int i_derivative = 0; i_derivative < this->mixed_derivatives_count; i_derivative++)
               {
-                double element_mean_value = this->get_mean_value(e, component, i_derivative);
-                this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_mean_value);
-                this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_mean_value);
+                double element_centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
+                this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
+                this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
               }
             }
           }
         }
       }
 
-      double VertexBasedLimiter::get_mean_value(Element* e, int component, int mixed_derivative_index)
+      double VertexBasedLimiter::get_centroid_value_multiplied(Element* e, int component, int mixed_derivative_index)
       {
         if(mixed_derivative_index > 5)
         {
-          throw Exceptions::MethodNotImplementedException("VertexBasedLimiter::get_mean_value only works for first and second derivatives.");
+          throw Exceptions::MethodNotImplementedException("VertexBasedLimiter::get_centroid_value_multiplied only works for first and second derivatives.");
           return 0.;
         }
 
-        // Special treatment of the function value.
-        if(mixed_derivative_index == 0)
-        {
-          AsmList<double> al;
-          this->spaces[component]->get_element_assembly_list(e, &al);
-          for(int i = 0; i < al.cnt; i++)
-          {
-            int order = spaces[component]->get_shapeset()->get_order(al.idx[i], e->get_mode());
-            if(H2D_GET_H_ORDER(order) == 0 && e->is_triangle())
-              return this->solution_vector[al.dof[i]];
-            if(H2D_GET_H_ORDER(order) == 0 && H2D_GET_V_ORDER(order) == 0 && e->is_quad())
-              return this->solution_vector[al.dof[i]];
-          }
-        }
+        Solution<double>* sln = dynamic_cast<Solution<double>*>(this->limited_solutions[component].get());
+        double result;
+        if(e->get_mode() == HERMES_MODE_TRIANGLE)
+          result = sln->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, mixed_derivative_index);
         else
+          result = sln->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, mixed_derivative_index);
+
+        switch(mixed_derivative_index)
         {
-          Solution<double>* sln = dynamic_cast<Solution<double>*>(this->limited_solutions[component].get());
-          sln->set_active_element(e);
-          if(e->get_mode() == HERMES_MODE_TRIANGLE)
-            return sln->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, mixed_derivative_index);
-          else
-            return sln->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, mixed_derivative_index);
+        case 1:
+            result *= ELEMENT_DELTA_X;
+          break;
+        case 2:
+            result *= ELEMENT_DELTA_Y;
+          break;
+        case 3:
+            result *= ELEMENT_DELTA_X;
+            result *= ELEMENT_DELTA_X;
+          break;
+        case 4:
+            result *= ELEMENT_DELTA_Y;
+            result *= ELEMENT_DELTA_Y;
+          break;
+        case 5:
+            result *= ELEMENT_DELTA_Y;
+            result *= ELEMENT_DELTA_X;
+          break;
         }
       }
 
@@ -316,7 +321,7 @@ namespace Hermes
               delete [] this->vertex_min_values[i][j];
               delete [] this->vertex_max_values[i][j];
             }
-            
+
             delete [] this->vertex_min_values[i];
             delete [] this->vertex_max_values[i];
           }
