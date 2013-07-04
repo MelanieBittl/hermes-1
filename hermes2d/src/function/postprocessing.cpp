@@ -124,7 +124,7 @@ namespace Hermes
 
           for_all_active_elements(e, mesh)
           {
-            if(this->impose_quadratic_correction_factor(e, component))
+            if(this->impose_quadratic_correction_factor(e, component) || H2D_GET_H_ORDER(this->spaces[component]->get_element_order(e->id)) < 2 || H2D_GET_H_ORDER(this->spaces[component]->get_element_order(e->id)) < 2)
               this->impose_linear_correction_factor(e, component);
           }
         }
@@ -290,7 +290,7 @@ namespace Hermes
 
           for(int j = 0; j < this->spaces[i]->get_mesh()->get_max_node_id(); j++)
           {
-            this->vertex_min_values[i][j] = new double[this->spaces[i]->get_mesh()->get_max_node_id()];
+            this->vertex_min_values[i][j] = new double[this->mixed_derivatives_count];
             for(int k = 0; k < this->mixed_derivatives_count; k++)
               this->vertex_min_values[i][j][k] = std::numeric_limits<double>::infinity();
           }
@@ -303,7 +303,7 @@ namespace Hermes
 
           for(int j = 0; j < this->spaces[i]->get_mesh()->get_max_node_id(); j++)
           {
-            this->vertex_max_values[i][j] = new double[this->spaces[i]->get_mesh()->get_max_node_id()];
+            this->vertex_max_values[i][j] = new double[this->mixed_derivatives_count];
             for(int k = 0; k < this->mixed_derivatives_count; k++)
               this->vertex_max_values[i][j][k] = -std::numeric_limits<double>::infinity();
           }
