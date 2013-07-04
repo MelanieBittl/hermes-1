@@ -28,10 +28,6 @@ int main(int argc, char* argv[])
 
   // Standard L2 space.
   SpaceSharedPtr<double> space(new L2Space<double>(mesh, polynomialDegree, new L2ShapesetTaylor));
-  // Visualization.
-  // BaseView<double> space_view("Space browser", new WinGeom(10, 10, 500, 500));
-  // space_view.show(space, HERMES_EPS_HIGH);
-  // View::wait_for_keypress();
 
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>initial_condition(new CustomInitialCondition(mesh));
