@@ -1490,6 +1490,8 @@ namespace Hermes
       if(this->sln_type != HERMES_SLN)
         throw Exceptions::Exception("Solution::get_ref_value_transformed only works for solutions wrt. FE space, project if you want to use the method for exact solutions.");
 
+      set_active_element(e);
+
       if(this->num_components == 1)
       {
         if(b == 0)
