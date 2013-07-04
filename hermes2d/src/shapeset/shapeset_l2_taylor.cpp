@@ -26,9 +26,6 @@ namespace Hermes
 #define minus_triangle_x_c 0.3333333333333333333333333
 #define minus_triangle_y_c 0.3333333333333333333333333
 
-#define element_delta_x 2.0
-#define element_delta_y 2.0
-
 #pragma region taylor_0
     static double taylor_fn_0(double x, double y)
     {
@@ -64,17 +61,17 @@ namespace Hermes
 #pragma region taylor_1
     static double taylor_fn_1_tri(double x, double y)
     {
-      return (x + minus_triangle_x_c) / element_delta_x;
+      return (x + minus_triangle_x_c) / ELEMENT_DELTA_X;
     }
 
     static double taylor_fn_1_quad(double x, double y)
     {
-      return x / element_delta_x;
+      return x / ELEMENT_DELTA_X;
     }
 
     static double taylor_dx_1(double x, double y)
     {
-      return 1. / element_delta_x;
+      return 1. / ELEMENT_DELTA_X;
     }
 
     static double taylor_dy_1(double x, double y)
@@ -101,12 +98,12 @@ namespace Hermes
 #pragma region taylor_2
     static double taylor_fn_2_tri(double x, double y)
     {
-      return (y + minus_triangle_y_c) / element_delta_y;
+      return (y + minus_triangle_y_c) / ELEMENT_DELTA_Y;
     }
 
     static double taylor_fn_2_quad(double x, double y)
     {
-      return y / element_delta_y;
+      return y / ELEMENT_DELTA_Y;
     }
 
     static double taylor_dx_2(double x, double y)
@@ -116,7 +113,7 @@ namespace Hermes
 
     static double taylor_dy_2(double x, double y)
     {
-      return 1. / element_delta_y;
+      return 1. / ELEMENT_DELTA_Y;
     }
 
     static double taylor_dxx_2(double x, double y)
@@ -140,23 +137,23 @@ namespace Hermes
     {
       // Mean value: 0.5 * 0.125 * Integrate[(x+c)*(x+c), {y, -1, 1}, {x, -1, -y}] = 2/3 (1 - 2c + 3c^2)
       // = 0.25 / 9.
-      return ((x + minus_triangle_x_c) * (x + minus_triangle_x_c) / (2. * element_delta_x * element_delta_x)) - (0.25 / 9.);
+      return ((x + minus_triangle_x_c) * (x + minus_triangle_x_c) / (2. * ELEMENT_DELTA_X * ELEMENT_DELTA_X)) - (0.25 / 9.);
     }
 
     static double taylor_fn_3_quad(double x, double y)
     {
       // (1/24) is the mean value.
-      return (x * x / (2. * element_delta_x * element_delta_x)) - (1. / 24.);
+      return (x * x / (2. * ELEMENT_DELTA_X * ELEMENT_DELTA_X)) - (1. / 24.);
     }
 
     static double taylor_dx_3_tri(double x, double y)
     {
-      return ((2. * x) + (2. * minus_triangle_x_c)) / (2. * element_delta_x * element_delta_x);
+      return ((2. * x) + (2. * minus_triangle_x_c)) / (2. * ELEMENT_DELTA_X * ELEMENT_DELTA_X);
     }
 
     static double taylor_dx_3_quad(double x, double y)
     {
-      return (2. * x) / (2. * element_delta_x * element_delta_x);
+      return (2. * x) / (2. * ELEMENT_DELTA_X * ELEMENT_DELTA_X);
     }
 
     static double taylor_dy_3(double x, double y)
@@ -185,13 +182,13 @@ namespace Hermes
     {
       // Mean value: 0.5 * 0.125 * Integrate[(x+c)*(x+c), {y, -1, 1}, {x, -1, -y}] = 2/3 (1 - 2c + 3c^2)
       // = 0.25 / 9.
-      return ((y + minus_triangle_y_c) * (y + minus_triangle_y_c) / (2. * element_delta_y * element_delta_y)) - (0.25 / 9.);
+      return ((y + minus_triangle_y_c) * (y + minus_triangle_y_c) / (2. * ELEMENT_DELTA_Y * ELEMENT_DELTA_Y)) - (0.25 / 9.);
     }
 
     static double taylor_fn_4_quad(double x, double y)
     {
       // (1/24) is the mean value.
-      return (y * y / (2. * element_delta_y * element_delta_y)) - (1. / 24.);
+      return (y * y / (2. * ELEMENT_DELTA_Y * ELEMENT_DELTA_Y)) - (1. / 24.);
     }
 
     static double taylor_dx_4(double x, double y)
@@ -201,12 +198,12 @@ namespace Hermes
     
     static double taylor_dy_4_tri(double x, double y)
     {
-      return ((2. * y) + (2. * minus_triangle_y_c)) / (2. * element_delta_y * element_delta_y);
+      return ((2. * y) + (2. * minus_triangle_y_c)) / (2. * ELEMENT_DELTA_Y * ELEMENT_DELTA_Y);
     }
 
     static double taylor_dy_4_quad(double x, double y)
     {
-      return (2. * y) / (2. * element_delta_y * element_delta_y);
+      return (2. * y) / (2. * ELEMENT_DELTA_Y * ELEMENT_DELTA_Y);
     }
 
     static double taylor_dxx_4(double x, double y)
@@ -230,33 +227,33 @@ namespace Hermes
     {
       // Mean value: 0.5 * 0.125 * Integrate[(x+c)*(y+c), {y, -1, 1}, {x, -1, -y}] = 2/3 (c * (-2 + 3c))
       // = - 0.125 / 9.
-      return ((x + minus_triangle_x_c) * (y + minus_triangle_y_c) / (2. * element_delta_x * element_delta_y)) + (0.125 / 9.);
+      return ((x + minus_triangle_x_c) * (y + minus_triangle_y_c) / (2. * ELEMENT_DELTA_X * ELEMENT_DELTA_Y)) + (0.125 / 9.);
     }
 
     static double taylor_fn_5_quad(double x, double y)
     {
       // (0.) is the mean value.
-      return (x * y / (2. * element_delta_x * element_delta_y));
+      return (x * y / (2. * ELEMENT_DELTA_X * ELEMENT_DELTA_Y));
     }
 
     static double taylor_dx_5_tri(double x, double y)
     {
-      return (y + minus_triangle_y_c) / (2 * element_delta_x * element_delta_y);
+      return (y + minus_triangle_y_c) / (2 * ELEMENT_DELTA_X * ELEMENT_DELTA_Y);
     }
 
     static double taylor_dx_5_quad(double x, double y)
     {
-      return y / (2 * element_delta_x * element_delta_y);
+      return y / (2 * ELEMENT_DELTA_X * ELEMENT_DELTA_Y);
     }
     
     static double taylor_dy_5_tri(double x, double y)
     {
-      return (x + minus_triangle_x_c) / (2 * element_delta_x * element_delta_y);
+      return (x + minus_triangle_x_c) / (2 * ELEMENT_DELTA_X * ELEMENT_DELTA_Y);
     }
 
     static double taylor_dy_5_quad(double x, double y)
     {
-      return x / (2 * element_delta_x * element_delta_y);
+      return x / (2 * ELEMENT_DELTA_X * ELEMENT_DELTA_Y);
     }
 
     static double taylor_dxx_5(double x, double y)
@@ -266,7 +263,7 @@ namespace Hermes
 
     static double taylor_dxy_5(double x, double y)
     {
-      return 1. / (2 * element_delta_x * element_delta_y);
+      return 1. / (2 * ELEMENT_DELTA_X * ELEMENT_DELTA_Y);
     }
 
     static double taylor_dyy_5(double x, double y)
