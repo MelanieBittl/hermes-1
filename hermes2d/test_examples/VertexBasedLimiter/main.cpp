@@ -1,10 +1,10 @@
 #include "definitions.h"
 
-const int polynomialDegree = 2;
+const int polynomialDegree = 1;
 const int initialRefinementsCount = 5;
 const double time_step_length = 0.01;
 const double time_interval_length = 1.;
-const double logPercentTimeSteps = 1.;
+const double logPercentTimeSteps = 0.1;
 int logPeriod = (int)std::max<double>(1., ((logPercentTimeSteps / 100.) * (time_interval_length / time_step_length)));
 
 Hermes::Mixins::Loggable logger(true);
