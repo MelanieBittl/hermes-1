@@ -15,7 +15,6 @@
 
 #include "mesh_function.h"
 #include "../views/linearizer_base.h"
-#include <limits>
 
 #ifdef _WINDOWS
 template<typename Scalar>

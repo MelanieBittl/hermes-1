@@ -16,7 +16,6 @@
 #include "mesh.h"
 #include "mesh_reader_h1d_xml.h"
 #include <iostream>
-#include <limits>
 
 using namespace std;
 

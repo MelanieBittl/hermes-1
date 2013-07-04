@@ -1,7 +1,6 @@
 #include "postprocessing.h"
 #include "../space/space.h"
 #include "../function/solution.h"
-#include <limits>
 
 namespace Hermes
 {
@@ -208,7 +207,7 @@ namespace Hermes
             std::cout << "\tvalue: " << vertex_value;
 
           double fraction;
-          if(std::abs(vertex_value - centroid_value_multiplied) < 1e-6)
+          if(std::abs(vertex_value - centroid_value_multiplied) < Hermes::Epsilon)
           {
             fraction = 1.;
             if(this->get_verbose_output())
@@ -281,7 +280,7 @@ namespace Hermes
               std::cout << "\tvalue: " << vertex_value;
 
             double fraction;
-            if(std::abs(vertex_value - centroid_value_multiplied) < 1e-6)
+            if(std::abs(vertex_value - centroid_value_multiplied) < Hermes::Epsilon)
             {
               if(this->get_verbose_output())
                 std::cout << "\tcenter_value";
