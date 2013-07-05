@@ -50,13 +50,15 @@ int main(int argc, char* argv[])
 
   // Solver.
   LinearSolver<double> solver(&weakform, space);
+  if(timeSteppingType == Explicit)
+    solver.set_jacobian_constant();
 
   // Solution.
   MeshFunctionSharedPtr<double> solution(new Solution<double>);
 
   double current_time = 0.;
   int number_of_steps = (time_interval_length - current_time) / time_step_length;
-  for(int time_step = 0; time_step <= 30; time_step++)
+	for(int time_step = 0; time_step <= number_of_steps; time_step++)
   { 
     if((!(time_step % logPeriod)) || (time_step == number_of_steps))
     {
