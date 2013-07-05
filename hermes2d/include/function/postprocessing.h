@@ -36,6 +36,7 @@ namespace Hermes
       public:
         Limiter(SpaceSharedPtr<Scalar> space, Scalar* solution_vector);
         Limiter(Hermes::vector<SpaceSharedPtr<Scalar> > spaces, Scalar* solution_vector);
+        ~Limiter();
 
         MeshFunctionSharedPtr<Scalar> get_solution();
         Hermes::vector<MeshFunctionSharedPtr<Scalar> > get_solutions();

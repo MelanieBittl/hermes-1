@@ -40,6 +40,13 @@ namespace Hermes
       }
 
       template<typename Scalar>
+      Limiter<Scalar>::~Limiter()
+      {
+        if(this->solution_vector)
+          delete [] this->solution_vector;
+      }
+
+      template<typename Scalar>
       MeshFunctionSharedPtr<Scalar> Limiter<Scalar>::get_solution()
       {
         // A check.
@@ -357,7 +364,6 @@ namespace Hermes
             for(int i_vertex = 0; i_vertex < e->get_nvert(); i_vertex++)
             {
               Node* vertex = e->vn[i_vertex];
-              double* element_centroid_value_multiplied = new double[this->mixed_derivatives_count];
               for(int i_derivative = (quadratic ? 1 : 0) ; i_derivative < (quadratic ? this->mixed_derivatives_count : 1); i_derivative++)
               {
                 double element_centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);

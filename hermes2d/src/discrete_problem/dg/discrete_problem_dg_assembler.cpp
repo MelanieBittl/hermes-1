@@ -142,6 +142,8 @@ namespace Hermes
 
               assemble_one_neighbor(processed[current_state->isurf][neighbor_i], neighbor_i, neighbor_searches[current_state->isurf]);
             }
+
+            deinit_neighbors(neighbor_searches[current_state->isurf], current_state);
           }
           else
             processed[current_state->isurf] = NULL;
@@ -479,6 +481,26 @@ namespace Hermes
       return DG_intra;
     }
 
+    template<typename Scalar>
+    bool DiscreteProblemDGAssembler<Scalar>::deinit_neighbors(NeighborSearch<Scalar>** current_neighbor_searches, Traverse::State* current_state)
+    {
+      // Initialize the NeighborSearches.
+      bool DG_intra = false;
+      for(unsigned int i = 0; i < current_state->num; i++)
+      {
+        bool existing_ns = false;
+        for(int j = i - 1; j >= 0; j--)
+          if(current_state->e[i] == current_state->e[j])
+          {
+            existing_ns = true;
+            break;
+          }
+        if(!existing_ns)
+          delete current_neighbor_searches[i];
+      }
+
+      return DG_intra;
+    }
 
 
 #ifdef DEBUG_DG_ASSEMBLING
