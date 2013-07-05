@@ -1,18 +1,46 @@
 #include "definitions.h"
 
-CustomWeakForm::CustomWeakForm(bool implicit) : WeakForm<double>(1) 
+
+static double advection_term_cube(double x, double y, double vx, double vy)
 {
+  return vx + vy;
+}
+
+static double advection_term_solid_body_rotation(double x, double y, double vx, double vy)
+{
+  return vx * (0.5 - y) + vy * (x - 0.5);
+}
+
+
+CustomWeakForm::CustomWeakForm(SolvedExample solvedExample, TimeSteppingType TimeSteppingType) : WeakForm<double>(1) 
+{
+  scalar_product_with_advection_direction advection_term;
+  if(solvedExample == AdvectedCube)
+    advection_term = advection_term_cube;
+  else if(solvedExample == SolidBodyRotation)
+    advection_term = advection_term_solid_body_rotation;
+
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
-if(implicit)
-{
-  add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
-  add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
-}
-else
-{
-  add_vector_form(new CustomVectorFormVolConvection(0));
-  add_vector_form_DG(new CustomVectorFormInterface(0));
-}
+  if(TimeSteppingType = Implicit)
+  {
+    CustomMatrixFormVolConvection* mf_vol = new CustomMatrixFormVolConvection(0, 0);
+    mf_vol->advection_term = advection_term;
+    add_matrix_form(mf_vol);
+
+    CustomMatrixFormInterface* mf_interface = new CustomMatrixFormInterface(0, 0);
+    mf_interface->advection_term = advection_term;
+    add_matrix_form_DG(mf_interface);
+  }
+  else
+  {
+    CustomVectorFormVolConvection* vf_vol = new CustomVectorFormVolConvection(0);
+    vf_vol->advection_term = advection_term;
+    add_vector_form(vf_vol);
+
+    CustomVectorFormInterface* vf_interface = new CustomVectorFormInterface(0);
+    vf_interface->advection_term = advection_term;
+    add_vector_form_DG(vf_interface);
+  }
   add_vector_form(new CustomVectorFormVol(0));
 }
 
@@ -25,7 +53,7 @@ double CustomWeakForm::CustomMatrixFormVolConvection::value(int n, double *wt, F
 {
   double result = 0.;
   for (int i = 0; i < n; i++)
-    result += wt[i] * u->val[i] * (v->dx[i] + v->dy[i]);
+    result += wt[i] * u->val[i] * this->advection_term(e->x[i], e->y[i], v->dx[i], v->dy[i]);
   return -result * wf->get_current_time_step();
 }
 
@@ -48,7 +76,7 @@ double CustomWeakForm::CustomVectorFormVolConvection::value(int n, double *wt, F
 {
   double result = 0.;
   for (int i = 0; i < n; i++)
-    result += wt[i] * ext[0]->val[i] * (v->dx[i] + v->dy[i]);
+    result += wt[i] * ext[0]->val[i] * this->advection_term(e->x[i], e->y[i], v->dx[i], v->dy[i]);
   return result * wf->get_current_time_step();
 }
 
@@ -90,7 +118,7 @@ double CustomWeakForm::CustomMatrixFormInterface::value(int n, double *wt, Disco
   double result = 0.;
   for (int i = 0; i < n; i++) 
   {
-    double a_dot_n = scalar_product_with_advection_direction(e->nx[i], e->ny[i]);
+    double a_dot_n = this->advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
 
     double jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
     if(u->fn_central == NULL)
@@ -112,11 +140,6 @@ MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
   return new CustomWeakForm::CustomMatrixFormInterface(*this);
 }
 
-double CustomWeakForm::CustomMatrixFormInterface::scalar_product_with_advection_direction(double vx, double vy) const
-{
-  return vx + vy;
-}
-
 double CustomWeakForm::CustomMatrixFormInterface::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
 {
   return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
@@ -134,7 +157,7 @@ double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, Disco
   double result = 0.;
   for (int i = 0; i < n; i++) 
   {
-    double a_dot_n = scalar_product_with_advection_direction(e->nx[i], e->ny[i]);
+    double a_dot_n = this->advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
 
     double jump_v = -v->val[i];
     result += wt[i] * upwind_flux(ext[0]->val[i], ext[0]->val_neighbor[i], a_dot_n) * jump_v;
@@ -153,11 +176,6 @@ VectorFormDG<double>* CustomWeakForm::CustomVectorFormInterface::clone() const
   return new CustomWeakForm::CustomVectorFormInterface(*this);
 }
 
-double CustomWeakForm::CustomVectorFormInterface::scalar_product_with_advection_direction(double vx, double vy) const
-{
-  return vx + vy;
-}
-
 double CustomWeakForm::CustomVectorFormInterface::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
 {
   return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
@@ -169,17 +187,17 @@ Ord CustomWeakForm::CustomVectorFormInterface::upwind_flux(Ord u_cent, Ord u_nei
 }
 
 
-CustomInitialCondition::CustomInitialCondition(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh)
+InitialConditionAdvectedCube::InitialConditionAdvectedCube(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh)
 {
 }
 
-void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const 
+void InitialConditionAdvectedCube::derivatives(double x, double y, double& dx, double& dy) const 
 {
   dx = 0.;
   dy = 0.;
 }
 
-double CustomInitialCondition::value(double x, double y) const
+double InitialConditionAdvectedCube::value(double x, double y) const
 {
   if(x < 0. && y < 0.0 && x > -1. && y > -1.)
     return 1.0;
@@ -187,14 +205,92 @@ double CustomInitialCondition::value(double x, double y) const
     return 0.0;
 }
 
-Ord CustomInitialCondition::ord(double x, double y) const 
+Ord InitialConditionAdvectedCube::ord(double x, double y) const 
 {
   return Ord(1);
 }
 
-MeshFunction<double>* CustomInitialCondition::clone() const
+MeshFunction<double>* InitialConditionAdvectedCube::clone() const
 {
-  return new CustomInitialCondition(this->mesh);
+  return new InitialConditionAdvectedCube(this->mesh);
 
 }
 
+
+void InitialConditionSolidBodyRotation::derivatives(double x, double y, double& dx, double& dy) const 
+{
+
+  double radius = 0.;
+  //hump
+  double x_0 =0.25;
+  double y_0= 0.5;	
+  radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
+  if( radius<= 1.0) 
+  {		
+    dx = -std::sin(radius*M_PI)/4.0*(M_PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
+    dy = -std::sin(radius*M_PI)/4.0*(M_PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
+  }
+  else
+  {			
+    //cone
+    x_0 = 0.5;
+    y_0 = 0.25;
+    radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
+    if((radius< 1.0)&&(x!=x_0)) 
+    { 	
+      dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
+      dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
+    }
+    else
+    {
+      dx=0.; dy=0.;
+    }	
+
+  }
+
+
+};
+
+double InitialConditionSolidBodyRotation::value(double x, double y) const 
+{
+
+  double result = 0.0;
+  double radius;
+  //hump
+  double x_0 =0.25;
+  double y_0= 0.5;	
+  radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
+  if( radius<= 1.0) 
+  { 
+    result = (1.0+ std::cos(M_PI*radius))/4.0;
+    return result;	
+  }
+  //slotted cylinder
+  x_0 = 0.5;
+  y_0 = 0.75;
+  radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
+  if(radius <= 1) 
+  { 	
+    if(fabs((x-x_0))>= 0.025) return 1.0;
+    if(y>=0.85) return 1.0;
+  }	
+  //cone
+  x_0 = 0.5;
+  y_0 = 0.25;
+  radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
+  if(radius<= 1.0) 
+  { 	
+    result = 1.0-radius;
+  }	
+  return result;
+};
+
+Ord InitialConditionSolidBodyRotation::ord(double x, double y) const 
+{
+  return Ord(10);
+};
+MeshFunction<double>* InitialConditionSolidBodyRotation::clone() const
+{
+  return new InitialConditionSolidBodyRotation(this->mesh);
+
+}

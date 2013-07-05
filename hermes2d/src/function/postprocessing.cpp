@@ -1,6 +1,7 @@
 #include "postprocessing.h"
 #include "../space/space.h"
 #include "../function/solution.h"
+#include "../views/scalar_view.h"
 
 namespace Hermes
 {
@@ -137,6 +138,13 @@ namespace Hermes
             std::cout << "Component: " << component << std::endl;
           for_all_active_elements(e, mesh)
           {
+            bool second_order = H2D_GET_H_ORDER(this->spaces[component]->get_element_order(e->id)) >= 2 || H2D_GET_V_ORDER(this->spaces[component]->get_element_order(e->id)) >= 2;
+            if(!second_order)
+            {
+              quadratic_correction_done.push_back(false);
+              continue;
+            }
+
             if(this->get_verbose_output())
               std::cout << "Element: " << e->id << std::endl;
 

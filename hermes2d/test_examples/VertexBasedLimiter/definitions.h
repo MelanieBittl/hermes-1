@@ -5,10 +5,24 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Hermes2D::WeakFormsH1;
 
+enum TimeSteppingType
+{
+  Explicit,
+  Implicit
+};
+
+enum SolvedExample
+{
+  AdvectedCube,
+  SolidBodyRotation
+};
+
 class CustomWeakForm  : public WeakForm<double>     
 {
 public:
-  CustomWeakForm(bool implicit = false);
+  CustomWeakForm(SolvedExample solvedExample, TimeSteppingType timeSteppingType = Explicit);
+
+  typedef double (*scalar_product_with_advection_direction)(double x, double y, double vx, double vy);
 
   class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
   {
@@ -20,6 +34,8 @@ public:
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord>  **ext) const;  
 
     MatrixFormVol<double>* clone() const;
+
+    CustomWeakForm::scalar_product_with_advection_direction advection_term;
   };
 
   class CustomVectorFormVolConvection : public VectorFormVol<double>   
@@ -32,6 +48,7 @@ public:
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>  **ext) const;  
 
     VectorFormVol<double>* clone() const;
+    CustomWeakForm::scalar_product_with_advection_direction advection_term;
   };
 
   class CustomVectorFormVol : public VectorFormVol<double>   
@@ -63,7 +80,7 @@ public:
 
     Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
 
-    double scalar_product_with_advection_direction(double vx, double vy) const;
+    CustomWeakForm::scalar_product_with_advection_direction advection_term;
   };
 
   class CustomVectorFormInterface : public VectorFormDG<double>
@@ -83,14 +100,14 @@ public:
 
     Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
 
-    double scalar_product_with_advection_direction(double vx, double vy) const;
+    CustomWeakForm::scalar_product_with_advection_direction advection_term;
   };
 };
 
-class CustomInitialCondition : public ExactSolutionScalar<double>
+class InitialConditionAdvectedCube : public ExactSolutionScalar<double>
 {
 public:
-  CustomInitialCondition(MeshSharedPtr mesh);
+  InitialConditionAdvectedCube(MeshSharedPtr mesh);
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const;
 
@@ -99,6 +116,21 @@ public:
   virtual Ord ord(double x, double y) const ;
 
   MeshFunction<double>* clone() const;
+};
+
+class InitialConditionSolidBodyRotation : public ExactSolutionScalar<double>
+{
+public:
+  InitialConditionSolidBodyRotation(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh) {};
+
+
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+  virtual Ord ord(double x, double y) const ;
+
+   MeshFunction<double>* clone() const;
 };
 
 int test();
