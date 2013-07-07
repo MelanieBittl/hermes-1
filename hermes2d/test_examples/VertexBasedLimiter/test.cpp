@@ -362,57 +362,6 @@ void test_vertex_extrema_calculation(bool& success)
   solution_view_quad.show(solution_quad, HERMES_EPS_NORMAL, H2D_FN_DX_0);
   View::wait_for_keypress();
 #endif
-
-  /*
-  // Calculate min/max vertex values.
-  Element* e;
-  double* vertex_min_values = new double[mesh->get_max_node_id()];
-  double* vertex_max_values = new double[mesh->get_max_node_id()];
-  for(int k = 0; k < mesh->get_max_node_id(); k++)
-  {
-    vertex_min_values[k] = std::numeric_limits<double>::infinity();
-    vertex_max_values[k] = -std::numeric_limits<double>::infinity();
-  }
-  for_all_active_elements(e, mesh)
-  {
-    for(int i_vertex = 0; i_vertex < e->get_nvert(); i_vertex++)
-    {
-      Node* vertex = e->vn[i_vertex];
-      double* element_centroid_value_multiplied = new double[this->mixed_derivatives_count];
-      for(int i_derivative = 0; i_derivative < this->mixed_derivatives_count; i_derivative++)
-      {
-        double element_centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
-        this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
-        this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
-      }
-    }
-  }
-
-  Element* e;
-  for_all_active_elements(e, mesh)
-  {
-    for(int i_vertex = 0; i_vertex < e->get_nvert(); i_vertex++)
-    {
-      Node* vertex = e->vn[i_vertex];
-      double x, y;
-      RefMap::untransform(e, vertex->x, vertex->y, x, y);
-
-      double vertex_value = 0.;
-      projected_sln->get_pt_value(vertex->x, vertex->y, false, e);
-
-      double fraction;
-      if(vertex_value > centroid_value_multiplied)
-        fraction = std::min(1., (this->vertex_max_values[component][vertex->id][i_derivative] - centroid_value_multiplied) / (vertex_value - centroid_value_multiplied));
-      else
-        if(vertex_value == centroid_value_multiplied)
-          fraction = 1.;
-        else
-          fraction = std::min(1., (this->vertex_min_values[component][vertex->id][i_derivative] - centroid_value_multiplied) / (vertex_value - centroid_value_multiplied));
-
-      correction_factor = std::min(correction_factor, fraction);
-    }
-  }
-  */
 }
 
 int test()

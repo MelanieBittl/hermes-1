@@ -66,6 +66,7 @@ namespace Hermes
         VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int maximum_polynomial_order);
         ~VertexBasedLimiter();
         Hermes::vector<std::pair<int, double> > get_correction_factors() const;
+        void print_detailed_info(bool print_details = true);
 
       private:
 
@@ -91,6 +92,7 @@ namespace Hermes
 
         int mixed_derivatives_count;
         Hermes::vector<std::pair<int, double> > correction_factors;
+        bool print_details;
       };
     }
   }

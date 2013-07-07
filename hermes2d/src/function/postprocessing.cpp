@@ -105,12 +105,21 @@ namespace Hermes
         vertex_min_values = NULL;
         vertex_max_values = NULL;
 
+        // This is what is the key aspect of the necessity to use L2ShapesetTaylor (or any other one that uses P_{} also for quads).
         this->mixed_derivatives_count = (maximum_polynomial_order)*(maximum_polynomial_order + 1) / 2;
+
+        this->print_details = false;
+
       }
 
       VertexBasedLimiter::~VertexBasedLimiter()
       {
         deallocate_vertex_values();
+      }
+
+      void VertexBasedLimiter::print_detailed_info(bool print_details_)
+      {
+        this->print_details = print_details_;
       }
 
       Hermes::vector<std::pair<int, double> > VertexBasedLimiter::get_correction_factors() const
@@ -120,7 +129,8 @@ namespace Hermes
 
       void VertexBasedLimiter::process()
       {
-        // Start by creating temporary solutions.  
+        // 0. Preparation.
+        // Start by creating temporary solutions and states for paralelism.
         for(int component = 0; component < this->component_count; component++)
           this->limited_solutions.push_back(MeshFunctionSharedPtr<double>(new Solution<double>(this->spaces[component]->get_mesh())));
         Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
@@ -392,26 +402,26 @@ namespace Hermes
 
         // No multiplication.
         /*
-         switch(mixed_derivative_index)
+        switch(mixed_derivative_index)
         {
         case 1:
-          result *= ELEMENT_DELTA_X;
-          break;
+        result *= ELEMENT_DELTA_X;
+        break;
         case 2:
-          result *= ELEMENT_DELTA_Y;
-          break;
+        result *= ELEMENT_DELTA_Y;
+        break;
         case 3:
-          result *= ELEMENT_DELTA_X;
-          result *= ELEMENT_DELTA_X;
-          break;
+        result *= ELEMENT_DELTA_X;
+        result *= ELEMENT_DELTA_X;
+        break;
         case 4:
-          result *= ELEMENT_DELTA_Y;
-          result *= ELEMENT_DELTA_Y;
-          break;
+        result *= ELEMENT_DELTA_Y;
+        result *= ELEMENT_DELTA_Y;
+        break;
         case 5:
-          result *= ELEMENT_DELTA_Y;
-          result *= ELEMENT_DELTA_X;
-          break;
+        result *= ELEMENT_DELTA_Y;
+        result *= ELEMENT_DELTA_X;
+        break;
         }
         */
         return result;

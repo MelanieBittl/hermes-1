@@ -1,12 +1,15 @@
 #include "definitions.h"
 
 const int polynomialDegree = 2;
-const int initialRefinementsCount = 5;
-const double logPercentTimeSteps = 0.1;
+const int initialRefinementsCount = 6;
+const double logPercentTimeSteps = 1.0;
 const TimeSteppingType timeSteppingType = Explicit;
 const SolvedExample solvedExample = SolidBodyRotation;
 
-const double time_step_length = timeSteppingType == Explicit ? 0.005 : 0.01;
+bool HermesView = false;
+bool VTKView = true;
+
+const double time_step_length = timeSteppingType == Explicit ? 0.0001 : 0.01;
 const double time_interval_length = solvedExample == SolidBodyRotation ? 2 * M_PI : 1.;
 int logPeriod = (int)std::max<double>(1., ((logPercentTimeSteps / 100.) * (time_interval_length / time_step_length)));
 Hermes::Mixins::Loggable logger(true);
@@ -41,7 +44,9 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double>previous_solution(initial_condition);
   // Visualization.
   ScalarView solution_view("Initial condition", new WinGeom(520, 10, 500, 500));
-  solution_view.show(previous_solution);
+  Linearizer lin;
+  if(HermesView)
+    solution_view.show(previous_solution);
 
   // Weak form.
   CustomWeakForm weakform(solvedExample, timeSteppingType);
@@ -70,13 +75,23 @@ int main(int argc, char* argv[])
     //Solution<double>::vector_to_solution(solver.get_sln_vector(), space, solution);
     PostProcessing::VertexBasedLimiter limiter(space, solver.get_sln_vector(), polynomialDegree);
     solution = limiter.get_solution();
-    
+
     if((!(time_step % logPeriod)) || (time_step == number_of_steps))
     {
       solver.set_verbose_output(false);
-      solution_view.set_title("Solution - time step: %i, time: %f.", time_step, current_time);
-      solution_view.show(solution);
-      //View::wait_for_keypress();
+      if(HermesView)
+      {
+        solution_view.set_title("Solution - time step: %i, time: %f.", time_step, current_time);
+        solution_view.show(solution);
+        //View::wait_for_keypress();
+      }
+      if(VTKView)
+      {
+        char* filename = new char[100];
+        sprintf(filename, "Sln-%i.vtk", time_step);
+        lin.save_solution_vtk(solution, filename, "sln");
+        delete [] filename;
+      }
     }
 
     previous_solution->copy(solution);
