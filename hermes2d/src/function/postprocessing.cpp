@@ -52,19 +52,26 @@ namespace Hermes
         // A check.
         warn_if(this->component_count > 1, "One solution asked from a Limiter, but multiple solutions exist for limiting.");
 
-        return this->get_solutions().back();
+        MeshFunctionSharedPtr<Scalar> solution(new Solution<Scalar>());
+        Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions;
+        solutions.push_back(solution);
+        this->get_solutions(solutions);
+        return solutions.back();
       }
 
       template<typename Scalar>
-      Hermes::vector<MeshFunctionSharedPtr<Scalar> > Limiter<Scalar>::get_solutions()
+      void Limiter<Scalar>::get_solutions(Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions)
       {
+        if(solutions.size() != this->component_count)
+          throw Exceptions::Exception("Limiter does not have correct number of spaces, solutions.");
+
+        this->limited_solutions = solutions;
+
         // Processing.
         this->process();
 
         if(this->limited_solutions.empty() || this->limited_solutions.size() != this->component_count)
           throw Exceptions::Exception("Limiter failed for unknown reason.");
-        else
-          return this->limited_solutions;
       }
 
       template<typename Scalar>
@@ -80,6 +87,12 @@ namespace Hermes
 
         return true;
       }
+
+      template<typename Scalar>
+        Scalar* Limiter<Scalar>::get_solution_vector()
+        {
+          return this->solution_vector;
+        }
 
       VertexBasedLimiter::VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order)
         : Limiter<double>(space, solution_vector)
@@ -131,8 +144,6 @@ namespace Hermes
       {
         // 0. Preparation.
         // Start by creating temporary solutions and states for paralelism.
-        for(int component = 0; component < this->component_count; component++)
-          this->limited_solutions.push_back(MeshFunctionSharedPtr<double>(new Solution<double>(this->spaces[component]->get_mesh())));
         Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
 
         // 1. Quadratic

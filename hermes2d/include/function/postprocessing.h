@@ -39,11 +39,13 @@ namespace Hermes
         ~Limiter();
 
         MeshFunctionSharedPtr<Scalar> get_solution();
-        Hermes::vector<MeshFunctionSharedPtr<Scalar> > get_solutions();
+        void get_solutions(Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions);
         Hermes::vector<int> get_changed_element_ids() const;
 
         virtual bool isOkay() const;
         inline std::string getClassName() const { return "Limiter"; }
+
+        Scalar* get_solution_vector();
 
       protected:
         int component_count;
