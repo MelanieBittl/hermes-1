@@ -20,7 +20,7 @@ enum SolvedExample
 class CustomWeakForm  : public WeakForm<double>     
 {
 public:
-  CustomWeakForm(SolvedExample solvedExample, TimeSteppingType timeSteppingType = Explicit);
+  CustomWeakForm(SolvedExample solvedExample, TimeSteppingType timeSteppingType = Explicit, int explicitSchemeStep = 1);
 
   typedef double (*scalar_product_with_advection_direction)(double x, double y, double vx, double vy);
 
@@ -51,16 +51,31 @@ public:
     CustomWeakForm::scalar_product_with_advection_direction advection_term;
   };
 
+  class CustomMatrixFormVol : public MatrixFormVol<double>   
+  {
+  public:
+    CustomMatrixFormVol(int i, int j, double factor);
+
+    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double>  **ext) const;
+
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord>  **ext) const;  
+
+    MatrixFormVol<double>* clone() const;
+    double factor;
+  };
+
   class CustomVectorFormVol : public VectorFormVol<double>   
   {
   public:
-    CustomVectorFormVol(int i);
+    CustomVectorFormVol(int i, int prev, double factor);
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>  **ext) const;
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>  **ext) const;  
 
     VectorFormVol<double>* clone() const;
+    int prev;
+    double factor;
   };
 
   class CustomMatrixFormInterface : public MatrixFormDG<double>

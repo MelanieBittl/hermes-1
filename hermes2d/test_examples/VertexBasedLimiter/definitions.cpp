@@ -12,7 +12,7 @@ static double advection_term_solid_body_rotation(double x, double y, double vx, 
 }
 
 
-CustomWeakForm::CustomWeakForm(SolvedExample solvedExample, TimeSteppingType TimeSteppingType) : WeakForm<double>(1) 
+CustomWeakForm::CustomWeakForm(SolvedExample solvedExample, TimeSteppingType TimeSteppingType, int explicitSchemeStep) : WeakForm<double>(1) 
 {
   scalar_product_with_advection_direction advection_term;
   if(solvedExample == AdvectedCube)
@@ -20,8 +20,7 @@ CustomWeakForm::CustomWeakForm(SolvedExample solvedExample, TimeSteppingType Tim
   else if(solvedExample == SolidBodyRotation)
     advection_term = advection_term_solid_body_rotation;
 
-  add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
-  if(TimeSteppingType = Implicit)
+  if(TimeSteppingType == Implicit)
   {
     CustomMatrixFormVolConvection* mf_vol = new CustomMatrixFormVolConvection(0, 0);
     mf_vol->advection_term = advection_term;
@@ -30,6 +29,9 @@ CustomWeakForm::CustomWeakForm(SolvedExample solvedExample, TimeSteppingType Tim
     CustomMatrixFormInterface* mf_interface = new CustomMatrixFormInterface(0, 0);
     mf_interface->advection_term = advection_term;
     add_matrix_form_DG(mf_interface);
+
+    add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
+    add_vector_form(new CustomVectorFormVol(0, 0, 1.));
   }
   else
   {
@@ -40,8 +42,25 @@ CustomWeakForm::CustomWeakForm(SolvedExample solvedExample, TimeSteppingType Tim
     CustomVectorFormInterface* vf_interface = new CustomVectorFormInterface(0);
     vf_interface->advection_term = advection_term;
     add_vector_form_DG(vf_interface);
+
+    if(explicitSchemeStep == 1)
+    {
+      add_matrix_form(new CustomMatrixFormVol(0, 0, 1.));
+      add_vector_form(new CustomVectorFormVol(0, 0, 1.));
+    }
+    else if (explicitSchemeStep == 2)
+    {
+      add_matrix_form(new CustomMatrixFormVol(0, 0, 1.));
+      add_vector_form(new CustomVectorFormVol(0, 0, .95));
+      add_vector_form(new CustomVectorFormVol(0, 1, .05));
+    }
+    else if (explicitSchemeStep == 3)
+    {
+      add_matrix_form(new CustomMatrixFormVol(0, 0, 1.));
+      add_vector_form(new CustomVectorFormVol(0, 0, 2./3.));
+      add_vector_form(new CustomVectorFormVol(0, 1, 1./3.));
+    }
   }
-  add_vector_form(new CustomVectorFormVol(0));
 }
 
 CustomWeakForm::CustomMatrixFormVolConvection::CustomMatrixFormVolConvection(int i, int j) : MatrixFormVol<double>(i, j)
@@ -90,7 +109,29 @@ VectorFormVol<double>* CustomWeakForm::CustomVectorFormVolConvection::clone() co
   return new CustomVectorFormVolConvection(*this);
 }
 
-CustomWeakForm::CustomVectorFormVol::CustomVectorFormVol(int i) : VectorFormVol<double>(i)
+CustomWeakForm::CustomMatrixFormVol::CustomMatrixFormVol(int i, int j, double factor) : MatrixFormVol<double>(i, j), factor(factor)
+{
+}
+
+double CustomWeakForm::CustomMatrixFormVol::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double>  **ext) const
+{
+  double result = 0.;
+  for (int i = 0; i < n; i++)
+    result += wt[i] * v->val[i] * u->val[i];
+  return result * this->factor;
+}
+
+Ord CustomWeakForm::CustomMatrixFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+{
+  return v->val[0] * u->val[0];
+}
+
+MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVol::clone() const
+{
+  return new CustomWeakForm::CustomMatrixFormVol(*this);
+}
+
+CustomWeakForm::CustomVectorFormVol::CustomVectorFormVol(int i, int prev, double factor) : VectorFormVol<double>(i), prev(prev), factor(factor)
 {
 }
 
@@ -98,13 +139,13 @@ double CustomWeakForm::CustomVectorFormVol::value(int n, double *wt, Func<double
 {
   double result = 0.;
   for (int i = 0; i < n; i++)
-    result += wt[i] * v->val[i] * ext[0]->val[i];
-  return result;
+    result += wt[i] * v->val[i] * ext[this->prev]->val[i];
+  return result * this->factor;
 }
 
 Ord CustomWeakForm::CustomVectorFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
 {
-  return v->val[0] * ext[0]->val[0];
+  return v->val[0] * ext[this->prev]->val[0];
 }
 
 VectorFormVol<double>* CustomWeakForm::CustomVectorFormVol::clone() const
