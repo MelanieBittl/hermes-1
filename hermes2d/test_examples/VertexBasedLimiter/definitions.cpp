@@ -286,10 +286,7 @@ void InitialConditionSolidBodyRotation::derivatives(double x, double y, double& 
     {
       dx=0.; dy=0.;
     }	
-
   }
-
-
 };
 
 double InitialConditionSolidBodyRotation::value(double x, double y) const 
@@ -333,5 +330,4 @@ Ord InitialConditionSolidBodyRotation::ord(double x, double y) const
 MeshFunction<double>* InitialConditionSolidBodyRotation::clone() const
 {
   return new InitialConditionSolidBodyRotation(this->mesh);
-
 }
