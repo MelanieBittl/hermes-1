@@ -50,15 +50,15 @@ CustomWeakForm::CustomWeakForm(SolvedExample solvedExample, TimeSteppingType Tim
     }
     else if (explicitSchemeStep == 2)
     {
-      add_matrix_form(new CustomMatrixFormVol(0, 0, 1.));
-      add_vector_form(new CustomVectorFormVol(0, 0, .95));
-      add_vector_form(new CustomVectorFormVol(0, 1, .05));
+      add_matrix_form(new CustomMatrixFormVol(0, 0, 4.));
+      add_vector_form(new CustomVectorFormVol(0, 0, 1.));
+      add_vector_form(new CustomVectorFormVol(0, 1, 3.));
     }
     else if (explicitSchemeStep == 3)
     {
-      add_matrix_form(new CustomMatrixFormVol(0, 0, 1.));
-      add_vector_form(new CustomVectorFormVol(0, 0, 2./3.));
-      add_vector_form(new CustomVectorFormVol(0, 1, 1./3.));
+      add_matrix_form(new CustomMatrixFormVol(0, 0, 3.));
+      add_vector_form(new CustomVectorFormVol(0, 0, 2.));
+      add_vector_form(new CustomVectorFormVol(0, 1, 1.));
     }
   }
 }

@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
     solver_2.set_jacobian_constant();
     solver_3.set_jacobian_constant();
   }
+      Hermes::Mixins::Loggable::set_static_logFile_name("logfile.h2d");
 
   // Solution.
   MeshFunctionSharedPtr<double> solution(new Solution<double>);
