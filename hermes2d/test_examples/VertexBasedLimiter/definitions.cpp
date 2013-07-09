@@ -79,7 +79,7 @@ double CustomWeakForm::CustomMatrixFormVolConvection::value(int n, double *wt, F
 Ord CustomWeakForm::CustomMatrixFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
                                                        Geom<Ord> *e, Func<Ord> **ext) const 
 {
-  return v->val[0] * (u->dx[0] + u->dy[0]);
+  return u->val[0] * v->dx[0];
 }
 
 MatrixFormVol<double>* CustomWeakForm::CustomMatrixFormVolConvection::clone() const
@@ -101,7 +101,7 @@ double CustomWeakForm::CustomVectorFormVolConvection::value(int n, double *wt, F
 
 Ord CustomWeakForm::CustomVectorFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const 
 {
-  return v->val[0] * v->val[0] * (ext[0]->dx[0] + ext[0]->dy[0]);
+  return ext[0]->val[0] * v->dx[0];
 }
 
 VectorFormVol<double>* CustomWeakForm::CustomVectorFormVolConvection::clone() const
@@ -209,7 +209,7 @@ double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, Disco
 Ord CustomWeakForm::CustomVectorFormInterface::ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, Func<Ord> *v,
                                                    Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const
 {
-  return ext[0]->val[0] * ext[0]->val_neighbor[0] * v->val[0] * v->val[0];
+  return ext[0]->val[0] * v->val[0];
 }
 
 VectorFormDG<double>* CustomWeakForm::CustomVectorFormInterface::clone() const
