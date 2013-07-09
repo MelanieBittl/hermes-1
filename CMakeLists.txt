@@ -49,7 +49,7 @@ project(hermes)
   set(WITH_TC_MALLOC YES)
 
   # Installation path:
-    set(TARGET_ROOT             /usr/local) #default installation path for the library will be /usr/local/lib,
+  set(TARGET_ROOT             /usr/local) #default installation path for the library will be /usr/local/lib,
                                             #for include files /usr/local/include
   #### Solvers ###
   # Standard UMFPACK
@@ -316,14 +316,17 @@ project(hermes)
     endif(WITH_PARALUTION)
     
     if(MSVC)
-      if(WITH_PETSC OR WITH_MUMPS OR WITH_TRILINOS OR WITH_SUPERLU)
+      if(WITH_PETSC OR WITH_TRILINOS OR WITH_SUPERLU)
           # The search for CLAPACK and associated libraries will be performed
           # every time the project is configured in MSVC (TODO: Find out if
           # CLAPACK_LIBRARY, BLAS_LIBRARY, F2C_LIBRARY and CLAPACK_INCLUDE_DIRS
           # could be cached to improve subsequent configuration performance).
           find_package(CLAPACK REQUIRED)
           include_directories(${CLAPACK_INCLUDE_DIRS})
-      endif(WITH_PETSC OR WITH_MUMPS OR WITH_TRILINOS OR WITH_SUPERLU)
+      endif(WITH_PETSC OR WITH_TRILINOS OR WITH_SUPERLU)
+      if(WITH_MUMPS)
+        find_package(WINBLAS REQUIRED)
+      endif(WITH_MUMPS)
     else(MSVC)
       # All third party solvers require BLAS and LAPACK (both found in the package LAPACK).
       # FindLAPACK is Fortran-only so Fortran must be enabled as well.
@@ -343,7 +346,6 @@ project(hermes)
         add_definitions(-DWITH_BLAS)  
       endif(WITH_UMFPACK OR WITH_PETSC OR WITH_MUMPS OR WITH_TRILINOS OR WITH_SUPERLU)
     endif(MSVC)
-
     
     if(WITH_PETSC)
       find_package(PETSC REQUIRED)
@@ -408,7 +410,6 @@ project(hermes)
       endif(NOT MPI_LIBRARIES OR NOT MPI_INCLUDE_PATH)
       include_directories(${MPI_INCLUDE_PATH})
     endif(WITH_MPI)
-    
     
     IF(WITH_STACKTRACE)
       IF(MSVC)
