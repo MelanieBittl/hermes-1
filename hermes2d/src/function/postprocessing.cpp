@@ -243,7 +243,7 @@ namespace Hermes
             std::cout << "\tvalue: " << vertex_value;
 
           double fraction;
-          if(std::abs(vertex_value - centroid_value_multiplied) < Hermes::Epsilon)
+          if(std::abs(vertex_value - centroid_value_multiplied) < Hermes::epsilon)
           {
             fraction = 1.;
             if(this->get_verbose_output())
@@ -316,7 +316,7 @@ namespace Hermes
               std::cout << "\tvalue: " << vertex_value;
 
             double fraction;
-            if(std::abs(vertex_value - centroid_value_multiplied) < Hermes::Epsilon)
+            if(std::abs(vertex_value - centroid_value_multiplied) < Hermes::epsilon)
             {
               if(this->get_verbose_output())
                 std::cout << "\tcenter_value";

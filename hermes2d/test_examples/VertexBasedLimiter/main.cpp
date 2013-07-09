@@ -92,19 +92,16 @@ int main(int argc, char* argv[])
     solver_1.solve();
     PostProcessing::VertexBasedLimiter limiter_1(space, solver_1.get_sln_vector(), polynomialDegree);
     previous_solution = limiter_1.get_solution();
-        solution_view.show(previous_solution);
 
     // 2nd step.
     solver_2.solve();
     PostProcessing::VertexBasedLimiter limiter_2(space, solver_2.get_sln_vector(), polynomialDegree);
     previous_solution = limiter_2.get_solution();
-        solution_view.show(previous_solution);
 
     // 3rd step.
     solver_3.solve();
     PostProcessing::VertexBasedLimiter limiter_3(space, solver_3.get_sln_vector(), polynomialDegree);
     solution = limiter_3.get_solution();
-        solution_view.show(solution);
 
     if((!(time_step % logPeriod)) || (time_step == number_of_steps))
     {
