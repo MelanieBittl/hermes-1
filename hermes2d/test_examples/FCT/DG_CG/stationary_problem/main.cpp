@@ -6,7 +6,7 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =0;                   // Number of initial refinements.
+const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 
@@ -18,10 +18,10 @@ const std::string BDY_OUT = "outlet";
 
 
 bool all = true;
-bool DG = false;
+bool DG = true;
 bool SD = false;
 
-bool serendipity = true;
+bool serendipity = false;
 
 #include "error_estimates.cpp"
 
@@ -59,13 +59,13 @@ for_all_vertex_nodes(vn, mesh)
 }
 */
 
-SerendipityShapeset ser_shapeset;
-  // Create an L2 	space with default shapeset.
+
+  // Create an space with default shapeset.
 //CustomDirichletCondition bc_essential(Hermes::vector<std::string>("inlet1","inlet2"));
  // EssentialBCs<double>  bcs(&bc_essential);
-  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity ));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
-  SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT, &ser_shapeset));
+  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));
 
 
 /*
@@ -74,12 +74,12 @@ SerendipityShapeset ser_shapeset;
 
 MeshView mview("Meshview", new WinGeom(450, 0, 440, 350));
 mview.show(mesh);
-View::wait(HERMES_WAIT_KEYPRESS);*/
+View::wait(HERMES_WAIT_KEYPRESS);
 
 
 BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
 bview.show(space);
-View::wait(HERMES_WAIT_KEYPRESS);
+View::wait(HERMES_WAIT_KEYPRESS);*/
 
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>);

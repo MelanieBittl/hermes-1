@@ -224,7 +224,6 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
 					double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 					result -= wt[i] * exact->val[i] * v->val[i] * a_dot_n;
 				}
-
 	}
   
   return result;

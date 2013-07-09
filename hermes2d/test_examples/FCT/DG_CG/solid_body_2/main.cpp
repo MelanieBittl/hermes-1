@@ -14,15 +14,18 @@ using namespace Hermes::Hermes2D::Views;
 const int INIT_REF_NUM = 6;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
-const double time_step = 1e-5;                           // Time step.
-//const double T_FINAL = 2*PI;                         // Time interval length. 
-const double T_FINAL = 1.;  
+const double time_step = 25e-5;                           // Time step.
+const double T_FINAL = 2.5*PI;                         // Time interval length. 
 
-const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
+//const double T_FINAL = PI;    
+
+
+const double theta = 1.;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
+const double theta_DG = 1.;
 
 const bool all = true;
 const bool DG = true;
-const bool SD = false;
+
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -40,10 +43,6 @@ int main(int argc, char* argv[])
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
 mloader.load("unit.mesh", basemesh);
-  //mloader.load("domain.mesh", basemesh);
- /*  MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
- meshview.show(basemesh);
-   View::wait();*/
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -55,44 +54,43 @@ mloader.load("unit.mesh", basemesh);
  // EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
-  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
-  SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+ // SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();
   
-  /* BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
-  bview.show(&space);
-View::wait(HERMES_WAIT_KEYPRESS);*/
+
 
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>);
-  MeshFunctionSharedPtr<double> u_prev_time(new CustomInitialCondition(mesh));
+  MeshFunctionSharedPtr<double> u_exact(new CustomInitialCondition(mesh));
 
 // Output solution in VTK format.
 	Linearizer lin;
 	bool mode_3D = true;
-//lin.save_solution_vtk(u_prev_time, "init.vtk", "solution", mode_3D);
+//lin.save_solution_vtk(u_exact, "init.vtk", "solution", mode_3D);
  
   // Initialize views.
 	ScalarView sview("Loesung", new WinGeom(500, 500, 500, 400));
 	ScalarView lview("init Loesung", new WinGeom(500, 0, 500, 400));
-	//lview.show(u_prev_time);
+	//lview.show(u_exact);
+//View::wait(HERMES_WAIT_KEYPRESS);
 
   OGProjection<double> ogProjection;
-  
+ 
 	char title[100];
     int ts = 1;
-    double current_time =0.;
+    double current_time = PI/2.;
 	
 	int ref_ndof = space->get_num_dofs();	
 	//Hermes::Mixins::Loggable::Static::info(" ndof = %d ", ref_ndof); 
 
 
+dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 
-
-CustomWeakForm wf(u_prev_time, mesh,time_step, theta, all, DG, SD, false);
-CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta, false, false, false, true);
+CustomWeakForm wf(u_exact, u_exact, mesh,time_step, theta,theta_DG, all, DG,  false);
+CustomWeakForm wf_rhs(u_exact, u_exact, mesh,time_step, theta,theta_DG, false, false,  true);
 
 
 	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double> ; 
@@ -103,17 +101,13 @@ CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta, false, false, false, t
 	DiscreteProblem<double> * dp_rhs = new DiscreteProblem<double> (&wf_rhs,space);	
 	dp_rhs->set_linear(true,false);
 
-/*
-FILE * matFile;
-matFile = fopen ("test.m","w");
-if(matrix->dump(matFile, "mat_t")) printf("print matrix\n");
-fclose (matFile);  
-*/
+
 
   do
   {
 	Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ref_ndof); 
 	wf_rhs.set_current_time(current_time);
+dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 	dp_rhs->assemble(rhs);
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(matrix,rhs);    
      if(solver->solve())
@@ -122,47 +116,23 @@ fclose (matFile);
       Solution<double>::vector_to_solution(vec_new, space, u_new);
       }
     else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
-			sview.show(u_new);
- 						if(ts==1) wf_rhs.set_ext(u_new);
+			//sview.show(u_new);
+			//lview.show(u_exact);
+ 		if(ts==1) wf_rhs.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(u_exact, u_new) );
 		 	current_time += time_step;
 		 	ts++;
 			delete solver;
 	  }
   while (current_time<T_FINAL);
 
+double x = -0.5*Hermes::sin(current_time);
+double y = 0.5*Hermes::cos(current_time);
+Hermes::Mixins::Loggable::Static::info("x=%f, y = %f,", x, y);
 
+dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 
-
-
-/*
-CustomWeakForm wf(u_prev_time, mesh,time_step, theta, all, DG, SD, true);
- // Initialize linear solver.
- Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
-  do
-  {Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ref_ndof); 
-					// Solve the linear problem.
-					try
-					{
-						linear_solver.solve();
-
-						// Get the solution vector.
-						double* sln_vector = linear_solver.get_sln_vector();
-
-						// Translate the solution vector into the previously initialized Solution.
-						Hermes::Hermes2D::Solution<double>::vector_to_solution(sln_vector, space, u_new);
-						//sview.show(u_new);
- 						if(ts==1) wf.set_ext(u_new);
-					}catch(std::exception& e)
-					{
-						std::cout << e.what();
-					}
-	 	current_time += time_step;
-	 	ts++;
-	  }
-  while (current_time<T_FINAL);
- */
-
-//calc_error_total(u_new, u_prev_time,space);
+  MeshFunctionSharedPtr<double> u_end(new CustomEndCondition(mesh));
+calc_error_total(u_new, u_end,space);
 
 
   // Wait for the view to be closed.
