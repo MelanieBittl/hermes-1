@@ -128,26 +128,31 @@ namespace Hermes
 
             // Create a multimesh tree;
             MultimeshDGNeighborTree<Scalar>::process_edge(neighbor_searches[current_state->isurf], this->current_state->num, this->num_neighbors[current_state->isurf], this->processed[current_state->isurf]);
-
-#ifdef DEBUG_DG_ASSEMBLING
-            debug();
-#endif
-            for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors[current_state->isurf]; neighbor_i++)
-            {
-              if(!DG_vector_forms_present && processed[current_state->isurf][neighbor_i])
-                continue;
-
-              // DG-inner-edge-wise parameters for WeakForm.
-              wf->set_active_DG_state(current_state->e, current_state->isurf);
-
-              assemble_one_neighbor(processed[current_state->isurf][neighbor_i], neighbor_i, neighbor_searches[current_state->isurf]);
-            }
-
-            deinit_neighbors(neighbor_searches[current_state->isurf], current_state);
           }
-          else
-            processed[current_state->isurf] = NULL;
         }
+      }
+      for(current_state->isurf = 0; current_state->isurf < current_state->rep->nvert; current_state->isurf++)
+      {
+        if(!current_state->bnd[current_state->isurf])
+        {
+#ifdef DEBUG_DG_ASSEMBLING
+          debug();
+#endif
+          for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors[current_state->isurf]; neighbor_i++)
+          {
+            if(!DG_vector_forms_present && processed[current_state->isurf][neighbor_i])
+              continue;
+
+            // DG-inner-edge-wise parameters for WeakForm.
+            wf->set_active_DG_state(current_state->e, current_state->isurf);
+
+            assemble_one_neighbor(processed[current_state->isurf][neighbor_i], neighbor_i, neighbor_searches[current_state->isurf]);
+          }
+
+          deinit_neighbors(neighbor_searches[current_state->isurf], current_state);
+        }
+        else
+          processed[current_state->isurf] = NULL;
       }
     }
 
@@ -439,7 +444,7 @@ namespace Hermes
 
     template<typename Scalar>
     DiscontinuousFunc<Scalar>** DiscreteProblemDGAssembler<Scalar>::init_ext_fns(Hermes::vector<MeshFunctionSharedPtr<Scalar> > ext,
-        NeighborSearch<Scalar>** current_neighbor_searches, int order)
+      NeighborSearch<Scalar>** current_neighbor_searches, int order)
     {
       DiscontinuousFunc<Scalar>** ext_fns = new DiscontinuousFunc<Scalar>*[ext.size()];
       for(unsigned int j = 0; j < ext.size(); j++)
@@ -467,15 +472,15 @@ namespace Hermes
             existing_ns = true;
             break;
           }
-        if(!existing_ns)
-        {
-          NeighborSearch<Scalar>* ns = new NeighborSearch<Scalar>(current_state->e[i], spaces[i]->get_mesh());
-          ns->original_central_el_transform = current_state->sub_idx[i];
-          current_neighbor_searches[i] = ns;
-          if(current_neighbor_searches[i]->set_active_edge_multimesh(current_state->isurf) && spaces[i]->get_type() == HERMES_L2_SPACE)
-            DG_intra = true;
-          current_neighbor_searches[i]->clear_initial_sub_idx();
-        }
+          if(!existing_ns)
+          {
+            NeighborSearch<Scalar>* ns = new NeighborSearch<Scalar>(current_state->e[i], spaces[i]->get_mesh());
+            ns->original_central_el_transform = current_state->sub_idx[i];
+            current_neighbor_searches[i] = ns;
+            if(current_neighbor_searches[i]->set_active_edge_multimesh(current_state->isurf) && spaces[i]->get_type() == HERMES_L2_SPACE)
+              DG_intra = true;
+            current_neighbor_searches[i]->clear_initial_sub_idx();
+          }
       }
 
       return DG_intra;
@@ -495,8 +500,8 @@ namespace Hermes
             existing_ns = true;
             break;
           }
-        if(!existing_ns)
-          delete current_neighbor_searches[i];
+          if(!existing_ns)
+            delete current_neighbor_searches[i];
       }
 
       return DG_intra;
