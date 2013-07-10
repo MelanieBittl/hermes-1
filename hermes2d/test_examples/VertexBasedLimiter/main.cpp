@@ -41,7 +41,13 @@ int main(int argc, char* argv[])
   else if (solvedExample == AdvectedCube)
     initial_condition = new InitialConditionAdvectedCube(mesh);
 
-  MeshFunctionSharedPtr<double>previous_solution(initial_condition);
+  ExactSolutionScalar<double>* previous_initial_condition;
+  if(solvedExample == SolidBodyRotation)
+    previous_initial_condition = new InitialConditionSolidBodyRotation(mesh);
+  else if (solvedExample == AdvectedCube)
+    previous_initial_condition = new InitialConditionAdvectedCube(mesh);
+
+  MeshFunctionSharedPtr<double>previous_solution(previous_initial_condition);
   MeshFunctionSharedPtr<double>previous_solution_time_step(initial_condition);
   // Visualization.
   ScalarView solution_view("Initial condition", new WinGeom(520, 10, 500, 500));
