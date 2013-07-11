@@ -31,3 +31,4 @@ add_subdirectory("13-FCT")
 add_subdirectory("14-error-calculation")
 
 add_subdirectory("VertexBasedLimiter")
+add_subdirectory("ShockTubeProblem")
