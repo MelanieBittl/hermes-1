@@ -10,14 +10,13 @@ public:
   {
     double x_c;
     this->element->get_center(x_c, y);
-    if(x == 0.5)
+    if(std::abs(x - 0.5) < 1e-6)
     {
-      if(x_c < 0.5)
+      if(x_c < 0.4999)
         x = 0.49;
       else
         x = 0.51;
     }
-
 
     if(x < 0.5)
     {

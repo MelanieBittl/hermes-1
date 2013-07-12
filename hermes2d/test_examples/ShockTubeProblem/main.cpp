@@ -18,11 +18,11 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = true;
+const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 20;
 
 bool SHOCK_CAPTURING = true;
 
@@ -33,7 +33,7 @@ const int INIT_REF_NUM = 7;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
-double time_step_length = 1E-3;
+double time_step_length = 5E-4;
 
 // Equation parameters.
 // Exterior pressure (dimensionless).
@@ -129,6 +129,7 @@ int main(int argc, char* argv[])
 #pragma endregion
 
   LinearSolver<double> solver(&wf, spaces);
+  solver.set_jacobian_constant();
 
 #pragma region 4. Time stepping loop.
   int iteration = 0;
@@ -198,7 +199,7 @@ int main(int argc, char* argv[])
     //CFL.calculate(prev_slns, mesh, time_step_length);
 
 #pragma region 4.1. Visualization
-    if((iteration - 1) % EVERY_NTH_STEP == 0) 
+    if(((iteration - 1) % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
     {
       // Hermes visualization.
       if(HERMES_VISUALIZATION)
@@ -215,12 +216,15 @@ int main(int argc, char* argv[])
       if(VTK_VISUALIZATION)
       {
         pressure->reinit();
+        velocity->reinit();
         Linearizer lin;
         char filename[40];
         sprintf(filename, "Pressure-%i.vtk", iteration - 1);
-        lin.save_solution_vtk(pressure, filename, "Pressure");
+        lin.save_solution_vtk(pressure, filename, "Pressure", false);
+        sprintf(filename, "Velocity-%i.vtk", iteration - 1);
+        lin.save_solution_vtk(velocity, filename, "Velocity", false);
         sprintf(filename, "Rho-%i.vtk", iteration - 1);
-        lin.save_solution_vtk(prev_rho, filename, "Rho");
+        lin.save_solution_vtk(prev_rho, filename, "Rho", false);
       }
     }
 #pragma endregion
