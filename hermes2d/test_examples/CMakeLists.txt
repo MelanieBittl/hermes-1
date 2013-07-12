@@ -32,3 +32,4 @@ add_subdirectory("14-error-calculation")
 
 add_subdirectory("VertexBasedLimiter")
 add_subdirectory("ShockTubeProblem")
+add_subdirectory("DoubleMachReflection")
