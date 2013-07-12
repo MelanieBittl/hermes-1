@@ -6,11 +6,13 @@
 // Utility functions for the Euler equations.
 #include "euler_util.h"
 
-class EulerEquationsWeakFormExplicitPrescribedValues : public WeakForm<double>
+class EulerEquationsWeakFormExplicitDoubleReflection : public WeakForm<double>
 {
 public:
   double kappa;
   bool fvm_only;
+  Hermes::vector<std::string> solid_wall_markers;
+  Hermes::vector<std::string> prescribed_markers;
 
   MeshFunctionSharedPtr<double> prev_density;
   MeshFunctionSharedPtr<double> prev_density_vel_x;
@@ -33,12 +35,14 @@ public:
   EulerFluxes* euler_fluxes;
 
   // Constructor for one inflow with different external states.
-  EulerEquationsWeakFormExplicitPrescribedValues(double kappa, 
+  EulerEquationsWeakFormExplicitDoubleReflection(double kappa, 
+    Hermes::vector<std::string> solid_wall_markers,
+    Hermes::vector<std::string> prescribed_markers,
     MeshFunctionSharedPtr<double> prev_density, MeshFunctionSharedPtr<double> prev_density_vel_x, MeshFunctionSharedPtr<double> prev_density_vel_y,  MeshFunctionSharedPtr<double> prev_energy, 
     MeshFunctionSharedPtr<double> exact_density, MeshFunctionSharedPtr<double> exact_density_vel_x, MeshFunctionSharedPtr<double> exact_density_vel_y,  MeshFunctionSharedPtr<double> exact_energy, 
     bool fvm_only = false, int num_of_equations = 4) :
   WeakForm<double>(num_of_equations), 
-    kappa(kappa), 
+    kappa(kappa), solid_wall_markers(solid_wall_markers), prescribed_markers(prescribed_markers),
     prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), 
     exact_density(exact_density), exact_density_vel_x(exact_density_vel_x), exact_density_vel_y(exact_density_vel_y), exact_energy(exact_energy), 
     fvm_only(fvm_only), 
@@ -53,9 +57,13 @@ public:
       EulerEquationsVectorFormFlux* formDG = new EulerEquationsVectorFormFlux(form_i, kappa, euler_fluxes);
       add_vector_form_DG(formDG);
       
-      add_vector_form_surf(new EulerEquationsVectorFormBdyFlux(form_i, exact_density, exact_density_vel_x, exact_density_vel_y, exact_energy, kappa));
+      EulerEquationsVectorFormBdyFlux* form_flux = new EulerEquationsVectorFormBdyFlux(form_i, exact_density, exact_density_vel_x, exact_density_vel_y, exact_energy, kappa);
+      form_flux->set_areas(prescribed_markers);
+      add_vector_form_surf(form_flux);
       
-    for(int form_j = 0; form_j < 4; form_j++)
+      add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, solid_wall_markers, kappa));
+      
+      for(int form_j = 0; form_j < 4; form_j++)
       {
         if(!fvm_only)
           add_vector_form(new EulerEquationsBilinearForm(form_i, form_j, euler_fluxes));
@@ -65,15 +73,15 @@ public:
     this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy));
   };
 
-  virtual ~EulerEquationsWeakFormExplicitPrescribedValues()
+  virtual ~EulerEquationsWeakFormExplicitDoubleReflection()
   {
     delete this->euler_fluxes;
   }
 
   WeakForm<double>* clone() const
   {
-    EulerEquationsWeakFormExplicitPrescribedValues* wf;
-    wf = new EulerEquationsWeakFormExplicitPrescribedValues(this->kappa, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->exact_density, this->exact_density_vel_x, this->exact_density_vel_y, this->exact_energy, this->fvm_only, this->neq);
+    EulerEquationsWeakFormExplicitDoubleReflection* wf;
+    wf = new EulerEquationsWeakFormExplicitDoubleReflection(this->kappa, this->solid_wall_markers, this->prescribed_markers, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->exact_density, this->exact_density_vel_x, this->exact_density_vel_y, this->exact_energy, this->fvm_only, this->neq);
 
     wf->ext.clear();
 
@@ -352,5 +360,51 @@ public:
     MeshFunctionSharedPtr<double> exact_density_vel_x;
     MeshFunctionSharedPtr<double> exact_density_vel_y;
     MeshFunctionSharedPtr<double> exact_energy;
+  };
+
+  class EulerEquationsVectorFormSolidWall : public VectorFormSurf<double>
+  {
+  public:
+    EulerEquationsVectorFormSolidWall(int i, Hermes::vector<std::string> markers, double kappa)
+      : VectorFormSurf<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), kappa(kappa) {set_areas(markers);}
+
+    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
+    {
+      double w_L[4], w_R[4];
+      double result = 0.;
+
+      for (int point_i = 0; point_i < n; point_i++)
+      {
+        w_L[0] = ext[0]->val[point_i];
+        w_L[1] = ext[1]->val[point_i];
+        w_L[2] = ext[2]->val[point_i];
+        w_L[3] = ext[3]->val[point_i];
+
+        w_R[0] = ext[0]->val[point_i];
+        w_R[1] = ext[1]->val[point_i] - 2 * e->nx[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
+        w_R[2] = ext[2]->val[point_i] - 2 * e->ny[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
+        w_R[3] = ext[3]->val[point_i];
+
+        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+      }
+
+      return -result * wf->get_current_time_step();
+    }
+
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>* *ext) const 
+    {
+      return Ord(10);
+    }
+
+    VectorFormSurf<double>* clone()  const
+    {
+      EulerEquationsVectorFormSolidWall* form = new EulerEquationsVectorFormSolidWall(this->i, this->areas, this->kappa);
+      form->wf = this->wf;
+      return form;
+    }
+
+    // Members.
+    double kappa;
+    LaxFriedrichsNumericalFlux* num_flux;
   };
 };

@@ -27,32 +27,14 @@ const unsigned int EVERY_NTH_STEP = 1;
 bool SHOCK_CAPTURING = true;
 
 // Initial polynomial degree.
-const int P_INIT = 1;
+const int P_INIT = 0;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 5;
+const int INIT_REF_NUM = 4;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
 double time_step_length = 5E-4;
 
-// Equation parameters.
-// Exterior pressure (dimensionless).
-const double P_EXT_IN = 1.;         
-// Inlet density (dimensionless).   
-const double RHO_EXT_IN = 1.0;       
-// Inlet x-velocity (dimensionless).
-const double V1_EXT_IN = 0.;       
-// Inlet y-velocity (dimensionless).
-const double V2_EXT_IN = 0.0;
-
-// Exterior pressure (dimensionless).
-const double P_EXT_OUT = .1;         
-// Inlet density (dimensionless).   
-const double RHO_EXT_OUT = .125;       
-// Inlet x-velocity (dimensionless).
-const double V1_EXT_OUT = 0.;       
-// Inlet y-velocity (dimensionless).
-const double V2_EXT_OUT = 0.0;    
 // Kappa.
 const double KAPPA = 1.4;
 
@@ -107,7 +89,11 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double> prev_e(new CustomInitialCondition_e (mesh, KAPPA));
   Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
-  EulerEquationsWeakFormExplicitPrescribedValues wf(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, exact_rho, exact_rho_v_x, exact_rho_v_y, exact_e, (P_INIT == 0));
+  Hermes::vector<std::string> solid_wall_markers;
+  Hermes::vector<std::string> prescribed_markers(BDY_INLET, BDY_SOLID_WALL_TOP);
+  solid_wall_markers.push_back(BDY_SOLID_WALL_BOTTOM);
+
+  EulerEquationsWeakFormExplicitDoubleReflection wf(KAPPA, solid_wall_markers, prescribed_markers, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, exact_rho, exact_rho_v_x, exact_rho_v_y, exact_e, (P_INIT == 0));
 
 #pragma region 3. Filters for visualization of Mach number, pressure + visualization setup.
   MeshFunctionSharedPtr<double>  Mach_number(new MachNumberFilter(prev_slns, KAPPA));
