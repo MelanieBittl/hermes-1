@@ -97,23 +97,17 @@ int main(int argc, char* argv[])
   CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
   // Set initial conditions.
+  MeshFunctionSharedPtr<double> exact_rho(new CustomInitialCondition_rho(mesh));
+  MeshFunctionSharedPtr<double> exact_rho_v_x(new CustomInitialCondition_v_x (mesh));
+  MeshFunctionSharedPtr<double> exact_rho_v_y(new CustomInitialCondition_v_y (mesh));
+  MeshFunctionSharedPtr<double> exact_e(new CustomInitialCondition_e (mesh, KAPPA));
   MeshFunctionSharedPtr<double> prev_rho(new CustomInitialCondition_rho(mesh));
   MeshFunctionSharedPtr<double> prev_rho_v_x(new CustomInitialCondition_v_x (mesh));
   MeshFunctionSharedPtr<double> prev_rho_v_y(new CustomInitialCondition_v_y (mesh));
   MeshFunctionSharedPtr<double> prev_e(new CustomInitialCondition_e (mesh, KAPPA));
   Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
-  // Initialize weak formulation.
-  Hermes::vector<std::string> solid_wall_markers(BDY_SOLID_WALL_BOTTOM, BDY_SOLID_WALL_TOP, BDY_INLET, BDY_OUTLET);
-  Hermes::vector<std::string> inlet_markers;
-  //inlet_markers.push_back(BDY_INLET);
-  Hermes::vector<std::string> outlet_markers;
-  //outlet_markers.push_back(BDY_OUTLET);
-
-  EulerEquationsWeakFormSemiImplicit wf(KAPPA, RHO_EXT_IN, V1_EXT_IN, V2_EXT_IN, P_EXT_IN, 
-    RHO_EXT_OUT, V1_EXT_OUT, V2_EXT_OUT, P_EXT_OUT,
-    solid_wall_markers, inlet_markers, outlet_markers,
-    prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, (P_INIT == 0));
+  EulerEquationsWeakFormExplicitPrescribedValues wf(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, exact_rho, exact_rho_v_x, exact_rho_v_y, exact_e, (P_INIT == 0));
 
 #pragma region 3. Filters for visualization of Mach number, pressure + visualization setup.
   MeshFunctionSharedPtr<double>  Mach_number(new MachNumberFilter(prev_slns, KAPPA));
