@@ -8,7 +8,18 @@ public:
 
   virtual double value (double x, double y) const 
   {
-    if(x <= 0.5)
+    double x_c;
+    this->element->get_center(x_c, y);
+    if(x == 0.5)
+    {
+      if(x_c < 0.5)
+        x = 0.49;
+      else
+        x = 0.51;
+    }
+
+
+    if(x < 0.5)
     {
       switch(this->component)
       {
@@ -22,7 +33,7 @@ public:
       };
     }
     else
-      {
+    {
       switch(this->component)
       {
       case 0:

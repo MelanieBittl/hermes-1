@@ -873,9 +873,7 @@ void LaxFriedrichsNumericalFlux::numerical_flux(double result[4], double w_L[4],
   this->Euler_flux_1(w_L, first_flux_left);
   this->Euler_flux_1(w_R, first_flux_right);
   for(int i = 0; i < 4; i++)
-    first_flux[i] = (first_flux_left[i] + first_flux_right[i]) * 0.5;
-  for(int i = 0; i < 4; i++)
-    first_flux[i] -= std::max(s_left, s_right) * (w_R[i] - w_L[i]);
+    first_flux[i] = 0.5 * (first_flux_left[i] + first_flux_right[i]);
 
   double second_flux[4];
   double second_flux_left[4];
@@ -883,12 +881,10 @@ void LaxFriedrichsNumericalFlux::numerical_flux(double result[4], double w_L[4],
   this->Euler_flux_2(w_L, second_flux_left);
   this->Euler_flux_2(w_R, second_flux_right);
   for(int i = 0; i < 4; i++)
-    second_flux[i] = (second_flux_left[i] + first_flux_right[i]) * 0.5;
-  for(int i = 0; i < 4; i++)
-    second_flux[i] -= std::max(s_left, s_right) * (w_R[i] - w_L[i]);
+    second_flux[i] = 0.5 * (second_flux_left[i] + second_flux_right[i]);
 
   for(int i = 0; i < 4; i++)
-    result[i] = (first_flux[i] * nx) + (second_flux[i] * ny);
+    result[i] = (first_flux[i] * nx) + (second_flux[i] * ny) - (std::max(s_left, s_right) * (w_R[i] - w_L[i]));
 }
 
 double LaxFriedrichsNumericalFlux::numerical_flux_i(int component, double w_L[4], double w_R[4],
@@ -903,14 +899,14 @@ void LaxFriedrichsNumericalFlux::Euler_flux_1(double state[4], double result[4])
 {
   result[0] = state[1];
   result[1] = (state[1] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
-  result[2] = (state[1] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  result[2] = (state[1] * state[2] / state[0]);
   result[3] = (state[3] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[1] / state[0]);
 }
 
 void LaxFriedrichsNumericalFlux::Euler_flux_2(double state[4], double result[4])
 {
   result[0] = state[2];
-  result[1] = (state[1] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  result[1] = (state[1] * state[2] / state[0]);
   result[2] = (state[2] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
   result[3] = (state[3] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[2] / state[0]);
 }
@@ -918,5 +914,5 @@ void LaxFriedrichsNumericalFlux::Euler_flux_2(double state[4], double result[4])
 double LaxFriedrichsNumericalFlux::calculate_s(double state[4], double nx, double ny)
 {
   double speed_of_sound = QuantityCalculator::calc_sound_speed(state[0], state[1], state[2], state[3], this->kappa);
-  return std::abs((nx * state[1]) + (ny * state[2]) / state[0]) + speed_of_sound;
+  return std::abs(((nx * state[1]) + (ny * state[2])) / state[0]) + speed_of_sound;
 }

@@ -88,16 +88,15 @@ public:
 
       add_vector_form(new EulerEquationsLinearFormTime(form_i));
 
-
+      EulerEquationsVectorFormLinearizableSurfSemiImplicit* formDG = new EulerEquationsVectorFormLinearizableSurfSemiImplicit(form_i, kappa, euler_fluxes, &this->cacheReadyDG, this->P_plus_cache_DG, this->P_minus_cache_DG);
+      add_vector_form_DG(formDG);
+      
+      add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, solid_wall_markers, kappa));
+        
       for(int form_j = 0; form_j < 4; form_j++)
       {
         if(!fvm_only)
           add_vector_form(new EulerEquationsBilinearForm(form_i, form_j, euler_fluxes));
-
-        EulerEquationsVectorFormLinearizableSurfSemiImplicit* formDG = new EulerEquationsVectorFormLinearizableSurfSemiImplicit(form_i, form_j, kappa, euler_fluxes, &this->cacheReadyDG, this->P_plus_cache_DG, this->P_minus_cache_DG);
-        add_vector_form_DG(formDG);
-
-        add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, form_j, solid_wall_markers, kappa));
       }
     }
 
@@ -291,8 +290,8 @@ public:
   class EulerEquationsVectorFormLinearizableSurfSemiImplicit : public VectorFormDG<double>
   {
   public:
-    EulerEquationsVectorFormLinearizableSurfSemiImplicit(int i, int j, double kappa, EulerFluxes* fluxes, bool* cacheReady, double** P_plus_cache, double** P_minus_cache) 
-      : VectorFormDG<double>(i), j(j), num_flux(new StegerWarmingNumericalFlux(kappa)), cacheReady(cacheReady), P_plus_cache(P_plus_cache), P_minus_cache(P_minus_cache), fluxes(fluxes) 
+    EulerEquationsVectorFormLinearizableSurfSemiImplicit(int i, double kappa, EulerFluxes* fluxes, bool* cacheReady, double** P_plus_cache, double** P_minus_cache) 
+      : VectorFormDG<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), cacheReady(cacheReady), P_plus_cache(P_plus_cache), P_minus_cache(P_minus_cache), fluxes(fluxes) 
     {
     }
 
@@ -304,56 +303,30 @@ public:
     double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, 
       Func<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
     {
-      double w[4];
+      double w_L[4], w_R[4];
       double result = 0.;
-      DiscontinuousFunc<double>* u = ext[this->j];
 
-      for (int point_i = 0; point_i < n; point_i++) 
+      for (int point_i = 0; point_i < n; point_i++)
       {
-        w[0] = ext[0]->val[point_i];
-        w[1] = ext[1]->val[point_i];
-        w[2] = ext[2]->val[point_i];
-        w[3] = ext[3]->val[point_i];
+        w_L[0] = ext[0]->val[point_i];
+        w_L[1] = ext[1]->val[point_i];
+        w_L[2] = ext[2]->val[point_i];
+        w_L[3] = ext[3]->val[point_i];
 
-        double e_1_1[4] = {1, 0, 0, 0};
-        double e_2_1[4] = {0, 1, 0, 0};
-        double e_3_1[4] = {0, 0, 1, 0};
-        double e_4_1[4] = {0, 0, 0, 1};
+        w_R[0] = ext[0]->val_neighbor[point_i];
+        w_R[1] = ext[1]->val_neighbor[point_i];
+        w_R[2] = ext[2]->val_neighbor[point_i];
+        w_R[3] = ext[3]->val_neighbor[point_i];
 
-        num_flux->P_plus(this->P_plus_cache[point_i], w, e_1_1, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_plus(this->P_plus_cache[point_i] + 4, w, e_2_1, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_plus(this->P_plus_cache[point_i] + 8, w, e_3_1, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_plus(this->P_plus_cache[point_i] + 12, w, e_4_1, e->nx[point_i], e->ny[point_i]);
-
-        w[0] = ext[0]->val_neighbor[point_i];
-        w[1] = ext[1]->val_neighbor[point_i];
-        w[2] = ext[2]->val_neighbor[point_i];
-        w[3] = ext[3]->val_neighbor[point_i];
-
-        double e_1_2[4] = {1, 0, 0, 0};
-        double e_2_2[4] = {0, 1, 0, 0};
-        double e_3_2[4] = {0, 0, 1, 0};
-        double e_4_2[4] = {0, 0, 0, 1};
-
-        num_flux->P_minus(this->P_minus_cache[point_i], w, e_1_2, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_minus(this->P_minus_cache[point_i] + 4, w, e_2_2, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_minus(this->P_minus_cache[point_i] + 8, w, e_3_2, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_minus(this->P_minus_cache[point_i] + 12, w, e_4_2, e->nx[point_i], e->ny[point_i]);
+        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
       }
-
-      int index = j * 4 + i;
-
-      for (int point_i = 0; point_i < n; point_i++) 
-        result += wt[point_i] * (this->P_minus_cache[point_i][index] * u->val_neighbor[point_i]) * v->val[point_i];
-      for (int point_i = 0; point_i < n; point_i++) 
-        result += wt[point_i] * (this->P_plus_cache[point_i][index] * u->val[point_i]) * v->val[point_i];
 
       return -result * wf->get_current_time_step();
     }
 
     VectorFormDG<double>* clone()  const
     { 
-      EulerEquationsVectorFormLinearizableSurfSemiImplicit* form = new EulerEquationsVectorFormLinearizableSurfSemiImplicit(this->i, this->j, this->num_flux->kappa, this->fluxes, this->cacheReady, this->P_plus_cache, this->P_minus_cache);
+      EulerEquationsVectorFormLinearizableSurfSemiImplicit* form = new EulerEquationsVectorFormLinearizableSurfSemiImplicit(this->i, this->num_flux->kappa, this->fluxes, this->cacheReady, this->P_plus_cache, this->P_minus_cache);
       form->wf = this->wf;
       return form;
     }
@@ -361,9 +334,8 @@ public:
     bool* cacheReady;
     double** P_plus_cache;
     double** P_minus_cache;
-    StegerWarmingNumericalFlux* num_flux;
+    LaxFriedrichsNumericalFlux* num_flux;
     EulerFluxes* fluxes;
-    int j;
   };
 
   class EulerEquationsLinearFormTime : public VectorFormVol<double>
@@ -390,37 +362,27 @@ public:
   class EulerEquationsVectorFormSolidWall : public VectorFormSurf<double>
   {
   public:
-    EulerEquationsVectorFormSolidWall(int i, int j, Hermes::vector<std::string> markers, double kappa)
-      : VectorFormSurf<double>(i), j(j), kappa(kappa) {set_areas(markers);}
+    EulerEquationsVectorFormSolidWall(int i, Hermes::vector<std::string> markers, double kappa)
+      : VectorFormSurf<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), kappa(kappa) {set_areas(markers);}
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
-      Func<double>* u = ext[this->j];
-
+      double w_L[4], w_R[4];
       double result = 0.;
 
-      for (int point_i = 0; point_i < n; point_i++) 
+      for (int point_i = 0; point_i < n; point_i++)
       {
-        double rho = ext[0]->val[point_i];
-        double v_1 = ext[1]->val[point_i] / rho;
-        double v_2 = ext[2]->val[point_i] / rho;
+        w_L[0] = ext[0]->val[point_i];
+        w_L[1] = ext[1]->val[point_i];
+        w_L[2] = ext[2]->val[point_i];
+        w_L[3] = ext[3]->val[point_i];
 
-        double P[4][4];
-        for(unsigned int P_i = 0; P_i < 4; P_i++)
-          for(unsigned int P_j = 0; P_j < 4; P_j++)
-            P[P_i][P_j] = 0.0;
+        w_R[0] = ext[0]->val[point_i];
+        w_R[1] = ext[1]->val[point_i] - 2 * e->nx[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
+        w_R[2] = ext[2]->val[point_i] - 2 * e->ny[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
+        w_R[3] = ext[3]->val[point_i];
 
-        P[1][0] = (kappa - 1) * (v_1 * v_1 + v_2 * v_2) * e->nx[point_i] / 2;
-        P[1][1] = (kappa - 1) * (-v_1) * e->nx[point_i];
-        P[1][2] = (kappa - 1) * (-v_2) * e->nx[point_i];
-        P[1][3] = (kappa - 1) * e->nx[point_i];
-
-        P[2][0] = (kappa - 1) * (v_1 * v_1 + v_2 * v_2) * e->ny[point_i] / 2;
-        P[2][1] = (kappa - 1) * (-v_1) * e->ny[point_i];
-        P[2][2] = (kappa - 1) * (-v_2) * e->ny[point_i];
-        P[2][3] = (kappa - 1) * e->ny[point_i];
-
-        result += wt[point_i] * P[i][j] * u->val[point_i] * v->val[point_i];
+        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
       }
 
       return -result * wf->get_current_time_step();
@@ -433,13 +395,13 @@ public:
 
     VectorFormSurf<double>* clone()  const
     {
-      EulerEquationsVectorFormSolidWall* form = new EulerEquationsVectorFormSolidWall(this->i, this->j, this->areas, this->kappa);
+      EulerEquationsVectorFormSolidWall* form = new EulerEquationsVectorFormSolidWall(this->i, this->areas, this->kappa);
       form->wf = this->wf;
       return form;
     }
 
     // Members.
     double kappa;
-    int j;
+    LaxFriedrichsNumericalFlux* num_flux;
   };
 };
