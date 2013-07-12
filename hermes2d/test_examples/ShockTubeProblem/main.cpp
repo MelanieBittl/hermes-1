@@ -72,8 +72,6 @@ const std::string BDY_SOLID_WALL_TOP = "Top";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 1);
-
 #pragma region 1. Load mesh and initialize spaces.
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
@@ -220,9 +218,9 @@ int main(int argc, char* argv[])
         Linearizer lin;
         char filename[40];
         sprintf(filename, "Pressure-%i.vtk", iteration - 1);
-        lin.save_solution_vtk(pressure, filename, "Pressure", false);
+        lin.save_solution_vtk(pressure, filename, "Pressure");
         sprintf(filename, "Rho-%i.vtk", iteration - 1);
-        lin.save_solution_vtk(prev_rho, filename, "Rho", false);
+        lin.save_solution_vtk(prev_rho, filename, "Rho");
       }
     }
 #pragma endregion
