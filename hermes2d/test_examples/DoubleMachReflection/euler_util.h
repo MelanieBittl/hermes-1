@@ -472,4 +472,6 @@ public:
     double kappa;
 };
 
+void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
+
 #endif

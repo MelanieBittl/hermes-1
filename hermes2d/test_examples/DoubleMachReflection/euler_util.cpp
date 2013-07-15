@@ -1299,3 +1299,47 @@ void EntropyFilter::filter_fn(int n, Hermes::vector<double*> values, double* res
       result[i] = std::log((QuantityCalculator::calc_pressure(values.at(0)[i], values.at(1)[i], values.at(2)[i], values.at(3)[i], kappa) / p_ext)
       / Hermes::pow((values.at(0)[i] / rho_ext), kappa));
 }
+
+void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns)
+{
+    int running_dofs = 0;
+    int ndof = spaces[0]->get_num_dofs();
+    double* density_sln_vector = limiter.get_solution_vector();
+    Element* e;
+    AsmList<double> al_density;
+    for(int component = 1; component < 4; component++)
+    {
+      if(spaces[component]->get_num_dofs() != ndof)
+        throw Exceptions::Exception("Euler code is supposed to be executed on a single mesh.");
+
+      double* conservative_vector = limiter.get_solution_vector() + component * ndof;
+      double* real_vector = new double[ndof];
+      memset(real_vector, 0, sizeof(double) * ndof);
+
+      for_all_active_elements(e, spaces[0]->get_mesh())
+      {
+        spaces[0]->get_element_assembly_list(e, &al_density);
+
+        real_vector[al_density.dof[0]] = conservative_vector[al_density.dof[0]] / density_sln_vector[al_density.dof[0]];
+        real_vector[al_density.dof[1]] = (conservative_vector[al_density.dof[1]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[1]]) / density_sln_vector[al_density.dof[0]];
+        real_vector[al_density.dof[2]] = (conservative_vector[al_density.dof[2]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[2]]) / density_sln_vector[al_density.dof[0]];
+      }
+
+      PostProcessing::VertexBasedLimiter real_component_limiter(spaces[0], real_vector, 1);
+      real_component_limiter.get_solution();
+      real_vector = real_component_limiter.get_solution_vector();
+
+      for_all_active_elements(e, spaces[0]->get_mesh())
+      {
+        spaces[0]->get_element_assembly_list(e, &al_density);
+
+        conservative_vector[al_density.dof[1]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[1]]
+        + density_sln_vector[al_density.dof[1]] * real_vector[al_density.dof[0]];
+
+        conservative_vector[al_density.dof[2]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[2]]
+        + density_sln_vector[al_density.dof[2]] * real_vector[al_density.dof[0]];
+      }
+
+      Solution<double>::vector_to_solution(conservative_vector, spaces[0], slns[component]);
+    }
+}

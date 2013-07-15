@@ -127,47 +127,7 @@ int main(int argc, char* argv[])
     {
       PostProcessing::VertexBasedLimiter limiter(spaces, solver.get_sln_vector(), 1);
       limiter.get_solutions(prev_slns);
-
-      int running_dofs = 0;
-      int ndof = spaces[0]->get_num_dofs();
-      double* density_sln_vector = limiter.get_solution_vector();
-      Element* e;
-      AsmList<double> al_density;
-      for(int component = 1; component < 4; component++)
-      {
-        if(spaces[component]->get_num_dofs() != ndof)
-          throw Exceptions::Exception("Euler code is supposed to be executed on a single mesh.");
-
-        double* conservative_vector = limiter.get_solution_vector() + component * ndof;
-        double* real_vector = new double[ndof];
-        memset(real_vector, 0, sizeof(double) * ndof);
-
-        for_all_active_elements(e, spaces[0]->get_mesh())
-        {
-          spaces[0]->get_element_assembly_list(e, &al_density);
-
-          real_vector[al_density.dof[0]] = conservative_vector[al_density.dof[0]] / density_sln_vector[al_density.dof[0]];
-          real_vector[al_density.dof[1]] = (conservative_vector[al_density.dof[1]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[1]]) / density_sln_vector[al_density.dof[0]];
-          real_vector[al_density.dof[2]] = (conservative_vector[al_density.dof[2]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[2]]) / density_sln_vector[al_density.dof[0]];
-        }
-
-        PostProcessing::VertexBasedLimiter real_component_limiter(spaces[0], real_vector, 1);
-        real_component_limiter.get_solution();
-        real_vector = real_component_limiter.get_solution_vector();
-
-        for_all_active_elements(e, spaces[0]->get_mesh())
-        {
-          spaces[0]->get_element_assembly_list(e, &al_density);
-
-          conservative_vector[al_density.dof[1]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[1]]
-          + density_sln_vector[al_density.dof[1]] * real_vector[al_density.dof[0]];
-
-          conservative_vector[al_density.dof[2]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[2]]
-          + density_sln_vector[al_density.dof[2]] * real_vector[al_density.dof[0]];
-        }
-
-        Solution<double>::vector_to_solution(conservative_vector, spaces[0], prev_slns[component]);
-      }
+      limitVelocityAndEnergy(spaces, limiter, prev_slns);
     }
 #pragma endregion
 
