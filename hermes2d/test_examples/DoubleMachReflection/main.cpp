@@ -24,7 +24,7 @@ const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
 const unsigned int EVERY_NTH_STEP = 1;
 
-bool SHOCK_CAPTURING = true;
+bool SHOCK_CAPTURING = false;
 
 // Initial polynomial degree.
 const int P_INIT = 0;
@@ -34,17 +34,10 @@ const int INIT_REF_NUM = 4;
 double CFL_NUMBER = 0.1;
 // Initial time step.
 double time_step_length = 5E-4;
+double TIME_INTERVAL_LENGTH = .2;
 
 // Kappa.
 const double KAPPA = 1.4;
-
-double TIME_INTERVAL_LENGTH = .2;
-
-// Boundary markers.
-const std::string BDY_INLET = "Left";
-const std::string BDY_OUTLET = "Right";
-const std::string BDY_SOLID_WALL_BOTTOM = "Bottom";
-const std::string BDY_SOLID_WALL_TOP = "Top";
 
 // Weak forms.
 #include "forms_explicit.cpp"
@@ -61,8 +54,11 @@ int main(int argc, char* argv[])
   mloader.load("domain.xml", mesh);
 
   // Perform initial mesh refinements.
-  for (int i = 0; i < INIT_REF_NUM; i++) 
-    mesh->refine_all_elements(0);
+  for (int i = 0; i < INIT_REF_NUM; i++)
+  {
+    mesh->refine_in_area("Post", 1, 1);
+    mesh->refine_in_area("Pre", 1, 0);
+  }
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -70,6 +66,10 @@ int main(int argc, char* argv[])
   SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
   SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
   Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho, space_rho_v_x, space_rho_v_y, space_e);
+
+  BaseView<double> b;
+  b.show(space_rho);
+  b.wait_for_close();
 
   int ndof = Space<double>::get_num_dofs(spaces);
   Hermes::Mixins::Loggable::Static::info("Ndof: %d", ndof);
@@ -79,19 +79,19 @@ int main(int argc, char* argv[])
   CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
   // Set initial conditions.
-  MeshFunctionSharedPtr<double> exact_rho(new CustomInitialCondition_rho(mesh));
-  MeshFunctionSharedPtr<double> exact_rho_v_x(new CustomInitialCondition_v_x (mesh));
-  MeshFunctionSharedPtr<double> exact_rho_v_y(new CustomInitialCondition_v_y (mesh));
-  MeshFunctionSharedPtr<double> exact_e(new CustomInitialCondition_e (mesh, KAPPA));
-  MeshFunctionSharedPtr<double> prev_rho(new CustomInitialCondition_rho(mesh));
-  MeshFunctionSharedPtr<double> prev_rho_v_x(new CustomInitialCondition_v_x (mesh));
-  MeshFunctionSharedPtr<double> prev_rho_v_y(new CustomInitialCondition_v_y (mesh));
-  MeshFunctionSharedPtr<double> prev_e(new CustomInitialCondition_e (mesh, KAPPA));
+  MeshFunctionSharedPtr<double> exact_rho(new CustomInitialCondition(mesh, 0, KAPPA));
+  MeshFunctionSharedPtr<double> exact_rho_v_x(new CustomInitialCondition(mesh, 1, KAPPA));
+  MeshFunctionSharedPtr<double> exact_rho_v_y(new CustomInitialCondition(mesh, 2, KAPPA));
+  MeshFunctionSharedPtr<double> exact_e(new CustomInitialCondition(mesh, 3, KAPPA));
+  MeshFunctionSharedPtr<double> prev_rho(new CustomInitialCondition(mesh, 0, KAPPA));
+  MeshFunctionSharedPtr<double> prev_rho_v_x(new CustomInitialCondition(mesh, 1, KAPPA));
+  MeshFunctionSharedPtr<double> prev_rho_v_y(new CustomInitialCondition(mesh, 2, KAPPA));
+  MeshFunctionSharedPtr<double> prev_e(new CustomInitialCondition(mesh, 3, KAPPA));
   Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
   Hermes::vector<std::string> solid_wall_markers;
-  Hermes::vector<std::string> prescribed_markers(BDY_INLET, BDY_SOLID_WALL_TOP);
-  solid_wall_markers.push_back(BDY_SOLID_WALL_BOTTOM);
+  Hermes::vector<std::string> prescribed_markers("BottomPost", "TopPre", "TopPost", "Left");
+  solid_wall_markers.push_back("BottomRefl");
 
   EulerEquationsWeakFormExplicitDoubleReflection wf(KAPPA, solid_wall_markers, prescribed_markers, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, exact_rho, exact_rho_v_x, exact_rho_v_y, exact_e, (P_INIT == 0));
 
@@ -122,6 +122,10 @@ int main(int argc, char* argv[])
     wf.set_current_time_step(time_step_length);
 
     // Solve.
+    ((CustomInitialCondition*)exact_rho.get())->time = t;
+    ((CustomInitialCondition*)exact_rho.get())->time = t;
+    ((CustomInitialCondition*)exact_rho.get())->time = t;
+    ((CustomInitialCondition*)exact_rho.get())->time = t;
     solver.solve();
 
 #pragma region *. Get the solution with optional shock capturing.
