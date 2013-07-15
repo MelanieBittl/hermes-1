@@ -9,6 +9,13 @@
 class EulerEquationsWeakFormExplicitDoubleReflection : public WeakForm<double>
 {
 public:
+  double inter_flux[4];
+  double bdy_flux[4];
+  double solid_flux[4];
+  bool inter_flux_set;
+  bool bdy_flux_set;
+  bool solid_flux_set;
+
   double kappa;
   bool fvm_only;
   Hermes::vector<std::string> solid_wall_markers;
@@ -56,13 +63,13 @@ public:
 
       EulerEquationsVectorFormFlux* formDG = new EulerEquationsVectorFormFlux(form_i, kappa, euler_fluxes);
       add_vector_form_DG(formDG);
-      
+
       EulerEquationsVectorFormBdyFlux* form_flux = new EulerEquationsVectorFormBdyFlux(form_i, exact_density, exact_density_vel_x, exact_density_vel_y, exact_energy, kappa);
       form_flux->set_areas(prescribed_markers);
       add_vector_form_surf(form_flux);
-      
+
       add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, solid_wall_markers, kappa));
-      
+
       for(int form_j = 0; form_j < 4; form_j++)
       {
         if(!fvm_only)
@@ -233,6 +240,17 @@ public:
     int j;
   };
 
+  void set_active_edge_state(Element** e, int isurf)
+  {
+    bdy_flux_set = false;
+    solid_flux_set = false;
+  }
+
+  void set_active_DG_state(Element** e, int isurf)
+  {
+    inter_flux_set = false;
+  }
+
   class EulerEquationsVectorFormFlux : public VectorFormDG<double>
   {
   public:
@@ -249,25 +267,40 @@ public:
     double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, 
       Func<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
     {
-      double w_L[4], w_R[4];
-      double result = 0.;
+      EulerEquationsWeakFormExplicitDoubleReflection* cwf = (EulerEquationsWeakFormExplicitDoubleReflection*)(this->wf);
 
-      for (int point_i = 0; point_i < n; point_i++)
+      if(!cwf->inter_flux_set)
       {
-        w_L[0] = ext[0]->val[point_i];
-        w_L[1] = ext[1]->val[point_i];
-        w_L[2] = ext[2]->val[point_i];
-        w_L[3] = ext[3]->val[point_i];
+#pragma omp critical
+        if(!cwf->inter_flux_set)
+        {
+          memset(cwf->inter_flux, 0, sizeof(double)*4);
 
-        w_R[0] = ext[0]->val_neighbor[point_i];
-        w_R[1] = ext[1]->val_neighbor[point_i];
-        w_R[2] = ext[2]->val_neighbor[point_i];
-        w_R[3] = ext[3]->val_neighbor[point_i];
+          double result[4];
+          double w_L[4], w_R[4];
+          for (int point_i = 0; point_i < n; point_i++)
+          {
+            w_L[0] = ext[0]->val[point_i];
+            w_L[1] = ext[1]->val[point_i];
+            w_L[2] = ext[2]->val[point_i];
+            w_L[3] = ext[3]->val[point_i];
 
-        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+            w_R[0] = ext[0]->val_neighbor[point_i];
+            w_R[1] = ext[1]->val_neighbor[point_i];
+            w_R[2] = ext[2]->val_neighbor[point_i];
+            w_R[3] = ext[3]->val_neighbor[point_i];
+
+            this->num_flux->numerical_flux(result, w_L, w_R, e->nx[point_i], e->ny[point_i]);
+
+            for(int k = 0; k < 4; k++)
+              cwf->inter_flux[k] += wt[point_i] * result[k] * v->val[point_i];
+          }
+
+          cwf->inter_flux_set = true;
+        }
       }
 
-      return -result * wf->get_current_time_step();
+      return -cwf->inter_flux[this->i] * wf->get_current_time_step();
     }
 
     VectorFormDG<double>* clone()  const
@@ -311,34 +344,50 @@ public:
       exact_density(exact_density), exact_density_vel_x(exact_density_vel_x), exact_density_vel_y(exact_density_vel_y), exact_energy(exact_energy),
       kappa(kappa)
     {
-      
+
     }
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
-      double w_L[4], w_R[4];
-      double result = 0.;
+      EulerEquationsWeakFormExplicitDoubleReflection* cwf = (EulerEquationsWeakFormExplicitDoubleReflection*)(this->wf);
 
-      ExactSolutionScalar<double>* sln[4];
-      sln[0] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_density.get());
-      sln[1] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_density_vel_x.get());
-      sln[2] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_density_vel_y.get());
-      sln[3] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_energy.get());
-
-      for (int point_i = 0; point_i < n; point_i++)
+      if(!cwf->bdy_flux_set)
       {
-        w_L[0] = ext[0]->val[point_i];
-        w_L[1] = ext[1]->val[point_i];
-        w_L[2] = ext[2]->val[point_i];
-        w_L[3] = ext[3]->val[point_i];
+#pragma omp critical
+        if(!cwf->bdy_flux_set)
+        {
+          memset(cwf->bdy_flux, 0, sizeof(double)*4);
 
-        for(int k = 0; k < 4; k++)
-          w_R[k] = sln[k]->value(e->x[point_i], e->y[point_i]);
+          double result[4];
+          double w_L[4], w_R[4];
 
-        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+          ExactSolutionScalar<double>* sln[4];
+          sln[0] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_density.get());
+          sln[1] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_density_vel_x.get());
+          sln[2] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_density_vel_y.get());
+          sln[3] = dynamic_cast<ExactSolutionScalar<double>*>(this->exact_energy.get());
+
+          for (int point_i = 0; point_i < n; point_i++)
+          {
+            w_L[0] = ext[0]->val[point_i];
+            w_L[1] = ext[1]->val[point_i];
+            w_L[2] = ext[2]->val[point_i];
+            w_L[3] = ext[3]->val[point_i];
+
+            for(int k = 0; k < 4; k++)
+              w_R[k] = sln[k]->value(e->x[point_i], e->y[point_i]);
+
+            this->num_flux->numerical_flux(result, w_L, w_R, e->nx[point_i], e->ny[point_i]);
+
+            for(int k = 0; k < 4; k++)
+              cwf->bdy_flux[k] += wt[point_i] * result[k] * v->val[point_i];
+          }
+
+          cwf->bdy_flux_set = true;
+        }
       }
 
-      return -result * wf->get_current_time_step();
+      return -cwf->bdy_flux[this->i] * wf->get_current_time_step();
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>* *ext) const 
@@ -370,25 +419,41 @@ public:
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
-      double w_L[4], w_R[4];
-      double result = 0.;
+      EulerEquationsWeakFormExplicitDoubleReflection* cwf = (EulerEquationsWeakFormExplicitDoubleReflection*)(this->wf);
 
-      for (int point_i = 0; point_i < n; point_i++)
+      if(!cwf->solid_flux_set)
       {
-        w_L[0] = ext[0]->val[point_i];
-        w_L[1] = ext[1]->val[point_i];
-        w_L[2] = ext[2]->val[point_i];
-        w_L[3] = ext[3]->val[point_i];
+#pragma omp critical
+        if(!cwf->solid_flux_set)
+        {
+          memset(cwf->solid_flux, 0, sizeof(double)*4);
 
-        w_R[0] = ext[0]->val[point_i];
-        w_R[1] = ext[1]->val[point_i] - 2 * e->nx[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
-        w_R[2] = ext[2]->val[point_i] - 2 * e->ny[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
-        w_R[3] = ext[3]->val[point_i];
+          double result[4];
+          double w_L[4], w_R[4];
 
-        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+          for (int point_i = 0; point_i < n; point_i++)
+          {
+            w_L[0] = ext[0]->val[point_i];
+            w_L[1] = ext[1]->val[point_i];
+            w_L[2] = ext[2]->val[point_i];
+            w_L[3] = ext[3]->val[point_i];
+
+            w_R[0] = ext[0]->val[point_i];
+            w_R[1] = ext[1]->val[point_i] - 2 * e->nx[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
+            w_R[2] = ext[2]->val[point_i] - 2 * e->ny[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
+            w_R[3] = ext[3]->val[point_i];
+
+            this->num_flux->numerical_flux(result, w_L, w_R, e->nx[point_i], e->ny[point_i]);
+
+            for(int k = 0; k < 4; k++)
+              cwf->solid_flux[k] += wt[point_i] * result[k] * v->val[point_i];
+
+          }
+          cwf->solid_flux_set = true;
+        }
       }
 
-      return -result * wf->get_current_time_step();
+      return -cwf->solid_flux[this->i] * wf->get_current_time_step();
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>* *ext) const 
