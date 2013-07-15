@@ -196,7 +196,9 @@ public:
           double nx, double ny);
 
   void Euler_flux_1(double state[4], double result[4]);
+  double Euler_flux_1_i(int i, double state[4]);
   void Euler_flux_2(double state[4], double result[4]);
+  double Euler_flux_2_i(int i, double state[4]);
 
   double calculate_s(double state[4], double nx, double ny);
 };

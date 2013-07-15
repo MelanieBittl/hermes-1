@@ -890,9 +890,18 @@ void LaxFriedrichsNumericalFlux::numerical_flux(double result[4], double w_L[4],
 double LaxFriedrichsNumericalFlux::numerical_flux_i(int component, double w_L[4], double w_R[4],
                                                     double nx, double ny)
 {
-  double result[4];
-  this->numerical_flux(result, w_L, w_R, nx, ny);
-  return result[component];
+  double s_left = this->calculate_s(w_L, nx, ny);
+  double s_right = this->calculate_s(w_R, nx, ny);
+  
+  double first_flux_left = this->Euler_flux_1_i(component, w_L);
+  double first_flux_right = this->Euler_flux_1_i(component, w_R);
+  double first_flux = 0.5 * (first_flux_left + first_flux_right);
+
+  double second_flux_left = this->Euler_flux_2_i(component, w_L);
+  double second_flux_right = this->Euler_flux_2_i(component, w_R);
+  double second_flux = 0.5 * (second_flux_left + second_flux_right);
+
+  return (first_flux * nx) + (second_flux * ny) - (std::max(s_left, s_right) * (w_R[component] - w_L[component]));
 }
 
 void LaxFriedrichsNumericalFlux::Euler_flux_1(double state[4], double result[4])
@@ -909,6 +918,36 @@ void LaxFriedrichsNumericalFlux::Euler_flux_2(double state[4], double result[4])
   result[1] = (state[1] * state[2] / state[0]);
   result[2] = (state[2] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
   result[3] = (state[3] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[2] / state[0]);
+}
+
+double LaxFriedrichsNumericalFlux::Euler_flux_1_i(int i, double state[4])
+{
+  switch(i)
+  {
+  case 0:
+    return state[1];
+  case 1:
+    return (state[1] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  case 2:
+    return (state[1] * state[2] / state[0]);
+  case 3:
+    return (state[3] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[1] / state[0]);
+  }
+}
+
+double LaxFriedrichsNumericalFlux::Euler_flux_2_i(int i, double state[4])
+{
+  switch(i)
+  {
+  case 0:
+    return state[2];
+  case 1:
+    return (state[1] * state[2] / state[0]);
+  case 2:
+    return (state[2] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  case 3:
+    return (state[3] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[2] / state[0]);
+  }
 }
 
 double LaxFriedrichsNumericalFlux::calculate_s(double state[4], double nx, double ny)
