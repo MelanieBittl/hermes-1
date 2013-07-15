@@ -22,16 +22,16 @@ const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 100;
+const unsigned int EVERY_NTH_STEP = 1;
 
-bool SHOCK_CAPTURING = false;
+bool SHOCK_CAPTURING = true;
 
 // Initial polynomial degree.
-const int P_INIT = 0;
+const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
 const int INIT_REF_NUM = 5;
 // Initial time step.
-double time_step_length = 5E-5;
+double time_step_length = 1E-4;
 double TIME_INTERVAL_LENGTH = .2;
 
 // Kappa.
