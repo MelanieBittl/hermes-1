@@ -29,7 +29,7 @@ bool SHOCK_CAPTURING = false;
 // Initial polynomial degree.
 const int P_INIT = 0;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 4;
+const int INIT_REF_NUM = 6;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
@@ -66,10 +66,6 @@ int main(int argc, char* argv[])
   SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
   SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
   Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho, space_rho_v_x, space_rho_v_y, space_e);
-
-  BaseView<double> b;
-  b.show(space_rho);
-  b.wait_for_close();
 
   int ndof = Space<double>::get_num_dofs(spaces);
   Hermes::Mixins::Loggable::Static::info("Ndof: %d", ndof);
@@ -123,9 +119,9 @@ int main(int argc, char* argv[])
 
     // Solve.
     ((CustomInitialCondition*)exact_rho.get())->time = t;
-    ((CustomInitialCondition*)exact_rho.get())->time = t;
-    ((CustomInitialCondition*)exact_rho.get())->time = t;
-    ((CustomInitialCondition*)exact_rho.get())->time = t;
+    ((CustomInitialCondition*)exact_rho_v_x.get())->time = t;
+    ((CustomInitialCondition*)exact_rho_v_y.get())->time = t;
+    ((CustomInitialCondition*)exact_e.get())->time = t;
     solver.solve();
 
 #pragma region *. Get the solution with optional shock capturing.
