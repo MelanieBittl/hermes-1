@@ -20,20 +20,18 @@ using namespace Hermes::Hermes2D::Views;
 // Set to "true" to enable Hermes OpenGL visualization. 
 const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 100;
 
 bool SHOCK_CAPTURING = false;
 
 // Initial polynomial degree.
 const int P_INIT = 0;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 4;
-// CFL value.
-double CFL_NUMBER = 0.1;
+const int INIT_REF_NUM = 5;
 // Initial time step.
-double time_step_length = 1E-4;
+double time_step_length = 5E-5;
 double TIME_INTERVAL_LENGTH = .2;
 
 // Kappa.
@@ -59,6 +57,9 @@ int main(int argc, char* argv[])
     mesh->refine_in_area("Post", 1, 1);
     mesh->refine_in_area("Pre", 1, 0);
   }
+  mesh->refine_all_elements(2);
+  mesh->refine_all_elements(2);
+  mesh->refine_all_elements(2);
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -70,9 +71,6 @@ int main(int argc, char* argv[])
   int ndof = Space<double>::get_num_dofs(spaces);
   Hermes::Mixins::Loggable::Static::info("Ndof: %d", ndof);
 #pragma endregion
-
-  // Set up CFL calculation class.
-  CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
   // Set initial conditions.
   MeshFunctionSharedPtr<double> exact_rho(new CustomInitialCondition(mesh, 0, KAPPA));
@@ -98,6 +96,7 @@ int main(int argc, char* argv[])
 
   ScalarView density_view("Density", new WinGeom(0, 0, 600, 300));
   ScalarView pressure_view("Pressure", new WinGeom(0, 330, 600, 300));
+  pressure_view.set_min_max_range(1, 557.8);
   ScalarView velocity_view("Velocity", new WinGeom(650, 0, 600, 300));
   ScalarView eview("Error - density", new WinGeom(0, 330, 600, 300));
   ScalarView eview1("Error - momentum", new WinGeom(0, 660, 600, 300));
@@ -106,17 +105,14 @@ int main(int argc, char* argv[])
 
   LinearSolver<double> solver(&wf, spaces);
   solver.set_jacobian_constant();
+  solver.set_verbose_output(false);
+  // Set the current time step.
+  wf.set_current_time_step(time_step_length);
 
 #pragma region 4. Time stepping loop.
   int iteration = 0;
   for(double t = 0.0; t <= TIME_INTERVAL_LENGTH + Hermes::Epsilon; t += time_step_length)
   {
-    // Info.
-    Hermes::Mixins::Loggable::Static::info("---- Time step %d, time %3.5f.", iteration++, t);
-
-    // Set the current time step.
-    wf.set_current_time_step(time_step_length);
-
     // Solve.
     ((CustomInitialCondition*)exact_rho.get())->time = t;
     ((CustomInitialCondition*)exact_rho_v_x.get())->time = t;
@@ -175,12 +171,12 @@ int main(int argc, char* argv[])
     }
 #pragma endregion
 
-    // Calculate time step according to CFL condition.
-    //CFL.calculate(prev_slns, mesh, time_step_length);
-
 #pragma region 4.1. Visualization
     if(((iteration - 1) % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
     {
+      // Info.
+      Hermes::Mixins::Loggable::Static::info("---- Time step %d, time %3.5f.", iteration, t);
+
       // Hermes visualization.
       if(HERMES_VISUALIZATION)
       {        
@@ -208,6 +204,8 @@ int main(int argc, char* argv[])
       }
     }
 #pragma endregion
+
+    iteration++;
   }
 #pragma endregion
 

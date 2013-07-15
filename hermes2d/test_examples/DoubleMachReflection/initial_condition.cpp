@@ -3,6 +3,7 @@ class CustomInitialCondition : public ExactSolutionScalar<double>
 public:
   CustomInitialCondition(MeshSharedPtr mesh, int component, double kappa) : ExactSolutionScalar<double>(mesh), component(component), kappa(kappa)
   {
+this->time = 0.;
     sqrt3 = std::sqrt(3.0);
     first_vel = 8.25*std::cos(M_PI/6.)*8.0;
     second_vel = -8.25*std::sin(M_PI/6.)*8.0;
