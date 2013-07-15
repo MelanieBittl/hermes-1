@@ -17,25 +17,25 @@ public:
     switch(this->component)
     {
     case 0:
-      if(x< (1./6. + ((y * (1 + 20 * this->time) / sqrt3))))
+      if(x < (1./6.) + (y * (1 + 20 * this->time) / sqrt3))
         return 8.0;
       else		
         return 1.4;
       break;
     case 1:
-      if(x< (1./6. + ((y * (1 + 20 * this->time) / sqrt3))))
+      if(x < (1./6.) + (y * (1 + 20 * this->time) / sqrt3))
         return 8.25*std::cos(M_PI/6.)*8.0;
       else		
         return 0.0;
       break;
     case 2:
-      if(x< (1./6. + ((y * (1 + 20 * this->time) / sqrt3))))
+      if(x < (1./6.) + (y * (1 + 20 * this->time) / sqrt3))
         return -8.25*std::sin(M_PI/6.)*8.0;
       else		
         return 0.0;
       break;
     case 3:
-      if(x< (1./6. + ((y * (1 + 20 * this->time) / sqrt3))))
+      if(x < (1./6.) + (y * (1 + 20 * this->time) / sqrt3))
         return QuantityCalculator::calc_energy(8.0, 8.25*std::cos(M_PI/6.)*8.0 ,-8.25*std::sin(M_PI/6.)*8.0, 116.5, kappa);
       else		
         return QuantityCalculator::calc_energy(1.4, 0.0 ,0.0, 1.0, kappa);
