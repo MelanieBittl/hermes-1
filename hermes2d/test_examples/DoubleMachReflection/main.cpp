@@ -22,7 +22,7 @@ const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 50;
 
 bool SHOCK_CAPTURING = true;
 
@@ -62,8 +62,7 @@ int main(int argc, char* argv[])
   }
   mesh->refine_all_elements(2);
   mesh->refine_all_elements(2);
-  mesh->refine_all_elements(2);
-  mesh->refine_all_elements(2);
+  mesh->refine_all_elements();
   mesh->refine_all_elements();
 
   // Initialize boundary condition types and spaces with default shapesets.
