@@ -45,6 +45,9 @@ const double KAPPA = 1.4;
 
 int main(int argc, char* argv[])
 {
+  Hermes::Mixins::Loggable logger(true);
+  logger.set_logFile_name("computation.log");
+
 #pragma region 1. Load mesh and initialize spaces.
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
@@ -71,7 +74,7 @@ int main(int argc, char* argv[])
   Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho, space_rho_v_x, space_rho_v_y, space_e);
 
   int ndof = Space<double>::get_num_dofs(spaces);
-  Hermes::Mixins::Loggable::Static::info("Ndof: %d", ndof);
+  logger.info("Ndof: %d", ndof);
 #pragma endregion
 
   // Set initial conditions.
@@ -115,6 +118,9 @@ int main(int argc, char* argv[])
   int iteration = 0;
   for(double t = 0.0; t <= TIME_INTERVAL_LENGTH + Hermes::Epsilon; t += time_step_length)
   {
+    // Info.
+    logger.info("---- Time step %d, time %3.5f.", iteration, t);
+      
     // Solve.
     ((CustomInitialCondition*)exact_rho.get())->time = t;
     ((CustomInitialCondition*)exact_rho_v_x.get())->time = t;
@@ -136,9 +142,6 @@ int main(int argc, char* argv[])
 #pragma region 4.1. Visualization
     if(((iteration - 1) % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
     {
-      // Info.
-      Hermes::Mixins::Loggable::Static::info("---- Time step %d, time %3.5f.", iteration, t);
-
       // Hermes visualization.
       if(HERMES_VISUALIZATION)
       {        
