@@ -313,6 +313,11 @@ public:
 
     }
 
+    ~EulerEquationsVectorFormBdyFlux()
+    {
+      delete this->num_flux;
+    }
+
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
       double result = 0.;
@@ -366,6 +371,11 @@ public:
   public:
     EulerEquationsVectorFormSolidWall(int i, Hermes::vector<std::string> markers, double kappa)
       : VectorFormSurf<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), kappa(kappa) {set_areas(markers);}
+
+    ~EulerEquationsVectorFormSolidWall()
+    {
+      delete this->num_flux;
+    }
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
