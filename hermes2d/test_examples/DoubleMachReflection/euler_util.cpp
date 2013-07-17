@@ -1328,6 +1328,7 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Post
       delete [] real_vector;
 
       PostProcessing::VertexBasedLimiter real_component_limiter(spaces[0], real_vector, 1);
+      delete [] real_vector;
       real_component_limiter.get_solution();
       real_vector = real_component_limiter.get_solution_vector();
 

@@ -22,7 +22,7 @@ const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 10;
 
 bool SHOCK_CAPTURING = true;
 
@@ -31,7 +31,7 @@ const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
 const int INIT_REF_NUM = 5;
 // Initial time step.
-double time_step_length = 5E-5;
+double time_step_length = 1E-4;
 double TIME_INTERVAL_LENGTH = .2;
 
 // Kappa.
@@ -62,8 +62,7 @@ int main(int argc, char* argv[])
   }
   mesh->refine_all_elements(2);
   mesh->refine_all_elements(2);
-  mesh->refine_all_elements(2);
-  mesh->refine_all_elements(2);
+  mesh->refine_all_elements();
   mesh->refine_all_elements();
 
   // Initialize boundary condition types and spaces with default shapesets.
