@@ -38,7 +38,7 @@ VijayasundaramNumericalFlux::VijayasundaramNumericalFlux(double kappa) : StegerW
 }
 
 void VijayasundaramNumericalFlux::numerical_flux(double result[4], double w_L[4], double w_R[4],
-          double nx, double ny)
+                                                 double nx, double ny)
 {
   double result_temp[4];
   double w_mean[4];
@@ -56,7 +56,7 @@ StegerWarmingNumericalFlux::StegerWarmingNumericalFlux(double kappa) : Numerical
 
 
 void StegerWarmingNumericalFlux::numerical_flux(double result[4], double w_L[4], double w_R[4],
-        double nx, double ny)
+                                                double nx, double ny)
 {
   double result_temp[4];
   P_plus(result_temp, w_L, w_L, nx, ny);
@@ -866,7 +866,7 @@ void LaxFriedrichsNumericalFlux::numerical_flux(double result[4], double w_L[4],
 {
   double s_left = this->calculate_s(w_L, nx, ny);
   double s_right = this->calculate_s(w_R, nx, ny);
-  
+
   double first_flux[4];
   double first_flux_left[4];
   double first_flux_right[4];
@@ -892,7 +892,7 @@ double LaxFriedrichsNumericalFlux::numerical_flux_i(int component, double w_L[4]
 {
   double s_left = this->calculate_s(w_L, nx, ny);
   double s_right = this->calculate_s(w_R, nx, ny);
-  
+
   double first_flux_left = this->Euler_flux_1_i(component, w_L);
   double first_flux_right = this->Euler_flux_1_i(component, w_R);
   double first_flux = 0.5 * (first_flux_left + first_flux_right);
@@ -954,4 +954,113 @@ double LaxFriedrichsNumericalFlux::calculate_s(double state[4], double nx, doubl
 {
   double speed_of_sound = QuantityCalculator::calc_sound_speed(state[0], state[1], state[2], state[3], this->kappa);
   return std::abs(((nx * state[1]) + (ny * state[2])) / state[0]) + speed_of_sound;
+}
+
+
+HLLNumericalFlux::HLLNumericalFlux(double kappa) : NumericalFlux(kappa)
+{
+}
+
+void HLLNumericalFlux::numerical_flux(double result[4], double w_L[4], double w_R[4],
+                                      double nx, double ny)
+{
+  throw Hermes::Exceptions::MethodNotImplementedException("HLLNumericalFlux::numerical_flux");
+}
+
+double HLLNumericalFlux::numerical_flux_i(int component, double w_L[4], double w_R[4],
+                                          double nx, double ny)
+{
+  double s_left = this->calculate_s_L(w_L, w_R, nx, ny);
+  if(s_left > 0.)
+  {
+    double first_flux_left = this->Euler_flux_1_i(component, w_L);
+    double second_flux_left = this->Euler_flux_2_i(component, w_L);
+    return (first_flux_left * nx) + (second_flux_left * ny);
+  }
+  
+  double s_right = this->calculate_s_R(w_L, w_R, nx, ny);
+  if(s_right < 0.)
+  {
+    double first_flux_right = this->Euler_flux_1_i(component, w_R);
+    double second_flux_right = this->Euler_flux_2_i(component, w_R);
+    return (first_flux_right * nx) + (second_flux_right * ny);
+  }
+
+  double first_ratio = (s_right / (s_right - s_left)) * (this->Euler_flux_1_i(component, w_L) * nx + this->Euler_flux_2_i(component, w_L) * ny);
+  double second_ratio = (s_left / (s_right - s_left)) * (this->Euler_flux_1_i(component, w_R) * nx + this->Euler_flux_2_i(component, w_R) * ny);
+  double third_ratio = (s_left * s_right / (s_right - s_left)) * (w_R[component] - w_L[component]);
+
+  return first_ratio - second_ratio + third_ratio;
+}
+
+void HLLNumericalFlux::Euler_flux_1(double state[4], double result[4])
+{
+  result[0] = state[1];
+  result[1] = (state[1] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  result[2] = (state[1] * state[2] / state[0]);
+  result[3] = (state[3] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[1] / state[0]);
+}
+
+void HLLNumericalFlux::Euler_flux_2(double state[4], double result[4])
+{
+  result[0] = state[2];
+  result[1] = (state[1] * state[2] / state[0]);
+  result[2] = (state[2] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  result[3] = (state[3] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[2] / state[0]);
+}
+
+double HLLNumericalFlux::Euler_flux_1_i(int i, double state[4])
+{
+  switch(i)
+  {
+  case 0:
+    return state[1];
+  case 1:
+    return (state[1] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  case 2:
+    return (state[1] * state[2] / state[0]);
+  case 3:
+    return (state[3] * state[1] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[1] / state[0]);
+  }
+}
+
+double HLLNumericalFlux::Euler_flux_2_i(int i, double state[4])
+{
+  switch(i)
+  {
+  case 0:
+    return state[2];
+  case 1:
+    return (state[1] * state[2] / state[0]);
+  case 2:
+    return (state[2] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa);
+  case 3:
+    return (state[3] * state[2] / state[0]) + QuantityCalculator::calc_pressure(state[0], state[1], state[2], state[3], this->kappa) * (state[2] / state[0]);
+  }
+}
+
+double HLLNumericalFlux::calculate_s_L(double state_L[4], double state_R[4], double nx, double ny)
+{
+  double speed_of_sound_L = QuantityCalculator::calc_sound_speed(state_L[0], state_L[1], state_L[2], state_L[3], this->kappa);
+  double speed_of_sound_R = QuantityCalculator::calc_sound_speed(state_R[0], state_R[1], state_R[2], state_R[3], this->kappa);
+
+  double max_speed_of_sound = std::max(speed_of_sound_L, speed_of_sound_R);
+
+  double first_component = ((nx * state_L[1]) + (ny * state_L[2])) / state_L[0];
+  double second_component = ((nx * state_R[1]) + (ny * state_R[2])) / state_R[0];
+
+  return std::min(first_component, second_component) - max_speed_of_sound;
+}
+
+double HLLNumericalFlux::calculate_s_R(double state_L[4], double state_R[4], double nx, double ny)
+{
+  double speed_of_sound_L = QuantityCalculator::calc_sound_speed(state_L[0], state_L[1], state_L[2], state_L[3], this->kappa);
+  double speed_of_sound_R = QuantityCalculator::calc_sound_speed(state_R[0], state_R[1], state_R[2], state_R[3], this->kappa);
+
+  double max_speed_of_sound = std::max(speed_of_sound_L, speed_of_sound_R);
+
+  double first_component = ((nx * state_L[1]) + (ny * state_L[2])) / state_L[0];
+  double second_component = ((nx * state_R[1]) + (ny * state_R[2])) / state_R[0];
+
+  return std::max(first_component, second_component) + max_speed_of_sound;
 }
