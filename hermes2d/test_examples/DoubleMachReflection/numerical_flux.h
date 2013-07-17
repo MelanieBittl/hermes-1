@@ -202,4 +202,24 @@ public:
 
   double calculate_s(double state[4], double nx, double ny);
 };
+
+class HLLNumericalFlux : public NumericalFlux
+{
+public:
+  HLLNumericalFlux(double kappa);
+
+  virtual void numerical_flux(double result[4], double w_L[4], double w_R[4],
+          double nx, double ny);
+  
+  virtual double numerical_flux_i(int component, double w_L[4], double w_R[4],
+          double nx, double ny);
+
+  void Euler_flux_1(double state[4], double result[4]);
+  double Euler_flux_1_i(int i, double state[4]);
+  void Euler_flux_2(double state[4], double result[4]);
+  double Euler_flux_2_i(int i, double state[4]);
+
+  double calculate_s_L(double state_L[4], double state_R[4], double nx, double ny);
+  double calculate_s_R(double state_L[4], double state_R[4], double nx, double ny);
+};
 #endif

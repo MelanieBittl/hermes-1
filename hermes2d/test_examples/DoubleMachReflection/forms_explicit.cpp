@@ -237,7 +237,7 @@ public:
   {
   public:
     EulerEquationsVectorFormFlux(int i, double kappa, EulerFluxes* fluxes) 
-      : VectorFormDG<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), fluxes(fluxes) 
+      : VectorFormDG<double>(i), num_flux(new HLLNumericalFlux(kappa)), fluxes(fluxes) 
     {
     }
 
@@ -276,7 +276,7 @@ public:
       return form;
     }
 
-    LaxFriedrichsNumericalFlux* num_flux;
+    HLLNumericalFlux* num_flux;
     EulerFluxes* fluxes;
   };
 
@@ -306,7 +306,7 @@ public:
   public:
     EulerEquationsVectorFormBdyFlux(int i, MeshFunctionSharedPtr<double> exact_density, MeshFunctionSharedPtr<double> exact_density_vel_x, MeshFunctionSharedPtr<double> exact_density_vel_y,  MeshFunctionSharedPtr<double> exact_energy, double kappa)
       : VectorFormSurf<double>(i),
-      num_flux(new LaxFriedrichsNumericalFlux(kappa)),
+      num_flux(new HLLNumericalFlux(kappa)),
       exact_density(exact_density), exact_density_vel_x(exact_density_vel_x), exact_density_vel_y(exact_density_vel_y), exact_energy(exact_energy),
       kappa(kappa)
     {
@@ -359,7 +359,7 @@ public:
 
     // Members.
     double kappa;
-    LaxFriedrichsNumericalFlux* num_flux;
+    HLLNumericalFlux* num_flux;
     MeshFunctionSharedPtr<double> exact_density;
     MeshFunctionSharedPtr<double> exact_density_vel_x;
     MeshFunctionSharedPtr<double> exact_density_vel_y;
@@ -370,7 +370,7 @@ public:
   {
   public:
     EulerEquationsVectorFormSolidWall(int i, Hermes::vector<std::string> markers, double kappa)
-      : VectorFormSurf<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), kappa(kappa) {set_areas(markers);}
+      : VectorFormSurf<double>(i), num_flux(new HLLNumericalFlux(kappa)), kappa(kappa) {set_areas(markers);}
 
     ~EulerEquationsVectorFormSolidWall()
     {
@@ -414,6 +414,6 @@ public:
 
     // Members.
     double kappa;
-    LaxFriedrichsNumericalFlux* num_flux;
+    HLLNumericalFlux* num_flux;
   };
 };
