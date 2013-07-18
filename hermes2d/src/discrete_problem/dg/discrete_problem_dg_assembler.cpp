@@ -28,7 +28,7 @@ namespace Hermes
     static const std::string H2D_DG_INNER_EDGE = "-1234567";
 
     template<typename Scalar>
-    DiscreteProblemDGAssembler<Scalar>::DiscreteProblemDGAssembler(DiscreteProblemThreadAssembler<Scalar>* threadAssembler, const Hermes::vector<SpaceSharedPtr<Scalar> >& spaces)
+    DiscreteProblemDGAssembler<Scalar>::DiscreteProblemDGAssembler(DiscreteProblemThreadAssembler<Scalar>* threadAssembler, const Hermes::vector<SpaceSharedPtr<Scalar> >& spaces, Hermes::vector<MeshSharedPtr>& meshes)
       : pss(threadAssembler->pss),
       refmaps(threadAssembler->refmaps),
       u_ext(threadAssembler->u_ext),
@@ -42,7 +42,8 @@ namespace Hermes
       current_state(NULL),
       selectiveAssembler(threadAssembler->selectiveAssembler),
       do_not_use_cache(threadAssembler->do_not_use_cache),
-      spaces(spaces)
+      spaces(spaces),
+      meshes(meshes)
     {
       this->DG_matrix_forms_present = false;
       this->DG_vector_forms_present = false;
@@ -474,10 +475,10 @@ namespace Hermes
           }
           if(!existing_ns)
           {
-            NeighborSearch<Scalar>* ns = new NeighborSearch<Scalar>(current_state->e[i], spaces[i]->get_mesh());
+            NeighborSearch<Scalar>* ns = new NeighborSearch<Scalar>(current_state->e[i], this->meshes[i]);
             ns->original_central_el_transform = current_state->sub_idx[i];
             current_neighbor_searches[i] = ns;
-            if(current_neighbor_searches[i]->set_active_edge_multimesh(current_state->isurf) && spaces[i]->get_type() == HERMES_L2_SPACE)
+            if(current_neighbor_searches[i]->set_active_edge_multimesh(current_state->isurf) && (i >= this->spaces_size || spaces[i]->get_type() == HERMES_L2_SPACE))
               DG_intra = true;
             current_neighbor_searches[i]->clear_initial_sub_idx();
           }
