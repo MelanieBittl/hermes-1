@@ -14,7 +14,7 @@ const bool VTK_VISUALIZATION = false;
 const unsigned int EVERY_NTH_STEP = 1;
 // Adaptivity.
 // Every UNREF_FREQth time step the mesh is unrefined.
-const int UNREF_FREQ = 10;
+const int UNREF_FREQ = 3;
 int REFINEMENT_COUNT = 1;
 
 // Shock capturing.
@@ -54,11 +54,8 @@ int main(int argc, char* argv[])
   mloader.load("domain.xml", mesh);
 
   // Perform initial mesh refinements.
-  for (int i = 0; i < INIT_REF_NUM; i++)
-  {
-    mesh->refine_in_area("Post", 1, 1);
-    mesh->refine_in_area("Pre", 1, 0);
-  }
+  mesh->refine_in_area("Pre", 1, 2);
+  mesh->refine_in_area("Pre", 1, 2);
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -181,8 +178,8 @@ int main(int argc, char* argv[])
       solver.set_spaces(ref_spaces);
 
       // Project the previous time level solution onto the new fine mesh
-      if(iteration > 0)
-        OGProjection<double>::project_global(ref_spaces, prev_slns, prev_slns);
+      //if(iteration > 0)
+        //OGProjection<double>::project_global(ref_spaces, prev_slns, prev_slns);
 #pragma endregion
 
 #pragma region 7.2 Solve
@@ -277,6 +274,5 @@ int main(int argc, char* argv[])
 #pragma endregion
 
   // Done.
-  View::wait();
   return 0;
 }
