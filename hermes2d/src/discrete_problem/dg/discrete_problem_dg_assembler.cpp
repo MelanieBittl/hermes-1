@@ -131,29 +131,29 @@ namespace Hermes
             MultimeshDGNeighborTree<Scalar>::process_edge(neighbor_searches[current_state->isurf], this->current_state->num, this->num_neighbors[current_state->isurf], this->processed[current_state->isurf]);
           }
         }
-      }
-      for(current_state->isurf = 0; current_state->isurf < current_state->rep->nvert; current_state->isurf++)
-      {
-        if(!current_state->bnd[current_state->isurf])
+        for(current_state->isurf = 0; current_state->isurf < current_state->rep->nvert; current_state->isurf++)
         {
-#ifdef DEBUG_DG_ASSEMBLING
-          debug();
-#endif
-          for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors[current_state->isurf]; neighbor_i++)
+          if(!current_state->bnd[current_state->isurf])
           {
-            if(!DG_vector_forms_present && processed[current_state->isurf][neighbor_i])
-              continue;
+#ifdef DEBUG_DG_ASSEMBLING
+            debug();
+#endif
+            for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors[current_state->isurf]; neighbor_i++)
+            {
+              if(!DG_vector_forms_present && processed[current_state->isurf][neighbor_i])
+                continue;
 
-            // DG-inner-edge-wise parameters for WeakForm.
-            wf->set_active_DG_state(current_state->e, current_state->isurf);
+              // DG-inner-edge-wise parameters for WeakForm.
+              wf->set_active_DG_state(current_state->e, current_state->isurf);
 
-            assemble_one_neighbor(processed[current_state->isurf][neighbor_i], neighbor_i, neighbor_searches[current_state->isurf]);
+              assemble_one_neighbor(processed[current_state->isurf][neighbor_i], neighbor_i, neighbor_searches[current_state->isurf]);
+            }
+
+            deinit_neighbors(neighbor_searches[current_state->isurf], current_state);
           }
-
-          deinit_neighbors(neighbor_searches[current_state->isurf], current_state);
+          else
+            processed[current_state->isurf] = NULL;
         }
-        else
-          processed[current_state->isurf] = NULL;
       }
     }
 
