@@ -14,8 +14,8 @@ const bool VTK_VISUALIZATION = false;
 const unsigned int EVERY_NTH_STEP = 1;
 // Adaptivity.
 // Every UNREF_FREQth time step the mesh is unrefined.
-const int UNREF_FREQ = 3;
-int REFINEMENT_COUNT = 1;
+const int UNREF_FREQ = 10;
+int REFINEMENT_COUNT = 0;
 
 // Shock capturing.
 bool SHOCK_CAPTURING = false;
@@ -26,7 +26,8 @@ const int INIT_REF_NUM = 2;
 // Initial time step.
 double time_step_length = 1E-4;
 double TIME_INTERVAL_LENGTH = .2;
-
+// CFL value.
+double CFL_NUMBER = 0.3; 
 // Kappa.
 const double KAPPA = 1.4;
 
@@ -37,13 +38,19 @@ const double KAPPA = 1.4;
 #include "initial_condition.cpp"
 
 // Stopping criterion for adaptivity.
-double adaptivityErrorStop(int iteration)
+bool adaptivityErrorStop(int iteration, double error, int ref_ndof)
 {
-  return 5.0;
+  if(ref_ndof < 2e3)
+    return false;
+  if(ref_ndof > 4e3)
+    return true;
 }
 
 int main(int argc, char* argv[])
 {
+  // Set up CFL calculation class.
+  CFLCalculation CFL(CFL_NUMBER, KAPPA);
+
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
 
@@ -128,7 +135,7 @@ int main(int argc, char* argv[])
   // Error calculation.
   DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(RelativeErrorToGlobalNorm, 4);
   // Stopping criterion for an adaptivity step.
-  AdaptStoppingCriterionSingleElement<double> stoppingCriterion(.75);
+  AdaptStoppingCriterionLevels<double> stoppingCriterion(.95);
   Adapt<double> adaptivity(spaces, &errorCalculator, &stoppingCriterion);
 #pragma endregion
 
@@ -146,7 +153,7 @@ int main(int argc, char* argv[])
   for(double t = 0.0; t <= TIME_INTERVAL_LENGTH + Hermes::Epsilon; t += time_step_length)
   {
     // Info.
-    logger.info("Time step %d, time %3.5f.", iteration, t);
+    logger.info("Time step %d, time %3.5f, time step %3.5f.", iteration, t, time_step_length);
 
 #pragma region 4.1. Periodic global derefinements.
     if (iteration > 1 && iteration % UNREF_FREQ == 0 && REFINEMENT_COUNT > 0) 
@@ -155,6 +162,7 @@ int main(int argc, char* argv[])
       REFINEMENT_COUNT = 0;
       Space<double>::unrefine_all_mesh_elements(spaces);
       Space<double>::assign_dofs(spaces);
+      solver.free_cache();
     }
 #pragma endregion
 
@@ -162,8 +170,6 @@ int main(int argc, char* argv[])
     int as = 1;
     do
     {
-      logger.info("\tAdaptivity step %d.", as);
-
 #pragma region 7.1 Create reference mesh and spaces.
       ref_mesh = refMeshCreatorFlow.create_ref_mesh();
       Space<double>::ReferenceSpaceCreator refSpaceCreatorRho(space_rho, ref_mesh, 0);
@@ -182,6 +188,9 @@ int main(int argc, char* argv[])
         //OGProjection<double>::project_global(ref_spaces, prev_slns, prev_slns);
 #pragma endregion
 
+      int ref_ndof = Space<double>::get_num_dofs(ref_spaces);
+      logger.info("\tAdaptivity step %d, NDOFs: %i.", as, ref_ndof);
+      
 #pragma region 7.2 Solve
       logger.info("\t\tSolving.");
       ((CustomInitialCondition*)exact_rho.get())->time = t;
@@ -204,6 +213,9 @@ int main(int argc, char* argv[])
         limiter.get_solutions(rslns);
         limitVelocityAndEnergy(ref_spaces, limiter, rslns);
       }
+
+      // Calculate time step according to CFL condition.
+      CFL.calculate(rslns, (ref_spaces)[0]->get_mesh(), time_step_length);
 #pragma endregion
 
 #pragma region 7.3.1 Visualization
@@ -243,13 +255,13 @@ int main(int argc, char* argv[])
 
       // Calculate element errors and total error estimate.
       errorCalculator.calculate_errors(slns, rslns);
-      double err_est_rel_total = errorCalculator.get_total_error_squared() * 100;
+      double err_est_rel_total = errorCalculator.get_error_squared(0) * 100;
 
       // Report results.
-      logger.info("\t\tError: %g%%.", err_est_rel_total);
+      logger.info("\t\tDensity error: %g%%.", err_est_rel_total);
 
       // If err_est too large, adapt the mesh.
-      if (err_est_rel_total < adaptivityErrorStop(iteration))
+      if (adaptivityErrorStop(iteration, err_est_rel_total, ref_ndof))
         break;
       else
       {
