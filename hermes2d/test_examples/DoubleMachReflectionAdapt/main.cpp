@@ -131,6 +131,7 @@ int main(int argc, char* argv[])
 #pragma region Adaptivity setup
   // Initialize refinement selector.
   HOnlySelector<double> selector;
+  Hermes::vector<RefinementSelectors::Selector<double> *> selectors(&selector, &selector, &selector, &selector);
 
   // Error calculation.
   DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(RelativeErrorToGlobalNorm, 4);
@@ -266,7 +267,7 @@ int main(int argc, char* argv[])
       else
       {
         Hermes::Mixins::Loggable::Static::info("\t\tAdapting coarse mesh.");
-        adaptivity.adapt(Hermes::vector<RefinementSelectors::Selector<double> *>(&selector, &selector, &selector, &selector));
+        adaptivity.adapt(selectors);
         REFINEMENT_COUNT++;
         as++;
       }
