@@ -185,8 +185,11 @@ namespace Hermes
 
         // Update the NeighborSearch.
         int added = update_ns_subtree(ns, node, i);
-        i -= added;
-        num_neighbors -= added;
+        if(added >= 0)
+        {
+          i--;
+          num_neighbors--;
+        }
       }
     }
 
@@ -229,7 +232,7 @@ namespace Hermes
       {
         if(node->get_right_son())
           throw Hermes::Exceptions::Exception("Only one son (right) not null in MultimeshDGNeighborTree<Scalar>::update_ns_subtree.");
-        return 0;
+        return -1;
       }
 
       // Key part.
