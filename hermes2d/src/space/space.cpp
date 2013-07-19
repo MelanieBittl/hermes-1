@@ -537,9 +537,8 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void Space<Scalar>::unrefine_all_mesh_elements(bool keep_initial_refinements)
+    void Space<Scalar>::unrefine_all_mesh_elements_internal(bool keep_initial_refinements, bool only_unrefine_space_data)
     {
-      check();
       // find inactive elements with active sons
       Hermes::vector<int> list;
       Element* e;
@@ -637,13 +636,29 @@ namespace Hermes
         else
           edata[list[i]].order = H2D_MAKE_QUAD_ORDER(h_order, v_order);
 
-        this->mesh->unrefine_element_id(list[i]);
+        if(!only_unrefine_space_data)
+          this->mesh->unrefine_element_id(list[i]);
       }
 
       // Recalculate all integrals, do not use previous adaptivity step.
       for_all_active_elements(e, this->mesh)
         this->edata[e->id].changed_in_last_adaptation = true;
+    }
 
+    template<typename Scalar>
+    void Space<Scalar>::unrefine_all_mesh_elements(bool keep_initial_refinements)
+    {
+      this->check();
+      this->unrefine_all_mesh_elements_internal(keep_initial_refinements, false);
+    }
+
+    template<typename Scalar>
+    void Space<Scalar>::unrefine_all_mesh_elements(Hermes::vector<SpaceSharedPtr<Scalar> > spaces, bool keep_initial_refinements)
+    {
+      for(int i = 0; i < spaces.size() - 1; i++)
+        spaces[i]->unrefine_all_mesh_elements_internal(keep_initial_refinements, true);
+
+      spaces[spaces.size() - 1]->unrefine_all_mesh_elements_internal(keep_initial_refinements, false);
     }
 
     template<typename Scalar>

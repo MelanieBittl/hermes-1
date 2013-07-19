@@ -42,7 +42,7 @@ namespace Hermes
     {
     public:
       /// Constructor copying data from DiscreteProblemThreadAssembler.
-      DiscreteProblemDGAssembler(DiscreteProblemThreadAssembler<Scalar>* threadAssembler, const Hermes::vector<SpaceSharedPtr<Scalar> >& spaces);
+      DiscreteProblemDGAssembler(DiscreteProblemThreadAssembler<Scalar>* threadAssembler, const Hermes::vector<SpaceSharedPtr<Scalar> >& spaces, Hermes::vector<MeshSharedPtr>& meshes);
       
       /// Destructor.
       ~DiscreteProblemDGAssembler();
@@ -105,6 +105,7 @@ namespace Hermes
       Traverse::State* current_state;
 
       const Hermes::vector<SpaceSharedPtr<Scalar> >& spaces;
+      const Hermes::vector<MeshSharedPtr>& meshes;
 
       template<typename T> friend class DiscreteProblem;
 

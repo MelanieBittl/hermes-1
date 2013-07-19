@@ -185,8 +185,11 @@ namespace Hermes
 
         // Update the NeighborSearch.
         int added = update_ns_subtree(ns, node, i);
-        i -= added;
-        num_neighbors -= added;
+        if(added >= 0)
+        {
+          i--;
+          num_neighbors--;
+        }
       }
     }
 
@@ -229,7 +232,7 @@ namespace Hermes
       {
         if(node->get_right_son())
           throw Hermes::Exceptions::Exception("Only one son (right) not null in MultimeshDGNeighborTree<Scalar>::update_ns_subtree.");
-        return 0;
+        return -1;
       }
 
       // Key part.
@@ -276,10 +279,10 @@ namespace Hermes
         ns->neighbors.push_back(neighbor);
         ns->neighbor_edges.push_back(edge_info);
 
-        if(!ns->central_transformations[ns->n_neighbors])
+        if((ns->n_neighbors >= ns->central_transformations_alloc_size) || !ns->central_transformations[ns->n_neighbors])
           ns->add_central_transformations(new typename NeighborSearch<Scalar>::Transformations, ns->n_neighbors);
 
-        if(!ns->neighbor_transformations[ns->n_neighbors])
+        if((ns->n_neighbors >= ns->neighbor_transformations_alloc_size) || !ns->neighbor_transformations[ns->n_neighbors])
           ns->add_neighbor_transformations(new typename NeighborSearch<Scalar>::Transformations, ns->n_neighbors);
 
         ns->central_transformations[ns->n_neighbors]->copy_from(*running_central_transformations[i]);
