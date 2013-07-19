@@ -519,10 +519,9 @@ namespace Hermes
         bool pass = true;
         if(DEBUG_DG_ASSEMBLING_ELEMENT != -1)
         {
-          for(unsigned int i = 0; i < (*neighbor_searches[current_state->isurf]).get_size(); i++)
-            if((*neighbor_searches[current_state->isurf]).present(i))
-              if((*neighbor_searches[current_state->isurf]).get(i)->central_el->id == DEBUG_DG_ASSEMBLING_ELEMENT)
-                pass = false;
+          for(unsigned int i = 0; i < this->current_state->num; i++)
+            if(neighbor_searches[current_state->isurf][i]->central_el->id == DEBUG_DG_ASSEMBLING_ELEMENT)
+              pass = false;
         }
         else
           pass = false;
@@ -534,27 +533,25 @@ namespace Hermes
 
         if(!pass)
         {
-          for(unsigned int i = 0; i < (*neighbor_searches[current_state->isurf]).get_size(); i++)
+          for(unsigned int i = 0; i < this->current_state->num; i++)
           {
-            if((*neighbor_searches[current_state->isurf]).present(i))
+            NeighborSearch<Scalar>* ns = neighbor_searches[current_state->isurf][i];
+            std::cout << "The " << ++id << "-th Neighbor search: " << ns->n_neighbors << " neighbors." << std::endl;
+            std::cout << "\tCentral element: " << ns->central_el->id << ", Isurf: " << current_state->isurf << ", Original sub_idx: " << ns->original_central_el_transform << std::endl;
+            for(int j = 0; j < ns->n_neighbors; j++)
             {
-              NeighborSearch<Scalar>* ns = (*neighbor_searches[current_state->isurf]).get(i);
-              std::cout << (std::string)"The " << ++id << (std::string)"-th Neighbor search:: " << (std::string)"Central element: " << ns->central_el->id << (std::string)", Isurf: " << current_state->isurf << (std::string)", Original sub_idx: " << ns->original_central_el_transform << std::endl;
-              for(int j = 0; j < ns->n_neighbors; j++)
+              std::cout << '\t' << "The " << j << "-th neighbor element: " << ns->neighbors[j]->id << std::endl;
+              if(ns->central_transformations[j])
               {
-                std::cout << '\t' << (std::string)"The " << j << (std::string)"-th neighbor element: " << ns->neighbors[j]->id << std::endl;
-                if(ns->central_transformations.present(j))
-                {
-                  std::cout << '\t' << (std::string)"Central transformations: " << std::endl;
-                  for(int k = 0; k < ns->central_transformations.get(j)->num_levels; k++)
-                    std::cout << '\t' << '\t' << ns->central_transformations.get(j)->transf[k] << std::endl;
-                }
-                if(ns->neighbor_transformations.present(j))
-                {
-                  std::cout << '\t' << (std::string)"Neighbor transformations: " << std::endl;
-                  for(int k = 0; k < ns->neighbor_transformations.get(j)->num_levels; k++)
-                    std::cout << '\t' << '\t' << ns->neighbor_transformations.get(j)->transf[k] << std::endl;
-                }
+                std::cout << '\t' << "Central transformations: " << std::endl;
+                for(int k = 0; k < ns->central_transformations[j]->num_levels; k++)
+                  std::cout << '\t' << '\t' << ns->central_transformations[j]->transf[k] << std::endl;
+              }
+              if(ns->neighbor_transformations[j])
+              {
+                std::cout << '\t' << "Neighbor transformations: " << std::endl;
+                for(int k = 0; k < ns->neighbor_transformations[j]->num_levels; k++)
+                  std::cout << '\t' << '\t' << ns->neighbor_transformations[j]->transf[k] << std::endl;
               }
             }
           }
