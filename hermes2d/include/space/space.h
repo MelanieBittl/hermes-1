@@ -164,7 +164,7 @@ namespace Hermes
 
       /// Sets element polynomial order. Can be called by the user. Should not be called
       /// for many elements at once, since assign_dofs() is called at the end of this function.
-      virtual void set_element_order(int id, int order);
+      virtual void set_element_order(int id, int order, int order_v = -1);
 
       /// Sets polynomial order to all elements.
       virtual void set_element_orders(int* elem_orders);
@@ -223,10 +223,22 @@ namespace Hermes
       Shapeset* get_shapeset() const;
 
       /// Saves this space into a file.
-      bool save(const char *filename) const;
+      void save(const char *filename) const;
+#ifdef WITH_BSON
+      void save_bson(const char* filename) const;
+#endif
 
-      /// Loads a space from a file.
-      static SpaceSharedPtr<Scalar> load(const char *filename, MeshSharedPtr mesh, bool validate, EssentialBCs<Scalar>* essential_bcs = NULL, Shapeset* shapeset = NULL);
+      /// Loads a space from a file in XML format.
+      static SpaceSharedPtr<Scalar> load(const char *filename, MeshSharedPtr mesh, bool validate = false, EssentialBCs<Scalar>* essential_bcs = NULL, Shapeset* shapeset = NULL);
+      /// This method is here for rapid re-loading.
+      void load(const char *filename, bool validate = false);
+
+#ifdef WITH_BSON
+      /// Loads a space from a file in BSON.
+      static SpaceSharedPtr<Scalar> load_bson(const char *filename, MeshSharedPtr mesh, EssentialBCs<Scalar>* essential_bcs = NULL, Shapeset* shapeset = NULL);
+      /// This method is here for rapid re-loading.
+      void load_bson(const char *filename);
+#endif
 
       /// Obtains an assembly list for the given element.
       virtual void get_element_assembly_list(Element* e, AsmList<Scalar>* al) const;
@@ -274,7 +286,7 @@ namespace Hermes
 
       /// Sets element polynomial order. This version does not call assign_dofs() and is
       /// intended primarily for internal use.
-      virtual void set_element_order_internal(int id, int order);
+      virtual void set_element_order_internal(int id, int order, int order_v = -1);
 
       /// \brief Builds basis functions and assigns DOF numbers to them.
       /// \details This functions must be called \b after assigning element orders, and \b before
@@ -441,6 +453,11 @@ namespace Hermes
       virtual void post_assign();
 
       void free_bc_data();
+
+      /// Internal.
+      /// Returns a new Space according to the type provided.
+      /// Used in loading.
+      static SpaceSharedPtr<Scalar> init_empty_space(const char* spaceType, MeshSharedPtr mesh, Shapeset* shapeset);
 
       template<typename T> friend class OGProjection;
       template<typename T> friend class NewtonSolver;

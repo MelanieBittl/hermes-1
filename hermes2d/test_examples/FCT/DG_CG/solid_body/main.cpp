@@ -11,7 +11,7 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 6;                   // Number of initial refinements.
+const int INIT_REF_NUM = 4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
 const double time_step = 1e-5;                           // Time step.
@@ -19,6 +19,7 @@ const double time_step = 1e-5;                           // Time step.
 const double T_FINAL = 1.;  
 
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
+const double theta_DG = 0.5;
 
 const bool all = true;
 const bool DG = true;
@@ -91,8 +92,8 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 
 
 
-CustomWeakForm wf(u_prev_time, mesh,time_step, theta, all, DG, SD, false);
-CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta, false, false, false, true);
+CustomWeakForm wf(u_prev_time, mesh,time_step, theta,theta_DG, all, DG, SD, false);
+CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, false, false, true);
 
 
 	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double> ; 
@@ -115,13 +116,20 @@ fclose (matFile);
 	Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ref_ndof); 
 	wf_rhs.set_current_time(current_time);
 	dp_rhs->assemble(rhs);
-		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(matrix,rhs);    
-     if(solver->solve())
-     {
+		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(matrix,rhs); 
+
+  try
+  {
+   solver->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
+
      double*	vec_new = solver->get_sln_vector();
       Solution<double>::vector_to_solution(vec_new, space, u_new);
-      }
-    else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 			sview.show(u_new);
  						if(ts==1) wf_rhs.set_ext(u_new);
 		 	current_time += time_step;

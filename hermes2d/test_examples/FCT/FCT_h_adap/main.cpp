@@ -369,10 +369,17 @@ if(ps==1){
 			high_rhs->multiply_with_vector(coeff_vec, coeff_vec_3); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_3);
 			UMFPackLinearMatrixSolver<double> * highOrd = new UMFPackLinearMatrixSolver<double> (high_matrix,vec_rhs);	
-			if(highOrd->solve()){ 
+			  try
+  {
+   highOrd->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 				u_H = highOrd->get_sln_vector();  
 				//Solution<double> ::vector_to_solution(u_H, ref_space, high_sln);	
-			  }else printf ("Matrix solver failed.\n");
+
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 		smoothness_indicator(ref_space,low_sln,R_h_1,R_h_2,smooth_elem,smooth_dof,&al,mass_matrix);
@@ -381,10 +388,17 @@ antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 			vec_rhs->add_vector(coeff_vec_3);
 			UMFPackLinearMatrixSolver<double> * newSol = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
-			if(newSol->solve()){ 
+  try
+  {
+   newSol->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 				u_new_double = newSol->get_sln_vector();  
 				Solution<double>::vector_to_solution(u_new_double, ref_space, u_new);	
-			}else printf ("Matrix solver failed.\n");	 
+
 
 			 // Visualize the solution.			 
 

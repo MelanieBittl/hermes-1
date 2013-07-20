@@ -11,17 +11,17 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 6;                   // Number of initial refinements.
+const int INIT_REF_NUM = 4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
-const double time_step = 25e-5;                           // Time step.
+const double time_step =1e-3;                           // Time step.
 const double T_FINAL = 2.5*PI;                         // Time interval length. 
 
-//const double T_FINAL = PI;    
+  
 
 
-const double theta = 1.;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
-const double theta_DG = 1.;
+const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
+const double theta_DG =	1.;
 
 const bool all = true;
 const bool DG = true;
@@ -54,17 +54,17 @@ mloader.load("unit.mesh", basemesh);
  // EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+ SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
  // SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();
   
 
-
+    double current_time = PI/2.;
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>);
-  MeshFunctionSharedPtr<double> u_exact(new CustomInitialCondition(mesh));
+  MeshFunctionSharedPtr<double> u_exact(new CustomInitialCondition(mesh, current_time));
 
 // Output solution in VTK format.
 	Linearizer lin;
@@ -81,7 +81,7 @@ mloader.load("unit.mesh", basemesh);
  
 	char title[100];
     int ts = 1;
-    double current_time = PI/2.;
+
 	
 	int ref_ndof = space->get_num_dofs();	
 	//Hermes::Mixins::Loggable::Static::info(" ndof = %d ", ref_ndof); 
@@ -110,18 +110,25 @@ CustomWeakForm wf_rhs(u_exact, u_exact, mesh,time_step, theta,theta_DG, false, f
 dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 	dp_rhs->assemble(rhs);
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(matrix,rhs);    
-     if(solver->solve())
-     {
+  try
+  {
+   solver->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
+ 
      double*	vec_new = solver->get_sln_vector();
       Solution<double>::vector_to_solution(vec_new, space, u_new);
-      }
-    else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 			//sview.show(u_new);
 			//lview.show(u_exact);
  		if(ts==1) wf_rhs.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(u_exact, u_new) );
 		 	current_time += time_step;
 		 	ts++;
 			delete solver;
+//View::wait(HERMES_WAIT_KEYPRESS);
 	  }
   while (current_time<T_FINAL);
 
@@ -131,8 +138,7 @@ Hermes::Mixins::Loggable::Static::info("x=%f, y = %f,", x, y);
 
 dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 
-  MeshFunctionSharedPtr<double> u_end(new CustomEndCondition(mesh));
-calc_error_total(u_new, u_end,space);
+calc_error_total(u_new, u_exact,space);
 
 
   // Wait for the view to be closed.

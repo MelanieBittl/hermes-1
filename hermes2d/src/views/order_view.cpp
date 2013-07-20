@@ -64,13 +64,13 @@ namespace Hermes
       };
 
       template<typename Scalar>
-      void OrderView::show(SpaceSharedPtr<Scalar> space)
+      void OrderView::show(SpaceSharedPtr<Scalar> space, bool show_edge_orders)
       {
         if(!space->is_up_to_date())
           throw Hermes::Exceptions::Exception("The space is not up to date.");
 
         ord.lock_data();
-        ord.process_space(space);
+        ord.process_space(space, show_edge_orders);
         ord.calc_vertices_aabb(&vertices_min_x, &vertices_max_x, &vertices_min_y, &vertices_max_y);
         init_order_palette(ord.get_vertices());
         ord.unlock_data();
@@ -95,16 +95,7 @@ namespace Hermes
         char* buf = text_buffer;
         for (int i = 0; i < num_boxes; i++)
         {
-          if(pal_type == H2DV_PT_DEFAULT)
-          {
-            order_colors[i + min][0] = (float) (order_palette[i + min] >> 16) / 0xff;
-            order_colors[i + min][1] = (float) ((order_palette[i + min] >> 8) & 0xff) / 0xff;
-            order_colors[i + min][2] = (float) (order_palette[i + min] & 0xff) / 0xff;
-          }
-          else
-          {
-            get_palette_color((i + min) / (double)H2DV_MAX_VIEWABLE_ORDER, &order_colors[i + min][0]);
-          }
+          get_palette_color((i + min) / (double)H2DV_MAX_VIEWABLE_ORDER, &order_colors[i + min][0]);
 
           sprintf(buf, "%d", i + min);
           box_names[i] = buf;
@@ -223,10 +214,9 @@ namespace Hermes
           {
             switch(pal_type)
             {
-            case H2DV_PT_DEFAULT: pal_type = H2DV_PT_HUESCALE; break;
             case H2DV_PT_HUESCALE: pal_type = H2DV_PT_GRAYSCALE; break;
             case H2DV_PT_GRAYSCALE: pal_type = H2DV_PT_INVGRAYSCALE; break;
-            case H2DV_PT_INVGRAYSCALE: pal_type = H2DV_PT_DEFAULT; break;
+            case H2DV_PT_INVGRAYSCALE: pal_type = H2DV_PT_HUESCALE; break;
             default: throw Hermes::Exceptions::Exception("Invalid palette type");
             }
             ord.lock_data();
@@ -258,8 +248,8 @@ namespace Hermes
           "  Esc, Q - quit";
       }
 
-      template HERMES_API void OrderView::show<double>(const SpaceSharedPtr<double> space);
-      template HERMES_API void OrderView::show<std::complex<double> >(const SpaceSharedPtr<std::complex<double> > space);
+      template HERMES_API void OrderView::show<double>(const SpaceSharedPtr<double> space, bool);
+      template HERMES_API void OrderView::show<std::complex<double> >(const SpaceSharedPtr<std::complex<double> > space, bool);
     }
   }
 }

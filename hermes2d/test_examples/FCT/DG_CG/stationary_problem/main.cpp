@@ -118,13 +118,18 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	dp_surf->set_linear(true,false);
 	dp_surf->assemble(dg_surface_matrix,surf_rhs);
  UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>( dg_surface_matrix, surf_rhs);    
-		if(solver->solve())
-		{
+  try
+  {
+   solver->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 			vec_new = solver->get_sln_vector();
 			Solution<double>::vector_to_solution(vec_new, space, u_new);
 			for(int i=0; i<ndof; i++) coeff_vec_2[i] = vec_new[i];
-		}
-    else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 		sview.show(u_new);
 
 /*

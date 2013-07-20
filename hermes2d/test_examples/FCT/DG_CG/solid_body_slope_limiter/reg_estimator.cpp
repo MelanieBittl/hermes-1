@@ -61,13 +61,27 @@ void smoothness_indicator(SpaceSharedPtr<double>  space,MeshFunctionSharedPtr<do
 	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);
-	if(solver_1->solve()){ 				
+  try
+  {
+   solver_1->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }				
 		Solution<double> ::vector_to_solution(solver_1->get_sln_vector() , space, R_h_1_fct);	
-	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 	UMFPackLinearMatrixSolver<double> * solver_2 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_2);	
-	if(solver_2->solve()){ 				
+  try
+  {
+   solver_2->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }				
 		Solution<double> ::vector_to_solution(solver_2->get_sln_vector() , space, R_h_2_fct);	
-	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 
 Solution<double>* sln = new Solution<double>; sln = static_cast<Solution<double>* > (sln_fct->clone());
 Solution<double>* R_h_1 = new Solution<double>; R_h_1= static_cast<Solution<double>* > (R_h_1_fct->clone());
@@ -242,13 +256,27 @@ void smoothness_indicator_2(SpaceSharedPtr<double>  space,MeshFunctionSharedPtr<
 	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);
-	if(solver_1->solve()){ 				
+  try
+  {
+   solver_1->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }					
 		Solution<double> ::vector_to_solution(solver_1->get_sln_vector() , space, R_h_1_fct);	
-	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 	UMFPackLinearMatrixSolver<double> * solver_2 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_2);	
-	if(solver_2->solve()){ 				
+  try
+  {
+   solver_2->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }				
 		Solution<double> ::vector_to_solution(solver_2->get_sln_vector() , space, R_h_2_fct);	
-	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 
 Solution<double>* sln = new Solution<double>; sln = static_cast<Solution<double>* > (sln_fct->clone());
 Solution<double>* R_h_1 = new Solution<double>; R_h_1= static_cast<Solution<double>* > (R_h_1_fct->clone());

@@ -29,14 +29,27 @@ void calc_elem_error(SpaceSharedPtr<Scalar> space, MeshFunctionSharedPtr<Scalar>
 	dp_1->assemble(mass_matrix,rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);
-	if(solver_1->solve()){ 				
+  try
+  {
+   solver_1->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	 				
 		Solution<double> ::vector_to_solution(solver_1->get_sln_vector() , space, R_h_1);	
-	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 	UMFPackLinearMatrixSolver<double> * solver_2 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_2);	
-	if(solver_2->solve()){ 				
+  try
+  {
+   solver_2->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	 				
 		Solution<double> ::vector_to_solution(solver_2->get_sln_vector() , space, R_h_2);	
-	}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
-//--------------------------
+		//--------------------------
 		calc_z_z_error( space, sln, R_h_1, R_h_2, elem_error);
 
 		double mean_value_h=0.;

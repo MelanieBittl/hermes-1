@@ -14,7 +14,6 @@
 // along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "element.h"
-#include <algorithm>
 #include "refmap.h"
 #include "global.h"
 #include "forms.h"
@@ -34,7 +33,8 @@ namespace Hermes
       if(type == HERMES_TYPE_EDGE)
       {
         // store the element pointer in a free slot of 'elem'
-        if(elem[0] == NULL) elem[0] = e;
+        if(elem[0] == NULL)
+          elem[0] = e;
         else
         {
           if(elem[1] == NULL)

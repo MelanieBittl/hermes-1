@@ -38,6 +38,7 @@
 #include "mesh/mesh_reader.h"
 #include "mesh/mesh_reader_h2d.h"
 #include "mesh/mesh_reader_h2d_xml.h"
+#include "mesh/mesh_reader_h2d_bson.h"
 #include "mesh/mesh_reader_h1d_xml.h"
 #include "mesh/mesh_reader_exodusii.h"
 
@@ -114,3 +115,7 @@
 
 #include "doxygen_first_page.h"
 #endif
+
+#undef assert
+#define assert(x) \
+(x) ? (void)0 : throw Hermes::Exceptions::Exception("Failed assertion: %s in %s (%d)", #x, __FILE__, __LINE__)

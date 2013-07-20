@@ -9,7 +9,7 @@ using namespace Hermes::Hermes2D;
 class CustomWeakForm : public WeakForm<double>
 {
 public:
-  CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,double time_step,double theta, bool all = false, bool DG = true, bool SD =false, bool right_hand_side = true);
+  CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,double time_step,double theta,double theta_DG, bool all = false, bool DG = true, bool SD =false, bool right_hand_side = true);
   WeakForm<double>* clone() const;
 
 	
@@ -73,7 +73,7 @@ double theta;
   class CustomMatrixFormInterface : public MatrixFormDG<double>
   {
   public:
-    CustomMatrixFormInterface(int i, int j) : MatrixFormDG<double>(i, j) 
+    CustomMatrixFormInterface(int i, int j, double theta ) : MatrixFormDG<double>(i, j) , theta(theta) 
     {
     };
 
@@ -85,13 +85,14 @@ double theta;
     virtual Ord ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, DiscontinuousFunc<Ord> *u, DiscontinuousFunc<Ord> *v, Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const;
 
     MatrixFormDG<double>* clone() const;
+double theta;
 
   };
-/*
+
   class CustomVectorFormInterface : public VectorFormDG<double>
   {
   public:
-			CustomVectorFormInterface(int i, double time_step, double theta) : VectorFormDG<double>(i), time_step(time_step), theta(theta) 
+			CustomVectorFormInterface(int i, double theta) : VectorFormDG<double>(i), theta(theta) 
     {
     };
 
@@ -103,11 +104,11 @@ double theta;
 
       virtual VectorFormDG<double>* clone() const;
 
-double time_step;
+
 double theta;
 
   };
-*/
+
 
   class CustomVectorFormSurface : public VectorFormSurf<double>
   {

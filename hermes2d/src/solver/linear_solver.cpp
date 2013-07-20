@@ -93,29 +93,10 @@ namespace Hermes
       this->process_vector_output(this->residual, 1);
 
       this->info("\tLinear: assembling done. Solving...");
-      // If the solver is iterative, give him the initial guess.
-      Hermes::Solvers::IterSolver<Scalar>* iter_solver = dynamic_cast<Hermes::Solvers::IterSolver<Scalar>*>(this->matrix_solver);
-      bool solved = iter_solver ? iter_solver->solve(coeff_vec) : this->matrix_solver->solve();
-      if(solved)
-      {
-        if(this->do_UMFPACK_reporting)
-        {
-          UMFPackLinearMatrixSolver<Scalar>* umfpack_matrix_solver = (UMFPackLinearMatrixSolver<Scalar>*)this->matrix_solver;
-          if(this->matrix_solver->get_used_reuse_scheme() != HERMES_REUSE_MATRIX_STRUCTURE_COMPLETELY)
-          {
-            this->UMFPACK_reporting_data[this->FactorizationSize] = umfpack_matrix_solver->Info[UMFPACK_NUMERIC_SIZE] * umfpack_matrix_solver->Info[UMFPACK_SIZE_OF_UNIT];
-            this->UMFPACK_reporting_data[this->PeakMemoryUsage] = umfpack_matrix_solver->Info[UMFPACK_PEAK_MEMORY] * umfpack_matrix_solver->Info[UMFPACK_SIZE_OF_UNIT];
-            this->UMFPACK_reporting_data[this->Flops] = umfpack_matrix_solver->Info[UMFPACK_FLOPS];
-          }
-          else
-            memset(this->UMFPACK_reporting_data, 0, 3 * sizeof(double));
-        }
-      }
-      else
-      {
-        this->on_finish();
-        throw Exceptions::LinearMatrixSolverException();
-      }
+
+      // Solve, if the solver is iterative, give him the initial guess.
+      this->matrix_solver->solve(coeff_vec);
+      this->handle_UMFPACK_reports();
 
       this->sln_vector = this->matrix_solver->get_sln_vector();
 

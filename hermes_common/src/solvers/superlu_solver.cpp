@@ -19,7 +19,6 @@
 /*! \file superlu_solver.cpp
 \brief SuperLU solver interface.
 */
-#include <algorithm>
 #include "config.h"
 #ifdef WITH_SUPERLU
 #include "superlu_solver.h"
@@ -646,7 +645,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    bool SuperLUSolver<Scalar>::solve()
+    void SuperLUSolver<Scalar>::solve()
     {
       assert(m != NULL);
       assert(rhs != NULL);
@@ -676,10 +675,7 @@ namespace Hermes
 #endif
 
       if( !setup_factorization() )
-      {
         this->warn("LU factorization could not be completed.");
-        return false;
-      }
 
       // If the previous factorization of A is to be fully reused as an input for the solver driver,
       // keep the (possibly rescaled) matrix from the last factorization, otherwise recreate it

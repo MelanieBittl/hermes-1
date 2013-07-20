@@ -282,10 +282,17 @@ Space<double>::assign_dofs(spaces);
 	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
 						//  	Hermes::Mixins::Loggable::Static::info("Solution low order ");
 			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
-			if(lowOrd->solve()){ 
+  try
+  {
+   lowOrd->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 				u_L = lowOrd->get_sln_vector();  
         Solution<double>::vector_to_solutions(u_L, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(low_rho,low_rho_v_x,low_rho_v_y,low_rho_e));
-			  }else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 	
 	Space<double>::assign_dofs(spaces);
 	

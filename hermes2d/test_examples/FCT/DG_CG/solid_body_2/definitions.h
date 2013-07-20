@@ -129,6 +129,7 @@ double theta;
 
   Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
 
+
 };
 
 
@@ -200,37 +201,14 @@ virtual ~AbsDifffilter(){};
 
 //------------------- Initial condition ----------------
 
+
+
 class CustomInitialCondition : public ExactSolutionScalar<double>
 {
 public:
-  CustomInitialCondition(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh) 
+  CustomInitialCondition(MeshSharedPtr mesh, double time) : ExactSolutionScalar<double>(mesh) , time(time)
 {
-		time = PI/2.; x_0 = 0.; y_0 = 0.5;
-};
-
-
-  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
-
-  virtual double value (double x, double y) const;
-
- virtual Ord ord(Ord x, Ord y) const ;
-
-   MeshFunction<double>* clone() const;
-	void set_time(double t){time = t;}
-
-protected:
-double x_0; 
-double y_0;
-double time;
-};
-
-
-class CustomEndCondition : public ExactSolutionScalar<double>
-{
-public:
-  CustomEndCondition(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh) 
-{
-		time = 2.5*PI; x_0 = 0.; y_0 = 0.5;
+		 x_0 = 0.; y_0 = 0.5;
 };
 
 

@@ -17,7 +17,6 @@
 #define _MESHLOADER_H_
 
 #include "mesh.h"
-
 namespace Hermes
 {
   namespace Hermes2D
@@ -37,7 +36,7 @@ namespace Hermes
       /// Loads the mesh from a file. Aborts the program on error.
       /// @param filename [in] The name of the file.
       /// @param mesh [out] The mesh.
-      virtual bool load(const char *filename, MeshSharedPtr mesg) = 0;
+      virtual void load(const char *filename, MeshSharedPtr mesg) = 0;
 
     protected:
       static bool is_twin_nurbs(Element* e, int i)

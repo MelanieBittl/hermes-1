@@ -404,6 +404,7 @@ void refine_quad_to_triangles(Element* e);
 
       friend class MeshHashGrid;
       friend class MeshReaderH2D;
+      friend class MeshReaderH2DBSON;
       friend class MeshReaderH2DXML;
       friend class MeshReaderH1DXML;
       friend class MeshReaderExodusII;
@@ -414,7 +415,6 @@ void refine_quad_to_triangles(Element* e);
       friend class WeakForm<std::complex<double> >;
       template<typename Scalar> friend class Adapt;
       friend class KellyTypeAdapt<double>;
-      template<typename Scalar> friend class Global;
       friend class KellyTypeAdapt<std::complex<double> >;
       template<typename Scalar> friend class Solution;
       template<typename Scalar> friend class Filter;

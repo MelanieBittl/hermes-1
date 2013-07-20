@@ -139,12 +139,23 @@ namespace Hermes
 #endif
           break;
         }
-      case Hermes::SOLVER_PARALUTION:
+      case Hermes::SOLVER_PARALUTION_ITERATIVE:
         {
           if(use_direct_solver)
             throw Hermes::Exceptions::Exception("The iterative solver PARALUTION selected as a direct solver.");
 #ifdef WITH_PARALUTION
-          return new ParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<double>*>(matrix), static_cast<ParalutionVector<double>*>(rhs));
+          return new IterativeParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<double>*>(matrix), static_cast<ParalutionVector<double>*>(rhs));
+#else
+          throw Hermes::Exceptions::Exception("PARALUTION was not installed.");
+#endif
+          break;
+        }
+      case Hermes::SOLVER_PARALUTION_AMG:
+        {
+          if(use_direct_solver)
+            throw Hermes::Exceptions::Exception("The AMG solver PARALUTION selected as a direct solver.");
+#ifdef WITH_PARALUTION
+					return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<double>*>(matrix), static_cast<ParalutionVector<double>*>(rhs));
 #else
           throw Hermes::Exceptions::Exception("PARALUTION was not installed.");
 #endif
@@ -226,7 +237,8 @@ namespace Hermes
 #endif
           break;
         }
-      case Hermes::SOLVER_PARALUTION:
+      case Hermes::SOLVER_PARALUTION_ITERATIVE:
+      case Hermes::SOLVER_PARALUTION_AMG:
         {
           if(use_direct_solver)
             throw Hermes::Exceptions::Exception("The iterative solver PARALUTION selected as a direct solver.");
@@ -259,28 +271,44 @@ namespace Hermes
     }
 
     template <typename Scalar>
-    IterSolver<Scalar>::IterSolver(MatrixStructureReuseScheme reuse_scheme) : LinearMatrixSolver<Scalar>(reuse_scheme), max_iters(10000), tolerance(1e-8), precond_yes(false)
+    void DirectSolver<Scalar>::solve(Scalar* initial_guess)
+    {
+      this->solve();
+    }
+
+    template <typename Scalar>
+    LoopSolver<Scalar>::LoopSolver(MatrixStructureReuseScheme reuse_scheme) : LinearMatrixSolver<Scalar>(reuse_scheme), max_iters(10000), tolerance(1e-8)
     {
     }
 
     template<typename Scalar>
-    void IterSolver<Scalar>::set_tolerance(double tol)
+    void LoopSolver<Scalar>::set_tolerance(double tol)
     {
       this->tolerance = tol;
       this->toleranceType = AbsoluteTolerance;
     }
 
     template<typename Scalar>
-    void IterSolver<Scalar>::set_tolerance(double tol, typename IterSolver<Scalar>::ToleranceType toleranceType)
+    void LoopSolver<Scalar>::set_tolerance(double tol, typename LoopSolver<Scalar>::ToleranceType toleranceType)
     {
       this->tolerance = tol;
       this->toleranceType = toleranceType;
     }
 
     template<typename Scalar>
-    void IterSolver<Scalar>::set_max_iters(int iters)
+    void LoopSolver<Scalar>::set_max_iters(int iters)
     {
       this->max_iters = iters;
+    }
+
+    template <typename Scalar>
+    IterSolver<Scalar>::IterSolver(MatrixStructureReuseScheme reuse_scheme) : LoopSolver<Scalar>(reuse_scheme), precond_yes(false)
+    {
+    }
+
+    template <typename Scalar>
+    AMGSolver<Scalar>::AMGSolver(MatrixStructureReuseScheme reuse_scheme) : LoopSolver<Scalar>(reuse_scheme)
+    {
     }
 
     template class HERMES_API LinearMatrixSolver<double>;
@@ -289,5 +317,7 @@ namespace Hermes
     template class HERMES_API DirectSolver<std::complex<double> >;
     template class HERMES_API IterSolver<double>;
     template class HERMES_API IterSolver<std::complex<double> >;
+    template class HERMES_API AMGSolver<double>;
+    template class HERMES_API AMGSolver<std::complex<double> >;
   }
 }

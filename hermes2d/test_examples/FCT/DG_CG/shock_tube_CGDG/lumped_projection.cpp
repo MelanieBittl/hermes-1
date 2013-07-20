@@ -54,10 +54,16 @@ if(mat!=NULL) if(mat->get_size()!=ndof) printf("lumped_projection: matrixsize =%
 		 lumped_matrix->create(size, size, col, row, diag);  //lumped Matrix aufstellen
    
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(lumped_matrix,rhs);		
-		if(solver->solve()){ 
+  try
+  {
+   solver->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 			coeff_vec = solver->get_sln_vector();		
-		}
-	  	else{  throw Hermes::Exceptions::Exception("Matrix solver failed.\n");}
+
 		 if (target_vec != NULL)
     		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
 		delete solver;
@@ -66,10 +72,16 @@ if(mat!=NULL) if(mat->get_size()!=ndof) printf("lumped_projection: matrixsize =%
 	}else{ 
 		dp->assemble(rhs);
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(mat,rhs);		
-		if(solver->solve()) 
+  try
+  {
+   solver->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	 
 			coeff_vec = solver->get_sln_vector();			
-	 	 else{  throw Hermes::Exceptions::Exception("Matrix solver failed.\n");}
-		 if (target_vec != NULL)
+			 if (target_vec != NULL)
     		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
 		delete solver;
 	}

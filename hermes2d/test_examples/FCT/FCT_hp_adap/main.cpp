@@ -348,10 +348,17 @@ View::wait(HERMES_WAIT_KEYPRESS);
 			  // Solve the linear system and if successful, obtain the solution. M_L/tau u^L=  M_L/tau+ (1-theta)(K+D) u^n
 			lumped_matrix->multiply_with_Scalar(1./time_step); //M_L/tau
 			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (lumped_matrix,vec_rhs);	
-			if(lowOrd->solve()){ 
+  try
+  {
+   lowOrd->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 				u_L = lowOrd->get_sln_vector();  
 				Solution<double> ::vector_to_solution(u_L, ref_space, low_sln);	
-			  }else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
+
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
 
 
@@ -360,10 +367,16 @@ View::wait(HERMES_WAIT_KEYPRESS);
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_3);
 
 			UMFPackLinearMatrixSolver<double> * highOrd = new UMFPackLinearMatrixSolver<double> (high_matrix,vec_rhs);	
-			if(highOrd->solve()){ 
+  try
+  {
+   highOrd->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 				u_H = highOrd->get_sln_vector();  
 				Solution<double> ::vector_to_solution(u_H, ref_space, high_sln);	
-			  }else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");
 
    		/*	sprintf(title, "high-sln adap-step %i", as);
 			  hview.set_title(title);
@@ -377,9 +390,16 @@ View::wait(HERMES_WAIT_KEYPRESS);
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 			vec_rhs->add_vector(coeff_vec_3);
 			UMFPackLinearMatrixSolver<double> * newSol = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
-			if(newSol->solve()){ 
+  try
+  {
+   newSol->solve();
+  }
+  catch(Hermes::Exceptions::Exception e)
+  {
+    e.print_msg();
+  }	
 				Solution<double> ::vector_to_solution(newSol->get_sln_vector(), ref_space, u_new);	
-			}else throw Hermes::Exceptions::Exception("Matrix solver failed.\n");	
+
 
 
 			 // Visualize the solution.		 

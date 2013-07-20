@@ -98,7 +98,12 @@ namespace Hermes
 
       /// Solve.
       /// @return true on succes
-      virtual bool solve() = 0;
+      virtual void solve() = 0;
+
+      /// Solve.
+      /// @return true on succes
+      /// \param[in] initial guess.
+      virtual void solve(Scalar* initial_guess) = 0;
 
       /// Get solution vector.
       /// @return solution vector ( #sln )
@@ -139,29 +144,25 @@ namespace Hermes
     {
     public:
       DirectSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+      virtual void solve() = 0;
+      virtual void solve(Scalar* initial_guess);
     };
 
-    /// \brief  Abstract class for defining interface for iterative solvers.
-    /// Internal, though utilizable for defining interfaces to other algebraic packages.
+    /// \brief Abstract middle-class for solvers that work in a loop of a kind (iterative, multigrid, ...)
     template <typename Scalar>
-    class IterSolver : public LinearMatrixSolver<Scalar>
+    class LoopSolver : public LinearMatrixSolver<Scalar>
     {
     public:
-      IterSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+      LoopSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
 
       /// Various tolerances.
       /// Not necessarily supported by all iterative solvers used.
       enum ToleranceType
       {
-        AbsoluteTolerance,
-        RelativeTolerance,
-        DivergenceTolerance
+        AbsoluteTolerance = 0,
+        RelativeTolerance = 1,
+        DivergenceTolerance = 2
       };
-
-      /// Solve.
-      /// @return true on succes
-      /// \param[in] initial guess.
-      virtual bool solve(Scalar* initial_guess) = 0;
 
       /// Get the number of iterations performed.
       virtual int get_num_iters() = 0;
@@ -182,8 +183,6 @@ namespace Hermes
       /// @param[in] iters - number of iterations
       virtual void set_max_iters(int iters);
 
-      virtual void set_precond(Precond<Scalar> *pc) = 0;
-
     protected:
       /// Maximum number of iterations.
       int max_iters;
@@ -192,8 +191,32 @@ namespace Hermes
       /// Convergence tolerance type.
       /// See the enum.
       ToleranceType toleranceType;
+    };
+    
+
+    /// \brief  Abstract class for defining interface for iterative solvers.
+    /// Internal, though utilizable for defining interfaces to other algebraic packages.
+    template <typename Scalar>
+    class IterSolver : public LoopSolver<Scalar>
+    {
+    public:
+      IterSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+
+      /// Set preconditioner.
+      virtual void set_precond(Precond<Scalar> *pc) = 0;
+
+    protected:
       /// Whether the solver is preconditioned.
       bool precond_yes;
+    };
+    
+    /// \brief  Abstract class for defining interface for Algebraic Multigrid solvers.
+    /// Internal, though utilizable for defining interfaces to other algebraic packages.
+    template <typename Scalar>
+    class AMGSolver : public LoopSolver<Scalar>
+    {
+    public:
+      AMGSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
     };
 
     /// \brief Function returning a solver according to the users's choice.

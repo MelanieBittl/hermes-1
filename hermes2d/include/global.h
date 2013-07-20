@@ -141,10 +141,12 @@ namespace Hermes
       HERMES_HCURL_SPACE = 1,
       HERMES_HDIV_SPACE = 2,
       HERMES_L2_SPACE = 3,
-			HERMES_L2_SEMI_SPACE = 4,
-      HERMES_UTILITY_L2_SPACES = 5,
+HERMES_L2_SEMI_SPACE = 4,
+      HERMES_L2_MARKERWISE_CONST_SPACE = 5,
       HERMES_INVALID_SPACE = -9999
     };
+
+    extern const char* SpaceTypeString[5];
 
     /// Geometrical type of weak forms.
     enum GeomType

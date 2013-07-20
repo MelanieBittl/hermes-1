@@ -15,8 +15,6 @@
 
 #include "mesh.h"
 #include "mesh_reader_h1d_xml.h"
-#include <iostream>
-#include <limits>
 
 using namespace std;
 
@@ -32,7 +30,7 @@ namespace Hermes
     {
     }
 
-    bool MeshReaderH1DXML::load(const char *filename, MeshSharedPtr mesh)
+    void MeshReaderH1DXML::load(const char *filename, MeshSharedPtr mesh)
     {
       mesh->free();
 
@@ -199,13 +197,11 @@ namespace Hermes
       {
         throw Hermes::Exceptions::MeshLoadFailureException(e.what());
       }
-      return true;
     }
 
-    bool MeshReaderH1DXML::save(const char *filename, MeshSharedPtr mesh)
+    void MeshReaderH1DXML::save(const char *filename, MeshSharedPtr mesh)
     {
       /// \todo Is this necessary? It is a valid H2D mesh afterall.
-      return true;
     }
   }
 }

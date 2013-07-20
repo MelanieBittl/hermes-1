@@ -19,7 +19,6 @@
 #include "solver/newton_solver.h"
 #include "projections/ogprojection.h"
 #include "hermes_common.h"
-#include <limits>
 
 namespace Hermes
 {
@@ -554,45 +553,26 @@ namespace Hermes
       // store the previous coeff_vec to coeff_vec_back.
       memcpy(coeff_vec_back, coeff_vec, sizeof(Scalar)*ndof);
 
-      // If the solver is iterative, give him the initial guess.
-      Hermes::Solvers::IterSolver<Scalar>* iter_solver = dynamic_cast<Hermes::Solvers::IterSolver<Scalar>*>(this->matrix_solver);
-      bool solved = iter_solver ? iter_solver->solve(coeff_vec) : this->matrix_solver->solve();
+      // Solve, if the solver is iterative, give him the initial guess.
+      this->matrix_solver->solve(coeff_vec);
+      this->handle_UMFPACK_reports();
 
-      if(solved)
-      {
-        if(this->do_UMFPACK_reporting)
-        {
-          UMFPackLinearMatrixSolver<Scalar>* umfpack_matrix_solver = (UMFPackLinearMatrixSolver<Scalar>*)this->matrix_solver;
-          if(this->matrix_solver->get_used_reuse_scheme() != HERMES_REUSE_MATRIX_STRUCTURE_COMPLETELY)
-          {
-            this->UMFPACK_reporting_data[this->FactorizationSize] = std::max(this->UMFPACK_reporting_data[this->FactorizationSize], umfpack_matrix_solver->Info[UMFPACK_NUMERIC_SIZE] / umfpack_matrix_solver->Info[UMFPACK_SIZE_OF_UNIT]);
-            this->UMFPACK_reporting_data[this->PeakMemoryUsage] += umfpack_matrix_solver->Info[UMFPACK_PEAK_MEMORY] / umfpack_matrix_solver->Info[UMFPACK_SIZE_OF_UNIT];
-            this->UMFPACK_reporting_data[this->Flops] += umfpack_matrix_solver->Info[UMFPACK_FLOPS];
-          }
-        }
+      // Get current damping factor.
+      double current_damping_factor = this->get_parameter_value(this->p_damping_factors).back();
 
-        // Get current damping factor.
-        double current_damping_factor = this->get_parameter_value(this->p_damping_factors).back();
+      // store the solution norm change.
+      // obtain the solution increment.
+      Scalar* sln_vector_local = this->matrix_solver->get_sln_vector();
 
-        // store the solution norm change.
-        // obtain the solution increment.
-        Scalar* sln_vector_local = this->matrix_solver->get_sln_vector();
+      // 1. store the solution.
+      for (int i = 0; i < ndof; i++)
+        coeff_vec[i] += current_damping_factor * sln_vector_local[i];
 
-        // 1. store the solution.
-        for (int i = 0; i < ndof; i++)
-          coeff_vec[i] += current_damping_factor * sln_vector_local[i];
+      // 2. store the solution change.
+      this->get_parameter_value(p_solution_change_norms).push_back(current_damping_factor * get_l2_norm(sln_vector_local, this->ndof));
 
-        // 2. store the solution change.
-        this->get_parameter_value(p_solution_change_norms).push_back(current_damping_factor * get_l2_norm(sln_vector_local, this->ndof));
-
-        // 3. store the solution norm.
-        this->get_parameter_value(p_solution_norms).push_back(get_l2_norm(coeff_vec, this->ndof));
-      }
-      else
-      {
-        this->deinit_solving(coeff_vec);
-        throw Exceptions::LinearMatrixSolverException();
-      }
+      // 3. store the solution norm.
+      this->get_parameter_value(p_solution_norms).push_back(get_l2_norm(coeff_vec, this->ndof));
     }
 
     template<typename Scalar>
@@ -648,10 +628,12 @@ namespace Hermes
           this->assemble_residual(coeff_vec);
       
           // Test convergence - if in this loop we found a solution.
-          this->info("\t\ttest convergence.");
+          this->info("\t\ttest convergence...");
           this->step_info();
           if(this->handle_convergence_state_return_finished(this->get_convergence_state(), coeff_vec))
             return;
+          else
+          this->info("\t\thas not converged.");
 
           // Inspect the damping factor.
           try
@@ -678,9 +660,8 @@ namespace Hermes
             // Try with the different damping factor.
             // Important thing here is the factor used that must be calculated from the current one and the previous one.
             // This results in the following relation (since the damping factor is only updated one way).
-            double factor = damping_factors.back() * (1 - this->auto_damping_ratio);
             for (int i = 0; i < ndof; i++)
-              coeff_vec[i] = coeff_vec_back[i] + factor * (coeff_vec[i] - coeff_vec_back[i]);
+              coeff_vec[i] = coeff_vec_back[i] + (coeff_vec[i] - coeff_vec_back[i]) / this->auto_damping_ratio;
 
             // Add new solution norm.
             solution_norms.push_back(get_l2_norm(coeff_vec, this->ndof));
@@ -691,8 +672,6 @@ namespace Hermes
 
         // Damping factor was updated, handle the event.
         this->on_damping_factor_updated();
-        // Output.
-        this->step_info();
 
 #pragma region jacobian_reusage_loop
         this->info("\n\tNewton: Jacobian handling:");

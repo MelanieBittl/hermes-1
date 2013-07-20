@@ -23,7 +23,7 @@
 #define __HERMES_API_H_
 
 #include "compat.h"
-#include <map>
+#include "common.h"
 
 namespace Hermes
 {
@@ -34,7 +34,8 @@ namespace Hermes
     numThreads,
     matrixSolverType,
     directMatrixSolverType,
-    showInternalWarnings
+    showInternalWarnings,
+    useAccelerators
   };
 
   /// API Class containing settings for the whole HermesCommon.

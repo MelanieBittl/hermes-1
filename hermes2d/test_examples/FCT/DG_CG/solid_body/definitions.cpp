@@ -33,7 +33,7 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 	return Hermes::sqrt(abs_v);
 }
 
-CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,double time_step, double theta, bool all, bool DG, bool SD,bool right_hand_side) : WeakForm<double>(1)
+CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,double time_step, double theta,double theta_DG, bool all, bool DG, bool SD,bool right_hand_side) : WeakForm<double>(1)
 {
  this->set_ext(sln_prev_time);
 
@@ -51,7 +51,11 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshS
 	}
 		
    if(DG)		
-		 add_matrix_form_DG(new CustomMatrixFormInterface(0, 0));
+		{
+		 add_matrix_form_DG(new CustomMatrixFormInterface(0, 0,theta_DG));
+		 add_vector_form_DG(new CustomVectorFormInterface(0, theta_DG));
+
+		}
 		
 	 if(SD)	add_matrix_form(new Streamline(0,0,mesh));
    
@@ -216,25 +220,30 @@ MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
 }
 
 
+
 //------------DG Vector Form--------------
-/*      double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
+     double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
         Geom<double> *e, DiscontinuousFunc<double> **ext) const
 {
- Discontinuous<double>* exact = ext[0];		
+DiscontinuousFunc<double>* exact = ext[0];		
   double result = double(0);
+	double diam = e->diam;
+
+
   for (int i = 0; i < n; i++) 
   {
-			Real v_x =  (0.5- e->y[i]);
-	Real v_y = (e->x[i]-0.5) ; 
-    Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-    Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
-    if(u->fn_central == NULL)
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(Real(0), exact->val_neighbor[i], a_dot_n) * jump_v;
-    else
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(exact->val[i], Real(0), a_dot_n) * jump_v;
+			double v_x = 1.;
+			double v_y = 1.; 
+   double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
+    double jump_v =  v->val[i];
+
+      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(exact->val[i], exact->val_neighbor[i], a_dot_n) * jump_v;
+
+
       
   }
-  return result;
+  return (-result*(1.-theta));
+
 
 }
 
@@ -249,7 +258,6 @@ Ord result = Ord(10);
 {
   return new CustomWeakForm::CustomVectorFormInterface(*this);
 }
-*/
 
 //----------Dirichlet Vector surface Form
 double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
