@@ -11,12 +11,12 @@ const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 10;
 // Adaptivity.
 // Every UNREF_FREQth time step the mesh is unrefined.
 const int UNREF_FREQ = 5;
 int REFINEMENT_COUNT = 0;
-int REFINEMENT_COUNT_THRESHOLD = 10;
+int REFINEMENT_COUNT_THRESHOLD = 12;
 
 // Shock capturing.
 bool SHOCK_CAPTURING = true;
@@ -28,7 +28,7 @@ const int INIT_REF_NUM = 2;
 double time_step_length = 1E-4;
 double TIME_INTERVAL_LENGTH = .2;
 // CFL value.
-double CFL_NUMBER = 0.3; 
+double CFL_NUMBER = 0.3;
 // Kappa.
 const double KAPPA = 1.4;
 
@@ -67,19 +67,21 @@ public:
 };
 
 // Stopping criterion for adaptivity.
-bool adaptivityErrorStop(int iteration, double error, int ref_ndof)
+bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
 {
   if(ref_ndof < 10e3)
     return false;
-  if(ref_ndof > 15e3)
+  if(ref_ndof > 30e3)
     return true;
 
-  return(error < 1e-2);
+  if(time < 1e-3)
+    return(error < 1e-2);
+  return (error < 1e-2 + (time) * (1e2 - 1e-2) / (.2 -  1e-3));
 }
 
 int main(int argc, char* argv[])
 {
-HermesCommonApi.set_integral_param_value(numThreads, 1);
+  HermesCommonApi.set_integral_param_value(numThreads, 1);
   // Set up CFL calculation class.
   CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
@@ -165,7 +167,7 @@ HermesCommonApi.set_integral_param_value(numThreads, 1);
   // Error calculation.
   CustomErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 1);
   // Stopping criterion for an adaptivity step.
-  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.8);
+  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.7);
   Adapt<double> adaptivity(space_rho, &errorCalculator, &stoppingCriterion);
 #pragma endregion
 
@@ -249,35 +251,6 @@ HermesCommonApi.set_integral_param_value(numThreads, 1);
       CFL.calculate(rslns, (ref_spaces)[0]->get_mesh(), time_step_length);
 #pragma endregion
 
-#pragma region 7.3.1 Visualization
-      if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
-      {
-        // Hermes visualization.
-        if(HERMES_VISUALIZATION)
-        {        
-          //pressure->reinit();
-          velocity->reinit();
-          density_view.show(rslns[0]);
-          //pressure_view.show(pressure);
-          //velocity_view.show(velocity);
-        }
-        // Output solution in VTK format.
-        if(VTK_VISUALIZATION)
-        {
-          pressure->reinit();
-          velocity->reinit();
-          Linearizer lin;
-          char filename[40];
-          sprintf(filename, "Pressure-%i.vtk", iteration - 1);
-          lin.save_solution_vtk(pressure, filename, "Pressure", false);
-          sprintf(filename, "Velocity-%i.vtk", iteration - 1);
-          lin.save_solution_vtk(velocity, filename, "Velocity", false);
-          sprintf(filename, "Rho-%i.vtk", iteration - 1);
-          lin.save_solution_vtk(prev_rho, filename, "Rho", false);
-        }
-      }
-#pragma endregion
-
 
 #pragma region 7.4 Project to coarse mesh -> error estimation -> space adaptivity
       // Project the fine mesh solution onto the coarse mesh.
@@ -298,8 +271,39 @@ HermesCommonApi.set_integral_param_value(numThreads, 1);
       logger.info("\t\tDensity error: %g%%.", density_error);
 
       // If err_est too large, adapt the mesh.
-      if (adaptivityErrorStop(iteration, density_error, ref_ndof))
+      if (adaptivityErrorStop(iteration, t, density_error, ref_ndof))
+      {
+
+#pragma region 7.3.1 Visualization
+        if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
+        {
+          // Hermes visualization.
+          if(HERMES_VISUALIZATION)
+          {        
+            //pressure->reinit();
+            velocity->reinit();
+            density_view.show(rslns[0]);
+            //pressure_view.show(pressure);
+            //velocity_view.show(velocity);
+          }
+          // Output solution in VTK format.
+          if(VTK_VISUALIZATION)
+          {
+            pressure->reinit();
+            velocity->reinit();
+            Linearizer lin;
+            char filename[40];
+            sprintf(filename, "Pressure-%i.vtk", iteration - 1);
+            lin.save_solution_vtk(pressure, filename, "Pressure", false);
+            sprintf(filename, "Velocity-%i.vtk", iteration - 1);
+            lin.save_solution_vtk(velocity, filename, "Velocity", false);
+            sprintf(filename, "Rho-%i.vtk", iteration - 1);
+            lin.save_solution_vtk(prev_rho, filename, "Rho", false);
+          }
+        }
         break;
+      }
+#pragma endregion
       else
       {
         Hermes::Mixins::Loggable::Static::info("\t\tAdapting coarse mesh.");
