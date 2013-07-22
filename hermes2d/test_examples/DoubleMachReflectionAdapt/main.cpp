@@ -16,11 +16,12 @@ const unsigned int EVERY_NTH_STEP = 1;
 // Every UNREF_FREQth time step the mesh is unrefined.
 const int UNREF_FREQ = 5;
 int REFINEMENT_COUNT = 0;
+int REFINEMENT_COUNT_THRESHOLD = 5;
 
 // Shock capturing.
-bool SHOCK_CAPTURING = false;
+bool SHOCK_CAPTURING = true;
 // Initial polynomial degree.
-const int P_INIT = 0;
+const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
 const int INIT_REF_NUM = 2;
 // Initial time step.
@@ -68,9 +69,9 @@ public:
 // Stopping criterion for adaptivity.
 bool adaptivityErrorStop(int iteration, double error, int ref_ndof)
 {
-  if(ref_ndof < 2e3)
+  if(ref_ndof < 6e3)
     return false;
-  if(ref_ndof > 4e3)
+  if(ref_ndof > 10e3)
     return true;
 
   return(error < 1e-2);
@@ -78,6 +79,7 @@ bool adaptivityErrorStop(int iteration, double error, int ref_ndof)
 
 int main(int argc, char* argv[])
 {
+HermesCommonApi.set_integral_param_value(numThreads, 1);
   // Set up CFL calculation class.
   CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
@@ -91,8 +93,9 @@ int main(int argc, char* argv[])
   mloader.load("domain.xml", mesh);
 
   // Perform initial mesh refinements.
-  mesh->refine_in_area("Pre", 1, 2);
-  mesh->refine_in_area("Pre", 1, 2);
+  mesh->refine_in_area("Pre", 1, 2, true);
+  mesh->refine_in_area("Pre", 1, 2, true);
+  mesh->refine_all_elements(0, true);
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -162,7 +165,7 @@ int main(int argc, char* argv[])
   // Error calculation.
   CustomErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 4);
   // Stopping criterion for an adaptivity step.
-  AdaptStoppingCriterionLevels<double> stoppingCriterion(.75);
+  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.75);
   Adapt<double> adaptivity(spaces, &errorCalculator, &stoppingCriterion);
 #pragma endregion
 
@@ -186,7 +189,8 @@ int main(int argc, char* argv[])
     if (iteration > 1 && iteration % UNREF_FREQ == 0) 
     {
       Hermes::Mixins::Loggable::Static::info("Global mesh derefinement.");
-      for(int i = 0; i < std::sqrt(REFINEMENT_COUNT); i++)
+      Space<double>::unrefine_all_mesh_elements(spaces);
+      if(REFINEMENT_COUNT > REFINEMENT_COUNT_THRESHOLD)
         Space<double>::unrefine_all_mesh_elements(spaces);
       REFINEMENT_COUNT = 0;
       Space<double>::assign_dofs(spaces);
