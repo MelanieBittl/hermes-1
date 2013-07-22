@@ -16,7 +16,7 @@ const unsigned int EVERY_NTH_STEP = 1;
 // Every UNREF_FREQth time step the mesh is unrefined.
 const int UNREF_FREQ = 5;
 int REFINEMENT_COUNT = 0;
-int REFINEMENT_COUNT_THRESHOLD = 5;
+int REFINEMENT_COUNT_THRESHOLD = 10;
 
 // Shock capturing.
 bool SHOCK_CAPTURING = true;
@@ -61,7 +61,7 @@ public:
       double result = 0.;
       for (int i = 0; i < n; i++)
         result += wt[i] * u->val[i] * v->val[i];
-      return result * e->area;
+      return result * std::sqrt(e->area);
     }
   };
 };
@@ -69,9 +69,9 @@ public:
 // Stopping criterion for adaptivity.
 bool adaptivityErrorStop(int iteration, double error, int ref_ndof)
 {
-  if(ref_ndof < 6e3)
+  if(ref_ndof < 10e3)
     return false;
-  if(ref_ndof > 10e3)
+  if(ref_ndof > 15e3)
     return true;
 
   return(error < 1e-2);
@@ -163,10 +163,10 @@ HermesCommonApi.set_integral_param_value(numThreads, 1);
   Hermes::vector<RefinementSelectors::Selector<double> *> selectors(&selector, &selector, &selector, &selector);
 
   // Error calculation.
-  CustomErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 4);
+  CustomErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 1);
   // Stopping criterion for an adaptivity step.
-  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.75);
-  Adapt<double> adaptivity(spaces, &errorCalculator, &stoppingCriterion);
+  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.8);
+  Adapt<double> adaptivity(space_rho, &errorCalculator, &stoppingCriterion);
 #pragma endregion
 
 #pragma region 3.1 Set up reference mesh and spaces.
@@ -303,7 +303,10 @@ HermesCommonApi.set_integral_param_value(numThreads, 1);
       else
       {
         Hermes::Mixins::Loggable::Static::info("\t\tAdapting coarse mesh.");
-        adaptivity.adapt(selectors);
+        adaptivity.adapt(&selector);
+        space_rho_v_x->copy(space_rho, space_rho->get_mesh());
+        space_rho_v_y->copy(space_rho, space_rho->get_mesh());
+        space_e->copy(space_rho, space_rho->get_mesh());
         REFINEMENT_COUNT++;
         as++;
       }
