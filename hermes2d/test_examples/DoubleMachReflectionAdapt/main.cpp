@@ -285,7 +285,7 @@ HermesCommonApi.set_integral_param_value(numThreads, 1);
       OGProjection<double>::project_global(spaces, rslns, slns, Hermes::vector<NormType>(HERMES_L2_NORM, HERMES_L2_NORM, HERMES_L2_NORM, HERMES_L2_NORM)); 
 
       // Calculate element errors and total error estimate.
-      errorCalculator.calculate_errors(slns, rslns);
+      errorCalculator.calculate_errors(sln_rho, rsln_rho);
       double density_error = errorCalculator.get_error_squared(0) * 100;
 
       if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
@@ -304,9 +304,10 @@ HermesCommonApi.set_integral_param_value(numThreads, 1);
       {
         Hermes::Mixins::Loggable::Static::info("\t\tAdapting coarse mesh.");
         adaptivity.adapt(&selector);
-        space_rho_v_x->copy(space_rho, space_rho->get_mesh());
-        space_rho_v_y->copy(space_rho, space_rho->get_mesh());
-        space_e->copy(space_rho, space_rho->get_mesh());
+        space_rho_v_x->copy(space_rho, mesh);
+        space_rho_v_y->copy(space_rho, mesh);
+        space_e->copy(space_rho, mesh);
+        Space<double>::assign_dofs(spaces);
         REFINEMENT_COUNT++;
         as++;
       }
