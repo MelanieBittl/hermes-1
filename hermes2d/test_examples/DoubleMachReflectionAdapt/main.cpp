@@ -14,7 +14,7 @@ const bool VTK_VISUALIZATION = false;
 const unsigned int EVERY_NTH_STEP = 1;
 // Adaptivity.
 // Every UNREF_FREQth time step the mesh is unrefined.
-const int UNREF_FREQ = 10;
+const int UNREF_FREQ = 5;
 int REFINEMENT_COUNT = 0;
 
 // Shock capturing.
@@ -37,6 +37,34 @@ const double KAPPA = 1.4;
 // Initial condition.
 #include "initial_condition.cpp"
 
+class CustomErrorCalculator : public ErrorCalculator<double>
+{
+public:
+  CustomErrorCalculator(CalculatedErrorType errorType, int component_count) : ErrorCalculator<double>(errorType)
+  {
+    for(int i = 0; i < component_count; i++)
+    {
+      this->add_error_form(new CustomNormFormVol(i, i));
+    }
+  }
+
+  class CustomNormFormVol : public NormFormVol<double>
+  {
+  public:
+    CustomNormFormVol(int i, int j) : NormFormVol<double>(i, j)
+    {
+    }
+
+    double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
+    {
+      double result = 0.;
+      for (int i = 0; i < n; i++)
+        result += wt[i] * u->val[i] * v->val[i];
+      return result * e->area;
+    }
+  };
+};
+
 // Stopping criterion for adaptivity.
 bool adaptivityErrorStop(int iteration, double error, int ref_ndof)
 {
@@ -44,6 +72,8 @@ bool adaptivityErrorStop(int iteration, double error, int ref_ndof)
     return false;
   if(ref_ndof > 4e3)
     return true;
+
+  return(error < 1e-2);
 }
 
 int main(int argc, char* argv[])
@@ -115,17 +145,13 @@ int main(int argc, char* argv[])
   ScalarView pressure_view("Pressure", new WinGeom(0, 330, 600, 300));
   ScalarView velocity_view("Velocity", new WinGeom(650, 0, 600, 300));
   ScalarView eview("Error - density", new WinGeom(0, 330, 600, 300));
-  ScalarView eview1("Error - momentum", new WinGeom(0, 660, 600, 300));
   OrderView order_view("Orders", new WinGeom(650, 330, 600, 300));
 #pragma endregion
 
 #pragma region Solver setup
   LinearSolver<double> solver;
   solver.set_weak_formulation(&wf);
-  solver.set_jacobian_constant();
   solver.set_verbose_output(false);
-  // Set the current time step.
-  wf.set_current_time_step(time_step_length);
 #pragma endregion
 
 #pragma region Adaptivity setup
@@ -134,9 +160,9 @@ int main(int argc, char* argv[])
   Hermes::vector<RefinementSelectors::Selector<double> *> selectors(&selector, &selector, &selector, &selector);
 
   // Error calculation.
-  DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(RelativeErrorToGlobalNorm, 4);
+  CustomErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 4);
   // Stopping criterion for an adaptivity step.
-  AdaptStoppingCriterionLevels<double> stoppingCriterion(.95);
+  AdaptStoppingCriterionLevels<double> stoppingCriterion(.75);
   Adapt<double> adaptivity(spaces, &errorCalculator, &stoppingCriterion);
 #pragma endregion
 
@@ -157,11 +183,12 @@ int main(int argc, char* argv[])
     logger.info("Time step %d, time %3.5f, time step %3.5f.", iteration, t, time_step_length);
 
 #pragma region 4.1. Periodic global derefinements.
-    if (iteration > 1 && iteration % UNREF_FREQ == 0 && REFINEMENT_COUNT > 0) 
+    if (iteration > 1 && iteration % UNREF_FREQ == 0) 
     {
       Hermes::Mixins::Loggable::Static::info("Global mesh derefinement.");
+      for(int i = 0; i < std::sqrt(REFINEMENT_COUNT); i++)
+        Space<double>::unrefine_all_mesh_elements(spaces);
       REFINEMENT_COUNT = 0;
-      Space<double>::unrefine_all_mesh_elements(spaces);
       Space<double>::assign_dofs(spaces);
       solver.free_cache();
     }
@@ -183,21 +210,20 @@ int main(int argc, char* argv[])
       ref_space_e = refSpaceCreatorE.create_ref_space();
       Hermes::vector<SpaceSharedPtr<double>  > ref_spaces(ref_space_rho, ref_space_rho_v_x, ref_space_rho_v_y, ref_space_e);
       solver.set_spaces(ref_spaces);
-
-      // Project the previous time level solution onto the new fine mesh
-      //if(iteration > 0)
-        //OGProjection<double>::project_global(ref_spaces, prev_slns, prev_slns);
 #pragma endregion
 
       int ref_ndof = Space<double>::get_num_dofs(ref_spaces);
       logger.info("\tAdaptivity step %d, NDOFs: %i.", as, ref_ndof);
-      
+
 #pragma region 7.2 Solve
       logger.info("\t\tSolving.");
       ((CustomInitialCondition*)exact_rho.get())->time = t;
       ((CustomInitialCondition*)exact_rho_v_x.get())->time = t;
       ((CustomInitialCondition*)exact_rho_v_y.get())->time = t;
       ((CustomInitialCondition*)exact_e.get())->time = t;
+
+      // Set the current time step.
+      wf.set_current_time_step(time_step_length);
       solver.solve();
 #pragma endregion
 
@@ -225,11 +251,11 @@ int main(int argc, char* argv[])
         // Hermes visualization.
         if(HERMES_VISUALIZATION)
         {        
-          pressure->reinit();
+          //pressure->reinit();
           velocity->reinit();
           density_view.show(rslns[0]);
-          pressure_view.show(pressure);
-          velocity_view.show(velocity);
+          //pressure_view.show(pressure);
+          //velocity_view.show(velocity);
         }
         // Output solution in VTK format.
         if(VTK_VISUALIZATION)
@@ -256,13 +282,19 @@ int main(int argc, char* argv[])
 
       // Calculate element errors and total error estimate.
       errorCalculator.calculate_errors(slns, rslns);
-      double err_est_rel_total = errorCalculator.get_error_squared(0) * 100;
+      double density_error = errorCalculator.get_error_squared(0) * 100;
+
+      if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
+      {
+        if(HERMES_VISUALIZATION)
+          eview.show(errorCalculator.get_errorMeshFunction(0));
+      }
 
       // Report results.
-      logger.info("\t\tDensity error: %g%%.", err_est_rel_total);
+      logger.info("\t\tDensity error: %g%%.", density_error);
 
       // If err_est too large, adapt the mesh.
-      if (adaptivityErrorStop(iteration, err_est_rel_total, ref_ndof))
+      if (adaptivityErrorStop(iteration, density_error, ref_ndof))
         break;
       else
       {
