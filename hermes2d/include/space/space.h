@@ -237,6 +237,7 @@ namespace Hermes
       virtual void get_element_assembly_list(Element* e, AsmList<Scalar>* al) const;
 
       /// Copy from Space instance 'space'
+      /// \param[in] new_mesh Mesh where data will be copied to.
       virtual void copy(SpaceSharedPtr<Scalar> space, MeshSharedPtr new_mesh);
 
       /// Class for creating reference space.
