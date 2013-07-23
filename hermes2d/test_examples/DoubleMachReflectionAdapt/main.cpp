@@ -46,6 +46,7 @@ public:
     for(int i = 0; i < component_count; i++)
     {
       this->add_error_form(new CustomNormFormVol(i, i));
+      this->add_error_form(new CustomNormFormDG(i, i));
     }
   }
 
@@ -61,7 +62,23 @@ public:
       double result = 0.;
       for (int i = 0; i < n; i++)
         result += wt[i] * u->val[i] * v->val[i];
-      return result * std::sqrt(e->area);
+      return result;
+    }
+  };
+
+  class CustomNormFormDG : public NormFormDG<double>
+  {
+  public:
+    CustomNormFormDG(int i, int j) : NormFormDG<double>(i, j)
+    {
+    }
+
+    double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const
+    {
+      double result = double(0);
+      for (int i = 0; i < n; i++)
+        result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i]);
+      return result;
     }
   };
 };
@@ -69,9 +86,9 @@ public:
 // Stopping criterion for adaptivity.
 bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
 {
-  if(ref_ndof < 10e3)
+  if(ref_ndof < 4e3)
     return false;
-  if(ref_ndof > 30e3)
+  if(ref_ndof > 8e3)
     return true;
 
   if(time < 1e-3)
