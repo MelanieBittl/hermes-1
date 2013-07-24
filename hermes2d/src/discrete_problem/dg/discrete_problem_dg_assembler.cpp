@@ -488,10 +488,8 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    bool DiscreteProblemDGAssembler<Scalar>::deinit_neighbors(NeighborSearch<Scalar>** current_neighbor_searches, Traverse::State* current_state)
+    void DiscreteProblemDGAssembler<Scalar>::deinit_neighbors(NeighborSearch<Scalar>** current_neighbor_searches, Traverse::State* current_state)
     {
-      // Initialize the NeighborSearches.
-      bool DG_intra = false;
       for(unsigned int i = 0; i < current_state->num; i++)
       {
         bool existing_ns = false;
@@ -504,8 +502,6 @@ namespace Hermes
           if(!existing_ns)
             delete current_neighbor_searches[i];
       }
-
-      return DG_intra;
     }
 
 

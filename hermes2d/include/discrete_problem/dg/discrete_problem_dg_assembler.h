@@ -75,7 +75,7 @@ namespace Hermes
       /// Initialize neighbors.
       bool init_neighbors(NeighborSearch<Scalar>** neighbor_searches, Traverse::State* current_state);
       /// Deinitialize neighbors.
-      bool deinit_neighbors(NeighborSearch<Scalar>** neighbor_searches, Traverse::State* current_state);
+      void deinit_neighbors(NeighborSearch<Scalar>** neighbor_searches, Traverse::State* current_state);
 
       /// Finds the correct NeighborSearch.
       NeighborSearch<Scalar>* get_neighbor_search_ext(NeighborSearch<Scalar>** neighbor_searches, int index);
