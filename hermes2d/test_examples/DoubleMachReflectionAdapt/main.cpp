@@ -45,7 +45,7 @@ public:
   {
     for(int i = 0; i < component_count; i++)
     {
-      this->add_error_form(new CustomNormFormVol(i, i));
+      //this->add_error_form(new CustomNormFormVol(i, i));
       this->add_error_form(new CustomNormFormDG(i, i));
     }
   }
@@ -55,6 +55,7 @@ public:
   public:
     CustomNormFormVol(int i, int j) : NormFormVol<double>(i, j)
     {
+      this->functionType = FineSolutions;
     }
 
     double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
@@ -88,17 +89,17 @@ bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
 {
   if(ref_ndof < 4e3)
     return false;
-  if(ref_ndof > 8e3)
+  if(ref_ndof > 6e3)
     return true;
 
-  if(time < 1e-3)
-    return(error < 1e-2);
-  return (error < 1e-2 + (time) * (1e2 - 1e-2) / (.2 -  1e-3));
+  return true;
 }
 
 int main(int argc, char* argv[])
 {
+#ifndef _WINDOWS
   HermesCommonApi.set_integral_param_value(numThreads, 1);
+#endif
   // Set up CFL calculation class.
   CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
@@ -182,9 +183,9 @@ int main(int argc, char* argv[])
   Hermes::vector<RefinementSelectors::Selector<double> *> selectors(&selector, &selector, &selector, &selector);
 
   // Error calculation.
-  CustomErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 1);
+  CustomErrorCalculator errorCalculator(AbsoluteError, 1);
   // Stopping criterion for an adaptivity step.
-  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.7);
+  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.5);
   Adapt<double> adaptivity(space_rho, &errorCalculator, &stoppingCriterion);
 #pragma endregion
 
