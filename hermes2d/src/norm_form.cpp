@@ -66,7 +66,7 @@ namespace Hermes
       return result;
     }
 
-    NormForm::NormForm(int i, int j) : i(i), j(j)
+    NormForm::NormForm(int i, int j, FunctionsEvaluatedType functionType) : i(i), j(j), functionType(functionType)
     {
     }
 

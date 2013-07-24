@@ -29,10 +29,18 @@ namespace Hermes
   /// Namespace containing definitions specific for Hermes2D.
   namespace Hermes2D
   {
+    /// Enum passed to the class NormForm specifying the functions the form acts upon.
+    enum FunctionsEvaluatedType
+    {
+      CoarseSolutions,
+      FineSolutions,
+      SolutionsDifference
+    };
+
     class HERMES_API NormForm
     {
     public:
-      NormForm(int i, int j);
+      NormForm(int i, int j, FunctionsEvaluatedType functionType = SolutionsDifference);
 
       /// set area
       /// \todo use this - it is not used so far.
@@ -41,7 +49,13 @@ namespace Hermes
       /// Coordinates.
       int i, j;
 
+      /// Get the function type.
+      inline FunctionsEvaluatedType get_function_type() const { return this->functionType; };
+
     protected:
+      /// Function type.
+      FunctionsEvaluatedType functionType;
+
       std::string area;
     };
 
