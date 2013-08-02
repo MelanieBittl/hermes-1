@@ -56,7 +56,7 @@
 #include "shapeset/shapeset_hd_all.h"
 #include "shapeset/shapeset_l2_all.h"
 #include "shapeset/shapeset_l2_semi.h"
-#include "shapeset_serendipity.h" 
+
 
 #include "mesh/refmap.h"
 #include "mesh/traverse.h"

@@ -11,10 +11,10 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 4;                   // Number of initial refinements.
+const int INIT_REF_NUM = 6;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
-const double time_step =1e-3;                           // Time step.
+const double time_step =25e-6;                           // Time step.
 const double T_FINAL = 2.5*PI;                         // Time interval length. 
 
   
@@ -25,7 +25,7 @@ const double theta_DG =	1.;
 
 const bool all = true;
 const bool DG = true;
-
+bool serendipity = true;
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -55,7 +55,8 @@ mloader.load("unit.mesh", basemesh);
   
   // Create an space with default shapeset.  
  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
- // SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
+  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
+  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();
@@ -132,9 +133,10 @@ dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 	  }
   while (current_time<T_FINAL);
 
+/*
 double x = -0.5*Hermes::sin(current_time);
 double y = 0.5*Hermes::cos(current_time);
-Hermes::Mixins::Loggable::Static::info("x=%f, y = %f,", x, y);
+Hermes::Mixins::Loggable::Static::info("x=%f, y = %f,", x, y);*/
 
 dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 

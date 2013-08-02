@@ -81,7 +81,7 @@ namespace Hermes
         if((this->shapeset!=NULL)&& (this->own_shapeset))
      delete this->shapeset;
       //if((shapeset->get_id() < 10)||(shapeset->get_id() ==31)) // <10=> H1 shapeset, 31=>taylor_shapeset
-			if((shapeset->get_id()==3)||(shapeset->get_id()==4))
+			if((shapeset->get_id()==3))
       {
         this->shapeset = shapeset;
         this->own_shapeset = false;
@@ -185,6 +185,19 @@ namespace Hermes
           }
       }
     }
+
+    template<typename Scalar>
+    void L2_SEMI_CG_Space<Scalar>::get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const
+    {
+      this->check();
+      al->cnt = 0;
+this->get_element_assembly_list( e, al) ;
+
+    /*  get_vertex_assembly_list(e, surf_num, al);
+      get_vertex_assembly_list(e, e->next_vert(surf_num), al);
+      get_boundary_assembly_list_internal(e, surf_num, al);*/
+    }
+
 
     template<typename Scalar>
     void L2_SEMI_CG_Space<Scalar>::get_boundary_assembly_list_internal(Element* e, int surf_num, AsmList<Scalar>* al) const

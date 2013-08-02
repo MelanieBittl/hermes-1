@@ -10,6 +10,7 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
 
+
 class CustomWeakForm : public WeakForm<double>
 {
 public:
@@ -57,6 +58,26 @@ public:
     MatrixFormDG<double>* clone() const;
 
   };
+
+  class CustomVectorFormInterface : public VectorFormDG<double>
+  {
+  public:
+			CustomVectorFormInterface(int i) : VectorFormDG<double>(i)
+    {
+    };
+      virtual double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
+        Geom<double> *e, DiscontinuousFunc<double> **ext) const;
+
+      virtual Ord ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, Func<Ord> *v, Geom<Ord> *e,
+        DiscontinuousFunc<Ord> **ext) const;
+
+      virtual VectorFormDG<double>* clone() const;
+
+
+  };
+
+
+
   class CustomMatrixFormSurface : public MatrixFormSurf<double>
   {
   public:
@@ -110,44 +131,6 @@ public:
 
 };
 
-
-//--------------------Error_calculation--------------
-
-class CustomNormFormVol : public NormFormVol<double>
-{
-public:
-  CustomNormFormVol(int i, int j);
-
-  virtual double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const;
-};
-
-class StreamlineDiffusionNorm : public NormFormVol<double>
-{
-public:
-  StreamlineDiffusionNorm(int i, int j,  MeshSharedPtr mesh);
-
-  virtual double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const;
-
-protected:
-MeshSharedPtr mesh;
-
-};
-
-class CustomNormFormSurf : public NormFormSurf<double>
-{
-public:
-  CustomNormFormSurf(int i, int j);
-
-  virtual double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const;
-};
-
-class CustomNormFormDG : public NormFormDG<double>
-{
-public:
-  CustomNormFormDG(int i, int j);
-
-  virtual double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const;
-};
 
 //----------------Filter-------------
     class AbsDifffilter : public DiffFilter<double>

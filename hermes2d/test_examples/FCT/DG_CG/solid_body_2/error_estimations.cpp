@@ -157,10 +157,12 @@ for_all_active_elements(e, space->get_mesh())
 	if(diam>diam_max) diam_max = diam;
 	break;
 }
+
+/*
 double x_h = calc_coord(space, u_new, 0);
 double y_h = calc_coord(space, u_new, 1);
 
-Hermes::Mixins::Loggable::Static::info("x_h=%f, y_h = %f,", x_h, y_h);
+Hermes::Mixins::Loggable::Static::info("x_h=%f, y_h = %f,", x_h, y_h);*/
 
 
 double err_max = calc_error_max(u_new, u_prev_time,space);

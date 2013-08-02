@@ -1,7 +1,10 @@
 #include "definitions.h"
 
 const double EPS = 1e-3;
-const double const_penalty = 0.;
+const double penalty_parameter = 1.;
+
+enum DG_TYPE {Baumann_Oden,	IP,	NIPG, NONE};
+DG_TYPE type = Baumann_Oden;
 
 
 double calc_abs_v(Element* e)
@@ -53,13 +56,14 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_exact,MeshFunct
 	{
 		add_vector_form(new RHS(0, time_step, theta));
 		add_vector_form_surf(new CustomVectorFormSurface(0) );
+		if(DG)
+			 add_vector_form_DG(new CustomVectorFormInterface(0, theta_DG));
+
 	}
 		
-   if(DG)	
-		{	
+   if(DG)				
 		 add_matrix_form_DG(new CustomMatrixFormInterface(0, 0, theta_DG));
-		 add_vector_form_DG(new CustomVectorFormInterface(0, theta_DG));
-		}
+		
 		
 
 }
@@ -116,9 +120,21 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
    result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
 
-	 result -= wt[i]*EPS*(u->dx[i]*e->nx[i]+u->dy[i]* e->ny[i]) *v->val[i];
-	result += wt[i]*EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i]) *u->val[i];
-	result +=wt[i]*u->val[i]*v->val[i]/diam;
+			if(type == Baumann_Oden)
+			{	
+				result += wt[i]*EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i]) *u->val[i];
+				result -= wt[i]*EPS*(u->dx[i]*e->nx[i]+u->dy[i]* e->ny[i]) *v->val[i];
+			}else if(type == IP)
+			{	
+				result -= wt[i]*EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i]) *u->val[i];
+				result -= wt[i]*EPS*(u->dx[i]*e->nx[i]+u->dy[i]* e->ny[i]) *v->val[i];
+				result += wt[i]*v->val[i]*u->val[i]/diam*penalty_parameter;
+			}else if(type == NIPG)
+			{
+				result += wt[i]*EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i]) *u->val[i];
+				result -= wt[i]*EPS*(u->dx[i]*e->nx[i]+u->dy[i]* e->ny[i]) *v->val[i];
+				result += wt[i]*v->val[i]*u->val[i]/diam*penalty_parameter;
+			}
 	}
 		return result;
 
@@ -146,38 +162,6 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
   Scalar result = Scalar(0);
 Real flux_u = Real(0);
 	double diam = e->diam;
-bool u_vertex = true;
-bool v_vertex = true;
-
-Real u_dx_val = (u->fn_central == NULL ? u->dx_neighbor[0]  : u->dx[0] );
-Real v_dx_val = (v->fn_central == NULL ? v->dx_neighbor[0]  : v->dx[0] );
-
-Real u_dy_val = (u->fn_central == NULL ? u->dy_neighbor[0]  : u->dy[0] );
-Real v_dy_val = (v->fn_central == NULL ? v->dy_neighbor[0]  : v->dy[0] );
-
-for(int i =1;i<n;i++)
-{
-		if(v->fn_central==NULL) {
-				if(v->dx_neighbor[i]!= v_dx_val) v_vertex = false;
-				if(v->dy_neighbor[i]!= v_dy_val) v_vertex = false;
-		}else{
-					if(v->dx[i]!= v_dx_val) v_vertex = false;
-					if(v->dy[i]!= v_dy_val) v_vertex = false;
-		}		
-		if(v_vertex==false) break;
-}
-for(int i =1;i<n;i++)
-{
-		if(u->fn_central==NULL) {
-				if(u->dx_neighbor[i]!= u_dx_val) u_vertex = false;
-				if(u->dy_neighbor[i]!= u_dy_val) u_vertex = false;
-		}else{
-					if(u->dx[i]!= u_dx_val) u_vertex = false;
-					if(u->dy[i]!= u_dy_val) u_vertex = false;
-		}		
-		if(u_vertex==false) break;
-}
-
 
 
   for (int i = 0; i < n; i++) 
@@ -197,25 +181,21 @@ Real mid_v =(v->fn_central == NULL ? v->val_neighbor[i] : v->val[i]);
 
 Real mid_u_dx = flux_u;
 
-Real u_v_dx =0.;
-		 if(u->fn_central == NULL){
-				if(v->fn_central == NULL) u_v_dx = (u->dx_neighbor[i]*v->dx_neighbor[i]+u->dy_neighbor[i]*v->dy_neighbor[i]);
-				else u_v_dx = (u->dx_neighbor[i]*v->dx[i]+u->dy_neighbor[i]*v->dy[i]);
-			}else{
-				if(v->fn_central == NULL) u_v_dx= (u->dx[i]*v->dx_neighbor[i]+u->dy[i]*v->dy_neighbor[i]);
-				else u_v_dx =(u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]);
+		if(type == Baumann_Oden)
+		{
+			result -= wt[i]*EPS*flux_u*jump_v/2.;
+			result += wt[i]*EPS*jump_u*mid_v_dx/2.;
+		}else if(type == IP)
+		{
+			result -= wt[i]*EPS*flux_u*jump_v/2.;
+			result -= wt[i]*EPS*jump_u*mid_v_dx/2.;
+			result += wt[i]*jump_u/diam*jump_v*penalty_parameter;
+		}else if(type == NIPG)
+		{
+			result -= wt[i]*EPS*flux_u*jump_v/2.;
+			result += wt[i]*EPS*jump_u*mid_v_dx/2.;
+			result += wt[i]*jump_u/diam*jump_v*penalty_parameter;
 		}
-
-
-if((u_vertex==false)&&(v_vertex==false))
-		result += wt[i]*EPS*u_v_dx/4.;
-
-	result -= wt[i]*EPS*flux_u/2.*jump_v;
-//result -= wt[i]*EPS*jump_u_dx/2.*mid_v;
-	//result += wt[i]*EPS*jump_u*mid_v_dx/2.;
-	//result -= wt[i]*EPS*mid_u*jump_v_dx/2.;
-	//result += wt[i]*EPS*jump_v_dx*max_u;
-	//result += wt[i]*jump_u*jump_v/diam*const_penalty;
 
 
 
@@ -255,21 +235,6 @@ DiscontinuousFunc<double>* exact = ext[1];
   double result = double(0);
 	double diam = e->diam;
 
-bool v_vertex = true;
-
-
-double v_dx_val =  v->dx[0] ;
-double v_dy_val =  v->dy[0] ;
-
-for(int i =1;i<n;i++)
-{
-
-		if(v->dx[i]!= v_dx_val) v_vertex = false;
-		if(v->dy[i]!= v_dy_val) v_vertex = false;
-				
-		if(v_vertex==false) break;
-}
-
 
 
   for (int i = 0; i < n; i++) 
@@ -291,21 +256,25 @@ double mid_v= v->val[i];
 
       result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(exact->val[i], exact->val_neighbor[i], a_dot_n) * jump_v;
 
-double u_v_dx =(exact->dx[i]*v->dx[i]+exact->dy[i]*v->dy[i]);
-		
+	
+
+		if(type == Baumann_Oden)
+		{
+			result -= wt[i]*EPS*flux_u*jump_v/2.;
+			result += wt[i]*EPS*jump_u*mid_v_dx/2.;
+		}else if(type == IP)
+		{
+			result -= wt[i]*EPS*flux_u*jump_v/2.;
+			result -= wt[i]*EPS*jump_u*mid_v_dx/2.;
+			result += wt[i]*jump_u/diam*jump_v*penalty_parameter;
+		}else if(type == NIPG)
+		{
+			result -= wt[i]*EPS*flux_u*jump_v/2.;
+			result += wt[i]*EPS*jump_u*mid_v_dx/2.;
+			result += wt[i]*jump_u/diam*jump_v*penalty_parameter;
+		}
 
 
-if(v_vertex==false)
-		result += wt[i]*EPS*u_v_dx/4.;
- //result -=  wt[i]*EPS*jump_u*mid_v_dx/2;
-// result -=  wt[i]*EPS*mid_u*jump_v_dx/2.;
-	//result -= wt[i]*EPS*jump_v*mid_u_dx/2.;
-//	result -= wt[i]*EPS*mid_v*jump_u_dx/2;
-//result += wt[i]*EPS*jump_u*jump_v/diam;
-
-	//result -= wt[i]*EPS*flux_u/2.*jump_v;
-	//result += wt[i]*EPS*jump_u*mid_v_dx/2.;
-	//result += wt[i]*jump_u*jump_v/diam*const_penalty;
       
   }
   return (-result*(1.-theta));
@@ -343,10 +312,20 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
 
 
 				result -= wt[i]*(static_cast<CustomWeakForm*>(wf)->upwind_flux(0., exact->val[i], a_dot_n))*v->val[i];
-				result += wt[i]* EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i])*exact->val[i];
-				result += wt[i]*v->val[i]*exact->val[i]/diam; 
 
-			//result += wt[i]* EPS*(exact->dx[i]*e->nx[i]+exact->dy[i]* e->ny[i])*v->val[i];
+			if(type == Baumann_Oden)
+			{	
+					result += wt[i]* EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i])*exact->val[i];
+			}else if(type == IP)
+			{	
+					result -= wt[i]* EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i])*exact->val[i];
+					result += wt[i]*v->val[i]*exact->val[i]/diam*penalty_parameter;	
+			}else if(type == NIPG)
+			{
+					result += wt[i]* EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i])*exact->val[i];
+					result += wt[i]*v->val[i]*exact->val[i]/diam*penalty_parameter;		
+			}
+
 	}
   
   return result;

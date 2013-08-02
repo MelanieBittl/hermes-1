@@ -93,7 +93,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 
 
 CustomWeakForm wf(u_prev_time, mesh,time_step, theta,theta_DG, all, DG, SD, false);
-CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, false, false, true);
+CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, DG, false, true);
 
 
 	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double> ; 

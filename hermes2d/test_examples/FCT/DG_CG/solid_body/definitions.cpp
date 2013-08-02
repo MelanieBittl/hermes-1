@@ -48,14 +48,15 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshS
 	{
 		add_vector_form(new RHS(0, time_step, theta));
 		add_vector_form_surf(new CustomVectorFormSurface(0) );
+			if(DG)
+		 add_vector_form_DG(new CustomVectorFormInterface(0, theta_DG));
 	}
 		
-   if(DG)		
-		{
+   if(DG)			
 		 add_matrix_form_DG(new CustomMatrixFormInterface(0, 0,theta_DG));
-		 add_vector_form_DG(new CustomVectorFormInterface(0, theta_DG));
 
-		}
+
+		
 		
 	 if(SD)	add_matrix_form(new Streamline(0,0,mesh));
    

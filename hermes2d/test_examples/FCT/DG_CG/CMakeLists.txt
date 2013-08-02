@@ -5,4 +5,5 @@ add_subdirectory("solid_body_ref")
 add_subdirectory("stationary_problem")
 add_subdirectory("shock_tube_CGDG")
 add_subdirectory("stationary_problem_2")
+add_subdirectory("stationary_problem_convection_diffusion")
 
