@@ -1651,6 +1651,7 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
       }
 
       bson_destroy(&br);
+      ::free(datar);
 
       init_dxdy_buffer();
     }
@@ -1777,6 +1778,7 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
       }
 
       bson_destroy(&br);
+      ::free(datar);
 
       init_dxdy_buffer();
     }

@@ -291,16 +291,18 @@ namespace Hermes
     /// Format of file matrix and vector output
     enum EMatrixDumpFormat
     {
-      DF_MATLAB_SPARSE = 0, ///< matlab file
-      /// \brief plain ascii file
+      /// \brief Plain ascii file
       /// first line is matrix size
       /// second line in number of nonzero values
       /// next lines contains row column and value
+      DF_MATLAB_SPARSE = 0,
       DF_PLAIN_ASCII = 1,
       /// \brief Hermes binary format
-      ///
       DF_HERMES_BIN = 2,
-      DF_MATRIX_MARKET = 3 ///< Matrix Market which can be read by pysparse library
+      /// \brief Matrix Market which can be read by pysparse library
+      DF_MATRIX_MARKET = 3,
+      /// Binary MATio format
+      DF_HERMES_MATLAB_BIN = 4
     };
 
     /// \brief General (abstract) matrix representation in Hermes.
@@ -310,7 +312,7 @@ namespace Hermes
     public:
       /// get size of matrix
       /// @return size of matrix
-      unsigned int get_size() { return this->size;};
+      unsigned int get_size() const { return this->size;};
 
       /// constructor of matrix
       /// @param[in] size size of matrix
@@ -385,6 +387,7 @@ namespace Hermes
       /// Constructor of sparse matrix
       /// @param[in] size size of matrix
       SparseMatrix(unsigned int size);
+      SparseMatrix(const SparseMatrix<Scalar>& mat);
       virtual ~SparseMatrix();
 
       /// prepare memory
@@ -400,8 +403,6 @@ namespace Hermes
 
       /// Finish manipulation with matrix (called before solving)
       virtual void finish() { }
-
-      virtual unsigned int get_size() { return this->size; }
 
       /// Add matrix
       /// @param mat matrix to add

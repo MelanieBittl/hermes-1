@@ -1516,6 +1516,7 @@ namespace Hermes
         space->edata[index_coeff++].changed_in_last_adaptation = bson_iterator_int(&it);
 
       bson_destroy(&br);
+      ::free(datar);
 
       space->seq = g_space_seq++;
 
@@ -1588,6 +1589,7 @@ namespace Hermes
         this->edata[index_coeff++].changed_in_last_adaptation = bson_iterator_int(&it);
 
       bson_destroy(&br);
+      ::free(datar);
 
       this->seq = g_space_seq++;
 

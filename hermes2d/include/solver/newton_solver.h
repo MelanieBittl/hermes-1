@@ -105,7 +105,7 @@ namespace Hermes
       /// Default: this->set_tolerance(1e-8, ResidualNormAbsolute);
       /// \param[in] handleMultipleTolerancesAnd If true, multiple tolerances defined will have to be all fulfilled in order to proclaim
       /// solution as a correct one. If false, only one will be enough.
-      void set_tolerance(double newton_tol, NewtonSolverConvergenceMeasurementType toleranceType, bool handleMultipleTolerancesAnd = false);
+      void set_tolerance(double newton_tol, NewtonSolverConvergenceMeasurementType toleranceType, bool handleMultipleTolerancesAnd = true);
 
 #pragma region damping-public
       /// Sets minimum damping coefficient.
@@ -273,7 +273,9 @@ namespace Hermes
 
       double sufficient_improvement_factor_jacobian;
       unsigned int max_steps_with_reused_jacobian;
-
+      
+      /// Backup vector for unsuccessful reuse of Jacobian.
+      Vector<Scalar>* residual_back;
 #pragma endregion
 
 #pragma region OutputAttachable

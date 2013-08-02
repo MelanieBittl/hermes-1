@@ -51,9 +51,6 @@ project(hermes)
   # BSON 
   set(WITH_BSON NO)
 
-  # Installation path:
-  set(TARGET_ROOT             /usr/local) #default installation path for the library will be /usr/local/lib,
-                                            #for include files /usr/local/include
   #### Solvers ###
   # Standard UMFPACK
     # UMFPACK is chosen by default.
@@ -130,8 +127,7 @@ project(hermes)
   
   ### END DEFAULT CONFIGURATION ###
     
-  set(CMAKE_MODULE_PATH ${CMAKE_HOME_DIRECTORY}/cmake)
-  set(HERMES_COMMON_DIR ${PROJECT_SOURCE_DIR})
+  set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
   set(HERMES_COMMON_LIB  hermes_common)
   
   if(${H2D_MAX_HANGING_NODES_LEVEL} MATCHES "[1-20]")
@@ -298,10 +294,18 @@ project(hermes)
       include_directories(${TCMALLOC_INCLUDE_DIR})
     endif(WITH_TC_MALLOC)
 
-    if(WITH_BSON)
-      find_package(BSON REQUIRED)
-      include_directories(${BSON_INCLUDE_DIR})
-    endif(WITH_BSON)
+    IF(DEFINED BSON_LIBRARY)
+      IF(DEFINED BSON_INCLUDE_DIR)
+        include_directories(${BSON_INCLUDE_DIR})
+      ELSE()
+        MESSAGE(FATAL_ERROR When BSON_LIBRARY is defined, so must be BSON_INCLUDE_DIR.)
+      ENDIF()
+    ELSE()
+      if(WITH_BSON)
+        find_package(BSON REQUIRED)
+        include_directories(${BSON_INCLUDE_DIR})
+      endif(WITH_BSON)
+    ENDIF()
 
     find_package(XSD REQUIRED)
     find_package(XERCES REQUIRED)
@@ -316,11 +320,19 @@ project(hermes)
       find_package(UMFPACK REQUIRED)
       include_directories(${UMFPACK_INCLUDE_DIRS})
     endif(WITH_UMFPACK)
-    
-    if(WITH_PARALUTION)
-      find_package(PARALUTION REQUIRED)
-      include_directories(${PARALUTION_INCLUDE_DIR})
-    endif(WITH_PARALUTION)
+
+    IF(DEFINED PARALUTION_LIBRARY)
+      IF(DEFINED PARALUTION_INCLUDE_DIR)
+        include_directories(${PARALUTION_INCLUDE_DIR})
+      ELSE()
+        MESSAGE(FATAL_ERROR When PARALUTION_LIBRARY is defined, so must be PARALUTION_INCLUDE_DIR.)
+      ENDIF()
+    ELSE()
+      if(WITH_PARALUTION)
+        find_package(PARALUTION REQUIRED)
+        include_directories(${PARALUTION_INCLUDE_DIR})
+      endif(WITH_PARALUTION)
+    ENDIF()
     
     if(MSVC)
       if(WITH_PETSC OR WITH_TRILINOS OR WITH_SUPERLU)

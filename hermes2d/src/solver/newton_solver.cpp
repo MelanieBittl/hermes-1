@@ -70,7 +70,7 @@ namespace Hermes
       for(int i = 0; i < NewtonSolverConvergenceMeasurementTypeCount; i++)
         this->newton_tolerance[i] = std::numeric_limits<double>::max();
       memset(this->newton_tolerance_set, 0, sizeof(bool)*NewtonSolverConvergenceMeasurementTypeCount);
-      this->handleMultipleTolerancesAnd = false;
+      this->handleMultipleTolerancesAnd = true;
       this->max_allowed_iterations = 20;
       this->residual_as_function = false;
       this->max_allowed_residual_norm = 1E9;
@@ -409,6 +409,10 @@ namespace Hermes
       // coeff_vec_back
       this->coeff_vec_back = (Scalar*)calloc(ndof, sizeof(Scalar));
 
+      // Backup vector for unsuccessful reuse of Jacobian.
+      residual_back = create_vector<Scalar>();
+      residual_back->alloc(this->ndof);
+          
       // sln_vector
       if(this->sln_vector != NULL)
       {
@@ -438,6 +442,7 @@ namespace Hermes
       }
 
       ::free(coeff_vec_back);
+      delete residual_back;
     }
 
     template<typename Scalar>
@@ -679,6 +684,8 @@ namespace Hermes
         // The whole loop is skipped if the jacobian is not suitable for being reused at all.
         while(this->jacobian_reusable && (this->reuse_jacobian_values() || force_reuse_jacobian_values(successful_steps_jacobian)))
         {
+          this->residual_back->set_vector(this->residual);
+
           // Info & handle the situation as necessary.
           this->info("\t\treusing Jacobian.");
           this->on_reused_jacobian_step_begin();
@@ -694,6 +701,9 @@ namespace Hermes
             this->warn("\t\treused Jacobian disapproved.");
             this->get_parameter_value(p_residual_norms).pop_back();
             this->get_parameter_value(p_solution_norms).pop_back();
+            this->get_parameter_value(p_solution_change_norms).pop_back();
+            memcpy(coeff_vec, coeff_vec_back, sizeof(Scalar)*ndof);
+            this->residual->set_vector(residual_back);
             break;
           }
 
