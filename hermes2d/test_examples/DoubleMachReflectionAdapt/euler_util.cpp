@@ -33,7 +33,7 @@ CFLCalculation::CFLCalculation(double CFL_number, double kappa) : CFL_number(CFL
 {
 }
 
-void CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const
+bool CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const
 {
   // Create spaces of constant functions over the given mesh->
   SpaceSharedPtr<double> constant_rho_space(new L2Space<double> (mesh, 0));
@@ -68,9 +68,17 @@ void CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > so
       min_condition = condition;
   }
 
+if(time_step > min_condition * (1 + 1e-4))
+{
   time_step = min_condition;
-
   delete [] sln_vector;
+  return true;
+}
+else
+{
+  delete [] sln_vector;
+  return false;
+}
 }
 
 void CFLCalculation::calculate_semi_implicit(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const

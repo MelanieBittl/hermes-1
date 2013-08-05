@@ -7,16 +7,15 @@ using namespace Hermes::Hermes2D::RefinementSelectors;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = true;
+const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 10;
+const unsigned int EVERY_NTH_STEP = 500;
 // Adaptivity.
 // Every UNREF_FREQth time step the mesh is unrefined.
-const int UNREF_FREQ = 5;
-int REFINEMENT_COUNT = 0;
-int REFINEMENT_COUNT_THRESHOLD = 12;
+double UNREF_FREQ = 1e-3;
+double LAST_UNREF = 0.;
 
 // Shock capturing.
 bool SHOCK_CAPTURING = true;
@@ -28,7 +27,7 @@ const int INIT_REF_NUM = 2;
 double time_step_length = 1E-4;
 double TIME_INTERVAL_LENGTH = .2;
 // CFL value.
-double CFL_NUMBER = 0.3;
+double CFL_NUMBER = 1.0;
 // Kappa.
 const double KAPPA = 1.4;
 
@@ -45,7 +44,7 @@ public:
   {
     for(int i = 0; i < component_count; i++)
     {
-      //this->add_error_form(new CustomNormFormVol(i, i));
+      this->add_error_form(new CustomNormFormVol(i, i));
       this->add_error_form(new CustomNormFormDG(i, i));
     }
   }
@@ -55,15 +54,18 @@ public:
   public:
     CustomNormFormVol(int i, int j) : NormFormVol<double>(i, j)
     {
-      this->functionType = FineSolutions;
+//this->functionType = CoarseSolutions;
     }
 
     double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
     {
-      double result = 0.;
-      for (int i = 0; i < n; i++)
-        result += wt[i] * u->val[i] * v->val[i];
-      return result;
+      double result_values = 0., result_derivatives = 0.;
+      for (int point_i = 0; point_i < n; point_i++)
+      {
+        result_values += wt[point_i] * (u->val[point_i] * v->val[point_i]);
+	result_derivatives += wt[point_i] * (u->dx[i] * v->dx[i] + u->dy[i] * v->dy[i]);
+      }
+      return result_values;// + result_derivatives;
     }
   };
 
@@ -72,6 +74,7 @@ public:
   public:
     CustomNormFormDG(int i, int j) : NormFormDG<double>(i, j)
     {
+      this->functionType = CoarseSolutions;
     }
 
     double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const
@@ -87,10 +90,8 @@ public:
 // Stopping criterion for adaptivity.
 bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
 {
-  if(ref_ndof < 4e3)
+  if(ref_ndof < (35e3 + time * 210e3))
     return false;
-  if(ref_ndof > 6e3)
-    return true;
 
   return true;
 }
@@ -98,7 +99,7 @@ bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
 int main(int argc, char* argv[])
 {
 #ifndef _WINDOWS
-  HermesCommonApi.set_integral_param_value(numThreads, 1);
+  HermesCommonApi.set_integral_param_value(numThreads, 8);
 #endif
   // Set up CFL calculation class.
   CFLCalculation CFL(CFL_NUMBER, KAPPA);
@@ -109,13 +110,16 @@ int main(int argc, char* argv[])
 #pragma region 1. Load mesh and initialize spaces.
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
+  MeshSharedPtr basemesh(new Mesh);
   MeshReaderH2DXML mloader;
-  mloader.load("domain.xml", mesh);
+  mloader.load("domain.xml", basemesh);
 
   // Perform initial mesh refinements.
-  mesh->refine_in_area("Pre", 1, 2, true);
-  mesh->refine_in_area("Pre", 1, 2, true);
-  mesh->refine_all_elements(0, true);
+  basemesh->refine_in_area("Pre", 1, 2, true);
+  basemesh->refine_in_area("Pre", 1, 2, true);
+  basemesh->refine_all_elements(0, true);
+  basemesh->refine_all_elements(0, true);
+  mesh->copy(basemesh);
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -174,7 +178,7 @@ int main(int argc, char* argv[])
 #pragma region Solver setup
   LinearSolver<double> solver;
   solver.set_weak_formulation(&wf);
-  solver.set_verbose_output(false);
+  solver.set_verbose_output(true);
 #pragma endregion
 
 #pragma region Adaptivity setup
@@ -185,7 +189,7 @@ int main(int argc, char* argv[])
   // Error calculation.
   CustomErrorCalculator errorCalculator(AbsoluteError, 1);
   // Stopping criterion for an adaptivity step.
-  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.5);
+  AdaptStoppingCriterionCumulative<double> stoppingCriterion(.6);
   Adapt<double> adaptivity(space_rho, &errorCalculator, &stoppingCriterion);
 #pragma endregion
 
@@ -206,13 +210,15 @@ int main(int argc, char* argv[])
     logger.info("Time step %d, time %3.5f, time step %3.5f.", iteration, t, time_step_length);
 
 #pragma region 4.1. Periodic global derefinements.
-    if (iteration > 1 && iteration % UNREF_FREQ == 0) 
+    if (iteration > 1 && t > LAST_UNREF + UNREF_FREQ)
     {
+      LAST_UNREF = t;
       Hermes::Mixins::Loggable::Static::info("Global mesh derefinement.");
-      Space<double>::unrefine_all_mesh_elements(spaces);
-      if(REFINEMENT_COUNT > REFINEMENT_COUNT_THRESHOLD)
-        Space<double>::unrefine_all_mesh_elements(spaces);
-      REFINEMENT_COUNT = 0;
+      mesh->copy(basemesh);
+      space_rho->set_uniform_order(1);
+      space_rho_v_x->set_uniform_order(1);
+      space_rho_v_y->set_uniform_order(1);
+      space_e->set_uniform_order(1);
       Space<double>::assign_dofs(spaces);
       solver.free_cache();
     }
@@ -266,7 +272,10 @@ int main(int argc, char* argv[])
       }
 
       // Calculate time step according to CFL condition.
-      CFL.calculate(rslns, (ref_spaces)[0]->get_mesh(), time_step_length);
+      if(CFL.calculate(rslns, (ref_spaces)[0]->get_mesh(), time_step_length))
+        solver.set_jacobian_constant(false);
+      else
+        solver.set_jacobian_constant(true);
 #pragma endregion
 
 
@@ -279,19 +288,17 @@ int main(int argc, char* argv[])
       errorCalculator.calculate_errors(sln_rho, rsln_rho);
       double density_error = errorCalculator.get_error_squared(0) * 100;
 
-      if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
+      if(HERMES_VISUALIZATION)
       {
-        if(HERMES_VISUALIZATION)
-          eview.show(errorCalculator.get_errorMeshFunction(0));
+        eview.show(errorCalculator.get_errorMeshFunction(0));
+        density_view.show(rslns[0]);
       }
-
       // Report results.
       logger.info("\t\tDensity error: %g%%.", density_error);
 
       // If err_est too large, adapt the mesh.
       if (adaptivityErrorStop(iteration, t, density_error, ref_ndof))
       {
-
 #pragma region 7.3.1 Visualization
         if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
         {
@@ -317,6 +324,9 @@ int main(int argc, char* argv[])
             lin.save_solution_vtk(velocity, filename, "Velocity", false);
             sprintf(filename, "Rho-%i.vtk", iteration - 1);
             lin.save_solution_vtk(prev_rho, filename, "Rho", false);
+            Orderizer ord;
+            sprintf(filename, "Mesh-%i.vtk", iteration - 1);
+            ord.save_mesh_vtk(ref_space_rho, filename);
           }
         }
         break;
@@ -330,7 +340,6 @@ int main(int argc, char* argv[])
         space_rho_v_y->copy(space_rho, mesh);
         space_e->copy(space_rho, mesh);
         Space<double>::assign_dofs(spaces);
-        REFINEMENT_COUNT++;
         as++;
       }
 #pragma endregion

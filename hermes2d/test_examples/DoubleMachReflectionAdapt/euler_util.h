@@ -26,7 +26,7 @@ public:
   CFLCalculation(double CFL_number, double kappa);
 
   // If the time step is necessary to decrease / possible to increase, the value time_step will be rewritten.
-  void calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const;
+  bool calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const;
   void calculate_semi_implicit(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const;
 
   void set_number(double new_CFL_number);
