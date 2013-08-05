@@ -1412,13 +1412,10 @@ double FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>
   order += this->limited_solutions[0]->get_refmap()->get_inv_ref_order();
   ns.set_quad_order(order);
 
-  RefMap** refmaps = new RefMap*[this->component_count];
-  for(int i = 0; i < this->component_count; i++)
-    refmaps[i] = this->limited_solutions[i]->get_refmap();
+  RefMap* refmap = this->limited_solutions[0]->get_refmap();
   Geom<double>* e = new Geom<double>();
   double* jwt;
-  int n_quadrature_points = init_surface_geometry_points(refmaps, this->component_count, order, edge, 1, e, jwt);
-  delete [] refmaps;
+  int n_quadrature_points = init_surface_geometry_points(&refmap, 1, order, edge, 1, e, jwt);
 
   DiscontinuousFunc<double>* density = ns.init_ext_fn(this->limited_solutions[0].get());
 

@@ -26,7 +26,7 @@ const bool VTK_VISUALIZATION = true;
 const unsigned int EVERY_NTH_STEP = 10;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = VertexBased;
+const EulerLimiterType limiter_type = JumpIndicator_P_coarsening;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
@@ -137,6 +137,7 @@ int main(int argc, char* argv[])
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
       limiter->get_solutions(prev_slns);
       limitVelocityAndEnergy(spaces, *limiter, prev_slns);
+      delete limiter;
     }
 #pragma endregion
 
