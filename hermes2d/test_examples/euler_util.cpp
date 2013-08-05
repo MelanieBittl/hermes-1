@@ -1383,15 +1383,11 @@ double FeistauerPCoarseningLimiter::get_jump_indicator(Element* e)
 
     NeighborSearch<double>* ns = new NeighborSearch<double>(e, this->spaces[0]->get_mesh());
     ns->set_active_edge_multimesh(isurf);
-    int num_neighbors;
-    bool* dummy_processed;
-    MultimeshDGNeighborTree<double>::process_edge(&ns, 1, num_neighbors, dummy_processed);
+    int num_neighbors = ns->get_num_neighbors();
 
     for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors; neighbor_i++)
       jump_indicator += this->assemble_one_neighbor(*ns, isurf, neighbor_i);
 
-    if(dummy_processed)
-      delete [] dummy_processed;
     delete ns;
   }
 
@@ -1413,7 +1409,7 @@ double FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>
   ns.set_quad_order(order);
 
   RefMap* refmap = this->limited_solutions[0]->get_refmap();
-  Geom<double>* e = new Geom<double>();
+  Geom<double>* e;
   double* jwt;
   int n_quadrature_points = init_surface_geometry_points(&refmap, 1, order, edge, 1, e, jwt);
 
