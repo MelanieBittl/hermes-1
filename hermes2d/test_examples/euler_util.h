@@ -472,7 +472,7 @@ public:
     double kappa;
 };
 
-void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
+void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::Limiter<double>& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
 
 class FeistauerPCoarseningLimiter : public PostProcessing::Limiter<double>
 {

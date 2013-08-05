@@ -134,9 +134,9 @@ int main(int argc, char* argv[])
       Solution<double>::vector_to_solutions(solver.get_sln_vector(), spaces, prev_slns);
     else
     {
-      PostProcessing::VertexBasedLimiter limiter(spaces, solver.get_sln_vector(), 1);
-      limiter.get_solutions(prev_slns);
-      limitVelocityAndEnergy(spaces, limiter, prev_slns);
+      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
+      limiter->get_solutions(prev_slns);
+      limitVelocityAndEnergy(spaces, *limiter, prev_slns);
     }
 #pragma endregion
 

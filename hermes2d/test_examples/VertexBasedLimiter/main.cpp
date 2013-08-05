@@ -1,15 +1,15 @@
 #include "definitions.h"
 #include "../euler_util.h"
 
-const int polynomialDegree = 2;
-const int initialRefinementsCount = 6;
-const double logPercentTimeSteps = 1.;
+const int polynomialDegree = 1;
+const int initialRefinementsCount = 5;
+const double logPercentTimeSteps = .01;
 const TimeSteppingType timeSteppingType = Explicit;
 const SolvedExample solvedExample = SolidBodyRotation;
-const EulerLimiterType limiter_type = VertexBased;
+const EulerLimiterType limiter_type = JumpIndicator_P_coarsening;
 
-bool HermesView = false;
-bool VTKView = true;
+bool HermesView = true;
+bool VTKView = false;
 
 const double time_step_length = timeSteppingType == Explicit ? 0.001 : 0.01;
 const double time_interval_length = solvedExample == SolidBodyRotation ? 2 * M_PI : 1.;

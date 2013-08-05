@@ -1310,7 +1310,7 @@ void EntropyFilter::filter_fn(int n, Hermes::vector<double*> values, double* res
       / Hermes::pow((values.at(0)[i] / rho_ext), kappa));
 }
 
-void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns)
+void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::Limiter<double>& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns)
 {
   int running_dofs = 0;
   int ndof = spaces[0]->get_num_dofs();

@@ -1,6 +1,6 @@
 #ifndef NUMERICAL_FLUX_H
 #define NUMERICAL_FLUX_H
-#include "euler_util.h"
+#include "../euler_util.h"
 
 class NumericalFlux
 {
