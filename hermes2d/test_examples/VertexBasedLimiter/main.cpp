@@ -1,10 +1,12 @@
 #include "definitions.h"
+#include "../euler_util.h"
 
 const int polynomialDegree = 2;
 const int initialRefinementsCount = 6;
 const double logPercentTimeSteps = 1.;
 const TimeSteppingType timeSteppingType = Explicit;
 const SolvedExample solvedExample = SolidBodyRotation;
+const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = false;
 bool VTKView = true;
@@ -98,18 +100,18 @@ int main(int argc, char* argv[])
 
     // 1st step.
     solver_1.solve();
-    PostProcessing::VertexBasedLimiter limiter_1(space, solver_1.get_sln_vector(), polynomialDegree);
-    previous_solution->copy(limiter_1.get_solution());
+    PostProcessing::Limiter<double>* limiter_1 = create_limiter(limiter_type, space, solver_1.get_sln_vector(), polynomialDegree);
+    previous_solution->copy(limiter_1->get_solution());
 
     // 2nd step.
     solver_2.solve();
-    PostProcessing::VertexBasedLimiter limiter_2(space, solver_2.get_sln_vector(), polynomialDegree);
-    previous_solution->copy(limiter_2.get_solution());
+    PostProcessing::Limiter<double>* limiter_2 = create_limiter(limiter_type, space, solver_2.get_sln_vector(), polynomialDegree);
+    previous_solution->copy(limiter_2->get_solution());
 
     // 3rd step.
     solver_3.solve();
-    PostProcessing::VertexBasedLimiter limiter_3(space, solver_3.get_sln_vector(), polynomialDegree);
-    solution->copy(limiter_3.get_solution());
+    PostProcessing::Limiter<double>* limiter_3 = create_limiter(limiter_type, space, solver_3.get_sln_vector(), polynomialDegree);
+    solution->copy(limiter_3->get_solution());
 
     if((!(time_step % logPeriod)) || (time_step == number_of_steps))
     {

@@ -1,4 +1,5 @@
 #include "hermes2d.h"
+#include "../euler_util.h"
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -25,6 +26,7 @@ const bool VTK_VISUALIZATION = true;
 const unsigned int EVERY_NTH_STEP = 10;
 
 bool SHOCK_CAPTURING = true;
+const EulerLimiterType limiter_type = VertexBased;
 
 // Initial polynomial degree.
 const int P_INIT = 1;

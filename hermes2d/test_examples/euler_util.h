@@ -26,7 +26,7 @@ public:
   CFLCalculation(double CFL_number, double kappa);
 
   // If the time step is necessary to decrease / possible to increase, the value time_step will be rewritten.
-  void calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const;
+  bool calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const;
   void calculate_semi_implicit(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const;
 
   void set_number(double new_CFL_number);
@@ -474,4 +474,50 @@ public:
 
 void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
 
+class FeistauerPCoarseningLimiter : public PostProcessing::Limiter<double>
+{
+public:
+  FeistauerPCoarseningLimiter(SpaceSharedPtr<double> space, double* solution_vector);
+  FeistauerPCoarseningLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector);
+  ~FeistauerPCoarseningLimiter();
+
+private:
+  void process();
+  double get_jump_indicator(Element* e);
+  double assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i);
+};
+
+enum EulerLimiterType
+{
+  VertexBased,
+  JumpIndicator_P_coarsening
+};
+
+PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false)
+{
+  PostProcessing::Limiter<double>* limiter;
+
+  if(limiter_type == VertexBased)
+    limiter = new PostProcessing::VertexBasedLimiter(space, solution_vector, polynomial_degree);
+
+  if(limiter_type == JumpIndicator_P_coarsening)
+    limiter = new FeistauerPCoarseningLimiter(space, solution_vector);
+
+  limiter->set_verbose_output(verbose);
+  return limiter;
+}
+
+PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int polynomial_degree = 1, bool verbose = false)
+{
+  PostProcessing::Limiter<double>* limiter;
+
+  if(limiter_type == VertexBased)
+    limiter = new PostProcessing::VertexBasedLimiter(spaces, solution_vector, polynomial_degree);
+
+  if(limiter_type == JumpIndicator_P_coarsening)
+    limiter = new FeistauerPCoarseningLimiter(spaces, solution_vector);
+
+  limiter->set_verbose_output(verbose);
+  return limiter;
+}
 #endif

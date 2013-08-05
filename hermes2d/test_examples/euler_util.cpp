@@ -1,4 +1,5 @@
 #include "euler_util.h"
+#include "discrete_problem/dg/multimesh_dg_neighbor_tree.h"
 #include "limits.h"
 #include <limits>
 
@@ -71,6 +72,7 @@ bool CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > so
 if(time_step > min_condition * (1 + 1e-4))
 {
   time_step = min_condition;
+
   delete [] sln_vector;
   return true;
 }
@@ -161,7 +163,7 @@ void CFLCalculation::calculate_semi_implicit(Hermes::vector<MeshFunctionSharedPt
 
     if(condition < min_condition || min_condition == 0.)
       min_condition = condition;
-	}
+  }
 
   time_step = min_condition;
 
@@ -220,7 +222,7 @@ void ADEStabilityCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<dou
 }
 
 DiscontinuityDetector::DiscontinuityDetector(Hermes::vector<SpaceSharedPtr<double>  > spaces, 
-  Hermes::vector<MeshFunctionSharedPtr<double> > solutions) : spaces(spaces), solutions(solutions)
+                                             Hermes::vector<MeshFunctionSharedPtr<double> > solutions) : spaces(spaces), solutions(solutions)
 {
   for(int i = 0; i < solutions.size(); i++)
     this->solutionsInternal.push_back((Solution<double>*)solutions[i].get());
@@ -230,7 +232,7 @@ DiscontinuityDetector::~DiscontinuityDetector()
 {};
 
 KrivodonovaDiscontinuityDetector::KrivodonovaDiscontinuityDetector(Hermes::vector<SpaceSharedPtr<double>  > spaces, 
-  Hermes::vector<MeshFunctionSharedPtr<double> > solutions) : DiscontinuityDetector(spaces, solutions)
+                                                                   Hermes::vector<MeshFunctionSharedPtr<double> > solutions) : DiscontinuityDetector(spaces, solutions)
 {
   // A check that all meshes are the same in the spaces.
   unsigned int mesh0_seq = spaces[0]->get_mesh()->get_seq();
@@ -506,7 +508,7 @@ void KrivodonovaDiscontinuityDetector::calculate_norms(Element* e, int edge_i, d
 };
 
 KuzminDiscontinuityDetector::KuzminDiscontinuityDetector(Hermes::vector<SpaceSharedPtr<double>  > spaces, 
-  Hermes::vector<MeshFunctionSharedPtr<double> > solutions, bool limit_all_orders_independently) : DiscontinuityDetector(spaces, solutions), limit_all_orders_independently(limit_all_orders_independently)
+                                                         Hermes::vector<MeshFunctionSharedPtr<double> > solutions, bool limit_all_orders_independently) : DiscontinuityDetector(spaces, solutions), limit_all_orders_independently(limit_all_orders_independently)
 {
   // A check that all meshes are the same in the spaces.
   unsigned int mesh0_seq = spaces[0]->get_mesh()->get_seq();
@@ -1081,7 +1083,7 @@ FluxLimiter::FluxLimiter(FluxLimiter::LimitingType type, Hermes::vector<MeshFunc
 
 FluxLimiter::~FluxLimiter()
 {
-	delete detector;
+  delete detector;
 };
 
 void FluxLimiter::get_limited_solutions(Hermes::vector<MeshFunctionSharedPtr<double> > solutions_to_limit)
@@ -1310,45 +1312,188 @@ void EntropyFilter::filter_fn(int n, Hermes::vector<double*> values, double* res
 
 void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns)
 {
-    int running_dofs = 0;
-    int ndof = spaces[0]->get_num_dofs();
-    double* density_sln_vector = limiter.get_solution_vector();
-    Element* e;
-    AsmList<double> al_density;
-    for(int component = 1; component < 4; component++)
+  int running_dofs = 0;
+  int ndof = spaces[0]->get_num_dofs();
+  double* density_sln_vector = limiter.get_solution_vector();
+  Element* e;
+  AsmList<double> al_density;
+  for(int component = 1; component < 4; component++)
+  {
+    if(spaces[component]->get_num_dofs() != ndof)
+      throw Exceptions::Exception("Euler code is supposed to be executed on a single mesh.");
+
+    double* conservative_vector = limiter.get_solution_vector() + component * ndof;
+    double* real_vector = new double[ndof];
+    memset(real_vector, 0, sizeof(double) * ndof);
+
+    for_all_active_elements(e, spaces[0]->get_mesh())
     {
-      if(spaces[component]->get_num_dofs() != ndof)
-        throw Exceptions::Exception("Euler code is supposed to be executed on a single mesh.");
+      spaces[0]->get_element_assembly_list(e, &al_density);
 
-      double* conservative_vector = limiter.get_solution_vector() + component * ndof;
-      double* real_vector = new double[ndof];
-      memset(real_vector, 0, sizeof(double) * ndof);
-
-      for_all_active_elements(e, spaces[0]->get_mesh())
-      {
-        spaces[0]->get_element_assembly_list(e, &al_density);
-
-        real_vector[al_density.dof[0]] = conservative_vector[al_density.dof[0]] / density_sln_vector[al_density.dof[0]];
-        real_vector[al_density.dof[1]] = (conservative_vector[al_density.dof[1]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[1]]) / density_sln_vector[al_density.dof[0]];
-        real_vector[al_density.dof[2]] = (conservative_vector[al_density.dof[2]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[2]]) / density_sln_vector[al_density.dof[0]];
-      }
-
-      PostProcessing::VertexBasedLimiter real_component_limiter(spaces[0], real_vector, 1);
-      delete [] real_vector;
-      real_component_limiter.get_solution();
-      real_vector = real_component_limiter.get_solution_vector();
-
-      for_all_active_elements(e, spaces[0]->get_mesh())
-      {
-        spaces[0]->get_element_assembly_list(e, &al_density);
-
-        conservative_vector[al_density.dof[1]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[1]]
-        + density_sln_vector[al_density.dof[1]] * real_vector[al_density.dof[0]];
-
-        conservative_vector[al_density.dof[2]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[2]]
-        + density_sln_vector[al_density.dof[2]] * real_vector[al_density.dof[0]];
-      }
-
-      Solution<double>::vector_to_solution(conservative_vector, spaces[0], slns[component]);
+      real_vector[al_density.dof[0]] = conservative_vector[al_density.dof[0]] / density_sln_vector[al_density.dof[0]];
+      real_vector[al_density.dof[1]] = (conservative_vector[al_density.dof[1]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[1]]) / density_sln_vector[al_density.dof[0]];
+      real_vector[al_density.dof[2]] = (conservative_vector[al_density.dof[2]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[2]]) / density_sln_vector[al_density.dof[0]];
     }
+
+    PostProcessing::VertexBasedLimiter real_component_limiter(spaces[0], real_vector, 1);
+    delete [] real_vector;
+    real_component_limiter.get_solution();
+    real_vector = real_component_limiter.get_solution_vector();
+
+    for_all_active_elements(e, spaces[0]->get_mesh())
+    {
+      spaces[0]->get_element_assembly_list(e, &al_density);
+
+      conservative_vector[al_density.dof[1]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[1]]
+      + density_sln_vector[al_density.dof[1]] * real_vector[al_density.dof[0]];
+
+      conservative_vector[al_density.dof[2]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[2]]
+      + density_sln_vector[al_density.dof[2]] * real_vector[al_density.dof[0]];
+    }
+
+    Solution<double>::vector_to_solution(conservative_vector, spaces[0], slns[component]);
+  }
+}
+FeistauerPCoarseningLimiter::FeistauerPCoarseningLimiter(SpaceSharedPtr<double> space, double* solution_vector) : PostProcessing::Limiter<double>(space, solution_vector)
+{
+}
+
+FeistauerPCoarseningLimiter::FeistauerPCoarseningLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector)
+  : PostProcessing::Limiter<double>(spaces, solution_vector)
+{
+}
+
+FeistauerPCoarseningLimiter::~FeistauerPCoarseningLimiter()
+{
+}
+
+double FeistauerPCoarseningLimiter::get_jump_indicator(Element* e)
+{
+  double jump_indicator = 0.;
+
+  this->limited_solutions[0]->set_active_element(e);
+
+  for (int isurf = 0; isurf < e->nvert; isurf++)
+  {
+    if(e->en[isurf]->bnd)
+      continue;
+
+    if(this->get_verbose_output())
+      std::cout << "\tEdge: " << isurf << std::endl;
+
+    NeighborSearch<double>* ns = new NeighborSearch<double>(e, this->spaces[0]->get_mesh());
+    ns->set_active_edge_multimesh(isurf);
+    int num_neighbors;
+    bool* dummy_processed;
+    MultimeshDGNeighborTree<double>::process_edge(&ns, 1, num_neighbors, dummy_processed);
+
+    for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors; neighbor_i++)
+      jump_indicator += this->assemble_one_neighbor(*ns, isurf, neighbor_i);
+
+    if(dummy_processed)
+      delete [] dummy_processed;
+    delete ns;
+  }
+
+  return jump_indicator;
+}
+
+double FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i)
+{
+  ns.set_active_segment(neighbor_i);
+
+  for(int component = 0; component < this->component_count; component++)
+  {
+    if(ns.get_central_n_trans(neighbor_i))
+      ns.central_transformations[neighbor_i]->apply_on(this->limited_solutions[component].get());
+  }
+
+  int order = std::max(H2D_GET_H_ORDER(this->spaces[0]->get_element_order(ns.central_el->id)), H2D_GET_V_ORDER(this->spaces[0]->get_element_order(ns.central_el->id)));
+  order += this->limited_solutions[0]->get_refmap()->get_inv_ref_order();
+  ns.set_quad_order(order);
+
+  RefMap** refmaps = new RefMap*[this->component_count];
+  for(int i = 0; i < this->component_count; i++)
+    refmaps[i] = this->limited_solutions[i]->get_refmap();
+  Geom<double>* e = new Geom<double>();
+  double* jwt;
+  int n_quadrature_points = init_surface_geometry_points(refmaps, this->component_count, order, edge, 1, e, jwt);
+  delete [] refmaps;
+
+  DiscontinuousFunc<double>* density = ns.init_ext_fn(this->limited_solutions[0].get());
+
+  double value = 0.;
+  for(int i = 0; i < n_quadrature_points; i++)
+    value += jwt[i] * (density->val[i] - density->val_neighbor[i]) * (density->val[i] - density->val_neighbor[i]);
+
+  value *= 0.5 / (ns.central_el->get_diameter() * std::pow(ns.central_el->get_area(), 0.75));
+
+  if(this->get_verbose_output())
+  {
+    std::cout << "\t\tNeighbor: " << neighbor_i << ", h: " << ns.central_el->get_diameter() << ", area: " << ns.central_el->get_area() << std::endl;
+    std::cout << "\t\tNeighbor: " << neighbor_i << ", jump: " << value << std::endl;
+  }
+
+  density->free_fn();
+  delete density;
+
+  delete [] jwt;
+  e->free();
+  delete e;
+
+  // This is just cleaning after ourselves.
+  // Clear the transformations from the RefMaps and all functions.
+  for(unsigned int fns_i = 0; fns_i < this->component_count; fns_i++)
+    this->limited_solutions[fns_i]->set_transform(0);
+
+  return value;
+}
+
+void FeistauerPCoarseningLimiter::process()
+{
+  this->tick();
+
+  // 0. Preparation.
+  // Start by creating temporary solutions and states for paralelism.
+  Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
+
+  // Use those to incorporate the correction factor.
+  Element* e;
+
+  MeshSharedPtr mesh = this->spaces[0]->get_mesh();
+
+  for_all_active_elements(e, mesh)
+  {
+    bool higher_order = H2D_GET_H_ORDER(this->spaces[0]->get_element_order(e->id)) >= 0 || H2D_GET_V_ORDER(this->spaces[0]->get_element_order(e->id)) >= 0;
+    if(!higher_order)
+      continue;
+
+    if(this->get_verbose_output())
+      std::cout << "Element: " << e->id << std::endl;
+
+    if(get_jump_indicator(e) > 1)
+    {
+      int running_dofs = 0;
+      for(int component = 0; component < this->component_count; component++)
+      {
+        AsmList<double> al;
+        this->spaces[component]->get_element_assembly_list(e, &al);
+        for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
+          if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
+            this->solution_vector[running_dofs + al.get_dof()[shape_i]] = 0.0;
+
+        running_dofs += spaces[component]->get_num_dofs();
+      }
+    }
+  }
+
+  this->tick();
+
+  std::cout << "Feistauer limiter took " << this->accumulated_str() << " time." << std::endl;
+
+  if(this->get_verbose_output())
+    std::cout << std::endl;
+
+  // Create the final solutions.
+  Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
 }
