@@ -1497,3 +1497,31 @@ void FeistauerPCoarseningLimiter::process()
   // Create the final solutions.
   Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
 }
+
+PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree, bool verbose)
+{
+  PostProcessing::Limiter<double>* limiter;
+
+  if(limiter_type == VertexBased)
+    limiter = new PostProcessing::VertexBasedLimiter(space, solution_vector, polynomial_degree);
+
+  if(limiter_type == JumpIndicator_P_coarsening)
+    limiter = new FeistauerPCoarseningLimiter(space, solution_vector);
+
+  limiter->set_verbose_output(verbose);
+  return limiter;
+}
+
+PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int polynomial_degree, bool verbose)
+{
+  PostProcessing::Limiter<double>* limiter;
+
+  if(limiter_type == VertexBased)
+    limiter = new PostProcessing::VertexBasedLimiter(spaces, solution_vector, polynomial_degree);
+
+  if(limiter_type == JumpIndicator_P_coarsening)
+    limiter = new FeistauerPCoarseningLimiter(spaces, solution_vector);
+
+  limiter->set_verbose_output(verbose);
+  return limiter;
+}

@@ -493,31 +493,7 @@ enum EulerLimiterType
   JumpIndicator_P_coarsening
 };
 
-PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false)
-{
-  PostProcessing::Limiter<double>* limiter;
+PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false);
+PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int polynomial_degree = 1, bool verbose = false);
 
-  if(limiter_type == VertexBased)
-    limiter = new PostProcessing::VertexBasedLimiter(space, solution_vector, polynomial_degree);
-
-  if(limiter_type == JumpIndicator_P_coarsening)
-    limiter = new FeistauerPCoarseningLimiter(space, solution_vector);
-
-  limiter->set_verbose_output(verbose);
-  return limiter;
-}
-
-PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int polynomial_degree = 1, bool verbose = false)
-{
-  PostProcessing::Limiter<double>* limiter;
-
-  if(limiter_type == VertexBased)
-    limiter = new PostProcessing::VertexBasedLimiter(spaces, solution_vector, polynomial_degree);
-
-  if(limiter_type == JumpIndicator_P_coarsening)
-    limiter = new FeistauerPCoarseningLimiter(spaces, solution_vector);
-
-  limiter->set_verbose_output(verbose);
-  return limiter;
-}
 #endif
