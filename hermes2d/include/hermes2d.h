@@ -70,6 +70,7 @@
 #include "function/solution.h"
 #include "function/mesh_function.h"
 #include "function/filter.h"
+#include "function/postprocessing.h"
 
 #include "graph.h"
 

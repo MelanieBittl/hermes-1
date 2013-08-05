@@ -7,7 +7,7 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
@@ -44,13 +44,13 @@ namespace Hermes
       MeshReaderH2D();
       virtual ~MeshReaderH2D();
 
-      virtual void load(const char *filename, MeshSharedPtr mesh);
-      virtual void load(std::string filename, MeshSharedPtr mesh)
+      virtual bool load(const char *filename, MeshSharedPtr mesh);
+      virtual bool load(std::string filename, MeshSharedPtr mesh)
       {
         return this->load(filename.c_str(), mesh);
       }
-      virtual void save(const char *filename, MeshSharedPtr mesh);
-      virtual void save(std::string filename, MeshSharedPtr mesh)
+      virtual bool save(const char *filename, MeshSharedPtr mesh);
+      virtual bool save(std::string filename, MeshSharedPtr mesh)
       {
         return this->save(filename.c_str(), mesh);
       }

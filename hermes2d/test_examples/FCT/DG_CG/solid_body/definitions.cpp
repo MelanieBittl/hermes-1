@@ -477,7 +477,7 @@ dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
 dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 		
 
-};
+}
 
  double CustomInitialCondition::value(double x, double y) const 
 {
@@ -517,12 +517,13 @@ dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
        return result;
 
 
-};
+}
 
- Ord CustomInitialCondition::ord(Ord x, Ord y) const 
+ Ord CustomInitialCondition::ord(double x, double y) const 
  {
       return Ord(10);
-	};
+	}
+
  MeshFunction<double>* CustomInitialCondition::clone() const
 	{
 		return new CustomInitialCondition(this->mesh);

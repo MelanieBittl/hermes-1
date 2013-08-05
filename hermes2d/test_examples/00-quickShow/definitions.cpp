@@ -57,7 +57,7 @@ double CustomNonlinearity::value(double u) const
 }
 
 Ord CustomNonlinearity::value(Ord u) const
-{ 
+{
   return Ord(10);
 }
 
@@ -76,9 +76,9 @@ CustomEssentialBCNonConst::CustomEssentialBCNonConst(std::string marker) : Essen
   markers.push_back(marker);
 }
 
-EssentialBoundaryCondition<double>::EssentialBCValueType CustomEssentialBCNonConst::get_value_type() const 
-{ 
-  return EssentialBoundaryCondition<double>::BC_FUNCTION; 
+EssentialBoundaryCondition<double>::EssentialBCValueType CustomEssentialBCNonConst::get_value_type() const
+{
+  return EssentialBoundaryCondition<double>::BC_FUNCTION;
 }
 
 double CustomEssentialBCNonConst::value(double x, double y, double n_x, double n_y, double t_x, double t_y) const
@@ -86,20 +86,20 @@ double CustomEssentialBCNonConst::value(double x, double y, double n_x, double n
   return (x + 10) * (y + 10) / 100.;
 }
 
-void CustomInitialCondition::derivatives (double x, double y, double& dx, double& dy) const 
+void CustomInitialCondition::derivatives (double x, double y, double& dx, double& dy) const
 {
   dx = (y + 10)/100.;
   dy = (x + 10)/100.;
 };
 
-double CustomInitialCondition::value (double x, double y) const 
+double CustomInitialCondition::value (double x, double y) const
 {
   return (x + 10) * (y + 10) / 100.;
 }
 
-Ord CustomInitialCondition::ord(Ord x, Ord y) const 
+Ord CustomInitialCondition::ord(double x, double y) const
 {
-  return x*y;
+  return Hermes::Ord(x*y);
 }
   
 MeshFunction<double>* CustomInitialCondition::clone() const
@@ -111,7 +111,7 @@ CustomInitialCondition::~CustomInitialCondition()
 {
 }
 
-CustomWeakFormTimeDependent::CustomMatrixFormVol::CustomMatrixFormVol(int i, int j) : DefaultMatrixFormVol<double>(i, j, HERMES_ANY_MARKER) 
+CustomWeakFormTimeDependent::CustomMatrixFormVol::CustomMatrixFormVol(int i, int j) : DefaultMatrixFormVol<double>(i, j, HERMES_ANY_MARKER)
 {
 }
 

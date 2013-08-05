@@ -7,13 +7,13 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
+// along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
-#include "solution.h"
+#include "mesh_function.h"
 #include "../views/linearizer_base.h"
 
 #ifdef _WINDOWS
@@ -49,14 +49,6 @@ void MeshFunctionSharedPtr<Scalar>::operator=(const MeshFunctionSharedPtr& other
   std::tr1::shared_ptr<Hermes::Hermes2D::MeshFunction<Scalar> >::operator=(other);
 }
 #endif
-
-
-template<typename Scalar>
-Hermes::Hermes2D::Solution<Scalar>* MeshFunctionSharedPtr<Scalar>::get_solution()
-{
-  return dynamic_cast<Hermes::Hermes2D::Solution<Scalar>*>(this->get());
-}
-
 
 template<typename Scalar>
 MeshFunctionSharedPtr<Scalar>::~MeshFunctionSharedPtr()
@@ -142,6 +134,12 @@ namespace Hermes
       init();
     }
     
+    template<typename Scalar>
+    void MeshFunction<Scalar>::add(MeshFunctionSharedPtr<Scalar> other_mesh_function, SpaceSharedPtr<Scalar> target_space)
+    {
+      throw Exceptions::MethodNotOverridenException("MeshFunction<Scalar>::add");
+    }
+
     template<typename Scalar>
     void MeshFunction<Scalar>::multiply(Scalar coef)
     {
@@ -284,7 +282,7 @@ namespace Hermes
     template<typename Scalar>
     void MeshFunction<Scalar>::set_quad_2d(Quad2D* quad_2d)
     {
-      if(quad_2d == NULL) 
+      if(quad_2d == NULL)
         throw Exceptions::NullException(1);
       Function<Scalar>::set_quad_2d(quad_2d);
       refmap->set_quad_2d(quad_2d);

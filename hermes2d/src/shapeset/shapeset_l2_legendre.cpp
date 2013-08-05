@@ -8227,7 +8227,7 @@ namespace Hermes
       min_order = 0;
       num_components = 1;
 
-      ebias = 2;
+      ebias = 0;
 
       comb_table = NULL;
     }

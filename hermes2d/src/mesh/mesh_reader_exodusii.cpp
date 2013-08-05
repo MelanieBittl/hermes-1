@@ -7,24 +7,32 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D; if not, see <http://www.gnu.prg/licenses/>.
 
 #include "config.h"
-#ifdef WITH_EXODUSII
 
+#include <string.h>
 #include "mesh_reader_exodusii.h"
 #include "mesh.h"
+#include <map>
+
+#ifdef WITH_EXODUSII
 #include <exodusII.h>
+#endif
 namespace Hermes
 {
   namespace Hermes2D
   {
     MeshReaderExodusII::MeshReaderExodusII()
     {
+#ifdef WITH_EXODUSII
+#else
+      throw Hermes::Exceptions::Exception("hermes2d was not compiled with ExodusII support");
+#endif
     }
 
     MeshReaderExodusII::~MeshReaderExodusII()
@@ -51,11 +59,12 @@ namespace Hermes
       }
     };
 
-    void MeshReaderExodusII::load(const char *file_name, MeshSharedPtr mesh)
+    bool MeshReaderExodusII::load(const char *file_name, MeshSharedPtr mesh)
     {
+#ifdef WITH_EXODUSII
       int err;
-      int cpu_ws = sizeof(double);    // use float or double
-      int io_ws = 8;            // store variables as doubles
+      int cpu_ws = sizeof(double); // use float or double
+      int io_ws = 8; // store variables as doubles
       float version;
       int exoid = ex_open(file_name, EX_READ, &cpu_ws, &io_ws, &version);
 
@@ -64,7 +73,10 @@ namespace Hermes
       char title[MAX_LINE_LENGTH + 1];
       err = ex_get_init(exoid, title, &n_dims, &n_nodes, &n_elems, &n_eblocks, &n_nodesets, &n_sidesets);
       if(n_dims != 2)
+      {
         throw Hermes::Exceptions::Exception("File '%s' does not contain 2D mesh", file_name);
+        return false;
+      }
 
       // load coordinates
       double *x = new double[n_nodes];
@@ -72,9 +84,9 @@ namespace Hermes
       err = ex_get_coord(exoid, x, y, NULL);
 
       // remove duplicate vertices and build renumbering map
-      std::map<Vertex, int, VCompare> vtx_list;        // map for eliminating duplicities
-      std::map<int, int> vmap;                // reindexing map
-      Hermes::vector<Vertex> vtx_arr;              // vertex array
+      std::map<Vertex, int, VCompare> vtx_list; // map for eliminating duplicities
+      std::map<int, int> vmap; // reindexing map
+      Hermes::vector<Vertex> vtx_arr; // vertex array
       int vid = 0;
       for (int i = 0; i < n_nodes; i++)
       {
@@ -102,8 +114,8 @@ namespace Hermes
         vtx[i][1] = vtx_arr[i].y;
       }
 
-      int n_tri = 0;    // number of triangles
-      int n_quad = 0;    // number of quads
+      int n_tri = 0; // number of triangles
+      int n_quad = 0; // number of quads
 
       // get info about element blocks
       int *eid_blocks = new int[n_eblocks];
@@ -124,16 +136,17 @@ namespace Hermes
         {
           delete [] vtx;
           throw Hermes::Exceptions::Exception("Unknown type of element");
+          return false;
         }
       }
-      int3 *tri = n_tri > 0 ? new int3[n_tri] : NULL;    // triangles
+      int3 *tri = n_tri > 0 ? new int3[n_tri] : NULL; // triangles
       std::string *tri_markers = n_tri > 0 ? new std::string[n_tri] : NULL;
-      int4 *quad = n_quad > 0 ? new int4[n_quad] : NULL;    // quads
+      int4 *quad = n_quad > 0 ? new int4[n_quad] : NULL; // quads
       std::string *quad_markers = n_quad > 0 ? new std::string[n_quad] : NULL;
 
-      int n_els = n_tri + n_quad;                // total number of elements
-      int **els = n_els > 0 ? new int *[n_els] : NULL;    // elements
-      int *el_nv = n_els > 0 ? new int[n_els] : NULL;    // number of vertices for each element
+      int n_els = n_tri + n_quad; // total number of elements
+      int **els = n_els > 0 ? new int *[n_els] : NULL; // elements
+      int *el_nv = n_els > 0 ? new int[n_els] : NULL; // number of vertices for each element
 
       int it = 0, iq = 0, iel = 0;
       for (int i = 0; i < n_eblocks; i++)
@@ -185,6 +198,7 @@ namespace Hermes
           {
             delete [] vtx;
             throw Hermes::Exceptions::Exception("Unknown type of element");
+            return false;
           }
           iel++;
         }
@@ -197,7 +211,7 @@ namespace Hermes
       err = ex_get_side_set_ids(exoid, sid_blocks);
 
       // go over the sidesets
-      int n_mark = 0;    // number of markers
+      int n_mark = 0; // number of markers
       for (int i = 0; i < n_sidesets; i++)
       {
         int sid = sid_blocks[i];
@@ -231,7 +245,7 @@ namespace Hermes
 
         for (int j = 0; j < num_elem_in_set; j++)
         {
-          int nv = el_nv[side_list[j] - 1];      // # of vertices of the element
+          int nv = el_nv[side_list[j] - 1]; // # of vertices of the element
           int vt = side_list[j] - 1;
           marks[im][0] = els[elem_list[j] - 1][vt];
           marks[im][1] = els[elem_list[j] - 1][(vt + 1) % nv];
@@ -259,7 +273,11 @@ namespace Hermes
       delete [] vtx;
       delete [] el_nv;
       delete [] els;
+
+      return true;
+#else
+      return false;
+#endif
     }
   }
 }
-#endif

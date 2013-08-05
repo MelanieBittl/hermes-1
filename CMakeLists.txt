@@ -56,7 +56,7 @@ project(hermes)
     # UMFPACK is chosen by default.
     set(WITH_UMFPACK YES)
     # PARALUTION is chosen by default.
-    set(WITH_PARALUTION YES)
+    set(WITH_PARALUTION NO)
 		set(PARALUTION_ROOT /home/staff/bittl/solvers/paralution-0.3.0/build)
     
   ################################## CURRENTLY NOT SUPPORTED ###################################

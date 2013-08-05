@@ -7,7 +7,7 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
@@ -17,13 +17,14 @@
 #define _MESHLOADER_H_
 
 #include "mesh.h"
+
 namespace Hermes
 {
   namespace Hermes2D
   {
     /** @defgroup mesh_readers Mesh readers
-     * \brief Collection of classes with the purpose of saving and loading Mesh class instances.
-     */
+* \brief Collection of classes with the purpose of saving and loading Mesh class instances.
+*/
     
     /// Abstract class for mesh readers
     ///
@@ -36,7 +37,7 @@ namespace Hermes
       /// Loads the mesh from a file. Aborts the program on error.
       /// @param filename [in] The name of the file.
       /// @param mesh [out] The mesh.
-      virtual void load(const char *filename, MeshSharedPtr mesg) = 0;
+      virtual bool load(const char *filename, MeshSharedPtr mesg) = 0;
 
     protected:
       static bool is_twin_nurbs(Element* e, int i)
@@ -48,3 +49,5 @@ namespace Hermes
   }
 }
 #endif
+
+

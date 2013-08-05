@@ -35,7 +35,6 @@ namespace Hermes
     matrixSolverType,
     directMatrixSolverType,
     showInternalWarnings,
-    checkMeshesOnLoad,
     useAccelerators
   };
 

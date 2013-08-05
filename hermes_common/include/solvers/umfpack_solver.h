@@ -10,16 +10,16 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 /*! \file umfpack_solver.h
 \brief UMFPACK solver interface.
 */
-#ifndef __HERMES_COMMON_UMFPACK_SOLVER_H_ 
+#ifndef __HERMES_COMMON_UMFPACK_SOLVER_H_
 #define __HERMES_COMMON_UMFPACK_SOLVER_H_
 #include "config.h"
 #ifdef WITH_UMFPACK
@@ -49,7 +49,7 @@ namespace Hermes
       // Friends.
       template <typename T> friend class Hermes::Solvers::UMFPackLinearMatrixSolver;
       template <typename T> friend class Hermes::Solvers::CSCIterator;
-      template<typename T> friend SparseMatrix<T>*  create_matrix();
+      template<typename T> friend SparseMatrix<T>* create_matrix();
     };
 
     /// \brief Class representing the vector for UMFPACK.
@@ -104,7 +104,7 @@ namespace Hermes
       /// @param[in] rhs pointer to right hand side vector
       UMFPackLinearMatrixSolver(UMFPackMatrix<Scalar> *m, UMFPackVector<Scalar> *rhs);
       virtual ~UMFPackLinearMatrixSolver();
-      virtual void solve();
+      virtual bool solve();
       virtual int get_matrix_size();
 
       /// Matrix to solve.
@@ -115,7 +115,7 @@ namespace Hermes
       /// \brief Reusable factorization information (A denotes matrix represented by the pointer 'm').
       /// Reordering of matrix A to reduce fill-in during factorization.
       void *symbolic;
-      void *numeric;  ///< LU factorization of matrix A.
+      void *numeric; ///< LU factorization of matrix A.
 
       /// \todo document
       void free_factorization_data();

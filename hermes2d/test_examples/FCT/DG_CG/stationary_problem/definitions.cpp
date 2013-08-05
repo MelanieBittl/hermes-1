@@ -471,7 +471,7 @@ return result;
 
 };
 
- Ord CustomInitialCondition::ord(Ord x, Ord y) const {
+ Ord CustomInitialCondition::ord(double x, double y)  const {
       return Ord(10);
 };
 
@@ -492,7 +492,7 @@ dx=0.; dy=1.0;
        return y;
 };
 
- Ord CustomV_x::ord(Ord x, Ord y) const {
+ Ord CustomV_x::ord(double x, double y)  const {
       return Ord(2);
 };
 
@@ -512,7 +512,7 @@ dx=-1.; dy=0.0;
 return (1.-x);
 };
 
- Ord CustomV_y::ord(Ord x, Ord y) const {
+ Ord CustomV_y::ord(double x, double y)  const {
       return Ord(2);
 };
 

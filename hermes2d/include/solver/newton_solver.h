@@ -10,12 +10,12 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 /*! \file solver_newton.h
 \brief Newton's method.
 */
@@ -105,7 +105,7 @@ namespace Hermes
       /// Default: this->set_tolerance(1e-8, ResidualNormAbsolute);
       /// \param[in] handleMultipleTolerancesAnd If true, multiple tolerances defined will have to be all fulfilled in order to proclaim
       /// solution as a correct one. If false, only one will be enough.
-      void set_tolerance(double newton_tol, NewtonSolverConvergenceMeasurementType toleranceType, bool handleMultipleTolerancesAnd = true);
+      void set_tolerance(double newton_tol, NewtonSolverConvergenceMeasurementType toleranceType, bool handleMultipleTolerancesAnd = false);
 
 #pragma region damping-public
       /// Sets minimum damping coefficient.
@@ -158,7 +158,7 @@ namespace Hermes
       void set_max_steps_with_reused_jacobian(unsigned int steps);
 #pragma endregion
       
-#pragma region ConvergenceState      
+#pragma region ConvergenceState
       /// Convergence state.
       enum ConvergenceState
       {
@@ -262,7 +262,7 @@ namespace Hermes
       /// necessary number of steps to increase back the damping coeff.
       unsigned int necessary_successful_steps_to_increase;
       /// Minimum allowed damping coeff.
-      double min_allowed_damping_coeff;      
+      double min_allowed_damping_coeff;
 #pragma endregion
 
 #pragma region jacobian_recalculation-private
@@ -273,9 +273,7 @@ namespace Hermes
 
       double sufficient_improvement_factor_jacobian;
       unsigned int max_steps_with_reused_jacobian;
-      
-      /// Backup vector for unsuccessful reuse of Jacobian.
-      Vector<Scalar>* residual_back;
+
 #pragma endregion
 
 #pragma region OutputAttachable
@@ -303,7 +301,7 @@ namespace Hermes
 #pragma endregion
 
     private:
-			Scalar* coeff_vec_back;
+Scalar* coeff_vec_back;
       int ndof;
 
       friend class NewtonSolverConvergenceMeasurement<Scalar>;

@@ -116,14 +116,14 @@ namespace Hermes
     {
     public:
       /// The preconditioner type.
-      enum ParalutionPreconditionerType
-      {
-        Jacobi = 0,
-        MultiColoredSGS = 1,
-        ILU = 2,
-        MultiColoredILU = 3,
-        IC = 4,
-        AIChebyshev = 5
+			enum ParalutionPreconditionerType
+	      {
+        Jacobi,
+        MultiColoredSGS,
+        ILU,
+        MultiColoredILU,
+        IC,
+        AIChebyshev
       };
 
       /// Constructor.
@@ -176,17 +176,17 @@ namespace Hermes
       /// Default: CG
       enum ParalutionSolverType
       {
-        CG = 0,
-        GMRES = 1,
-        BiCGStab = 2
+        CG,
+        GMRES,
+        BiCGStab
       };
 
       /// Set current solver type.
       /// This destroys the current solver (NOT the matrix, and rhs).
       void set_solver_type(ParalutionSolverType paralutionSolverType);
 
-      virtual void solve(Scalar* initial_guess);
-      virtual void solve();
+      virtual bool solve(Scalar* initial_guess);
+      virtual bool solve();
 
       /// Get number of iterations.
       virtual int get_num_iters();
@@ -248,8 +248,8 @@ namespace Hermes
       AMGParalutionLinearMatrixSolver(ParalutionMatrix<Scalar> *m, ParalutionVector<Scalar> *rhs);
       virtual ~AMGParalutionLinearMatrixSolver();
 
-      virtual void solve(Scalar* initial_guess);
-      virtual void solve();
+      virtual bool solve(Scalar* initial_guess);
+      virtual bool solve();
 
       /// Get number of iterations.
       virtual int get_num_iters();

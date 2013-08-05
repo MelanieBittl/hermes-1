@@ -7,7 +7,7 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
@@ -15,6 +15,7 @@
 
 #include "mesh.h"
 #include "mesh_reader_h1d_xml.h"
+#include <iostream>
 
 using namespace std;
 
@@ -30,7 +31,7 @@ namespace Hermes
     {
     }
 
-    void MeshReaderH1DXML::load(const char *filename, MeshSharedPtr mesh)
+    bool MeshReaderH1DXML::load(const char *filename, MeshSharedPtr mesh)
     {
       mesh->free();
 
@@ -47,9 +48,9 @@ namespace Hermes
         std::map<std::string, double> variables;
         for (unsigned int variables_i = 0; variables_i < variables_count; variables_i++)
 #ifdef _MSC_VER
-				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_mesh->variables()->var().at(variables_i).name(), (double&&)parsed_xml_mesh->variables()->var().at(variables_i).value()));
+variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_mesh->variables()->var().at(variables_i).name(), (double&&)parsed_xml_mesh->variables()->var().at(variables_i).value()));
 #else
-				variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_mesh->variables()->var().at(variables_i).name(), parsed_xml_mesh->variables()->var().at(variables_i).value()));
+variables.insert(std::make_pair<std::string, double>((std::string)parsed_xml_mesh->variables()->var().at(variables_i).name(), parsed_xml_mesh->variables()->var().at(variables_i).value()));
 #endif
 
         // Vertices //
@@ -197,11 +198,13 @@ namespace Hermes
       {
         throw Hermes::Exceptions::MeshLoadFailureException(e.what());
       }
+      return true;
     }
 
-    void MeshReaderH1DXML::save(const char *filename, MeshSharedPtr mesh)
+    bool MeshReaderH1DXML::save(const char *filename, MeshSharedPtr mesh)
     {
       /// \todo Is this necessary? It is a valid H2D mesh afterall.
+      return true;
     }
   }
 }

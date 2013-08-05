@@ -7,11 +7,11 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
+// along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef __H2D_SOLUTION_H
 #define __H2D_SOLUTION_H
@@ -64,18 +64,16 @@ namespace Hermes
     /// The following is an example of the set of monomials for a cubic quad and a cubic triangle.
     /// (Note that these are actually the definitions of the polynomial spaces on these elements.)
     ///
-    ///  [ x^3*y^3  x^2*y^3  x*y^3  y^3 ]      [                    y^3 ]
-    ///  [ x^3*y^2  x^2*y^2  x*y^2  y^2 ]      [             x*y^2  y^2 ]
-    ///  [ x^3*y    x^2*y    x*y    y   ]      [      x^2*y  x*y    y   ]
-    ///  [ x^3      x^2      x      1   ]      [ x^3  x^2    x      1   ]
+    /// [ x^3*y^3 x^2*y^3 x*y^3 y^3 ] [ y^3 ]
+    /// [ x^3*y^2 x^2*y^2 x*y^2 y^2 ] [ x*y^2 y^2 ]
+    /// [ x^3*y x^2*y x*y y ] [ x^2*y x*y y ]
+    /// [ x^3 x^2 x 1 ] [ x^3 x^2 x 1 ]
     ///
     /// The number of monomials is (p + 1)^2 for quads and (p + 1)*(p + 2)/2 for triangles, where
     /// 'p' is the polynomial degree.
     ///
     template<typename Scalar>
-    class HERMES_API Solution : 
-      public MeshFunction<Scalar>,
-      public Hermes2D::Mixins::XMLParsing
+    class HERMES_API Solution : public MeshFunction<Scalar>, public Hermes2D::Mixins::XMLParsing
     {
     public:
       Solution();
@@ -85,8 +83,7 @@ namespace Hermes
       virtual ~Solution();
 
       /// State querying helpers.
-      virtual bool isOkay() const;
-      virtual inline std::string getClassName() const { return "Solution"; }
+      inline std::string getClassName() const { return "Solution"; }
 
       virtual void copy(const MeshFunction<Scalar>* sln);
 
@@ -96,16 +93,10 @@ namespace Hermes
       /// Saves the complete solution (i.e., including the internal copy of the mesh and
       /// element orders) to an XML file.
       virtual void save(const char* filename) const;
-#ifdef WITH_BSON
-      virtual void save_bson(const char* filename) const;
-#endif
 
       /// Loads the solution from a file previously created by Solution::save(). This completely
       /// restores the solution in the memory.
       void load(const char* filename, SpaceSharedPtr<Scalar> space);
-#ifdef WITH_BSON
-      void load_bson(const char* filename, SpaceSharedPtr<Scalar> space);
-#endif
 
       /// Returns solution value or derivatives at element e, in its reference domain point (xi1, xi2).
       /// 'item' controls the returned value: 0 = value, 1 = dx, 2 = dy, 3 = dxx, 4 = dyy, 5 = dxy.
@@ -133,6 +124,10 @@ namespace Hermes
       /// slow. Prefer Solution::get_ref_value if possible.
       virtual Func<Scalar>* get_pt_value(double x, double y, bool use_MeshHashGrid = false, Element* e = NULL);
 
+      /// Adds another mesh function on the given space.
+      /// See method of parent class.
+      virtual void add(MeshFunctionSharedPtr<Scalar> other_mesh_function, SpaceSharedPtr<Scalar> target_space);
+
       /// Multiplies the function represented by this class by the given coefficient.
       virtual void multiply(Scalar coef);
 
@@ -143,36 +138,36 @@ namespace Hermes
 
       /// Passes solution components calculated from solution vector as Solutions.
       static void vector_to_solutions(const Scalar* solution_vector, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
-          Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
-          Hermes::vector<bool> add_dir_lift = Hermes::vector<bool>(),
-          Hermes::vector<int> start_indices = Hermes::vector<int>());
+        Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
+        Hermes::vector<bool> add_dir_lift = Hermes::vector<bool>(),
+        Hermes::vector<int> start_indices = Hermes::vector<int>());
 
       static void vector_to_solution(const Scalar* solution_vector, SpaceSharedPtr<Scalar> space, MeshFunctionSharedPtr<Scalar> solution,
-          bool add_dir_lift = true, int start_index = 0);
+        bool add_dir_lift = true, int start_index = 0);
 
       static void vector_to_solution(const Scalar* solution_vector, SpaceSharedPtr<Scalar> space, Solution<Scalar>* solution,
-          bool add_dir_lift = true, int start_index = 0);
+        bool add_dir_lift = true, int start_index = 0);
 
       static void vector_to_solutions(const Vector<Scalar>* vec, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
-          Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
-          Hermes::vector<bool> add_dir_lift = Hermes::vector<bool>(),
-          Hermes::vector<int> start_indices = Hermes::vector<int>());
+        Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
+        Hermes::vector<bool> add_dir_lift = Hermes::vector<bool>(),
+        Hermes::vector<int> start_indices = Hermes::vector<int>());
 
       static void vector_to_solutions_common_dir_lift(const Vector<Scalar>* vec, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
-          Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
-          bool add_dir_lift = false);
+        Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
+        bool add_dir_lift = false);
 
       static void vector_to_solutions_common_dir_lift(const Scalar* solution_vector, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
-          Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
-          bool add_dir_lift = false);
+        Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
+        bool add_dir_lift = false);
 
       static void vector_to_solution(const Vector<Scalar>* vec, SpaceSharedPtr<Scalar> space, MeshFunctionSharedPtr<Scalar> solution,
-          bool add_dir_lift = true, int start_index = 0);
+        bool add_dir_lift = true, int start_index = 0);
 
       static void vector_to_solutions(const Scalar* solution_vector, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
-          Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions, Hermes::vector<PrecalcShapeset *> pss,
-          Hermes::vector<bool> add_dir_lift = Hermes::vector<bool>(),
-          Hermes::vector<int> start_indices = Hermes::vector<int>());
+        Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions, Hermes::vector<PrecalcShapeset *> pss,
+        Hermes::vector<bool> add_dir_lift = Hermes::vector<bool>(),
+        Hermes::vector<int> start_indices = Hermes::vector<int>());
 
       /// Internal.
       virtual void set_active_element(Element* e);
@@ -183,9 +178,19 @@ namespace Hermes
 
       void set_type(SolutionType type) { sln_type = type; };
 
+      /// Monomial coefficient array
+      Scalar* mono_coeffs;
+      /// Stored element orders in the mathematical sense.
+      /// The polynomial degree of the highest basis function + increments due to the element shape, etc. .
+      int* elem_orders;
+      // Calculate derivative wrt. x of mono into result.
+      static void make_dx_coeffs(int mode, int o, Scalar* mono, Scalar* result);
+      // Calculate derivative wrt. y of mono into result.
+      static void make_dy_coeffs(int mode, int o, Scalar* mono, Scalar* result);
+
     protected:
       static void vector_to_solution(const Scalar* solution_vector, SpaceSharedPtr<Scalar> space, MeshFunctionSharedPtr<Scalar> solution,
-          PrecalcShapeset* pss, bool add_dir_lift = true, int start_index = 0);
+        PrecalcShapeset* pss, bool add_dir_lift = true, int start_index = 0);
 
       static bool static_verbose_output;
 
@@ -226,10 +231,7 @@ namespace Hermes
       Element* elems[H2D_MAX_QUADRATURES][H2D_SOLUTION_ELEMENT_CACHE_SIZE];
       int cur_elem, oldest[H2D_SOLUTION_ELEMENT_CACHE_SIZE];
 
-      Scalar* mono_coeffs;  ///< monomial coefficient array
-      int* elem_coeffs[H2D_MAX_SOLUTION_COMPONENTS];  ///< array of pointers into mono_coeffs
-      /// Stored element orders in the mathematical sense. The polynomial degree of the highest basis function + increments due to the element shape, etc.  .
-      int* elem_orders;
+      int* elem_coeffs[H2D_MAX_SOLUTION_COMPONENTS]; ///< array of pointers into mono_coeffs
       int num_coeffs, num_elems;
       int num_dofs;
 
@@ -248,13 +250,6 @@ namespace Hermes
       void free_tables();
 
       Element* e_last; ///< last visited element when getting solution values at specific points
-
-      /// Internal, checks the compliance of the passed space type and owned space type.
-      void check_space_type_compliance(const char* space_type_to_check) const;
-
-      /// Special internal method for loading exact solutions.
-      void load_exact_solution(int number_of_components, SpaceSharedPtr<Scalar> space, bool complexness,
-        double x_real, double y_real, double x_complex, double y_complex);
 
       friend class RefMap;
       template<typename T> friend class KellyTypeAdapt;

@@ -68,7 +68,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>);
-  MeshFunctionSharedPtr<double> u_prev_time(new CustomInitialCondition(mesh));
+  MeshFunctionSharedPtr<double> u_prev_time(new CustomInitialCondition (mesh));
 
 // Output solution in VTK format.
 	Linearizer lin;

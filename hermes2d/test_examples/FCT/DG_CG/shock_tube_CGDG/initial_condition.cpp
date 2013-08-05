@@ -13,7 +13,7 @@
 
 };
 
- Ord CustomInitialCondition_rho::ord(Ord x, Ord y) const {
+ Ord CustomInitialCondition_rho::ord(double x, double y)  const {
       return Ord(2);
 };
 
@@ -31,7 +31,7 @@
 			else			return QuantityCalculator::calc_energy(1.0, 0.0 ,0.0, 1.0, kappa);
 };
 
- Ord CustomInitialCondition_e::ord(Ord x, Ord y) const {
+ Ord CustomInitialCondition_e::ord(double x, double y)  const {
       return Ord(2);
 };
 

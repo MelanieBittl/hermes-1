@@ -1,6 +1,6 @@
 #include "definitions.h"
 
-const double EPS = 1e-3;
+const double EPS = 1e-6;
 const double penalty_parameter = 1.;
 
 enum DG_TYPE {Baumann_Oden,	IP,	NIPG, NONE};
@@ -82,10 +82,12 @@ WeakForm<double>* CustomWeakForm::clone() const
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
 {
-	Real v_x =-e->y[i];
+/*	Real v_x =-e->y[i];
 	Real v_y =e->x[i];
-		result += wt[i] *( (u->val[i] *(v->val[i]/time_step - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]) );
+		result += wt[i] *( (u->val[i] *(v->val[i]/time_step - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]) );*/
 
+double v_x =2.; double v_y =3.;
+		result += wt[i] *( (u->val[i] *(v->val[i]/time_step + theta*v->val[i] - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]) );
 }
   return result;
 
@@ -114,8 +116,9 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
 	double diam = e->diam;
 	for (int i = 0; i < n; i++)
 	{
-			double v_x =-e->y[i];
-			double v_y =e->x[i];
+		//	double v_x =-e->y[i];	double v_y =e->x[i];
+
+double v_x =2.; double v_y =3.;
 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
    result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
@@ -166,8 +169,10 @@ Real flux_u = Real(0);
 
   for (int i = 0; i < n; i++) 
   {
-	Real v_x =-e->y[i];
-	Real v_y =e->x[i];
+	//Real v_x =-e->y[i];	Real v_y =e->x[i];
+
+double v_x =2.; double v_y =3.;
+
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 
     Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
@@ -239,8 +244,10 @@ DiscontinuousFunc<double>* exact = ext[1];
 
   for (int i = 0; i < n; i++) 
   {
-			double v_x =  (- e->y[i]);
-	double v_y = (e->x[i]) ; 
+			//double v_x =  (- e->y[i]);	double v_y = (e->x[i]) ;
+
+double v_x =2.; double v_y =3.; 
+
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     double jump_v =  v->val[i];
 	double	flux_u =(exact->dx_neighbor[i]*e->nx[i]+exact->dy_neighbor[i]* e->ny[i])  + (exact->dx[i]* e->nx[i]+exact->dy[i]* e->ny[i]);
@@ -304,8 +311,8 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
 	double diam = e->diam;
    for (int i = 0; i < n; i++)
 	{ 		 
-			double v_x = -e->y[i];
-			double v_y = e->x[i]; 
+			//double v_x = -e->y[i];			double v_y = e->x[i]; 
+double v_x =2.; double v_y =3.;
 
 			double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 			double grad_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(exact->dx[i], exact->dy[i], e->nx[i], e->ny[i]);
@@ -347,12 +354,41 @@ double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Fun
 {  
 	double result = 0;
  	Func<double>* sln_prev_time = ext[1];
+ Func<double>* exact = ext[0];
+double t = static_cast<CustomWeakForm*>(wf)->get_current_time(); 
+
+
    for (int i = 0; i < n; i++)
 		{ 
 
-			double v_x =(- e->y[i]);
-			double v_y = (e->x[i]) ; 
-			result += wt[i] *(sln_prev_time->val[i]* (v->val[i]/time_step +(1.-theta)*( v_x*v->dx[i] + v_y*v->dy[i]))- (1.-theta)*EPS*(sln_prev_time->dx[i]*v->dx[i]+sln_prev_time->dy[i]*v->dy[i]));
+		//	double v_x =(- e->y[i]);			double v_y = (e->x[i]) ; 
+			//result += wt[i] *(sln_prev_time->val[i]* (v->val[i]/time_step +(1.-theta)*( v_x*v->dx[i] + v_y*v->dy[i]))- (1.-theta)*EPS*(sln_prev_time->dx[i]*v->dx[i]+sln_prev_time->dy[i]*v->dy[i]));
+
+double x = e->x[i]; double y = e->y[i];
+double v_x =2.; double v_y =3.;
+
+result += wt[i] *(sln_prev_time->val[i]* (v->val[i]/time_step- (1.-theta)*v->val[i] +(1.-theta)*( v_x*v->dx[i] + v_y*v->dy[i]))- (1.-theta)*EPS*(sln_prev_time->dx[i]*v->dx[i]+sln_prev_time->dy[i]*v->dy[i]));
+
+//Berechnung von f
+double a = 16.*Hermes::sin(M_PI*t)*x*(1.-x)*y*(1.-y);
+double arg = Hermes::sqr(0.25)-Hermes::sqr(x-0.5)-Hermes::sqr(y-0.5);
+arg *= 2./Hermes::sqrt(EPS);
+double b = (0.5+std::atan(arg)/M_PI);
+
+double ax = 16.*Hermes::sin(M_PI*t)*y*(1.-y)*(1.-2.*x);
+double axx = 16.*Hermes::sin(M_PI*t)*y*(1.-y)*(-2.);
+double ay =	16.*Hermes::sin(M_PI*t)*x*(1.-x)*(1.-2.*y);
+double ayy =	16.*Hermes::sin(M_PI*t)*x*(1.-x)*(-2.);
+
+double bx = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-x+0.5);
+double bxx = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-1.) - 1./(M_PI*Hermes::sqr(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-x+0.5)*2.*arg;
+double by = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-y+0.5); 
+double byy = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-1.) - 1./(M_PI*Hermes::sqr(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-y+0.5)*2.*arg;
+
+double a_t = 16.*Hermes::cos(M_PI*t)*x*(1.-x)*y*(1.-y)*M_PI;
+double laplace = axx*b+bxx*a+ax*bx*2. + ayy*b+byy*a+ay*by*2.;
+
+result += wt[i]*(a_t*b+ 2.*exact->dx[i] + 3.*exact->dy[i] + exact->val[i]- laplace*EPS)*v->val[i] ;
 		}
  return result;
 }
@@ -477,32 +513,54 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
 void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const 
 {
 	double t = time;
-	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
+/*	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
 	double y_real = y_0*Hermes::cos(t) - x_0*Hermes::sin(t);
 	double radius_2 = Hermes::sqr(x-x_real) + Hermes::sqr(y-y_real);
 
 dx = -2*PI/Hermes::sqr(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t))*(x-x_real);
-dy = -2*PI/Hermes::sqr(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t))*(y-y_real);
+dy = -2*PI/Hermes::sqr(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t))*(y-y_real);*/
 
+double a = 16.*Hermes::sin(M_PI*t)*x*(1.-x)*y*(1.-y);
+double arg = Hermes::sqr(0.25)-Hermes::sqr(x-0.5)-Hermes::sqr(y-0.5);
+arg *= 2./Hermes::sqrt(EPS);
+double b = (0.5+std::atan(arg)/M_PI);
+
+double ax = 16.*Hermes::sin(M_PI*t)*y*(1.-y)*(1.-2.*x);
+double ay =	16.*Hermes::sin(M_PI*t)*x*(1.-x)*(1.-2.*y);
+
+double bx = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-x+0.5);
+double by = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-y+0.5); 
+dx = ax*b + a*bx;
+dy = ay*b + a*by;
 };
+
+
+
 
  double CustomInitialCondition::value(double x, double y) const 
 {
        double t = time;
   double result = 0.0;
-	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
+/*	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
 	double y_real = y_0*Hermes::cos(t) - x_0*Hermes::sin(t);
 	double radius_2 = Hermes::sqr(x-x_real) + Hermes::sqr(y-y_real);
 
 
-		result= 1./(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t));
+		result= 1./(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t));*/
+
+double a = 16.*Hermes::sin(M_PI*t)*x*(1.-x)*y*(1.-y);
+double arg = Hermes::sqr(0.25)-Hermes::sqr(x-0.5)-Hermes::sqr(y-0.5);
+arg *= 2./Hermes::sqrt(EPS);
+double b = (0.5+std::atan(arg)/M_PI);
+
+result = a*b;
 
        return result;
 
 
 };
 
- Ord CustomInitialCondition::ord(Ord x, Ord y) const 
+ Ord CustomInitialCondition::ord(double x, double y)  const 
  {
       return Ord(10);
 	};

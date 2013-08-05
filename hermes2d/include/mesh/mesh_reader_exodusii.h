@@ -7,7 +7,7 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
@@ -30,8 +30,10 @@ namespace Hermes
       MeshReaderExodusII();
       virtual ~MeshReaderExodusII();
 
-      virtual void load(const char *file_name, MeshSharedPtr mesh);
+      virtual bool load(const char *file_name, MeshSharedPtr mesh);
     };
   }
 }
 #endif
+
+

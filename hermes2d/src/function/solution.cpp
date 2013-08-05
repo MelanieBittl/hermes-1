@@ -7,17 +7,18 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
+// along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
 #include "exact_solution.h"
 #include "forms.h"
 #include "solution_h2d_xml.h"
 #include "ogprojection.h"
 #include "api2d.h"
+#include <algorithm>
 
 namespace Hermes
 {
@@ -25,11 +26,11 @@ namespace Hermes
   {
     static double3* cheb_tab_tri[11];
     static double3* cheb_tab_quad[11];
-    static int      cheb_np_tri[11];
-    static int      cheb_np_quad[11];
+    static int cheb_np_tri[11];
+    static int cheb_np_quad[11];
 
     static double3** cheb_tab[2] = { cheb_tab_tri, cheb_tab_quad };
-    static int*      cheb_np[2]  = { cheb_np_tri,  cheb_np_quad  };
+    static int* cheb_np[2] = { cheb_np_tri, cheb_np_quad };
 
     static class Quad2DCheb : public Quad2D
     {
@@ -37,7 +38,7 @@ namespace Hermes
 
       Quad2DCheb()
       {
-        max_order[0]  = max_order[1]  = 10;
+        max_order[0] = max_order[1] = 10;
         num_tables[0] = num_tables[1] = 11;
         tables = cheb_tab;
         np = cheb_np;
@@ -86,7 +87,7 @@ namespace Hermes
     template<typename Scalar>
     void Solution<Scalar>::init()
     {
-      memset(elems,  0, sizeof(elems));
+      memset(elems, 0, sizeof(elems));
       memset(oldest, 0, sizeof(oldest));
       transform = true;
       sln_type = HERMES_UNDEF;
@@ -178,7 +179,7 @@ namespace Hermes
       if(solution == NULL)
         throw Exceptions::Exception("The instance is in fact not a Solution instance in copy().");
 
-      if(solution->sln_type == HERMES_UNDEF) 
+      if(solution->sln_type == HERMES_UNDEF)
         throw Hermes::Exceptions::Exception("Solution being copied is uninitialized.");
       free();
 
@@ -237,13 +238,13 @@ namespace Hermes
     template<typename Scalar>
     void Solution<Scalar>::free()
     {
-      if(mono_coeffs  != NULL) { delete [] mono_coeffs;   mono_coeffs = NULL;  }
-      if(elem_orders != NULL) { delete [] elem_orders;  elem_orders = NULL; }
-      if(dxdy_buffer != NULL) { delete [] dxdy_buffer;  dxdy_buffer = NULL; }
+      if(mono_coeffs != NULL) { delete [] mono_coeffs; mono_coeffs = NULL; }
+      if(elem_orders != NULL) { delete [] elem_orders; elem_orders = NULL; }
+      if(dxdy_buffer != NULL) { delete [] dxdy_buffer; dxdy_buffer = NULL; }
 
       for (int i = 0; i < this->num_components; i++)
         if(elem_coeffs[i] != NULL)
-        { delete [] elem_coeffs[i];  elem_coeffs[i] = NULL; }
+        { delete [] elem_coeffs[i]; elem_coeffs[i] = NULL; }
 
         e_last = NULL;
 
@@ -299,8 +300,8 @@ namespace Hermes
           x = o ? cos(l * M_PI / o) : 1.0;
 
           // each row of the matrix contains all the monomials x^i*y^j
-          for (i = 0, yn = 1.0, m = n-1;  i <= o;  i++, yn *= y)
-            for (j = (this->mode ? 0 : i), xn = 1.0;  j <= o;  j++, xn *= x, m--)
+          for (i = 0, yn = 1.0, m = n-1; i <= o; i++, yn *= y)
+            for (j = (this->mode ? 0 : i), xn = 1.0; j <= o; j++, xn *= x, m--)
               mat[row][m] = xn * yn;
         }
       }
@@ -438,7 +439,7 @@ namespace Hermes
             // By subtracting space->first_dof we make sure that it does not matter where the
             // enumeration of dofs in the space starts. This ca be either zero or there can be some
             // offset. By adding start_index we move to the desired section of coeff_vec.
-            Scalar coef = al.coef[k] * (dof >= 0 ? coeff_vec[dof  - space->first_dof + start_index] : dir_lift_coeff);
+            Scalar coef = al.coef[k] * (dof >= 0 ? coeff_vec[dof - space->first_dof + start_index] : dir_lift_coeff);
             double* shape = pss->get_fn_values(l);
             for (int i = 0; i < np; i++)
               val[i] += shape[i] * coef;
@@ -464,9 +465,9 @@ namespace Hermes
       Hermes::vector<SpaceSharedPtr<Scalar> > spaces, Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions,
       Hermes::vector<bool> add_dir_lift, Hermes::vector<int> start_indices)
     {
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
-      if(spaces.size() != solutions.size()) 
+      if(spaces.size() != solutions.size())
         throw Exceptions::LengthException(2, 3, spaces.size(), solutions.size());
 
       // If start indices are not given, calculate them using the dimension of each space.
@@ -506,7 +507,7 @@ namespace Hermes
       Solution<Scalar>* solution, bool add_dir_lift, int start_index)
     {
       // Sanity checks.
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
 
       solution->set_coeff_vector(space, solution_vector, add_dir_lift, start_index);
@@ -517,7 +518,7 @@ namespace Hermes
       MeshFunctionSharedPtr<Scalar> solution, bool add_dir_lift, int start_index)
     {
       // Sanity checks.
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
 
       Solution<Scalar>* sln = dynamic_cast<Solution<Scalar>*>(solution.get());
@@ -531,9 +532,9 @@ namespace Hermes
     void Solution<Scalar>::vector_to_solutions(const Vector<Scalar>* solution_vector, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
       Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions, Hermes::vector<bool> add_dir_lift, Hermes::vector<int> start_indices)
     {
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
-      if(spaces.size() != solutions.size()) 
+      if(spaces.size() != solutions.size())
         throw Exceptions::LengthException(2, 3, spaces.size(), solutions.size());
 
       // If start indices are not given, calculate them using the dimension of each space.
@@ -572,9 +573,9 @@ namespace Hermes
     void Solution<Scalar>::vector_to_solutions_common_dir_lift(const Vector<Scalar>* solution_vector, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
       Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions, bool add_dir_lift)
     {
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
-      if(spaces.size() != solutions.size()) 
+      if(spaces.size() != solutions.size())
         throw Exceptions::LengthException(2, 3, spaces.size(), solutions.size());
 
       // If start indices are not given, calculate them using the dimension of each space.
@@ -599,9 +600,9 @@ namespace Hermes
     void Solution<Scalar>::vector_to_solutions_common_dir_lift(const Scalar* solution_vector, Hermes::vector<SpaceSharedPtr<Scalar> > spaces,
       Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions, bool add_dir_lift)
     {
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
-      if(spaces.size() != solutions.size()) 
+      if(spaces.size() != solutions.size())
         throw Exceptions::LengthException(2, 3, spaces.size(), solutions.size());
 
       // If start indices are not given, calculate them using the dimension of each space.
@@ -627,7 +628,7 @@ namespace Hermes
       MeshFunctionSharedPtr<Scalar> solution, bool add_dir_lift, int start_index)
     {
       // Sanity checks.
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
 
       Solution<Scalar>* sln = dynamic_cast<Solution<Scalar>*>(solution.get());
@@ -642,9 +643,9 @@ namespace Hermes
       Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions, Hermes::vector<PrecalcShapeset *> pss,
       Hermes::vector<bool> add_dir_lift, Hermes::vector<int> start_indices)
     {
-      if(solution_vector==NULL) 
+      if(solution_vector==NULL)
         throw Exceptions::NullException(1);
-      if(spaces.size() != solutions.size()) 
+      if(spaces.size() != solutions.size())
         throw Exceptions::LengthException(2, 3, spaces.size(), solutions.size());
 
       // If start indices are not given, calculate them using the dimension of each space.
@@ -660,14 +661,14 @@ namespace Hermes
       }
       else
       {
-        if(start_indices.size() != spaces.size()) 
+        if(start_indices.size() != spaces.size())
           throw Hermes::Exceptions::Exception("Mismatched start indices in vector_to_solutions().");
         for (int i=0; i < spaces.size(); i++)
         {
           start_indices_new.push_back(start_indices[i]);
         }
       }
-
+      
       for (int i=0; i < spaces.size(); i++)
       {
         if(Solution<Scalar>::static_verbose_output)
@@ -684,9 +685,9 @@ namespace Hermes
     void Solution<Scalar>::vector_to_solution(const Scalar* solution_vector, SpaceSharedPtr<Scalar> space, MeshFunctionSharedPtr<Scalar> solution,
       PrecalcShapeset* pss, bool add_dir_lift, int start_index)
     {
-      if(solution_vector == NULL) 
+      if(solution_vector == NULL)
         throw Exceptions::NullException(1);
-      if(pss == NULL) 
+      if(pss == NULL)
         throw Exceptions::NullException(4);
 
       Solution<Scalar>* sln = dynamic_cast<Solution<Scalar>*>(solution.get());
@@ -716,6 +717,20 @@ namespace Hermes
         free_tables();
       transform = enable;
     }
+    
+    template<typename Scalar>
+    void Solution<Scalar>::add(MeshFunctionSharedPtr<Scalar> other_mesh_function, SpaceSharedPtr<Scalar> target_space)
+    {
+      Scalar* base_vector = new Scalar[target_space->get_num_dofs()];
+      Scalar* added_vector = new Scalar[target_space->get_num_dofs()];
+      OGProjection<Scalar>::project_global(target_space, this, base_vector);
+      OGProjection<Scalar>::project_global(target_space, other_mesh_function, added_vector);
+      
+      for(int i = 0; i < target_space->get_num_dofs(); i++)
+        base_vector[i] += added_vector[i];
+
+      this->set_coeff_vector(target_space, base_vector, true, 0);
+    }
 
     template<typename Scalar>
     void Solution<Scalar>::multiply(Scalar coef)
@@ -732,10 +747,11 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    static void make_dx_coeffs(int mode, int o, Scalar* mono, Scalar* result)
+    void Solution<Scalar>::make_dx_coeffs(int mode, int o, Scalar* mono, Scalar* result)
     {
       int i, j, k;
-      for (i = 0; i <= o; i++) {
+      for (i = 0; i <= o; i++)
+      {
         *result++= 0.0;
         k = mode ? o : i;
         for (j = 0; j < k; j++)
@@ -745,10 +761,11 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    static void make_dy_coeffs(int mode, int o, Scalar* mono, Scalar* result)
+    void Solution<Scalar>::make_dy_coeffs(int mode, int o, Scalar* mono, Scalar* result)
     {
       int i, j;
-      if(mode) {
+      if(mode)
+      {
         for (j = 0; j <= o; j++)
           *result++= 0.0;
         for (i = 0; i < o; i++)
@@ -756,7 +773,8 @@ namespace Hermes
             *result++= (Scalar) (o-i) * (*mono++);
       }
       else {
-        for (i = 0; i <= o; i++) {
+        for (i = 0; i <= o; i++)
+        {
           *result++= 0.0;
           for (j = 0; j < i; j++)
             *result++= (Scalar) (o + 1-i) * (*mono++);
@@ -781,7 +799,7 @@ namespace Hermes
       if(e == this->element)
         return;
 
-      if(!e->active) 
+      if(!e->active)
         throw Hermes::Exceptions::Exception("Cannot select inactive element. Wrong mesh?");
 
       MeshFunction<Scalar>::set_active_element(e);
@@ -815,16 +833,18 @@ namespace Hermes
           Scalar* mono = mono_coeffs + elem_coeffs[i][e->id];
           dxdy_coeffs[i][0] = mono;
 
-          make_dx_coeffs(this->mode, o, mono, dxdy_coeffs[i][1] = dxdy_buffer + m);  m += n;
-          make_dy_coeffs(this->mode, o, mono, dxdy_coeffs[i][2] = dxdy_buffer + m);  m += n;
-          make_dx_coeffs(this->mode, o, dxdy_coeffs[i][1], dxdy_coeffs[i][3] = dxdy_buffer + m);  m += n;
-          make_dy_coeffs(this->mode, o, dxdy_coeffs[i][2], dxdy_coeffs[i][4] = dxdy_buffer + m);  m += n;
-          make_dx_coeffs(this->mode, o, dxdy_coeffs[i][2], dxdy_coeffs[i][5] = dxdy_buffer + m);  m += n;
+          make_dx_coeffs(this->mode, o, mono, dxdy_coeffs[i][1] = dxdy_buffer + m); m += n;
+          make_dy_coeffs(this->mode, o, mono, dxdy_coeffs[i][2] = dxdy_buffer + m); m += n;
+          make_dx_coeffs(this->mode, o, dxdy_coeffs[i][1], dxdy_coeffs[i][3] = dxdy_buffer + m); m += n;
+          make_dy_coeffs(this->mode, o, dxdy_coeffs[i][2], dxdy_coeffs[i][4] = dxdy_buffer + m); m += n;
+          make_dx_coeffs(this->mode, o, dxdy_coeffs[i][2], dxdy_coeffs[i][5] = dxdy_buffer + m); m += n;
         }
       }
       else if(sln_type == HERMES_EXACT)
       {
-        this->order = Hermes::Hermes2D::g_max_quad;
+        double x, y;
+        e->get_center(x, y);
+        this->order = (dynamic_cast<ExactSolution<double>*>(this))->ord(x, y).get_order();
       }
       else
         throw Hermes::Exceptions::Exception("Uninitialized solution.");
@@ -865,10 +885,8 @@ namespace Hermes
       double2x2 *mat, *m;
       int i, mstep = 0;
 
-      // H1 space
-      //if(space_type == HERMES_H1_SPACE)
-if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_type == HERMES_L2_SPACE) 
-
+      // H1 space, L2 space
+      if((space_type == HERMES_H1_SPACE)||(space_type == HERMES_L2_SPACE)||(space_type == HERMES_L2_SEMI_SPACE))
       {
 #ifdef H2D_USE_SECOND_DERIVATIVES
         if(((newmask & H2D_SECOND) == H2D_SECOND && (oldmask & H2D_SECOND) != H2D_SECOND))
@@ -884,9 +902,9 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
             Scalar vyy = node->values[0][4][i];
             Scalar vxy = node->values[0][5][i];
 
-            node->values[0][3][i] = sqr((*m)[0][0])*vxx + 2*(*m)[0][1]*(*m)[0][0]*vxy + sqr((*m)[0][1])*vyy + (*mm)[0][0]*vx + (*mm)[0][1]*vy;   // dxx
-            node->values[0][4][i] = sqr((*m)[1][0])*vxx + 2*(*m)[1][1]*(*m)[1][0]*vxy + sqr((*m)[1][1])*vyy + (*mm)[2][0]*vx + (*mm)[2][1]*vy;   // dyy
-            node->values[0][5][i] = (*m)[0][0]*(*m)[1][0]*vxx + ((*m)[0][0]*(*m)[1][1] + (*m)[1][0]*(*m)[0][1])*vxy + (*m)[0][1]*(*m)[1][1]*vyy + (*mm)[1][0]*vx + (*mm)[1][1]*vy;   //dxy
+            node->values[0][3][i] = sqr((*m)[0][0])*vxx + 2*(*m)[0][1]*(*m)[0][0]*vxy + sqr((*m)[0][1])*vyy + (*mm)[0][0]*vx + (*mm)[0][1]*vy; // dxx
+            node->values[0][4][i] = sqr((*m)[1][0])*vxx + 2*(*m)[1][1]*(*m)[1][0]*vxy + sqr((*m)[1][1])*vyy + (*mm)[2][0]*vx + (*mm)[2][1]*vy; // dyy
+            node->values[0][5][i] = (*m)[0][0]*(*m)[1][0]*vxx + ((*m)[0][0]*(*m)[1][1] + (*m)[1][0]*(*m)[0][1])*vxy + (*m)[0][1]*(*m)[1][1]*vyy + (*mm)[1][0]*vx + (*mm)[1][1]*vy; //dxy
           }
         }
 #endif
@@ -910,8 +928,8 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
       else if(space_type == HERMES_HCURL_SPACE)
       {
         bool trans_val = false, trans_curl = false;
-        if((newmask & H2D_FN_VAL) == H2D_FN_VAL && (oldmask & H2D_FN_VAL) != H2D_FN_VAL) trans_val  = true;
-        if((newmask &   H2D_CURL) ==   H2D_CURL && (oldmask &   H2D_CURL) !=   H2D_CURL) trans_curl = true;
+        if((newmask & H2D_FN_VAL) == H2D_FN_VAL && (oldmask & H2D_FN_VAL) != H2D_FN_VAL) trans_val = true;
+        if((newmask & H2D_CURL) == H2D_CURL && (oldmask & H2D_CURL) != H2D_CURL) trans_curl = true;
 
         if(trans_val || trans_curl)
         {
@@ -952,7 +970,7 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
           {
             Scalar vx = node->values[0][0][i];
             Scalar vy = node->values[1][0][i];
-            node->values[0][0][i] =   (*m)[1][1]*vx - (*m)[1][0]*vy;
+            node->values[0][0][i] = (*m)[1][1]*vx - (*m)[1][0]*vy;
             node->values[1][0][i] = - (*m)[0][1]*vx + (*m)[0][0]*vy;
           }
         }
@@ -975,15 +993,15 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
         const int H2D_CURL = H2D_FN_DX | H2D_FN_DY; // sic
         if(transform)
         {
-          if(this->num_components == 1)                                            // H1 space or L2 space
+          if(this->num_components == 1) // H1 space or L2 space
           {
-            if((mask & H2D_FN_DX_0)  || (mask & H2D_FN_DY_0))  mask |= H2D_GRAD;
-            if((mask & H2D_FN_DXX_0)  || (mask & H2D_FN_DXY_0) || (mask & H2D_FN_DYY_0))  mask |= H2D_SECOND;
+            if((mask & H2D_FN_DX_0) || (mask & H2D_FN_DY_0)) mask |= H2D_GRAD;
+            if((mask & H2D_FN_DXX_0) || (mask & H2D_FN_DXY_0) || (mask & H2D_FN_DYY_0)) mask |= H2D_SECOND;
           }
-          else if(space_type == HERMES_HCURL_SPACE)                                           // Hcurl space
+          else if(space_type == HERMES_HCURL_SPACE) // Hcurl space
           { if((mask & H2D_FN_VAL_0) || (mask & H2D_FN_VAL_1)) mask |= H2D_FN_VAL;
-          if((mask & H2D_FN_DX_1)  || (mask & H2D_FN_DY_0))  mask |= H2D_CURL; }
-          else                                                                // Hdiv space
+          if((mask & H2D_FN_DX_1) || (mask & H2D_FN_DY_0)) mask |= H2D_CURL; }
+          else // Hdiv space
           { if((mask & H2D_FN_VAL_0) || (mask & H2D_FN_VAL_1)) mask |= H2D_FN_VAL; }
         }
 
@@ -1067,11 +1085,11 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
 
             for (i = 0, m = mat; i < np; i++, m += mstep)
             {
-              double jac = (*m)[0][0] *  (*m)[1][1] - (*m)[1][0] *  (*m)[0][1];
+              double jac = (*m)[0][0] * (*m)[1][1] - (*m)[1][0] * (*m)[0][1];
               Scalar val, dx = 0.0, dy = 0.0;
               val = (static_cast<ExactSolutionScalar<Scalar>*>(this))->exact_function(x[i], y[i], dx, dy);
               node->values[0][0][i] = val * (static_cast<ExactSolutionVector<Scalar>*>(this))->exact_multiplicator;
-              node->values[0][1][i] = (  (*m)[1][1]*dx - (*m)[0][1]*dy) / jac * (static_cast<ExactSolutionVector<Scalar>*>(this))->exact_multiplicator;
+              node->values[0][1][i] = ( (*m)[1][1]*dx - (*m)[0][1]*dy) / jac * (static_cast<ExactSolutionVector<Scalar>*>(this))->exact_multiplicator;
               node->values[0][2][i] = (- (*m)[1][0]*dx + (*m)[0][0]*dy) / jac * (static_cast<ExactSolutionVector<Scalar>*>(this))->exact_multiplicator;
             }
           }
@@ -1121,27 +1139,39 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
     template<>
     void Solution<double>::save(const char* filename) const
     {
-      // Check.
-      this->check();
+      if(sln_type == HERMES_UNDEF)
+        throw Exceptions::Exception("Cannot save -- uninitialized solution.");
 
       try
       {
-        // Init XML.
-        // With counts, exactness.
         XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs, 0, 0);
+        switch(this->get_space_type())
+        {
+        case HERMES_H1_SPACE:
+          xmlsolution.space().set("h1");
+          break;
+        case HERMES_HCURL_SPACE:
+          xmlsolution.space().set("hcurl");
+          break;
+        case HERMES_HDIV_SPACE:
+          xmlsolution.space().set("hdiv");
+          break;
+        case HERMES_L2_SPACE:
+          xmlsolution.space().set("l2");
+          break;
+        case HERMES_L2_MARKERWISE_CONST_SPACE:
+          xmlsolution.space().set("l2-markerwise");
+          break;
+        default:
+          throw Exceptions::Exception("This type of solution can not be saved.");
+        }
 
-        // Space type.
-        xmlsolution.space().set(SpaceTypeString[this->get_space_type()]);
-
-        // Coefficients.
         for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
           xmlsolution.mono_coeffs().push_back(XMLSolution::mono_coeffs(coeffs_i, mono_coeffs[coeffs_i]));
 
-        // Orders.
         for(unsigned int elems_i = 0; elems_i < this->num_elems; elems_i++)
           xmlsolution.elem_orders().push_back(XMLSolution::elem_orders(elems_i, elem_orders[elems_i]));
 
-        // Element offsets for each component.
         for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
         {
           xmlsolution.component().push_back(XMLSolution::component());
@@ -1150,7 +1180,6 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
             xmlsolution.component().back().elem_coeffs().push_back(XMLSolution::elem_coeffs(elems_i, elem_coeffs[component_i][elems_i]));
         }
 
-        // Finish.
         std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
         solution_schema_location.append("/solution_h2d_xml.xsd");
         ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
@@ -1158,9 +1187,10 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
         ::xml_schema::namespace_infomap namespace_info_map;
         namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
 
-        // Write to disk.
         std::ofstream out(filename);
+
         ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
+
         XMLSolution::solution_(out, xmlsolution, namespace_info_map, "UTF-8", parsing_flags);
         out.close();
       }
@@ -1173,30 +1203,40 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
     template<>
     void Solution<std::complex<double> >::save(const char* filename) const
     {
-      // Check.
-      this->check();
+      if(sln_type == HERMES_UNDEF)
+        throw Exceptions::Exception("Cannot save -- uninitialized solution.");
 
       try
       {
-        // Init XML.
-        // With counts, exactness.
-        XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs, 0, 0);
+        XMLSolution::solution xmlsolution(this->num_components, this->num_elems, this->num_coeffs, 0, 1);
 
-        // Space type.
-        xmlsolution.space().set(SpaceTypeString[this->get_space_type()]);
+        switch(this->get_space_type())
+        {
+        case HERMES_H1_SPACE:
+          xmlsolution.space().set("h1");
+          break;
+        case HERMES_HCURL_SPACE:
+          xmlsolution.space().set("hcurl");
+          break;
+        case HERMES_HDIV_SPACE:
+          xmlsolution.space().set("hdiv");
+          break;
+        case HERMES_L2_SPACE:
+          xmlsolution.space().set("l2");
+          break;
+        default:
+          throw Exceptions::Exception("This type of solution can not be saved.");
+        }
 
-        // Coefficients - this is the only difference wrt. the real method.
         for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
         {
           xmlsolution.mono_coeffs().push_back(XMLSolution::mono_coeffs(coeffs_i, mono_coeffs[coeffs_i].real()));
           xmlsolution.mono_coeffs().back().im() = mono_coeffs[coeffs_i].imag();
         }
 
-        // Orders.
         for(unsigned int elems_i = 0; elems_i < this->num_elems; elems_i++)
           xmlsolution.elem_orders().push_back(XMLSolution::elem_orders(elems_i, elem_orders[elems_i]));
 
-        // Element offsets for each component.
         for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
         {
           xmlsolution.component().push_back(XMLSolution::component());
@@ -1205,7 +1245,6 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
             xmlsolution.component().back().elem_coeffs().push_back(XMLSolution::elem_coeffs(elems_i, elem_coeffs[component_i][elems_i]));
         }
 
-        // Finish.
         std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
         solution_schema_location.append("/solution_h2d_xml.xsd");
         ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
@@ -1213,208 +1252,16 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
         ::xml_schema::namespace_infomap namespace_info_map;
         namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
 
-        // Write to disk.
         std::ofstream out(filename);
+
         ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
+
         XMLSolution::solution_(out, xmlsolution, namespace_info_map, "UTF-8", parsing_flags);
         out.close();
       }
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
-      }
-    }
-
-#ifdef WITH_BSON
-    template<>
-    void Solution<double>::save_bson(const char* filename) const
-    {
-      // Check.
-      this->check();
-
-      // Init bson
-      bson bw;
-      bson_init(&bw);
-
-      // Space type.
-      bson_append_string(&bw, "space", SpaceTypeString[this->get_space_type()]);
-
-      // Exactness.
-      bson_append_bool(&bw, "exact", false);
-
-      // Complexness for checking.
-      bson_append_bool(&bw, "complex", false);
-
-      // Counts.
-      bson_append_int(&bw, "coeffs_count", this->num_coeffs);
-      bson_append_int(&bw, "orders_count", this->num_elems);
-      bson_append_int(&bw, "components_count", this->num_components);
-
-      // Coefficients.
-      bson_append_start_array(&bw, "coeffs");
-      for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
-        bson_append_double(&bw, "c", mono_coeffs[coeffs_i]);
-      bson_append_finish_array(&bw);
-
-      // Orders.
-      bson_append_start_array(&bw, "orders");
-      for(unsigned int elems_i = 0; elems_i < this->num_elems; elems_i++)
-        bson_append_int(&bw, "o", elem_orders[elems_i]);
-      bson_append_finish_array(&bw);
-
-      // Element offsets for each component.
-      bson_append_start_array(&bw, "components");
-      for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
-      {
-        bson_append_start_array(&bw, "component");
-        for(unsigned int elems_i = 0; elems_i < this->num_elems; elems_i++)
-          bson_append_int(&bw, "c", elem_coeffs[component_i][elems_i]);
-        bson_append_finish_array(&bw);
-      }
-      bson_append_finish_array(&bw);
-
-      // Done.
-      bson_finish(&bw);
-
-      // Write to disk.
-      FILE *fpw;
-      fpw = fopen(filename, "wb");
-      const char *dataw = (const char *) bson_data(&bw);
-      fwrite(dataw, bson_size(&bw), 1, fpw);
-      fclose(fpw);
-
-      bson_destroy(&bw);
-    }
-
-    template<>
-    void Solution<std::complex<double> >::save_bson(const char* filename) const
-    {
-      // Check.
-      this->check();
-
-      // Init bson
-      bson bw;
-      bson_init(&bw);
-
-      // Space type.
-      bson_append_string(&bw, "space", SpaceTypeString[this->get_space_type()]);
-
-      // Exactness.
-      bson_append_bool(&bw, "exact", false);
-
-      // Complexness for checking.
-      bson_append_bool(&bw, "complex", true);
-
-      // Counts.
-      bson_append_int(&bw, "coeffs_count", this->num_coeffs);
-      bson_append_int(&bw, "orders_count", this->num_elems);
-      bson_append_int(&bw, "components_count", this->num_components);
-
-      // Coefficients.
-      bson_append_start_array(&bw, "coeffs-real");
-      for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
-        bson_append_double(&bw, "c", mono_coeffs[coeffs_i].real());
-      bson_append_finish_array(&bw);
-
-      bson_append_start_array(&bw, "coeffs-imag");
-      for(unsigned int coeffs_i = 0; coeffs_i < this->num_coeffs; coeffs_i++)
-        bson_append_double(&bw, "c", mono_coeffs[coeffs_i].imag());
-      bson_append_finish_array(&bw);
-
-      // Orders.
-      bson_append_start_array(&bw, "orders");
-      for(unsigned int elems_i = 0; elems_i < this->num_elems; elems_i++)
-        bson_append_int(&bw, "o", elem_orders[elems_i]);
-      bson_append_finish_array(&bw);
-
-      // Element offsets for each component.
-      bson_append_start_array(&bw, "components");
-      for (unsigned int component_i = 0; component_i < this->num_components; component_i++)
-      {
-        bson_append_start_array(&bw, "component");
-        for(unsigned int elems_i = 0; elems_i < this->num_elems; elems_i++)
-          bson_append_int(&bw, "c", elem_coeffs[component_i][elems_i]);
-        bson_append_finish_array(&bw);
-      }
-      bson_append_finish_array(&bw);
-
-      // Done.
-      bson_finish(&bw);
-
-      // Write to disk.
-      FILE *fpw;
-      fpw = fopen(filename, "wb");
-      const char *dataw = (const char *) bson_data(&bw);
-      fwrite(dataw, bson_size(&bw), 1, fpw);
-      fclose(fpw);
-
-      bson_destroy(&bw);
-    }
-#endif
-
-    template<>
-    void Solution<double>::load_exact_solution(int number_of_components, SpaceSharedPtr<double> space, bool complexness,
-      double x_real, double y_real, double x_complex, double y_complex)
-    {
-      switch(number_of_components)
-      {
-      case 1:
-        if(!complexness)
-        {
-          double* coeff_vec = new double[space->get_num_dofs()];
-          MeshFunctionSharedPtr<double> sln(new ConstantSolution<double>(this->mesh, x_real));
-          OGProjection<double>::project_global(space, sln, coeff_vec);
-          this->set_coeff_vector(space, coeff_vec, true, 0);
-          sln_type = HERMES_SLN;
-        }
-        else
-          throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
-        break;
-      case 2:
-        if(!complexness)
-        {
-          double* coeff_vec = new double[space->get_num_dofs()];
-          MeshFunctionSharedPtr<double> sln(new ConstantSolutionVector<double>(this->mesh, x_real, y_real));
-          OGProjection<double>::project_global(space, sln, coeff_vec);
-          this->set_coeff_vector(space, coeff_vec, true, 0);
-          this->sln_type = HERMES_SLN;
-        }
-        else
-          throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
-        break;
-      }
-    }
-
-    template<>
-    void Solution<std::complex<double> >::load_exact_solution(int number_of_components, SpaceSharedPtr<std::complex<double> > space, bool complexness,
-      double x_real, double y_real, double x_complex, double y_complex)
-    {
-      switch(number_of_components)
-      {
-      case 1:
-        if(complexness)
-        {
-          std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
-          MeshFunctionSharedPtr<std::complex<double> > sln(new ConstantSolution<std::complex<double> >(this->mesh, std::complex<double>(x_real, x_complex)));
-          OGProjection<std::complex<double> >::project_global(space, sln, coeff_vec);
-          this->set_coeff_vector(space, coeff_vec, true, 0);
-          sln_type = HERMES_SLN;
-        }
-        else
-          throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
-        break;
-      case 2:
-        if(complexness == 1)
-        {
-          std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
-          MeshFunctionSharedPtr<std::complex<double> > sln(new ConstantSolutionVector<std::complex<double> >(this->mesh, std::complex<double>(x_real, x_complex), std::complex<double>(y_real, y_complex)));
-          OGProjection<std::complex<double> >::project_global(space, sln, coeff_vec);
-          this->set_coeff_vector(space, coeff_vec, true, 0);
-          sln_type = HERMES_SLN;
-        }
-        else
-          throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
-        break;
       }
     }
 
@@ -1434,14 +1281,57 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
         std::auto_ptr<XMLSolution::solution> parsed_xml_solution(XMLSolution::solution_(filename, parsing_flags));
         sln_type = parsed_xml_solution->exact() == 0 ? HERMES_SLN : HERMES_EXACT;
 
-        if(parsed_xml_solution->ncmp() != space->get_shapeset()->get_num_components())
-          throw Exceptions::Exception("Mismatched space / saved solution.");
-
         if(sln_type == HERMES_EXACT)
-          this->load_exact_solution(parsed_xml_solution->ncmp(), space, parsed_xml_solution->exactC(), parsed_xml_solution->exactCXR().get(), parsed_xml_solution->exactCYR().get(), parsed_xml_solution->exactCXC().get(), parsed_xml_solution->exactCYC().get());
+        {
+          switch(parsed_xml_solution->ncmp())
+          {
+          case 1:
+            if(parsed_xml_solution->exactC() == 0)
+            {
+              double* coeff_vec = new double[space->get_num_dofs()];
+              MeshFunctionSharedPtr<double> sln(new ConstantSolution<double>(this->mesh, parsed_xml_solution->exactCXR().get()));
+              OGProjection<double>::project_global(space, sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          case 2:
+            if(parsed_xml_solution->exactC() == 0)
+            {
+              double* coeff_vec = new double[space->get_num_dofs()];
+              MeshFunctionSharedPtr<double> sln(new ConstantSolutionVector<double>(this->mesh, parsed_xml_solution->exactCXR().get(), parsed_xml_solution->exactCYR().get()));
+              OGProjection<double>::project_global(space, sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          }
+        }
         else
         {
-          this->check_space_type_compliance(parsed_xml_solution->space().get().c_str());
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"h1"))
+            if(this->space_type != HERMES_H1_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
+
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"l2"))
+            if(this->space_type != HERMES_L2_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
+
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"hcurl"))
+            if(this->space_type != HERMES_HCURL_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
+
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"hdiv"))
+            if(this->space_type != HERMES_HDIV_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
+
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"l2-markerwise"))
+            if(this->space_type != HERMES_L2_MARKERWISE_CONST_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
 
           this->num_coeffs = parsed_xml_solution->nc();
           this->num_elems = parsed_xml_solution->nel();
@@ -1491,14 +1381,53 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
         std::auto_ptr<XMLSolution::solution> parsed_xml_solution(XMLSolution::solution_(filename, parsing_flags));
         sln_type = parsed_xml_solution->exact() == 0 ? HERMES_SLN : HERMES_EXACT;
 
-        if(parsed_xml_solution->ncmp() != space->get_shapeset()->get_num_components())
-          throw Exceptions::Exception("Mismatched space / saved solution.");
-
         if(sln_type == HERMES_EXACT)
-          this->load_exact_solution(parsed_xml_solution->ncmp(), space, parsed_xml_solution->exactC(), parsed_xml_solution->exactCXR().get(), parsed_xml_solution->exactCYR().get(), parsed_xml_solution->exactCXC().get(), parsed_xml_solution->exactCYC().get());
+        {
+          switch(parsed_xml_solution->ncmp())
+          {
+          case 1:
+            if(parsed_xml_solution->exactC() == 1)
+            {
+              std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
+              MeshFunctionSharedPtr<std::complex<double> > sln(new ConstantSolution<std::complex<double> >(this->mesh, parsed_xml_solution->exactCXR().get()));
+              OGProjection<std::complex<double> >::project_global(space, sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          case 2:
+            if(parsed_xml_solution->exactC() == 1)
+            {
+              std::complex<double>* coeff_vec = new std::complex<double>[space->get_num_dofs()];
+              MeshFunctionSharedPtr<std::complex<double> > sln(new ConstantSolutionVector<std::complex<double> >(this->mesh, std::complex<double>(parsed_xml_solution->exactCXR().get(), parsed_xml_solution->exactCXC().get()), std::complex<double>(parsed_xml_solution->exactCYR().get(), parsed_xml_solution->exactCYC().get())));
+              OGProjection<std::complex<double> >::project_global(space, sln, coeff_vec);
+              this->set_coeff_vector(space, coeff_vec, true, 0);
+              sln_type = HERMES_SLN;
+            }
+            else
+              throw Hermes::Exceptions::SolutionLoadFailureException("Mismatched real - complex exact solutions.");
+            break;
+          }
+        }
         else
         {
-          this->check_space_type_compliance(parsed_xml_solution->space().get().c_str());
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"h1"))
+            if(this->space_type != HERMES_H1_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
+
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"l2"))
+            if(this->space_type != HERMES_L2_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
+
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"hcurl"))
+            if(this->space_type != HERMES_HCURL_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
+
+          if(!strcmp(parsed_xml_solution->space().get().c_str(),"hdiv"))
+            if(this->space_type != HERMES_HDIV_SPACE)
+              throw Exceptions::Exception("Space types not compliant in Solution::load().");
 
           ::xml_schema::flags parsing_flags = 0;
           if(!this->validate)
@@ -1537,297 +1466,10 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
       }
     }
 
-#ifdef WITH_BSON
-    template<>
-    void Solution<double>::load_bson(const char* filename, SpaceSharedPtr<double> space)
-    {
-      free();
-      this->mesh = space->get_mesh();
-      this->space_type = space->get_type();
-
-      FILE *fpr;
-      fpr = fopen(filename, "rb");
-
-      // file size:
-      fseek (fpr, 0, SEEK_END);
-      int size = ftell(fpr);
-      rewind(fpr);
-
-      // allocate memory to contain the whole file:
-      char *datar = (char*) malloc (sizeof(char)*size);
-      fread(datar, size, 1, fpr);
-      fclose(fpr);
-
-      bson br;
-      bson_init_finished_data(&br, datar, 0);
-      // bson_print(&br);
-
-      bson sub;
-      bson_iterator it;
-
-      bson_iterator it_exact;
-      bson_find(&it_exact, &br, "exact");
-      sln_type = bson_iterator_bool(&it_exact) ? HERMES_EXACT : HERMES_SLN;
-
-      bson_iterator it_complex;
-      bson_find(&it_complex, &br, "complex");
-      bool complex = bson_iterator_bool(&it_complex);
-
-      bson_iterator it_components;
-      bson_find(&it_components, &br, "components_count");
-      if(bson_iterator_int(&it_components) != space->get_shapeset()->get_num_components())
-        throw Exceptions::Exception("Mismatched space / saved solution.");
-      else
-        this->num_components = bson_iterator_int(&it_components);
-
-      if (sln_type == HERMES_EXACT)
-      {
-        Hermes::vector<double> values;
-        // values
-        bson_find(&it, &br, "values");
-        bson_iterator_subobject_init(&it, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        while (bson_iterator_next(&it))
-          values.push_back(bson_iterator_double(&it));
-        this->load_exact_solution(this->num_components, space, complex, values[0], values[1], values[2], values[3]);
-      }
-      else
-      {
-        // space
-        bson_iterator it_sp;
-        bson_find(&it_sp, &br, "space");
-        const char *sp = bson_iterator_string(&it_sp);
-
-        this->check_space_type_compliance(sp);
-
-        bson_iterator it_coeffs, it_orders;
-        bson_find(&it_coeffs, &br, "coeffs_count");
-        bson_find(&it_orders, &br, "orders_count");         
-
-        this->num_coeffs = bson_iterator_int(&it_coeffs);
-        this->num_elems = bson_iterator_int(&it_orders);
-
-        this->mono_coeffs = new double[num_coeffs];
-
-        for(unsigned int component_i = 0; component_i < num_components; component_i++)
-          this->elem_coeffs[component_i] = new int[num_elems];
-
-        this->elem_orders = new int[num_elems];
-
-        // coeffs
-        bson_find(&it_coeffs, &br, "coeffs");
-        bson_iterator_subobject_init(&it_coeffs, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        int index_coeff = 0;
-        while (bson_iterator_next(&it))
-          this->mono_coeffs[index_coeff++] = bson_iterator_double(&it);
-
-        // elem order
-        bson_find(&it_orders, &br, "orders");
-        bson_iterator_subobject_init(&it_orders, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        int index_order = 0;
-        while (bson_iterator_next(&it))
-          this->elem_orders[index_order++] = bson_iterator_int(&it);
-
-        //
-        bson_find(&it_components, &br, "components");
-        bson_iterator_subobject_init(&it_components, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        int index_comp = 0;
-        while (bson_iterator_next(&it))
-        {
-          bson sub_coeffs;
-          bson_iterator_subobject_init(&it, &sub_coeffs, 0);
-          bson_iterator it_coeffs;
-          bson_iterator_init(&it_coeffs, &sub_coeffs);
-
-          int index_coeff = 0;
-          while (bson_iterator_next(&it_coeffs))
-            this->elem_coeffs[index_comp][index_coeff++] = bson_iterator_int(&it_coeffs);
-
-          index_comp++;
-        }
-      }
-
-      bson_destroy(&br);
-      ::free(datar);
-
-      init_dxdy_buffer();
-    }
-
-    template<>
-    void Solution<std::complex<double> >::load_bson(const char* filename, SpaceSharedPtr<std::complex<double> > space)
-    {
-      free();
-      this->mesh = space->get_mesh();
-      this->space_type = space->get_type();
-
-      FILE *fpr;
-      fpr = fopen(filename, "rb");
-
-      // file size:
-      fseek (fpr, 0, SEEK_END);
-      int size = ftell(fpr);
-      rewind(fpr);
-
-      // allocate memory to contain the whole file:
-      char *datar = (char*) malloc (sizeof(char)*size);
-      fread(datar, size, 1, fpr);
-      fclose(fpr);
-
-      bson br;
-      bson_init_finished_data(&br, datar, 0);
-      // bson_print(&br);
-
-      bson sub;
-      bson_iterator it;
-
-      bson_iterator it_exact;
-      bson_find(&it_exact, &br, "exact");
-      sln_type = bson_iterator_bool(&it_exact) ? HERMES_EXACT : HERMES_SLN;
-
-      bson_iterator it_complex;
-      bson_find(&it_complex, &br, "complex");
-      bool complex = bson_iterator_bool(&it_complex);
-
-      bson_iterator it_components;
-      bson_find(&it_components, &br, "components_count");
-      if(bson_iterator_int(&it_components) != space->get_shapeset()->get_num_components())
-        throw Exceptions::Exception("Mismatched space / saved solution.");
-      else
-        this->num_components = bson_iterator_int(&it_components);
-
-      if (sln_type == HERMES_EXACT)
-      {
-        Hermes::vector<double> values;
-        // values
-        bson_find(&it, &br, "values");
-        bson_iterator_subobject_init(&it, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        while (bson_iterator_next(&it))
-          values.push_back(bson_iterator_double(&it));
-        this->load_exact_solution(this->num_components, space, complex, values[0], values[1], values[2], values[3]);
-      }
-      else
-      {
-        // space
-        bson_iterator it_sp;
-        bson_find(&it_sp, &br, "space");
-        const char *sp = bson_iterator_string(&it_sp);
-
-        this->check_space_type_compliance(sp);
-
-        bson_iterator it_coeffs, it_coeffs_real, it_coeffs_imag, it_orders;
-        bson_find(&it_coeffs, &br, "coeffs_count");
-        bson_find(&it_orders, &br, "orders_count");         
-
-        this->num_coeffs = bson_iterator_int(&it_coeffs);
-        this->num_elems = bson_iterator_int(&it_orders);
-
-        this->mono_coeffs = new std::complex<double>[num_coeffs];
-
-        for(unsigned int component_i = 0; component_i < num_components; component_i++)
-          this->elem_coeffs[component_i] = new int[num_elems];
-
-        this->elem_orders = new int[num_elems];
-
-        // coeffs.
-        Hermes::vector<double> real_coeffs, imag_coeffs;
-        bson_find(&it_coeffs_real, &br, "coeffs-real");
-        bson_iterator_subobject_init(&it_coeffs_real, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        while (bson_iterator_next(&it))
-          real_coeffs.push_back(bson_iterator_double(&it));
-
-        bson_find(&it_coeffs_imag, &br, "coeffs-imag");
-        bson_iterator_subobject_init(&it_coeffs_imag, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        while (bson_iterator_next(&it))
-          imag_coeffs.push_back(bson_iterator_double(&it));
-
-        for(int i = 0; i < imag_coeffs.size(); i++)
-          this->mono_coeffs[i] = std::complex<double>(real_coeffs[i], imag_coeffs[i]);
-
-        // elem order
-        bson_find(&it_orders, &br, "orders");
-        bson_iterator_subobject_init(&it_orders, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        int index_order = 0;
-        while (bson_iterator_next(&it))
-          this->elem_orders[index_order++] = bson_iterator_int(&it);
-
-        //
-        bson_find(&it_components, &br, "components");
-        bson_iterator_subobject_init(&it_components, &sub, 0);
-        bson_iterator_init(&it, &sub);
-        int index_comp = 0;
-        while (bson_iterator_next(&it))
-        {
-          bson sub_coeffs;
-          bson_iterator_subobject_init(&it, &sub_coeffs, 0);
-          bson_iterator it_coeffs;
-          bson_iterator_init(&it_coeffs, &sub_coeffs);
-
-          int index_coeff = 0;
-          while (bson_iterator_next(&it_coeffs))
-            this->elem_coeffs[index_comp][index_coeff++] = bson_iterator_int(&it_coeffs);
-
-          index_comp++;
-        }
-      }
-
-      bson_destroy(&br);
-      ::free(datar);
-
-      init_dxdy_buffer();
-    }
-#endif
-
-    template<typename Scalar>
-    bool Solution<Scalar>::isOkay() const
-    {
-      bool okay = MeshFunction<Scalar>::isOkay();
-
-      okay = (this->sln_type == HERMES_EXACT || this->get_space_type() != HERMES_INVALID_SPACE) && okay;
-
-      if(sln_type == HERMES_UNDEF)
-      {
-        okay = false;
-        throw Exceptions::Exception("Uninitialized space type.");
-      }
-
-      return okay;
-    }
-
-    template<typename Scalar>
-    void Solution<Scalar>::check_space_type_compliance(const char* space_type_to_check) const
-    {
-      if(!strcmp(space_type_to_check, "h1"))
-        if(this->space_type != HERMES_H1_SPACE)
-          throw Exceptions::Exception("Space types not compliant in Solution::load().");
-
-      if(!strcmp(space_type_to_check, "l2"))
-        if(this->space_type != HERMES_L2_SPACE)
-          throw Exceptions::Exception("Space types not compliant in Solution::load().");
-
-      if(!strcmp(space_type_to_check, "hcurl"))
-        if(this->space_type != HERMES_HCURL_SPACE)
-          throw Exceptions::Exception("Space types not compliant in Solution::load().");
-
-      if(!strcmp(space_type_to_check, "hdiv"))
-        if(this->space_type != HERMES_HDIV_SPACE)
-          throw Exceptions::Exception("Space types not compliant in Solution::load().");
-
-      if(!strcmp(space_type_to_check, "l2-markerwise"))
-        if(this->space_type != HERMES_L2_MARKERWISE_CONST_SPACE)
-          throw Exceptions::Exception("Space types not compliant in Solution::load().");
-    }
-
     template<typename Scalar>
     Scalar Solution<Scalar>::get_ref_value(Element* e, double xi1, double xi2, int component, int item)
     {
-      if(e==NULL) 
+      if(e==NULL)
         throw Exceptions::NullException(1);
 
       set_active_element(e);
@@ -1849,8 +1491,13 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
     template<typename Scalar>
     Scalar Solution<Scalar>::get_ref_value_transformed(Element* e, double xi1, double xi2, int a, int b)
     {
-      if(e == NULL) 
+      if(e == NULL)
         throw Exceptions::NullException(1);
+
+      if(this->sln_type != HERMES_SLN)
+        throw Exceptions::Exception("Solution::get_ref_value_transformed only works for solutions wrt. FE space, project if you want to use the method for exact solutions.");
+
+      set_active_element(e);
 
       if(this->num_components == 1)
       {
@@ -1868,7 +1515,6 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
         }
         else
         {
-#ifdef H2D_USE_SECOND_DERIVATIVES
           double2x2 mat;
           double3x2 mat2;
           double xx, yy;
@@ -1882,12 +1528,11 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
           Scalar vyy = get_ref_value(e, xi1, xi2, a, 4);
           Scalar vxy = get_ref_value(e, xi1, xi2, a, 5);
           if(b == 3)
-            return sqr(mat[0][0])*vxx + 2*mat[0][1]*mat[0][0]*vxy + sqr(mat[0][1])*vyy + mat2[0][0]*vx + mat2[0][1]*vy;   // dxx
+            return sqr(mat[0][0])*vxx + 2*mat[0][1]*mat[0][0]*vxy + sqr(mat[0][1])*vyy + mat2[0][0]*vx + mat2[0][1]*vy; // dxx
           if(b == 4)
-            return sqr(mat[1][0])*vxx + 2*mat[1][1]*mat[1][0]*vxy + sqr(mat[1][1])*vyy + mat2[2][0]*vx + mat2[2][1]*vy;   // dyy
+            return sqr(mat[1][0])*vxx + 2*mat[1][1]*mat[1][0]*vxy + sqr(mat[1][1])*vyy + mat2[2][0]*vx + mat2[2][1]*vy; // dyy
           if(b == 5)
-            return mat[0][0]*mat[1][0]*vxx + (mat[0][0]*mat[1][1] + mat[1][0]*mat[0][1])*vxy + mat[0][1]*mat[1][1]*vyy + mat2[1][0]*vx + mat2[1][1]*vy;   //dxy
-#endif
+            return mat[0][0]*mat[1][0]*vxx + (mat[0][0]*mat[1][1] + mat[1][0]*mat[0][1])*vxy + mat[0][1]*mat[1][1]*vyy + mat2[1][0]*vx + mat2[1][1]*vy; //dxy
         }
       }
       else // vector solution
@@ -1905,8 +1550,9 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
         else
           throw Hermes::Exceptions::Exception("Getting derivatives of the vector solution: Not implemented yet.");
       }
-      throw Hermes::Exceptions::Exception("internal error: reached end of non-void function");
-      return 0;
+
+      throw Hermes::Exceptions::Exception("Internal error: reached end of non-void function");
+      return 0.;
     }
 
     template<typename Scalar>
@@ -2058,8 +1704,8 @@ if(space_type == HERMES_H1_SPACE || space_type == HERMES_L2_SEMI_SPACE|| space_t
             Scalar vxx = get_ref_value(e, xi1, xi2, 0, 3);
             Scalar vyy = get_ref_value(e, xi1, xi2, 0, 4);
             Scalar vxy = get_ref_value(e, xi1, xi2, 0, 5);
-            Scalar dxx = sqr(mat[0][0])*vxx + 2*mat[0][1]*mat[0][0]*vxy + sqr(mat[0][1])*vyy + mat2[0][0]*dx + mat2[0][1]*dy;   // dxx
-            Scalar dyy = sqr(mat[1][0])*vxx + 2*mat[1][1]*mat[1][0]*vxy + sqr(mat[1][1])*vyy + mat2[2][0]*dx + mat2[2][1]*dy;   // dyy
+            Scalar dxx = sqr(mat[0][0])*vxx + 2*mat[0][1]*mat[0][0]*vxy + sqr(mat[0][1])*vyy + mat2[0][0]*dx + mat2[0][1]*dy; // dxx
+            Scalar dyy = sqr(mat[1][0])*vxx + 2*mat[1][1]*mat[1][0]*vxy + sqr(mat[1][1])*vyy + mat2[2][0]*dx + mat2[2][1]*dy; // dyy
             toReturn->laplace[0] = dxx + dyy;
 #endif
           }

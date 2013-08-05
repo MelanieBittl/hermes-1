@@ -7,7 +7,7 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
@@ -16,6 +16,7 @@
 #include "mesh.h"
 #include "api2d.h"
 #include "mesh_reader_h2d_xml.h"
+#include <iostream>
 
 using namespace std;
 
@@ -31,39 +32,25 @@ namespace Hermes
     {
     }
 
-    void MeshReaderH2DXML::load(const char *filename, MeshSharedPtr mesh)
-    {
-      try
-      {
-        ::xml_schema::flags parsing_flags = 0;
-        if(!this->validate)
-          parsing_flags = xml_schema::flags::dont_validate;
-
-        // init
-        std::auto_ptr<XMLMesh::mesh> parsed_xml_mesh(XMLMesh::mesh_(filename, parsing_flags));
-
-        // load
-        load(parsed_xml_mesh, mesh);
-      }
-      catch (const xml_schema::exception& e)
-      {
-        throw Hermes::Exceptions::MeshLoadFailureException(e.what());
-      }
-    }
-
-    void MeshReaderH2DXML::load(std::auto_ptr<XMLMesh::mesh> & parsed_xml_mesh, MeshSharedPtr mesh)
+    bool MeshReaderH2DXML::load(const char *filename, MeshSharedPtr mesh)
     {
       if(!mesh)
         throw Exceptions::NullException(1);
 
       mesh->free();
 
+      std::map<unsigned int, unsigned int> vertex_is;
+
       try
       {
-        std::map<unsigned int, unsigned int> vertex_is;
+        ::xml_schema::flags parsing_flags = 0;
+        if(!this->validate)
+          parsing_flags = xml_schema::flags::dont_validate;
 
-        // load
-        load(parsed_xml_mesh, mesh, vertex_is);
+        std::auto_ptr<XMLMesh::mesh> parsed_xml_mesh(XMLMesh::mesh_(filename, parsing_flags));
+
+        if(!load(parsed_xml_mesh, mesh, vertex_is))
+          return false;
 
         // refinements.
         if(parsed_xml_mesh->refinements().present() && parsed_xml_mesh->refinements()->ref().size() > 0)
@@ -79,16 +66,16 @@ namespace Hermes
               mesh->refine_element_id(element_id, refinement_type);
           }
         }
-        if(HermesCommonApi.get_integral_param_value(checkMeshesOnLoad))
-          mesh->initial_single_check();
+        mesh->initial_single_check();
       }
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::MeshLoadFailureException(e.what());
       }
+      return true;
     }
 
-    void MeshReaderH2DXML::save(const char *filename, MeshSharedPtr mesh)
+    bool MeshReaderH2DXML::save(const char *filename, MeshSharedPtr mesh)
     {
       // Utility pointer.
       Element* e;
@@ -155,28 +142,11 @@ namespace Hermes
       ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
       XMLMesh::mesh_(out, xmlmesh, namespace_info_map, "UTF-8", parsing_flags);
       out.close();
+
+      return true;
     }
 
-    void MeshReaderH2DXML::load(const char *filename, Hermes::vector<MeshSharedPtr > meshes)
-    {
-      try
-      {
-        ::xml_schema::flags parsing_flags = 0;
-        if(!this->validate)
-          parsing_flags = xml_schema::flags::dont_validate;
-
-        // init
-        std::auto_ptr<XMLSubdomains::domain> parsed_xml_domain (XMLSubdomains::domain_(filename, parsing_flags));
-
-        this->load(parsed_xml_domain, meshes);
-      }
-      catch (const xml_schema::exception& e)
-      {
-        throw Hermes::Exceptions::MeshLoadFailureException(e.what());
-      }
-    }
-
-    void MeshReaderH2DXML::load(std::auto_ptr<XMLSubdomains::domain> & parsed_xml_domain, Hermes::vector<MeshSharedPtr > meshes)
+    bool MeshReaderH2DXML::load(const char *filename, Hermes::vector<MeshSharedPtr > meshes)
     {
       for(unsigned int meshes_i = 0; meshes_i < meshes.size(); meshes_i++)
       {
@@ -187,25 +157,33 @@ namespace Hermes
 
       try
       {
+        ::xml_schema::flags parsing_flags = 0;
+        if(!this->validate)
+          parsing_flags = xml_schema::flags::dont_validate;
+
+        std::auto_ptr<XMLSubdomains::domain> parsed_xml_domain (XMLSubdomains::domain_(filename, parsing_flags));
+
         std::map<int, int> vertex_is;
+
         std::map<int, int> element_is;
+
         std::map<int, int> edge_is;
 
-        // load
-        load(parsed_xml_domain, global_mesh, vertex_is, element_is, edge_is);
+        if(!load(parsed_xml_domain, global_mesh, vertex_is, element_is, edge_is))
+          return false;
 
         int max_vertex_i = -1;
-        for(std::map<int, int>::iterator it = vertex_is.begin(); it != vertex_is.end(); it++)
-          if(it->first > max_vertex_i)
-            max_vertex_i = it->first;
+        for(int i = 0; i < parsed_xml_domain->vertices().v().size(); i++)
+          if(vertex_is[i] > max_vertex_i)
+            max_vertex_i = vertex_is[i];
         int max_element_i = -1;
-        for(std::map<int, int>::iterator it = element_is.begin(); it != element_is.end(); it++)
-          if(it->first > max_element_i)
-            max_element_i = it->first;
+        for(int i = 0; i < parsed_xml_domain->elements().el().size(); i++)
+          if(element_is[i] > max_element_i)
+            max_element_i = element_is[i];
         int max_edge_i = -1;
-        for(std::map<int, int>::iterator it = edge_is.begin(); it != edge_is.end(); it++)
-          if(it->first > max_edge_i)
-            max_edge_i = it->first;
+        for(int i = 0; i < parsed_xml_domain->edges().ed().size(); i++)
+          if(edge_is[i] > max_edge_i)
+            max_edge_i = edge_is[i];
 
         // Subdomains //
         unsigned int subdomains_count = parsed_xml_domain->subdomains().subdomain().size();
@@ -298,7 +276,7 @@ namespace Hermes
                 vertex_number = vertex_is[vertex_numbers_i];
               else
               {
-                vertex_number =  parsed_xml_domain->subdomains().subdomain().at(subdomains_i).vertices()->i().at(vertex_numbers_i);
+                vertex_number = parsed_xml_domain->subdomains().subdomain().at(subdomains_i).vertices()->i().at(vertex_numbers_i);
                 if(vertex_number > max_vertex_i)
                   throw Exceptions::MeshLoadFailureException("Wrong vertex number:%u in subdomain %u.", vertex_number, subdomains_i);
               }
@@ -384,7 +362,7 @@ namespace Hermes
             {
               int elementI = parsed_xml_domain->subdomains().subdomain().at(subdomains_i).elements()->i().at(element_number_i);
               if(elementI > max_element_i)
-                throw Exceptions::MeshLoadFailureException("Wrong element number:%i in subdomain %u.", elementI, subdomains_i);
+                  throw Exceptions::MeshLoadFailureException("Wrong element number:%i in subdomain %u.", elementI, subdomains_i);
 
               elements_existing[element_is[parsed_xml_domain->subdomains().subdomain().at(subdomains_i).elements()->i().at(element_number_i)]] = elementI;
             }
@@ -460,7 +438,7 @@ namespace Hermes
               }
 
               if(edge == NULL)
-                throw Exceptions::MeshLoadFailureException("Wrong boundary-edge number:%i in subdomain %u.", parsed_xml_domain->subdomains().subdomain().at(subdomains_i).boundary_edges()->i().at(boundary_edge_number_i), subdomains_i);
+                  throw Exceptions::MeshLoadFailureException("Wrong boundary-edge number:%i in subdomain %u.", parsed_xml_domain->subdomains().subdomain().at(subdomains_i).boundary_edges()->i().at(boundary_edge_number_i), subdomains_i);
 
               Node* en = meshes[subdomains_i]->peek_edge_node(vertex_vertex_numbers.find(edge->v1())->second, vertex_vertex_numbers.find(edge->v2())->second);
               if(en == NULL)
@@ -488,7 +466,7 @@ namespace Hermes
               }
 
               if(edge == NULL)
-                throw Exceptions::MeshLoadFailureException("Wrong inner-edge number:%i in subdomain %u.", parsed_xml_domain->subdomains().subdomain().at(subdomains_i).boundary_edges()->i().at(inner_edge_number_i), subdomains_i);
+                  throw Exceptions::MeshLoadFailureException("Wrong inner-edge number:%i in subdomain %u.", parsed_xml_domain->subdomains().subdomain().at(subdomains_i).boundary_edges()->i().at(inner_edge_number_i), subdomains_i);
 
               Node* en = meshes[subdomains_i]->peek_edge_node(vertex_vertex_numbers.find(edge->v1())->second, vertex_vertex_numbers.find(edge->v2())->second);
               if(en == NULL)
@@ -601,9 +579,10 @@ namespace Hermes
             delete [] elements_existing;
           }
           meshes[subdomains_i]->seq = g_mesh_seq++;
-          if(HermesCommonApi.get_integral_param_value(checkMeshesOnLoad))
-            meshes[subdomains_i]->initial_single_check();
+          meshes[subdomains_i]->initial_single_check();
         }
+
+        return true;
       }
       catch (const xml_schema::exception& e)
       {
@@ -613,7 +592,7 @@ namespace Hermes
 
     static bool elementCompare (XMLSubdomains::el_t* el_i, XMLSubdomains::el_t* el_j) { return ( el_i->i() < el_j->i() ); }
 
-    void MeshReaderH2DXML::save(const char *filename, Hermes::vector<MeshSharedPtr > meshes)
+    bool MeshReaderH2DXML::save(const char *filename, Hermes::vector<MeshSharedPtr > meshes)
     {
       // For mapping of physical coordinates onto top vertices.
       std::map<std::pair<double, double>, unsigned int> points_to_vertices;
@@ -646,7 +625,7 @@ namespace Hermes
 
         // Refinements.
         XMLMesh::refinements_type refinements;
-
+        
         // Mapping of top vertices of subdomains to the global mesh.
         std::map<unsigned int, unsigned int> vertices_to_vertices;
 
@@ -741,8 +720,8 @@ namespace Hermes
                   vertices_to_boundaries.insert(std::pair<std::pair<unsigned int, unsigned int>, unsigned int>(std::pair<unsigned int, unsigned int>(std::min(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second), std::max(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second)), edge_i));
                   edges.ed().push_back(XMLSubdomains::ed(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second, meshes[meshes_i]->boundary_markers_conversion.get_user_marker(meshes[meshes_i]->get_base_edge_node(e, i)->marker).marker.c_str(), edge_i));
                 }
-                if(!hasAllElements)
-                  subdomain.inner_edges()->i().push_back(vertices_to_boundaries.find(std::pair<unsigned int, unsigned int>(std::min(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second), std::max(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second)))->second);
+              if(!hasAllElements)
+                subdomain.inner_edges()->i().push_back(vertices_to_boundaries.find(std::pair<unsigned int, unsigned int>(std::min(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second), std::max(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second)))->second);
               }
             }
         }
@@ -761,12 +740,12 @@ namespace Hermes
                   vertices_to_curves.insert(std::pair<std::pair<unsigned int, unsigned int>, bool>(std::pair<unsigned int, unsigned int>(std::min(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second), std::max(vertices_to_vertices.find(e->vn[i]->id)->second, vertices_to_vertices.find(e->vn[e->next_vert(i)]->id)->second)), true));
                 }
 
-                // save refinements
-                for(unsigned int refinement_i = 0; refinement_i < meshes[meshes_i]->refinements.size(); refinement_i++)
-                  refinements.ref().push_back(XMLMesh::ref(meshes[meshes_i]->refinements[refinement_i].first, meshes[meshes_i]->refinements[refinement_i].second));
+        // save refinements
+        for(unsigned int refinement_i = 0; refinement_i < meshes[meshes_i]->refinements.size(); refinement_i++)
+          refinements.ref().push_back(XMLMesh::ref(meshes[meshes_i]->refinements[refinement_i].first, meshes[meshes_i]->refinements[refinement_i].second));
 
-                subdomain.refinements().set(refinements);
-                subdomains.subdomain().push_back(subdomain);
+        subdomain.refinements().set(refinements);
+        subdomains.subdomain().push_back(subdomain);
       }
 
       delete [] baseElementsSaved;
@@ -798,9 +777,11 @@ namespace Hermes
       ::xml_schema::flags parsing_flags = ::xml_schema::flags::base;
       XMLSubdomains::domain_(out, xmldomain, namespace_info_map, "UTF-8", parsing_flags);
       out.close();
+
+      return true;
     }
 
-    void MeshReaderH2DXML::load(std::auto_ptr<XMLMesh::mesh> & parsed_xml_mesh, MeshSharedPtr mesh, std::map<unsigned int, unsigned int>& vertex_is)
+    bool MeshReaderH2DXML::load(std::auto_ptr<XMLMesh::mesh> & parsed_xml_mesh, MeshSharedPtr mesh, std::map<unsigned int, unsigned int>& vertex_is)
     {
       try
       {
@@ -1045,9 +1026,11 @@ namespace Hermes
       {
         throw Hermes::Exceptions::MeshLoadFailureException(e.what());
       }
+
+      return true;
     }
 
-    void MeshReaderH2DXML::load(std::auto_ptr<XMLSubdomains::domain> & parsed_xml_domain, MeshSharedPtr mesh, std::map<int, int>& vertex_is, std::map<int, int>& element_is, std::map<int, int>& edge_is)
+    bool MeshReaderH2DXML::load(std::auto_ptr<XMLSubdomains::domain> & parsed_xml_domain, MeshSharedPtr mesh, std::map<int, int>& vertex_is, std::map<int, int>& element_is, std::map<int, int>& edge_is)
     {
       try
       {
@@ -1309,6 +1292,8 @@ namespace Hermes
       {
         throw Hermes::Exceptions::MeshLoadFailureException(e.what());
       }
+
+      return true;
     }
 
     template<typename T>

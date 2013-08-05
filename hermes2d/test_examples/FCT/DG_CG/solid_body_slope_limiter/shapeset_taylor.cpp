@@ -14,7 +14,7 @@
    	return (y-c);
 };
 
- Ord AuxiliarySolution::ord(Ord x, Ord y) const 
+ Ord AuxiliarySolution::ord(double x, double y)  const 
  {
       return Ord(10);
 };

@@ -399,7 +399,7 @@ namespace Hermes
       }
     }
 
-    template<typename Scalar>
+    template<typename Scalar> 
     MeshFunctionSharedPtr<double> Adapt<Scalar>::get_refinementInfoMeshFunction(int component)
     {
       if(component >= this->num)

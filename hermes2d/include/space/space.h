@@ -145,7 +145,7 @@ namespace Hermes
     /// <br>
     /// The handling of irregular meshes is desribed in H1Space and HcurlSpace.<br>
     ///
-    template<typename Scalar>
+   template<typename Scalar>
     class HERMES_API Space : public Hermes::Mixins::Loggable, public Hermes::Hermes2D::Mixins::StateQueryable, public Hermes::Hermes2D::Mixins::XMLParsing
     {
     public:
@@ -164,7 +164,7 @@ namespace Hermes
 
       /// Sets element polynomial order. Can be called by the user. Should not be called
       /// for many elements at once, since assign_dofs() is called at the end of this function.
-      virtual void set_element_order(int id, int order, int order_v = -1);
+      virtual void set_element_order(int id, int order);
 
       /// Sets polynomial order to all elements.
       virtual void set_element_orders(int* elem_orders);
@@ -185,7 +185,13 @@ namespace Hermes
 
       /// Recursively removes all son elements of the given element and
       /// makes it active. Also handles element orders.
+      /// \param[in] keep_initial_refinements Refinements in Mesh can be marked as initial (to prevent taking them back),
+      /// this parameter serves to prevent taking them back with this method.
       void unrefine_all_mesh_elements(bool keep_initial_refinements = true);
+      
+      /// Recursively removes all son elements of the given element and
+      /// Version for more spaces sharing the mesh
+      static void unrefine_all_mesh_elements(Hermes::vector<SpaceSharedPtr<Scalar> > spaces, bool keep_initial_refinements = true);
 
       /// Updates element orders when the underlying mesh has been refined.
       void update_element_orders_after_refinement();
@@ -223,27 +229,16 @@ namespace Hermes
       Shapeset* get_shapeset() const;
 
       /// Saves this space into a file.
-      void save(const char *filename) const;
-#ifdef WITH_BSON
-      void save_bson(const char* filename) const;
-#endif
+      bool save(const char *filename) const;
 
-      /// Loads a space from a file in XML format.
-      static SpaceSharedPtr<Scalar> load(const char *filename, MeshSharedPtr mesh, bool validate = false, EssentialBCs<Scalar>* essential_bcs = NULL, Shapeset* shapeset = NULL);
-      /// This method is here for rapid re-loading.
-      void load(const char *filename, bool validate = false);
-
-#ifdef WITH_BSON
-      /// Loads a space from a file in BSON.
-      static SpaceSharedPtr<Scalar> load_bson(const char *filename, MeshSharedPtr mesh, EssentialBCs<Scalar>* essential_bcs = NULL, Shapeset* shapeset = NULL);
-      /// This method is here for rapid re-loading.
-      void load_bson(const char *filename);
-#endif
+      /// Loads a space from a file.
+      static SpaceSharedPtr<Scalar> load(const char *filename, MeshSharedPtr mesh, bool validate, EssentialBCs<Scalar>* essential_bcs = NULL, Shapeset* shapeset = NULL);
 
       /// Obtains an assembly list for the given element.
       virtual void get_element_assembly_list(Element* e, AsmList<Scalar>* al) const;
 
       /// Copy from Space instance 'space'
+      /// \param[in] new_mesh Mesh where data will be copied to.
       virtual void copy(SpaceSharedPtr<Scalar> space, MeshSharedPtr new_mesh);
 
       /// Class for creating reference space.
@@ -273,7 +268,6 @@ namespace Hermes
         SpaceSharedPtr<Scalar> init_construction_h1();
         SpaceSharedPtr<Scalar> init_construction_hcurl();
         SpaceSharedPtr<Scalar> init_construction_hdiv();
-				SpaceSharedPtr<Scalar> init_construction_l2_semi_cg();
 
         /// Construction finalization.
         virtual void finish_construction(SpaceSharedPtr<Scalar> ref_space);
@@ -286,7 +280,7 @@ namespace Hermes
 
       /// Sets element polynomial order. This version does not call assign_dofs() and is
       /// intended primarily for internal use.
-      virtual void set_element_order_internal(int id, int order, int order_v = -1);
+      virtual void set_element_order_internal(int id, int order);
 
       /// \brief Builds basis functions and assigns DOF numbers to them.
       /// \details This functions must be called \b after assigning element orders, and \b before
@@ -324,7 +318,7 @@ namespace Hermes
       bool is_up_to_date() const;
 
       /// Obtains an edge assembly list (contains shape functions that are nonzero on the specified edge).
-      virtual void get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const;
+      void get_boundary_assembly_list(Element* e, int surf_num, AsmList<Scalar>* al) const;
 
       /// Sets the same polynomial order for all elements in the mesh. Does not
       /// call assign_dofs(). For internal use.
@@ -352,7 +346,7 @@ namespace Hermes
 
       Shapeset* shapeset;
 
-      bool own_shapeset;  ///< true if default shapeset is created in the constructor, false if shapeset is supplied by user.
+      bool own_shapeset; ///< true if default shapeset is created in the constructor, false if shapeset is supplied by user.
 
       /// Boundary conditions.
       EssentialBCs<Scalar>* essential_bcs;
@@ -407,13 +401,21 @@ namespace Hermes
         bool changed_in_last_adaptation;
       };
 
-      NodeData* ndata;    ///< node data table
+      NodeData* ndata; ///< node data table
       ElementData* edata; ///< element data table
       int nsize, ndata_allocated; ///< number of items in ndata, allocated space
       int esize;
 
       virtual int get_edge_order_internal(Node* en) const;
 
+      /// Recursively removes all son elements of the given element and
+      /// makes it active. Also handles element orders.
+      /// \param[in] keep_initial_refinements Refinements in Mesh can be marked as initial (to prevent taking them back),
+      /// this parameter serves to prevent taking them back with this method.
+      /// \param[in] only_unrefine_space_data Useful when more spaces share the mesh if one wants to unrefine the underlying
+      /// Mesh only once, but wants other spaces know about the change.
+      void unrefine_all_mesh_elements_internal(bool keep_initial_refinements, bool only_unrefine_space_data);
+      
       /// \brief Updates internal node and element tables.
       /// \details Since meshes only contain geometric information, the Space class keeps two
       /// tables with FEM-related information. The first one, 'ndata', contains DOF numbers
@@ -435,13 +437,13 @@ namespace Hermes
       virtual void get_bubble_assembly_list(Element* e, AsmList<Scalar>* al) const;
 
       double** proj_mat;
-      double*  chol_p;
+      double* chol_p;
 
       /// Used for bc projection.
       Hermes::vector<void*> bc_data;
 
       void precalculate_projection_matrix(int nv, double**& mat, double*& p);
-      virtual void update_edge_bc(Element* e, SurfPos* surf_pos);
+      void update_edge_bc(Element* e, SurfPos* surf_pos);
 
       /// Called by Space to update constraining relationships between shape functions due
       /// to hanging nodes in the mesh. As this is space-specific, this function is reimplemented
@@ -453,11 +455,6 @@ namespace Hermes
       virtual void post_assign();
 
       void free_bc_data();
-
-      /// Internal.
-      /// Returns a new Space according to the type provided.
-      /// Used in loading.
-      static SpaceSharedPtr<Scalar> init_empty_space(const char* spaceType, MeshSharedPtr mesh, Shapeset* shapeset);
 
       template<typename T> friend class OGProjection;
       template<typename T> friend class NewtonSolver;
@@ -483,3 +480,5 @@ namespace Hermes
   }
 }
 #endif
+
+

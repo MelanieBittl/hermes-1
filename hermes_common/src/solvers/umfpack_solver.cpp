@@ -10,12 +10,12 @@
 //
 // Hermes is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Hermes; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 /*! \file umfpack_solver.cpp
 \brief UMFPACK solver interface.
 */
@@ -121,14 +121,14 @@ namespace Hermes
     {
       memcpy(v, this->v, this->size * sizeof(Scalar));
     }
-
+    
     template<typename Scalar>
     void UMFPackVector<Scalar>::set_vector(Vector<Scalar>* vec)
     {
       assert(this->size == vec->length());
       for (unsigned int i = 0; i < this->size; i++) this->v[i] = vec->get(i);
     }
-
+    
     template<typename Scalar>
     void UMFPackVector<Scalar>::set_vector(Scalar* vec)
     {
@@ -174,13 +174,6 @@ namespace Hermes
           hermes_fwrite("HERMESR\001", 1, 8, file);
           int ssize = sizeof(double);
           hermes_fwrite(&ssize, sizeof(int), 1, file);
-          hermes_fwrite(&this->size, sizeof(int), 1, file);
-          hermes_fwrite(v, sizeof(double), this->size, file);
-          return true;
-        }
-
-      case DF_HERMES_MATLAB_BIN:
-        {
           hermes_fwrite(&this->size, sizeof(int), 1, file);
           hermes_fwrite(v, sizeof(double), this->size, file);
           return true;
@@ -254,7 +247,7 @@ namespace Hermes
   {
     template<typename Scalar>
     void UMFPackLinearMatrixSolver<Scalar>::set_output_level(double level)
-    { 
+    {
       Control[UMFPACK_PRL] = level;
     }
 
@@ -294,7 +287,7 @@ namespace Hermes
         {
           umfpack_di_free_symbolic(&symbolic);
           memset(Info, 0, 90 * sizeof(double));
-        } 
+        }
 
         // Factorizing symbolically.
         status = umfpack_real_symbolic(m->get_size(), m->get_size(), m->get_Ap(), m->get_Ai(), m->get_Ax(), &symbolic, Control, Info);
@@ -389,7 +382,7 @@ namespace Hermes
     }
 
     template<>
-    void UMFPackLinearMatrixSolver<double>::solve()
+    bool UMFPackLinearMatrixSolver<double>::solve()
     {
       assert(m != NULL);
       assert(rhs != NULL);
@@ -413,10 +406,12 @@ namespace Hermes
       }
 
       this->tick();
+
+      return true;
     }
 
     template<>
-    void UMFPackLinearMatrixSolver<std::complex<double> >::solve()
+    bool UMFPackLinearMatrixSolver<std::complex<double> >::solve()
     {
       assert(m != NULL);
       assert(rhs != NULL);
@@ -424,12 +419,14 @@ namespace Hermes
 
       this->tick();
       if( !setup_factorization() )
+      {
         this->warn("LU factorization could not be completed.");
+        return false;
+      }
 
       if(sln)
         delete [] sln;
       sln = new std::complex<double>[m->get_size()];
-
       memset(sln, 0, m->get_size() * sizeof(std::complex<double>));
       int status = umfpack_complex_solve(UMFPACK_A, m->get_Ap(), m->get_Ai(), (double *)m->get_Ax(), NULL, (double*) sln, NULL, (double *)rhs->get_c_array(), NULL, numeric, NULL, NULL);
       if(status != UMFPACK_OK)
@@ -440,6 +437,8 @@ namespace Hermes
 
       this->tick();
       time = this->accumulated();
+
+      return true;
     }
 
     template<typename Scalar>
@@ -450,17 +449,17 @@ namespace Hermes
       switch (status)
       {
       case UMFPACK_OK: break;
-      case UMFPACK_WARNING_singular_matrix:       sprintf(to_return, "%s: UMFPACK_WARNING_singular_matrix!", fn_name); break;
-      case UMFPACK_ERROR_out_of_memory:           sprintf(to_return, "%s: UMFPACK_ERROR_out_of_memory!", fn_name); break;
-      case UMFPACK_ERROR_argument_missing:        sprintf(to_return, "%s: UMFPACK_ERROR_argument_missing", fn_name); break;
+      case UMFPACK_WARNING_singular_matrix: sprintf(to_return, "%s: UMFPACK_WARNING_singular_matrix!", fn_name); break;
+      case UMFPACK_ERROR_out_of_memory: sprintf(to_return, "%s: UMFPACK_ERROR_out_of_memory!", fn_name); break;
+      case UMFPACK_ERROR_argument_missing: sprintf(to_return, "%s: UMFPACK_ERROR_argument_missing", fn_name); break;
       case UMFPACK_ERROR_invalid_Symbolic_object: sprintf(to_return, "%s: UMFPACK_ERROR_invalid_Symbolic_object", fn_name); break;
-      case UMFPACK_ERROR_invalid_Numeric_object:  sprintf(to_return, "%s: UMFPACK_ERROR_invalid_Numeric_object", fn_name); break;
-      case UMFPACK_ERROR_different_pattern:       sprintf(to_return, "%s: UMFPACK_ERROR_different_pattern", fn_name); break;
-      case UMFPACK_ERROR_invalid_system:          sprintf(to_return, "%s: UMFPACK_ERROR_invalid_system", fn_name); break;
-      case UMFPACK_ERROR_n_nonpositive:           sprintf(to_return, "%s: UMFPACK_ERROR_n_nonpositive", fn_name); break;
-      case UMFPACK_ERROR_invalid_matrix:          sprintf(to_return, "%s: UMFPACK_ERROR_invalid_matrix", fn_name); break;
-      case UMFPACK_ERROR_internal_error:          sprintf(to_return, "%s: UMFPACK_ERROR_internal_error", fn_name); break;
-      default:                                    sprintf(to_return, "%s: unknown error (%d)", fn_name, status); break;
+      case UMFPACK_ERROR_invalid_Numeric_object: sprintf(to_return, "%s: UMFPACK_ERROR_invalid_Numeric_object", fn_name); break;
+      case UMFPACK_ERROR_different_pattern: sprintf(to_return, "%s: UMFPACK_ERROR_different_pattern", fn_name); break;
+      case UMFPACK_ERROR_invalid_system: sprintf(to_return, "%s: UMFPACK_ERROR_invalid_system", fn_name); break;
+      case UMFPACK_ERROR_n_nonpositive: sprintf(to_return, "%s: UMFPACK_ERROR_n_nonpositive", fn_name); break;
+      case UMFPACK_ERROR_invalid_matrix: sprintf(to_return, "%s: UMFPACK_ERROR_invalid_matrix", fn_name); break;
+      case UMFPACK_ERROR_internal_error: sprintf(to_return, "%s: UMFPACK_ERROR_internal_error", fn_name); break;
+      default: sprintf(to_return, "%s: unknown error (%d)", fn_name, status); break;
       }
 
       return to_return;

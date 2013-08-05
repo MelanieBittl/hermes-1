@@ -7,7 +7,7 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
@@ -35,7 +35,7 @@ namespace Hermes
 {
   namespace Hermes2D
   {
-    /// Mesh reader from Hermes2D XML format
+    /// Mesh reader from Hermes2D format
     ///
     /// @ingroup mesh_readers
     /// Typical usage:
@@ -50,7 +50,7 @@ namespace Hermes
     ///&nbsp;e.print_msg();
     ///&nbsp;return -1;
     /// }
-    /// 
+    ///
     /// The format specification is in hermes2d/xml_schemas/mesh_h2d_xml.xsd
     class HERMES_API MeshReaderH2DXML : public MeshReader, public Hermes::Hermes2D::Mixins::XMLParsing
     {
@@ -59,33 +59,25 @@ namespace Hermes
       virtual ~MeshReaderH2DXML();
 
       /// This method loads a single mesh from a file.
-      virtual void load(const char *filename, MeshSharedPtr mesh);
-
-      /// This method loads a single mesh from a XML structure.
-      virtual void load(std::auto_ptr<XMLMesh::mesh> & parsed_xml_mesh, MeshSharedPtr mesh);
+      virtual bool load(const char *filename, MeshSharedPtr mesh);
 
       /// This method saves a single mesh to a file.
-      void save(const char *filename, MeshSharedPtr mesh);
+      bool save(const char *filename, MeshSharedPtr mesh);
 
       /// This method loads multiple meshes according to subdomains described in the meshfile.
       /// \param[in] meshes Meshes to be loaded, the number must correspond to the subdomains described in the file.
-      ///&nbsp;         also the order is determined by the order in the file.
-      void load(const char *filename, Hermes::vector<MeshSharedPtr > meshes);
-
-      /// This method loads multiple meshes according to subdomains described in the meshfile.
-      /// \param[in] meshes Meshes to be loaded, the number must correspond to the subdomains described in the provided XML structure.
-      ///&nbsp;         also the order is determined by the order in the file.
-      void load(std::auto_ptr<XMLSubdomains::domain> & parsed_xml_domain, Hermes::vector<MeshSharedPtr > meshes);
+      ///&nbsp; also the order is determined by the order in the file.
+      bool load(const char *filename, Hermes::vector<MeshSharedPtr > meshes);
 
       /// This method saves multiple meshes according to subdomains in the vector meshes.
-      void save(const char *filename, Hermes::vector<MeshSharedPtr > meshes);
+      bool save(const char *filename, Hermes::vector<MeshSharedPtr > meshes);
 
     protected:
       /// Internal method loading contents of parsed_xml_mesh into mesh.
-      void load(std::auto_ptr<XMLMesh::mesh> & parsed_xml_mesh, MeshSharedPtr mesh, std::map<unsigned int, unsigned int>& vertex_is);
+      bool load(std::auto_ptr<XMLMesh::mesh> & parsed_xml_mesh, MeshSharedPtr mesh, std::map<unsigned int, unsigned int>& vertex_is);
 
       /// Internal method loading contents of parsed_xml_domain's domain into mesh.
-      void load(std::auto_ptr<XMLSubdomains::domain> & parsed_xml_domain, MeshSharedPtr mesh, std::map<int, int>& vertex_is, std::map<int, int>& element_is, std::map<int, int>& edge_is);
+      bool load(std::auto_ptr<XMLSubdomains::domain> & parsed_xml_domain, MeshSharedPtr mesh, std::map<int, int>& vertex_is, std::map<int, int>& element_is, std::map<int, int>& edge_is);
 
       /// Loads one circular arc.
       /// \param[in] parsed_xml_entity Either XMLSubdomains::domain or XMLMesh::mesh.

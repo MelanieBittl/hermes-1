@@ -407,7 +407,7 @@ return result;
 
 };
 
- Ord CustomInitialCondition::ord(Ord x, Ord y) const {
+ Ord CustomInitialCondition::ord(double x, double y)  const {
       return Ord(10);
 };
 

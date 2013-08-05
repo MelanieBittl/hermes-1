@@ -7,7 +7,7 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
@@ -40,10 +40,10 @@ namespace Hermes
       virtual ~MeshReaderH1DXML();
 
       /// This method loads a single mesh from a file.
-      virtual void load(const char *filename, MeshSharedPtr mesh);
+      virtual bool load(const char *filename, MeshSharedPtr mesh);
 
       /// This method saves a single mesh to a file.
-      void save(const char *filename, MeshSharedPtr mesh);
+      bool save(const char *filename, MeshSharedPtr mesh);
     };
   }
 }

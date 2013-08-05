@@ -117,7 +117,7 @@ namespace Hermes
       
       /// Absolute / Relative error.
       CalculatedErrorType errorType;
-
+      
       /// A queue of elements which should be processes. The queue had to be filled by the method fill_regular_queue().
       ElementReference* element_references;
 

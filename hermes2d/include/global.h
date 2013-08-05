@@ -42,6 +42,14 @@ static const std::string H2D_DG_INNER_EDGE = "-1234567";
 #define HERMES_DEFAULT_FUNCTION NULL
 #define HERMES_DEFAULT_SPLINE NULL
 
+#define CENTROID_QUAD_X 0.
+#define CENTROID_QUAD_Y 0.
+#define CENTROID_TRI_X -0.3333333333333333
+#define CENTROID_TRI_Y -0.3333333333333333
+
+#define ELEMENT_DELTA_X 2.0
+#define ELEMENT_DELTA_Y 2.0
+
 /// A total number of valid transformation of a triangle to a sub-domain.
 static const int H2D_TRF_TRI_NUM = 4;
 /// A total number of valid transformation of a quad to a sub-domain.
@@ -141,13 +149,12 @@ namespace Hermes
       HERMES_HCURL_SPACE = 1,
       HERMES_HDIV_SPACE = 2,
       HERMES_L2_SPACE = 3,
-HERMES_L2_SEMI_SPACE = 4,
+			HERMES_L2_SEMI_SPACE = 4,
       HERMES_L2_MARKERWISE_CONST_SPACE = 5,
       HERMES_INVALID_SPACE = -9999
     };
 
-    extern const char* SpaceTypeString[5];
-
+    
     /// Geometrical type of weak forms.
     enum GeomType
     {

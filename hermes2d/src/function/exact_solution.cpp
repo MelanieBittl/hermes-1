@@ -7,20 +7,15 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
+// along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
 #include "solution_h2d_xml.h"
 #include "exact_solution.h"
 #include "api2d.h"
-
-#ifdef WITH_BSON
-#include "bson.h"
-#endif
-
 namespace Hermes
 {
   namespace Hermes2D
@@ -32,32 +27,6 @@ namespace Hermes
       this->num_dofs = -1;
       this->exact_multiplicator = 1.0;
     }
-
-    template<typename Scalar>
-    void ExactSolution<Scalar>::save(const char* filename) const
-    {
-      if(this->sln_type == HERMES_SLN)
-      {
-        Solution<Scalar>::save(filename);
-        return;
-      }
-
-      throw Exceptions::Exception("Arbitrary exact solution can not be saved to disk. Only constant one can. Project to a space to get a saveable solution.");
-    }
-
-#ifdef WITH_BSON
-    template<typename Scalar>
-    void ExactSolution<Scalar>::save_bson(const char* filename) const
-    {
-      if(this->sln_type == HERMES_SLN)
-      {
-        Solution<Scalar>::save_bson(filename);
-        return;
-      }
-
-      throw Exceptions::Exception("Arbitrary exact solution can not be saved to disk. Only constant one can. Project to a space to get a saveable solution.");
-    }
-#endif
 
     template<typename Scalar>
     MeshFunction<Scalar>* ExactSolution<Scalar>::clone() const
@@ -103,7 +72,7 @@ namespace Hermes
     }
 
     template<typename Scalar, typename ValueType>
-    Ord ExactSolutionConstantArray<Scalar, ValueType>::ord(Ord x, Ord y) const {
+    Ord ExactSolutionConstantArray<Scalar, ValueType>::ord(double x, double y) const {
       return Ord(0);
     }
 
@@ -199,80 +168,6 @@ namespace Hermes
       }
     }
 
-#ifdef WITH_BSON
-    template<>
-    void ConstantSolution<double>::save_bson(const char* filename) const
-    {
-      if(this->sln_type == HERMES_SLN)
-      {
-        Solution<double>::save_bson(filename);
-        return;
-      }
-
-      // bson
-      bson bw;
-      bson_init(&bw);
-
-      bson_append_bool(&bw, "exact", true);
-      bson_append_bool(&bw, "complex", false);
-
-      bson_append_start_array(&bw, "values");
-      bson_append_double(&bw, "c", this->constant);
-      bson_append_double(&bw, "c", 0.);
-      bson_append_double(&bw, "c", 0.);
-      bson_append_double(&bw, "c", 0.);
-      bson_append_finish_array(&bw);
-
-      bson_append_int(&bw, "components_count", this->num_components);
-
-      bson_finish(&bw);
-
-      FILE *fpw;
-      fpw = fopen(filename, "wb");
-      const char *dataw = (const char *) bson_data(&bw);
-      fwrite(dataw, bson_size(&bw), 1, fpw);
-      fclose(fpw);
-
-      bson_destroy(&bw);
-    }
-
-    template<>
-    void ConstantSolution<std::complex<double> >::save_bson(const char* filename) const
-    {
-      if(this->sln_type == HERMES_SLN)
-      {
-        Solution<std::complex<double> >::save_bson(filename);
-        return;
-      }
-
-      // bson
-      bson bw;
-      bson_init(&bw);
-
-      bson_append_bool(&bw, "exact", true);
-      bson_append_bool(&bw, "complex", true);
-
-      bson_append_start_array(&bw, "values");
-      bson_append_double(&bw, "c", this->constant.real());
-      bson_append_double(&bw, "c", 0.);
-      bson_append_double(&bw, "c", this->constant.imag());
-      bson_append_double(&bw, "c", 0.);
-      bson_append_finish_array(&bw);
-
-      bson_append_int(&bw, "components_count", this->num_components);
-
-      bson_finish(&bw);
-
-      FILE *fpw;
-      fpw = fopen(filename, "wb");
-      const char *dataw = (const char *) bson_data(&bw);
-      fwrite(dataw, bson_size(&bw), 1, fpw);
-      fclose(fpw);
-
-      bson_destroy(&bw);
-    }
-#endif
-
     template<typename Scalar>
     ConstantSolution<Scalar>::ConstantSolution(MeshSharedPtr mesh, Scalar constant) : ExactSolutionScalar<Scalar>(mesh), constant(constant)
     {
@@ -299,8 +194,73 @@ namespace Hermes
     };
 
     template<typename Scalar>
-    Ord ConstantSolution<Scalar>::ord(Ord x, Ord y) const {
+    Ord ConstantSolution<Scalar>::ord(double x, double y) const {
       return Ord(0);
+    }
+
+    template<>
+    void ZeroSolution<double>::save(const char* filename) const
+    {
+      if(this->sln_type == HERMES_SLN)
+      {
+        Solution<double>::save(filename);
+        return;
+      }
+      try
+      {
+        XMLSolution::solution xmlsolution(1, 0, 0, 1, 0);
+
+        xmlsolution.exactCXR() = 0;
+
+        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
+        solution_schema_location.append("/solution_h2d_xml.xsd");
+        ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
+
+        ::xml_schema::namespace_infomap namespace_info_map;
+        namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
+
+        std::ofstream out(filename);
+        ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
+        XMLSolution::solution_(out, xmlsolution, namespace_info_map, "UTF-8", parsing_flags);
+        out.close();
+      }
+      catch (const xml_schema::exception& e)
+      {
+        throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
+      }
+    }
+
+    template<>
+    void ZeroSolution<std::complex<double> >::save(const char* filename) const
+    {
+      if(this->sln_type == HERMES_SLN)
+      {
+        Solution<std::complex<double> >::save(filename);
+        return;
+      }
+      try
+      {
+        XMLSolution::solution xmlsolution(1, 0, 0, 1, 1);
+
+        xmlsolution.exactCXR() = 0;
+        xmlsolution.exactCXC() = 0;
+
+        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
+        solution_schema_location.append("/solution_h2d_xml.xsd");
+        ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
+
+        ::xml_schema::namespace_infomap namespace_info_map;
+        namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
+
+        std::ofstream out(filename);
+        ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
+        XMLSolution::solution_(out, xmlsolution, namespace_info_map, "UTF-8", parsing_flags);
+        out.close();
+      }
+      catch (const xml_schema::exception& e)
+      {
+        throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
+      }
     }
 
     template<typename Scalar>
@@ -329,7 +289,7 @@ namespace Hermes
     };
 
     template<typename Scalar>
-    Ord ZeroSolution<Scalar>::ord(Ord x, Ord y) const {
+    Ord ZeroSolution<Scalar>::ord(double x, double y) const {
       return Ord(0);
     }
 
@@ -432,83 +392,80 @@ namespace Hermes
     };
 
     template<typename Scalar>
-    Ord ConstantSolutionVector<Scalar>::ord(Ord x, Ord y) const {
+    Ord ConstantSolutionVector<Scalar>::ord(double x, double y) const {
       return Ord(0);
     }
 
-#ifdef WITH_BSON
     template<>
-    void ConstantSolutionVector<double>::save_bson(const char* filename) const
+    void ZeroSolutionVector<double>::save(const char* filename) const
     {
       if(this->sln_type == HERMES_SLN)
       {
-        Solution<double>::save_bson(filename);
+        Solution<double>::save(filename);
         return;
       }
+      try
+      {
+        XMLSolution::solution xmlsolution(2, 0, 0, 1, 0);
 
-      // bson
-      bson bw;
-      bson_init(&bw);
+        xmlsolution.exactCXR() = 0;
+        xmlsolution.exactCYR() = 0;
 
-      bson_append_bool(&bw, "exact", true);
-      bson_append_bool(&bw, "complex", false);
+        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
+        solution_schema_location.append("/solution_h2d_xml.xsd");
+        ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
 
-      bson_append_start_array(&bw, "values");
-      bson_append_double(&bw, "c", this->constantX);
-      bson_append_double(&bw, "c", this->constantY);
-      bson_append_double(&bw, "c", 0.);
-      bson_append_double(&bw, "c", 0.);
-      bson_append_finish_array(&bw);
+        ::xml_schema::namespace_infomap namespace_info_map;
+        namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
 
-      bson_append_int(&bw, "components_count", this->num_components);
+        std::ofstream out(filename);
 
-      bson_finish(&bw);
+        ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
+        XMLSolution::solution_(out, xmlsolution, namespace_info_map, "UTF-8", parsing_flags);
 
-      FILE *fpw;
-      fpw = fopen(filename, "wb");
-      const char *dataw = (const char *) bson_data(&bw);
-      fwrite(dataw, bson_size(&bw), 1, fpw);
-      fclose(fpw);
-
-      bson_destroy(&bw);
+        out.close();
+      }
+      catch (const xml_schema::exception& e)
+      {
+        throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
+      }
     }
 
     template<>
-    void ConstantSolutionVector<std::complex<double> >::save_bson(const char* filename) const
+    void ZeroSolutionVector<std::complex<double> >::save(const char* filename) const
     {
       if(this->sln_type == HERMES_SLN)
       {
-        Solution<std::complex<double> >::save_bson(filename);
+        Solution<std::complex<double> >::save(filename);
         return;
       }
+      try
+      {
+        XMLSolution::solution xmlsolution(2, 0, 0, 1, 1);
 
-      // bson
-      bson bw;
-      bson_init(&bw);
+        xmlsolution.exactCXR() = 0;
+        xmlsolution.exactCXC() = 0;
+        xmlsolution.exactCYR() = 0;
+        xmlsolution.exactCYC() = 0;
 
-      bson_append_bool(&bw, "exact", true);
-      bson_append_bool(&bw, "complex", true);
+        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
+        solution_schema_location.append("/solution_h2d_xml.xsd");
+        ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
 
-      bson_append_start_array(&bw, "values");
-      bson_append_double(&bw, "c", this->constantX.real());
-      bson_append_double(&bw, "c", this->constantY.real());
-      bson_append_double(&bw, "c", this->constantX.imag());
-      bson_append_double(&bw, "c", this->constantY.imag());
-      bson_append_finish_array(&bw);
+        ::xml_schema::namespace_infomap namespace_info_map;
+        namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
 
-      bson_append_int(&bw, "components_count", this->num_components);
+        std::ofstream out(filename);
+        ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
+        XMLSolution::solution_(out, xmlsolution, namespace_info_map, "UTF-8", parsing_flags);
 
-      bson_finish(&bw);
-
-      FILE *fpw;
-      fpw = fopen(filename, "wb");
-      const char *dataw = (const char *) bson_data(&bw);
-      fwrite(dataw, bson_size(&bw), 1, fpw);
-      fclose(fpw);
-
-      bson_destroy(&bw);
+        out.close();
+      }
+      catch (const xml_schema::exception& e)
+      {
+        throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
+      }
     }
-#endif
 
     template<typename Scalar>
     ZeroSolutionVector<Scalar>::ZeroSolutionVector(MeshSharedPtr mesh) : ExactSolutionVector<Scalar>(mesh)
@@ -528,7 +485,7 @@ namespace Hermes
     };
 
     template<typename Scalar>
-    Ord ZeroSolutionVector<Scalar>::ord(Ord x, Ord y) const {
+    Ord ZeroSolutionVector<Scalar>::ord(double x, double y) const {
       return Ord(0);
     }
 
@@ -543,13 +500,13 @@ namespace Hermes
 
     template HERMES_API class ExactSolutionScalar<double>;
     template HERMES_API class ExactSolutionScalar<std::complex<double> >;
-
+    
     template HERMES_API class ExactSolutionConstantArray<double, double>;
     template HERMES_API class ExactSolutionConstantArray<double, int>;
     template HERMES_API class ExactSolutionConstantArray<double, unsigned int>;
     template HERMES_API class ExactSolutionConstantArray<double, bool>;
     template HERMES_API class ExactSolutionConstantArray<std::complex<double>, std::complex<double> >;
-
+    
     template HERMES_API class ExactSolutionVector<double>;
     template HERMES_API class ExactSolutionVector<std::complex<double> >;
     template HERMES_API class ConstantSolution<double>;

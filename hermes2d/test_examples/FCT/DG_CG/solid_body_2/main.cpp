@@ -15,13 +15,13 @@ const int INIT_REF_NUM = 6;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
 const double time_step =25e-6;                           // Time step.
-const double T_FINAL = 2.5*PI;                         // Time interval length. 
+//const double T_FINAL = 2.5*PI;                         // Time interval length. 
 
-  
+ const double T_FINAL = 2.;   
 
 
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
-const double theta_DG =	1.;
+const double theta_DG =	0.5;
 
 const bool all = true;
 const bool DG = true;
@@ -62,7 +62,11 @@ mloader.load("unit.mesh", basemesh);
   int ndof = space->get_num_dofs();
   
 
-    double current_time = PI/2.;
+    //double current_time = PI/2.;
+
+double current_time = 0.;
+
+
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>);
   MeshFunctionSharedPtr<double> u_exact(new CustomInitialCondition(mesh, current_time));
@@ -76,6 +80,7 @@ mloader.load("unit.mesh", basemesh);
 	ScalarView sview("Loesung", new WinGeom(500, 500, 500, 400));
 	ScalarView lview("init Loesung", new WinGeom(500, 0, 500, 400));
 	//lview.show(u_exact);
+//sview.set_min_max_range(0,1);
 //View::wait(HERMES_WAIT_KEYPRESS);
 
   OGProjection<double> ogProjection;

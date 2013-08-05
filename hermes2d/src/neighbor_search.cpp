@@ -596,7 +596,7 @@ namespace Hermes
 
         for(unsigned int level = central_transformations[i]->num_levels; level < updated_transformations.size(); level++)
         {
-          if(!neighbor_transformations[i])
+          if((i >= neighbor_transformations_alloc_size) || !neighbor_transformations[i])
             this->add_neighbor_transformations(new Transformations, i);
 
           Transformations* neighbor_transforms = neighbor_transformations[i];
@@ -646,14 +646,15 @@ namespace Hermes
     void NeighborSearch<Scalar>::delete_neighbor(unsigned int position)
     {
       for(unsigned int i = position; i < n_neighbors - 1; i++)
-        central_transformations[i]->copy_from(central_transformations[i + 1]);
+        if(i + 1 < this->central_transformations_alloc_size)
+          central_transformations[i]->copy_from(central_transformations[i + 1]);
 
-      if(central_transformations[n_neighbors - 1]) // may not be true when position == n_neighbors - 1
+      if((n_neighbors - 1 < this->central_transformations_alloc_size) && central_transformations[n_neighbors - 1])
         central_transformations[n_neighbors - 1]->reset();
 
       for(unsigned int i = position; i < n_neighbors - 1; i++)
       {
-        if(neighbor_transformations[i + 1])
+        if((i + 1 < this->neighbor_transformations_alloc_size) && neighbor_transformations[i + 1])
         {
           if(!neighbor_transformations[i])
             this->add_neighbor_transformations(new Transformations, i);
@@ -661,7 +662,7 @@ namespace Hermes
           neighbor_transformations[i]->copy_from(neighbor_transformations[i + 1]);
         }
       }
-      if(neighbor_transformations[n_neighbors - 1]) // may not be true when position == n_neighbors - 1
+      if((n_neighbors - 1 < this->neighbor_transformations_alloc_size) && neighbor_transformations[n_neighbors - 1])
         neighbor_transformations[n_neighbors - 1]->reset();
 
       neighbor_edges.erase (neighbor_edges.begin() + position);
@@ -732,7 +733,7 @@ namespace Hermes
               // adjacent to the single big neighbor.
               assert(n_neighbors == 0);
 
-              if(!neighbor_transformations[n_neighbors])
+              if(n_neighbors >= this->neighbor_transformations_alloc_size || !neighbor_transformations[n_neighbors])
                 this->add_neighbor_transformations(new Transformations, n_neighbors);
 
               Transformations *neighbor_transforms = neighbor_transformations[n_neighbors];
@@ -845,7 +846,7 @@ namespace Hermes
 
                 if(neighbor_edge.local_num_of_edge == -1) throw Hermes::Exceptions::Exception("Neighbor edge wasn't found");
 
-                if(!central_transformations[n_neighbors])
+                if((n_neighbors >= this->central_transformations_alloc_size) || !central_transformations[n_neighbors])
                   this->add_central_transformations(new Transformations, n_neighbors);
 
                 Transformations *tr = central_transformations[n_neighbors];
@@ -1011,7 +1012,7 @@ namespace Hermes
       // Change the active element of the function. Note that this also resets the transformations on the function.
       fu->set_active_element(neighbors[active_segment]);
 
-      if(neighbor_transformations[active_segment])
+      if(active_segment < this->neighbor_transformations_alloc_size && neighbor_transformations[active_segment])
         neighbor_transformations[active_segment]->apply_on(fu);
 
       Func<Scalar>* fn_neighbor = init_fn(fu, get_quad_eo(true));

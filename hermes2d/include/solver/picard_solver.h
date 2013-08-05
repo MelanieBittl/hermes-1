@@ -10,12 +10,12 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 /*! \file solver_picard.h
 \brief Picard's method.
 */
@@ -93,11 +93,11 @@ namespace Hermes
       /// Set the relative tolerance, thus co-determine when to stop Picard's iterations.
       void set_tolerance(double tol);
       
-      /// Set how many last vectors will be used for Anderson acceleration. See the details about the Anderson acceleration for 
+      /// Set how many last vectors will be used for Anderson acceleration. See the details about the Anderson acceleration for
       /// explanation of this parameter.
       void set_num_last_vector_used(int num);
 
-      /// Set the Anderson beta coefficient. See the details about the Anderson acceleration for 
+      /// Set the Anderson beta coefficient. See the details about the Anderson acceleration for
       /// explanation of this parameter.
       void set_anderson_beta(double beta);
 #pragma endregion

@@ -291,7 +291,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void IterativeParalutionLinearMatrixSolver<Scalar>::solve()
+    bool IterativeParalutionLinearMatrixSolver<Scalar>::solve()
     {
       if(this->sln)
         delete [] this->sln;
@@ -342,7 +342,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void IterativeParalutionLinearMatrixSolver<Scalar>::solve(Scalar* initial_guess)
+    bool IterativeParalutionLinearMatrixSolver<Scalar>::solve(Scalar* initial_guess)
     {
       // Handle sln.
       if(this->sln)
@@ -422,8 +422,8 @@ namespace Hermes
     AMGParalutionLinearMatrixSolver<Scalar>::AMGParalutionLinearMatrixSolver(ParalutionMatrix<Scalar> *matrix, ParalutionVector<Scalar> *rhs) : AMGSolver<Scalar>(), matrix(matrix), rhs(rhs), paralutionSolver(NULL)
     {
       this->set_max_iters(1000);
-      this->set_tolerance(1e-8, LoopSolver<Scalar>::AbsoluteTolerance);
-      this->smootherSolverType = IterativeParalutionLinearMatrixSolver<Scalar>::CG;
+      this->set_tolerance(1e-8, AMGSolver<Scalar>::AbsoluteTolerance);
+      this->smootherSolverType = IterativeParalutionLinearMatrixSolver<Scalar>::ParalutionSolverType::CG;
       this->smootherPreconditionerType = ParalutionPrecond<Scalar>::MultiColoredSGS;
     }
 
@@ -443,13 +443,13 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void AMGParalutionLinearMatrixSolver<Scalar>::solve()
+    bool AMGParalutionLinearMatrixSolver<Scalar>::solve()
     {
       if(this->sln)
         delete [] this->sln;
       this->sln = new Scalar[this->get_matrix_size()];
       memset(this->sln, Scalar(0), this->get_matrix_size() * sizeof(Scalar));
-      this->solve(this->sln);
+      return this->solve(this->sln);
     }
 
     template<typename Scalar>
@@ -518,7 +518,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void AMGParalutionLinearMatrixSolver<Scalar>::solve(Scalar* initial_guess)
+    bool AMGParalutionLinearMatrixSolver<Scalar>::solve(Scalar* initial_guess)
     {
       // Handle sln.
       if(this->sln)
@@ -539,6 +539,7 @@ namespace Hermes
       {
         x.LeaveDataPtr(&this->sln);
         x.Clear();
+        return true;
       }
 
       // Init.
@@ -555,6 +556,7 @@ namespace Hermes
 
       // Destroy the paralution vector, keeping the data in sln.
       x.LeaveDataPtr(&this->sln);
+      return true;
     }
 
     template<typename Scalar>

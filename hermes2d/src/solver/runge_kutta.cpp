@@ -545,7 +545,7 @@ namespace Hermes
       for(unsigned int component_i = 0; component_i < size; component_i++)
       {
         if(spaces[component_i]->get_type() == HERMES_H1_SPACE
-           || spaces[component_i]->get_type() == HERMES_L2_SPACE)
+           || spaces[component_i]->get_type() == HERMES_L2_SPACE|| spaces[component_i]->get_type() == HERMES_L2_SEMI_SPACE)
         {
           MatrixDefaultNormFormVol<Scalar>* proj_form = new MatrixDefaultNormFormVol<Scalar>(component_i, component_i, HERMES_L2_NORM);
           proj_form->areas.push_back(HERMES_ANY);

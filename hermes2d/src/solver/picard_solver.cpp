@@ -10,12 +10,12 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #include "solver/picard_solver.h"
 #include "projections/ogprojection.h"
 #include "exact_solution.h"
@@ -195,7 +195,7 @@ namespace Hermes
     template<typename Scalar>
     void PicardSolver<Scalar>::init_anderson()
     {
-      if (anderson_is_on) 
+      if (anderson_is_on)
       {
         previous_vectors = new Scalar*[num_last_vectors_used];
         for (int i = 0; i < num_last_vectors_used; i++)
@@ -325,7 +325,7 @@ namespace Hermes
       this->init_anderson();
 
       it++;
-      unsigned int vec_in_memory = 1;   // There is already one vector in the memory.
+      unsigned int vec_in_memory = 1; // There is already one vector in the memory.
       this->set_parameter_value(this->p_vec_in_memory, &vec_in_memory);
 
       while (true)
@@ -337,14 +337,14 @@ namespace Hermes
         if(this->report_cache_hits_and_misses)
           this->add_cache_hits_and_misses(this->dp);
 
-        this->process_matrix_output(this->jacobian, it); 
+        this->process_matrix_output(this->jacobian, it);
         this->process_vector_output(this->residual, it);
 
         this->on_step_end();
 
         // Solve the linear system.
-        this->matrix_solver->solve(coeff_vec);
-        this->handle_UMFPACK_reports();
+        if(!this->matrix_solver->solve())
+          throw Exceptions::LinearMatrixSolverException();
 
         memcpy(this->sln_vector, this->matrix_solver->get_sln_vector(), sizeof(Scalar)*ndof);
 

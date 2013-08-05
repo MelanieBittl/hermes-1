@@ -7,18 +7,18 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
+// along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef __H2D_MESH_FUNCTION_H
 #define __H2D_MESH_FUNCTION_H
 
 #include "function.h"
 #include "../mesh/refmap.h"
-#include "../mesh/mesh.h"
+#include "../space/space.h"
 #include "exceptions.h"
 
 namespace Hermes
@@ -26,7 +26,6 @@ namespace Hermes
   namespace Hermes2D
   {
     template<typename Scalar> class MeshFunction;
-    template<typename Scalar> class Solution;
   }
 }
 
@@ -43,9 +42,7 @@ public:
   MeshFunctionSharedPtr(const MeshFunctionSharedPtr<Scalar>& other);
 
   void operator=(const MeshFunctionSharedPtr<Scalar>& other);
-
-  Hermes::Hermes2D::Solution<Scalar>* get_solution();
-
+      
   ~MeshFunctionSharedPtr();
 };
 
@@ -55,9 +52,9 @@ namespace Hermes
   namespace Hermes2D
   {
     /** \defgroup meshFunctions Mesh functions
-    * \brief Collection of classes that represent various functions of the mesh coordinates, i.e. defined on the Mesh.
-    * These comprise solutions, exact &amp; initial solutions, filters (functions of the solutions) etc.
-    */
+* \brief Collection of classes that represent various functions of the mesh coordinates, i.e. defined on the Mesh.
+* These comprise solutions, exact &amp; initial solutions, filters (functions of the solutions) etc.
+*/
 
     /// @ingroup meshFunctions
     /// \brief Represents a function defined on a mesh.
@@ -70,9 +67,7 @@ namespace Hermes
     /// (This is an abstract class and cannot be instantiated.)
     ///
     template<typename Scalar>
-    class HERMES_API MeshFunction : 
-      public Function<Scalar>, 
-      public Hermes::Hermes2D::Mixins::StateQueryable
+    class HERMES_API MeshFunction : public Function<Scalar>, public Hermes::Hermes2D::Mixins::StateQueryable
     {
     public:
       /// Empty constructor.
@@ -91,11 +86,11 @@ namespace Hermes
       virtual void copy(const MeshFunction<Scalar>* sln);
       virtual void copy(MeshFunctionSharedPtr<Scalar> sln);
 
-		virtual void set_own_mesh(MeshSharedPtr mesh)
-		{
+	virtual void set_own_mesh(MeshSharedPtr mesh)
+{
         throw Hermes::Exceptions::Exception("You need to implement set_own_mesh");
         
-			}	
+}	
 
       /// Return the reference mapping.
       RefMap* get_refmap(bool update = true);
@@ -114,6 +109,10 @@ namespace Hermes
       /// Multiplies the function represented by this class by the given coefficient.
       virtual void multiply(Scalar coef);
 
+      /// Adds another mesh function on the given space.
+      /// ! Resulting mesh function is a solution.
+      virtual void add(MeshFunctionSharedPtr<Scalar> other_mesh_function, SpaceSharedPtr<Scalar> target_space);
+
       /// Return the approximate maximum value of this instance.
       virtual Scalar get_approx_max_value(int item = H2D_FN_VAL_0);
 
@@ -124,7 +123,7 @@ namespace Hermes
       virtual bool isOkay() const;
 
       /// Internal.
-      virtual inline std::string getClassName() const { return "MeshFunction"; }
+      inline std::string getClassName() const { return "MeshFunction"; }
 
       /// Internal.
       virtual void init();

@@ -7,13 +7,16 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D; if not, see <http://www.gnu.prg/licenses/>.
 
+#include <string.h>
 #include "mesh.h"
+#include <map>
+#include <iostream>
 #include "mesh_reader_h2d.h"
 
 namespace Hermes
@@ -150,11 +153,11 @@ namespace Hermes
       return nurbs;
     }
 
-    void MeshReaderH2D::load(const char *filename, MeshSharedPtr mesh)
+    bool MeshReaderH2D::load(const char *filename, MeshSharedPtr mesh)
     {
       // Check if file exists
       std::ifstream s(filename);
-      if(!s.good()) 
+      if(!s.good())
         throw Hermes::Exceptions::MeshLoadFailureException("Mesh file not found.");
       s.close();
 
@@ -206,7 +209,7 @@ namespace Hermes
       {
         // read and check vertex indices
         int nv;
-        if(m.en4[i] == -1)  nv = 4;
+        if(m.en4[i] == -1) nv = 4;
         else nv = 5;
 
         int* idx = new int[nv-1];
@@ -244,28 +247,28 @@ namespace Hermes
             throw Hermes::Exceptions::MeshLoadFailureException("File %s: error creating element #%d: vertex #%d does not exist.", filename, i, idx[j]);
           }
 
-          Node *v0 = &mesh->nodes[idx[0]], *v1 = &mesh->nodes[idx[1]], *v2 = &mesh->nodes[idx[2]];
+        Node *v0 = &mesh->nodes[idx[0]], *v1 = &mesh->nodes[idx[1]], *v2 = &mesh->nodes[idx[2]];
 
-          int marker;
+        int marker;
 
-          // This functions check if the user-supplied marker on this element has been
-          // already used, and if not, inserts it in the appropriate structure.
-          mesh->element_markers_conversion.insert_marker(el_marker);
-          marker = mesh->element_markers_conversion.get_internal_marker(el_marker).marker;
+        // This functions check if the user-supplied marker on this element has been
+        // already used, and if not, inserts it in the appropriate structure.
+        mesh->element_markers_conversion.insert_marker(el_marker);
+        marker = mesh->element_markers_conversion.get_internal_marker(el_marker).marker;
 
-          if(nv == 4) {
-            Mesh::check_triangle(i, v0, v1, v2);
-            mesh->create_triangle(marker, v0, v1, v2, NULL);
-          }
-          else {
-            Node *v3 = &mesh->nodes[idx[3]];
-            Mesh::check_quad(i, v0, v1, v2, v3);
-            mesh->create_quad(marker, v0, v1, v2, v3, NULL);
-          }
+        if(nv == 4) {
+          Mesh::check_triangle(i, v0, v1, v2);
+          mesh->create_triangle(marker, v0, v1, v2, NULL);
+        }
+        else {
+          Node *v3 = &mesh->nodes[idx[3]];
+          Mesh::check_quad(i, v0, v1, v2, v3);
+          mesh->create_quad(marker, v0, v1, v2, v3, NULL);
+        }
 
-          mesh->nactive++;
+        mesh->nactive++;
 
-          delete [] idx;
+        delete [] idx;
       }
       mesh->nbase = n;
 
@@ -381,8 +384,8 @@ namespace Hermes
       mesh->ninitial = mesh->elements.get_num_items();
 
       mesh->seq = g_mesh_seq++;
-      if(HermesCommonApi.get_integral_param_value(checkMeshesOnLoad))
-        mesh->initial_single_check();
+      mesh->initial_single_check();
+      return true;
     }
 
     void MeshReaderH2D::save_refinements(MeshSharedPtr mesh, FILE* f, Element* e, int id, bool& first)
@@ -391,21 +394,21 @@ namespace Hermes
       fprintf(f, first ? "refinements =\n{\n" : ",\n"); first = false;
       if(e->bsplit())
       {
-        fprintf(f, "  { %d, 0 }", id);
+        fprintf(f, " { %d, 0 }", id);
         int sid = mesh->seq; mesh->seq += 4;
         for (int i = 0; i < 4; i++)
           save_refinements(mesh, f, e->sons[i], sid+i, first);
       }
       else if(e->hsplit())
       {
-        fprintf(f, "  { %d, 1 }", id);
+        fprintf(f, " { %d, 1 }", id);
         int sid = mesh->seq; mesh->seq += 2;
         save_refinements(mesh, f, e->sons[0], sid, first);
         save_refinements(mesh, f, e->sons[1], sid+1, first);
       }
       else
       {
-        fprintf(f, "  { %d, 2 }", id);
+        fprintf(f, " { %d, 2 }", id);
         int sid = mesh->seq; mesh->seq += 2;
         save_refinements(mesh, f, e->sons[2], sid, first);
         save_refinements(mesh, f, e->sons[3], sid+1, first);
@@ -422,9 +425,9 @@ namespace Hermes
       {
         int inner = nurbs->np - 2;
         int outer = nurbs->nk - inner;
-        fprintf(f, "  ú %d, %d, %d, ú ", p1, p2, nurbs->degree);
+        fprintf(f, " Ãº %d, %d, %d, Ãº ", p1, p2, nurbs->degree);
         for (int i = 1; i < nurbs->np-1; i++)
-          fprintf(f, "ú %.16g, %.16g, %.16g ]%s ",
+          fprintf(f, "Ãº %.16g, %.16g, %.16g ]%s ",
           nurbs->pt[i][0], nurbs->pt[i][1], nurbs->pt[i][2],
           i < nurbs->np-2 ? "," : "");
 
@@ -436,7 +439,7 @@ namespace Hermes
       }
     }
 
-    void MeshReaderH2D::save(const char* filename, MeshSharedPtr mesh)
+    bool MeshReaderH2D::save(const char* filename, MeshSharedPtr mesh)
     {
       int i, mrk;
       Element* e;
@@ -456,7 +459,7 @@ namespace Hermes
       bool first = true;
       for (i = 0; i < mesh->get_num_base_elements(); i++)
       {
-        const char* nl = first ? "\n" : ",\n";  first = false;
+        const char* nl = first ? "\n" : ",\n"; first = false;
         e = mesh->get_element_fast(i);
         if(!e->used)
           fprintf(f, "%s [ ]", nl);
@@ -470,41 +473,36 @@ namespace Hermes
       fprintf(f, "\n]\n\nboundaries =\n[");
       first = true;
       for_all_base_elements(e, mesh)
-      {
         for (unsigned i = 0; i < e->get_nvert(); i++)
-          if((mrk = mesh->get_base_edge_node(e, i)->marker))
-          {
-            const char* nl = first ? "\n" : ",\n";  first = false;
+          if((mrk = mesh->get_base_edge_node(e, i)->marker)) {
+            const char* nl = first ? "\n" : ",\n"; first = false;
             fprintf(f, "%s [ %d, %d, \"%s\" ]", nl, e->vn[i]->id, e->vn[e->next_vert(i)]->id, mesh->boundary_markers_conversion.get_user_marker(mrk).marker.c_str());
           }
-      }
-      fprintf(f, "\n]\n\n");
+          fprintf(f, "\n]\n\n");
 
-      // save curved edges
-      first = true;
-      for_all_base_elements(e, mesh)
-      {
-        if(e->is_curved())
-        {
-          for (unsigned i = 0; i < e->get_nvert(); i++)
-            if(e->cm->nurbs[i] != NULL && !is_twin_nurbs(e, i))
-            {
-              fprintf(f, first ? "curves =\n[\n" : ",\n");  first = false;
-              save_nurbs(mesh, f, e->vn[i]->id, e->vn[e->next_vert(i)]->id, e->cm->nurbs[i]);
-            }
-            if(!first) fprintf(f, "\n]\n\n");
-        }
-      }
-      // save refinements
-      unsigned temp = mesh->seq;
-      mesh->seq = mesh->nbase;
-      first = true;
-      for_all_base_elements(e, mesh)
-        save_refinements(mesh, f, e, e->id, first);
-      if(!first) fprintf(f, "\n]\n\n");
+          // save curved edges
+          first = true;
+          for_all_base_elements(e, mesh)
+            if(e->is_curved())
+              for (unsigned i = 0; i < e->get_nvert(); i++)
+                if(e->cm->nurbs[i] != NULL && !is_twin_nurbs(e, i)) {
+                  fprintf(f, first ? "curves =\n[\n" : ",\n"); first = false;
+                  save_nurbs(mesh, f, e->vn[i]->id, e->vn[e->next_vert(i)]->id, e->cm->nurbs[i]);
+                }
+                if(!first) fprintf(f, "\n]\n\n");
 
-      mesh->seq = temp;
-      fclose(f);
+          // save refinements
+          unsigned temp = mesh->seq;
+          mesh->seq = mesh->nbase;
+          first = true;
+          for_all_base_elements(e, mesh)
+            save_refinements(mesh, f, e, e->id, first);
+          if(!first) fprintf(f, "\n]\n\n");
+
+          mesh->seq = temp;
+          fclose(f);
+
+          return true;
     }
   }
 }
