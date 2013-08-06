@@ -1464,18 +1464,15 @@ void FeistauerPCoarseningLimiter::process()
     if(this->get_verbose_output())
       std::cout << "Element: " << e->id << std::endl;
 
-    if(get_jump_indicator(e) > 1)
+    if(get_jump_indicator(e) > 1.)
     {
-      int running_dofs = 0;
       for(int component = 0; component < this->component_count; component++)
       {
         AsmList<double> al;
         this->spaces[component]->get_element_assembly_list(e, &al);
         for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
           if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
-            this->solution_vector[running_dofs + al.get_dof()[shape_i]] = 0.0;
-
-        running_dofs += spaces[component]->get_num_dofs();
+            this->solution_vector[al.get_dof()[shape_i]] = 0.0;
       }
     }
   }
