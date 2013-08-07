@@ -108,6 +108,8 @@ namespace Hermes
 
       void VertexBasedLimiter::init(int maximum_polynomial_order)
       {
+        this->maximum_polynomial_order = maximum_polynomial_order;
+
         // Checking that this is the Taylor shapeset.
         for(int i = 0; i < this->component_count; i++)
         {
@@ -122,7 +124,6 @@ namespace Hermes
         this->mixed_derivatives_count = (maximum_polynomial_order)*(maximum_polynomial_order + 1) / 2;
 
         this->print_details = false;
-
       }
 
       VertexBasedLimiter::~VertexBasedLimiter()

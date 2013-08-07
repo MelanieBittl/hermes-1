@@ -70,6 +70,7 @@ namespace Hermes
         Hermes::vector<std::pair<int, double> > get_correction_factors() const;
         void print_detailed_info(bool print_details = true);
 
+        int maximum_polynomial_order;
       private:
 
         void init(int maximum_polynomial_order);

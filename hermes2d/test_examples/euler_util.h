@@ -482,7 +482,8 @@ enum EulerLimiterType
   CoarseningJumpIndicatorAllToAll
 };
 
-void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::Limiter<double>& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
+template<typename LimiterType>
+void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, LimiterType* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
 
 class FeistauerPCoarseningLimiter : public PostProcessing::Limiter<double>
 {
@@ -492,6 +493,7 @@ public:
   ~FeistauerPCoarseningLimiter();
 
   void set_type(EulerLimiterType indicatorType);
+  EulerLimiterType get_type();
 private:
   void process();
   void get_jump_indicators(Element* e, double* values);
@@ -499,6 +501,8 @@ private:
   bool conditionally_coarsen(Element* e, double* values);
 
   EulerLimiterType indicatorType;
+
+  const static double constant;
 };
 
 PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false);

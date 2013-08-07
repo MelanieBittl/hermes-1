@@ -19,21 +19,20 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = false;
+const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = true;
+const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 100;
+const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = JumpIndicator_P_coarsening;
 const EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
 //const EulerLimiterType limiter_type = VertexBased;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 7;
+const int INIT_REF_NUM = 6;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
@@ -155,8 +154,7 @@ int main(int argc, char* argv[])
     {
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), P_INIT);
       limiter->get_solutions(prev_slns);
-      if(limiter_type == VertexBasedWithLimitingNonConservative)
-        limitVelocityAndEnergy(spaces, *limiter, prev_slns);
+      limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
     }
 #pragma endregion

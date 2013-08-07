@@ -36,7 +36,6 @@ CFLCalculation::CFLCalculation(double CFL_number, double kappa) : CFL_number(CFL
 
 bool CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const
 {
-  // Create spaces of constant functions over the given mesh->
   SpaceSharedPtr<double> constant_rho_space(new L2Space<double> (mesh, 0));
   SpaceSharedPtr<double> constant_rho_v_x_space(new L2Space<double> (mesh, 0));
   SpaceSharedPtr<double> constant_rho_v_y_space(new L2Space<double> (mesh, 0));
@@ -182,7 +181,6 @@ ADEStabilityCalculation::ADEStabilityCalculation(double AdvectionRelativeConstan
 
 void ADEStabilityCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step)
 {
-  // Create spaces of constant functions over the given mesh->
   SpaceSharedPtr<double> constant_rho_space(new L2Space<double>(mesh, 0));
   SpaceSharedPtr<double> constant_rho_v_x_space(new L2Space<double>(mesh, 0));
   SpaceSharedPtr<double> constant_rho_v_y_space(new L2Space<double>(mesh, 0));
@@ -1310,11 +1308,12 @@ void EntropyFilter::filter_fn(int n, Hermes::vector<double*> values, double* res
       / Hermes::pow((values.at(0)[i] / rho_ext), kappa));
 }
 
-void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::Limiter<double>& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns)
+template<typename LimiterType>
+void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, LimiterType* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns)
 {
   int running_dofs = 0;
   int ndof = spaces[0]->get_num_dofs();
-  double* density_sln_vector = limiter.get_solution_vector();
+  double* density_sln_vector = limiter->get_solution_vector();
   Element* e;
   AsmList<double> al_density;
   for(int component = 1; component < 4; component++)
@@ -1322,7 +1321,7 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Post
     if(spaces[component]->get_num_dofs() != ndof)
       throw Exceptions::Exception("Euler code is supposed to be executed on a single mesh.");
 
-    double* conservative_vector = limiter.get_solution_vector() + component * ndof;
+    double* conservative_vector = limiter->get_solution_vector() + component * ndof;
     double* real_vector = new double[ndof];
     memset(real_vector, 0, sizeof(double) * ndof);
 
@@ -1335,10 +1334,18 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Post
       real_vector[al_density.dof[2]] = (conservative_vector[al_density.dof[2]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[2]]) / density_sln_vector[al_density.dof[0]];
     }
 
-    PostProcessing::VertexBasedLimiter real_component_limiter(spaces[0], real_vector, 1);
+    PostProcessing::Limiter<double> * real_component_limiter;
+    if(dynamic_cast<PostProcessing::VertexBasedLimiter*>(limiter))
+      real_component_limiter = new PostProcessing::VertexBasedLimiter(spaces[0], real_vector, dynamic_cast<PostProcessing::VertexBasedLimiter*>(limiter)->maximum_polynomial_order);
+    else
+    {
+      real_component_limiter = new FeistauerPCoarseningLimiter(spaces[0], real_vector);
+      dynamic_cast<FeistauerPCoarseningLimiter*>(real_component_limiter)->set_type(dynamic_cast<FeistauerPCoarseningLimiter*>(limiter)->get_type());
+    }
+
     delete [] real_vector;
-    real_component_limiter.get_solution();
-    real_vector = real_component_limiter.get_solution_vector();
+    real_component_limiter->get_solution();
+    real_vector = real_component_limiter->get_solution_vector();
 
     for_all_active_elements(e, spaces[0]->get_mesh())
     {
@@ -1352,6 +1359,8 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Post
     }
 
     Solution<double>::vector_to_solution(conservative_vector, spaces[0], slns[component]);
+
+    delete real_component_limiter;
   }
 }
 FeistauerPCoarseningLimiter::FeistauerPCoarseningLimiter(SpaceSharedPtr<double> space, double* solution_vector) : PostProcessing::Limiter<double>(space, solution_vector)
@@ -1372,13 +1381,21 @@ void FeistauerPCoarseningLimiter::set_type(EulerLimiterType type)
   this->indicatorType = type;
 }
 
+EulerLimiterType FeistauerPCoarseningLimiter::get_type()
+{
+  return this->indicatorType;
+}
+
+const double FeistauerPCoarseningLimiter::constant = 0.001;
+
+
 bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* values)
 {
   switch(this->indicatorType)
   {
   case CoarseningJumpIndicatorDensity:
     {
-      if(values[0] > 1.0)
+      if(values[0] > FeistauerPCoarseningLimiter::constant)
       {
         AsmList<double> al;
         this->spaces[0]->get_element_assembly_list(e, &al);
@@ -1390,7 +1407,7 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
     break;
   case CoarseningJumpIndicatorDensityToAll:
     {
-      if(values[0] > 1.0)
+      if(values[0] > FeistauerPCoarseningLimiter::constant)
         for(int component = 0; component < this->component_count; component++)
         {
           AsmList<double> al;
@@ -1404,7 +1421,7 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
   case CoarseningJumpIndicatorAllToThemselves:
     {
       for(int component = 0; component < this->component_count; component++)
-        if(values[component] > 1.0)
+        if(values[component] > FeistauerPCoarseningLimiter::constant)
         {
           AsmList<double> al;
           this->spaces[component]->get_element_assembly_list(e, &al);
@@ -1417,7 +1434,7 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
     {
       bool limit = false;
       for(int component = 0; component < this->component_count; component++)
-        if(values[component] > 1.0)
+        if(values[component] > FeistauerPCoarseningLimiter::constant)
           limit = true;
 
       if(limit)
@@ -1618,3 +1635,7 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, H
   limiter->set_verbose_output(verbose);
   return limiter;
 }
+
+template void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::Limiter<double>* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
+template void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
+template void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, FeistauerPCoarseningLimiter* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
