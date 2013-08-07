@@ -1,4 +1,5 @@
 #include "hermes2d.h"
+#include "../euler_util.h"
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -22,9 +23,11 @@ const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 20;
+const unsigned int EVERY_NTH_STEP = 100;
 
 bool SHOCK_CAPTURING = true;
+const EulerLimiterType limiter_type = JumpIndicator_P_coarsening;
+//const EulerLimiterType limiter_type = VertexBased;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
@@ -33,7 +36,7 @@ const int INIT_REF_NUM = 7;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
-double time_step_length = 5E-4;
+double time_step_length = 1E-4;
 
 // Equation parameters.
 // Exterior pressure (dimensionless).
@@ -149,49 +152,11 @@ int main(int argc, char* argv[])
       Solution<double>::vector_to_solutions(solver.get_sln_vector(), spaces, prev_slns);
     else
     {
-      PostProcessing::VertexBasedLimiter limiter(spaces, solver.get_sln_vector(), 1);
-      limiter.get_solutions(prev_slns);
-
-      int running_dofs = 0;
-      int ndof = spaces[0]->get_num_dofs();
-      double* density_sln_vector = limiter.get_solution_vector();
-      Element* e;
-      AsmList<double> al_density;
-      for(int component = 1; component < 4; component++)
-      {
-        if(spaces[component]->get_num_dofs() != ndof)
-          throw Exceptions::Exception("Euler code is supposed to be executed on a single mesh.");
-
-        double* conservative_vector = limiter.get_solution_vector() + component * ndof;
-        double* real_vector = new double[ndof];
-        memset(real_vector, 0, sizeof(double) * ndof);
-
-        for_all_active_elements(e, spaces[0]->get_mesh())
-        {
-          spaces[0]->get_element_assembly_list(e, &al_density);
-
-          real_vector[al_density.dof[0]] = conservative_vector[al_density.dof[0]] / density_sln_vector[al_density.dof[0]];
-          real_vector[al_density.dof[1]] = (conservative_vector[al_density.dof[1]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[1]]) / density_sln_vector[al_density.dof[0]];
-          real_vector[al_density.dof[2]] = (conservative_vector[al_density.dof[2]] - real_vector[al_density.dof[0]] * density_sln_vector[al_density.dof[2]]) / density_sln_vector[al_density.dof[0]];
-        }
-
-        PostProcessing::VertexBasedLimiter real_component_limiter(spaces[0], real_vector, 1);
-        real_component_limiter.get_solution();
-        real_vector = real_component_limiter.get_solution_vector();
-
-        for_all_active_elements(e, spaces[0]->get_mesh())
-        {
-          spaces[0]->get_element_assembly_list(e, &al_density);
-
-          conservative_vector[al_density.dof[1]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[1]]
-          + density_sln_vector[al_density.dof[1]] * real_vector[al_density.dof[0]];
-
-          conservative_vector[al_density.dof[2]] = density_sln_vector[al_density.dof[0]] * real_vector[al_density.dof[2]]
-          + density_sln_vector[al_density.dof[2]] * real_vector[al_density.dof[0]];
-        }
-
-        Solution<double>::vector_to_solution(conservative_vector, spaces[0], prev_slns[component]);
-      }
+      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), P_INIT);
+      limiter->get_solutions(prev_slns);
+      if(limiter_type == VertexBasedWithLimitingNonConservative)
+        limitVelocityAndEnergy(spaces, *limiter, prev_slns);
+      delete limiter;
     }
 #pragma endregion
 

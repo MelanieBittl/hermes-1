@@ -490,6 +490,7 @@ private:
 enum EulerLimiterType
 {
   VertexBased,
+  VertexBasedWithLimitingNonConservative,
   JumpIndicator_P_coarsening
 };
 

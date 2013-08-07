@@ -136,7 +136,8 @@ int main(int argc, char* argv[])
     {
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
       limiter->get_solutions(prev_slns);
-      limitVelocityAndEnergy(spaces, *limiter, prev_slns);
+      if(limiter_type == VertexBasedWithLimitingNonConservative)
+        limitVelocityAndEnergy(spaces, *limiter, prev_slns);
       delete limiter;
     }
 #pragma endregion
