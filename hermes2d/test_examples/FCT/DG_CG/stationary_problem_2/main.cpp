@@ -6,7 +6,7 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 
@@ -52,15 +52,15 @@ m1view.show(mesh);*/
 
 
   // Create an space with default shapeset.
-//SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh, P_INIT));
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
+SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh, P_INIT));
+  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
   //SpaceSharedPtr<double> space_h1(new H1Space<double>(mesh,P_INIT));
 
- /* BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
+/* BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
   bview.show(space);
-View::wait(HERMES_WAIT_KEYPRESS);*/
-
+View::wait(HERMES_WAIT_KEYPRESS);
+*/
 
 
 
@@ -97,7 +97,7 @@ Solution<double>::vector_to_solution(coeff_vec, space_h1, u_test);*/
 	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; 
 	UMFPackVector<double> * surf_rhs = new UMFPackVector<double> (ndof); 
 	DiscreteProblem<double> * dp_surf = new DiscreteProblem<double> (&wf_surf,space);	
-	dp_surf->set_linear(true,true);
+	dp_surf->set_linear(true,false);
 	dp_surf->assemble(surf_rhs);
 	dp_surf->assemble(dg_surface_matrix,surf_rhs);
  UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>( dg_surface_matrix, surf_rhs);    

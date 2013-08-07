@@ -6,8 +6,8 @@ const double logPercentTimeSteps = 1.;
 const TimeSteppingType timeSteppingType = Explicit;
 const SolvedExample solvedExample = SolidBodyRotation;
 
-bool HermesView = false;
-bool VTKView = true;
+bool HermesView = true;
+bool VTKView = false;
 
 const double time_step_length = timeSteppingType == Explicit ? 0.001 : 0.01;
 const double time_interval_length = solvedExample == SolidBodyRotation ? 2 * M_PI : 1.;

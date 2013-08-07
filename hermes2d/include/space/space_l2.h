@@ -44,14 +44,14 @@ namespace Hermes
 
       virtual void get_element_assembly_list(Element* e, AsmList<Scalar>* al) const;
 
+ 			virtual void set_shapeset(Shapeset* shapeset);
+
       /// Copy from Space instance 'space'
       virtual void copy(SpaceSharedPtr<Scalar> space, MeshSharedPtr new_mesh);
     protected:
       virtual int get_edge_order(Element* e, int edge) const {
         return H2D_MAKE_EDGE_ORDER(e->get_mode(), edge, this->edata[e->id].order);
-      }
-
-      virtual void set_shapeset(Shapeset* shapeset);
+      }     
 
       virtual SpaceType get_type() const { return HERMES_L2_SPACE; }
 

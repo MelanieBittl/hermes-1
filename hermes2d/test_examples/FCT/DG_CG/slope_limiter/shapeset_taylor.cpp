@@ -114,6 +114,7 @@
      vertex_indices, vertex_indices
     };
     
+
     static int taylor_quad_edge_indices_0[6] =  { -1, -1, -1, -1, -1, -1  };
     static int taylor_quad_edge_indices_1[6] =  { -1, -1, -1, -1, -1, -1  };
     static int taylor_quad_edge_indices_2[6] =  { -1, -1, -1, -1, -1, -1 };
@@ -133,8 +134,7 @@
       taylor_quad_edge_indices
     };
     
-
-    
+  
     
     static int qb_0_0[] = { 0, };
     static int qb_0_1[] = { 0, 1, };
@@ -158,9 +158,15 @@
 
     };
     
+    static int qb_0[] = { 0, };
+    static int qb_1[] = { 0, 1, 2, };
+    static int qb_2[] = { 0, 1, 2, 3, 4, 5 };
+
+		int* taylor_tri_bubble_indices[] = {  qb_0,   qb_1,  qb_2 };
+
     static int** taylor_bubble_indices[2] =
     {
-      NULL,
+      taylor_tri_bubble_indices,
       taylor_quad_bubble_indices
     };
 
@@ -175,10 +181,11 @@
 		zero16,zero16,		zero16,zero16,		zero16,zero16,		zero16,zero16
     };
     
+		int taylor_tri_bubble_count[ ] = { 1,  3,  6 };
 
     static int* taylor_bubble_count[2] =
     {
-    	 NULL,
+    	taylor_tri_bubble_count,
       taylor_quad_bubble_count
     };
 
@@ -206,35 +213,29 @@
       taylor_quad_index_to_order
     };
 
-		static TaylorShapeset::shape_fn_t taylor_quad_fn[] = 
-			{taylor_1, taylor_2, taylor_3, taylor_4, taylor_5, taylor_6};
+		static TaylorShapeset::shape_fn_t taylor_quad_fn[] = {taylor_1, taylor_2, taylor_3, taylor_4, taylor_5, taylor_6};
 		TaylorShapeset::shape_fn_t* taylor_quad_shape_fn_table[1] = { taylor_quad_fn };
-		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table[2] = { NULL, taylor_quad_shape_fn_table  };
+		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table[2] = { taylor_quad_shape_fn_table, taylor_quad_shape_fn_table  };
 
-		static TaylorShapeset::shape_fn_t taylor_quad_fn_dx[] =
-			 {taylor_0, taylor_2_dx, taylor_0, taylor_4_dx, taylor_0, taylor_6_dx};
+		static TaylorShapeset::shape_fn_t taylor_quad_fn_dx[] = {taylor_0, taylor_2_dx, taylor_0, taylor_4_dx, taylor_0, taylor_6_dx};
 		TaylorShapeset::shape_fn_t* taylor_quad_shape_fn_table_dx[1] = { taylor_quad_fn_dx };
-		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dx[2] = { NULL, taylor_quad_shape_fn_table_dx  };
+		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dx[2] = { taylor_quad_shape_fn_table_dx, taylor_quad_shape_fn_table_dx  };
 		
-		static TaylorShapeset::shape_fn_t taylor_quad_fn_dy[] = 
-				{taylor_0, taylor_0, taylor_3_dy, taylor_0, taylor_5_dy, taylor_6_dy};
+		static TaylorShapeset::shape_fn_t taylor_quad_fn_dy[] = {taylor_0, taylor_0, taylor_3_dy, taylor_0, taylor_5_dy, taylor_6_dy};
 		TaylorShapeset::shape_fn_t* taylor_quad_shape_fn_table_dy[1] = { taylor_quad_fn_dy };
-		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dy[2] = { NULL, taylor_quad_shape_fn_table_dy };
+		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dy[2] = { taylor_quad_shape_fn_table_dy, taylor_quad_shape_fn_table_dy };
 
-		static TaylorShapeset::shape_fn_t taylor_quad_fn_dxx[] =
-			 {taylor_0, taylor_0, taylor_0, taylor_4_dxx, taylor_0, taylor_0};
+		static TaylorShapeset::shape_fn_t taylor_quad_fn_dxx[] = {taylor_0, taylor_0, taylor_0, taylor_4_dxx, taylor_0, taylor_0};
 		TaylorShapeset::shape_fn_t* taylor_quad_shape_fn_table_dxx[1] = { taylor_quad_fn_dxx };
-		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dxx[2] = { NULL, taylor_quad_shape_fn_table_dxx  };
+		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dxx[2] = { taylor_quad_shape_fn_table_dxx, taylor_quad_shape_fn_table_dxx  };
 
-		static TaylorShapeset::shape_fn_t taylor_quad_fn_dyy[] = 
-				{taylor_0, taylor_0, taylor_0, taylor_0, taylor_5_dyy, taylor_0};
+		static TaylorShapeset::shape_fn_t taylor_quad_fn_dyy[] = 	{taylor_0, taylor_0, taylor_0, taylor_0, taylor_5_dyy, taylor_0};
 		TaylorShapeset::shape_fn_t* taylor_quad_shape_fn_table_dyy[1] = { taylor_quad_fn_dyy };
-		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dyy[2] = { NULL, taylor_quad_shape_fn_table_dyy };
+		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dyy[2] = { taylor_quad_shape_fn_table_dyy, taylor_quad_shape_fn_table_dyy };
 		
-				static TaylorShapeset::shape_fn_t taylor_quad_fn_dxy[] =
-			 {taylor_0, taylor_0, taylor_0, taylor_0, taylor_0, taylor_6_dxy};
+		static TaylorShapeset::shape_fn_t taylor_quad_fn_dxy[] =  {taylor_0, taylor_0, taylor_0, taylor_0, taylor_0, taylor_6_dxy};
 		TaylorShapeset::shape_fn_t* taylor_quad_shape_fn_table_dxy[1] = { taylor_quad_fn_dxy };
-		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dxy[2] = { NULL, taylor_quad_shape_fn_table_dxy  };
+		static TaylorShapeset::shape_fn_t** taylor_shape_fn_table_dxy[2] = { taylor_quad_shape_fn_table_dxy, taylor_quad_shape_fn_table_dxy  };
 
 TaylorShapeset::TaylorShapeset()
 {
@@ -271,9 +272,9 @@ TaylorShapeset::TaylorShapeset(Element* e,SpaceSharedPtr<double>  space)
  			space = new_space;
  			mesh = space->get_mesh();
  			
- 	shape_table[0] = taylor_shape_fn_table;
-     shape_table[1] = taylor_shape_fn_table_dx;
-     shape_table[2] = taylor_shape_fn_table_dy;
+ 			shape_table[0] = taylor_shape_fn_table;
+    	shape_table[1] = taylor_shape_fn_table_dx;
+      shape_table[2] = taylor_shape_fn_table_dy;
       shape_table[3]= taylor_shape_fn_table_dxx;
       shape_table[4] = taylor_shape_fn_table_dyy;
       shape_table[5] = taylor_shape_fn_table_dxy;
@@ -305,7 +306,14 @@ TaylorShapeset::TaylorShapeset(Element* e,SpaceSharedPtr<double>  space)
 			
 		}
 
- 	/*  ref_vert[1][0][0] = -1.0;
+    /*  ref_vert[0][0][0] = -1.0;
+      ref_vert[0][0][1] = -1.0;
+      ref_vert[0][1][0] =  1.0;
+      ref_vert[0][1][1] = -1.0;
+      ref_vert[0][2][0] = -1.0;
+      ref_vert[0][2][1] =  1.0;
+
+      ref_vert[1][0][0] = -1.0;
       ref_vert[1][0][1] = -1.0;
       ref_vert[1][1][0] =  1.0;
       ref_vert[1][1][1] = -1.0;
@@ -318,7 +326,6 @@ TaylorShapeset::TaylorShapeset(Element* e,SpaceSharedPtr<double>  space)
 		x_c/= active_element->get_nvert(); 
 		y_c /= active_element->get_nvert();
 
-//x_c =0; y_c = 0;
 	
 	if(vol_av!=NULL) delete vol_av; 
 	 if(sln_x!=NULL) delete sln_x; 
@@ -335,12 +342,11 @@ TaylorShapeset::TaylorShapeset(Element* e,SpaceSharedPtr<double>  space)
    rest_taylor_5 = vol_av->calculate_Volume_Average(active_element,0, sln_y, space, sln_y);
    rest_taylor_6 = vol_av->calculate_Volume_Average(active_element,0, sln_x, space, sln_y);
    
-  // rest_taylor_4 = 1./3.;rest_taylor_5 = 1./3.;rest_taylor_6 = 0;  //fuer x_c, y_c  =0 und einheitsquadrat
-   
+    
    	delta_x = (x_max - x_min)/2.;
 		delta_y = (y_max - y_min)/2.;    
 
-			//x_c =0; y_c = 0;
+
  }
 
 TaylorShapeset::~TaylorShapeset()

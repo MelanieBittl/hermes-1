@@ -2,22 +2,19 @@
 
 //Detector for Oszillations
 
-KuzminOscillationDetector::KuzminOscillationDetector(SpaceSharedPtr<double> space, MeshFunctionSharedPtr<double> sln_fct) : space(space)
+KuzminOscillationDetector::KuzminOscillationDetector(SpaceSharedPtr<double> space, MeshFunctionSharedPtr<double> solution) : space(space), solution(solution)
 {
-printf("test_0");
-	Solution<double>* solution = new Solution<double>;
- 	solution = static_cast<Solution<double>* > (sln_fct->clone());
   mesh = space->get_mesh();
 	vol_average = new VolumeAverage;
-printf("test_1");
-  int max_id=mesh->get_max_node_id();
+
+  int max_id = mesh->get_max_node_id();
 	u_min_i = new double[max_id];
 	u_max_i = new double[max_id];
 	u_dx_min_i = new double[max_id];
 	u_dx_max_i = new double[max_id];
 	u_dy_min_i = new double[max_id];
 	u_dy_max_i = new double[max_id];   
-printf("test_2");
+
   int max_elem = mesh->get_max_element_id();   
   u_c = new double[max_elem]; 
   u_dx_K = new double[max_elem];  
@@ -25,7 +22,7 @@ printf("test_2");
   u_dxx_K= new double[max_elem]; 
   u_dyy_K= new double[max_elem];   
   u_dxy_K= new double[max_elem];  
-  printf("test_3");
+ 
   alpha_i_first_order = new double[max_elem]; 
   alpha_i_second_order= new double[max_elem];   
    
@@ -49,7 +46,7 @@ KuzminOscillationDetector::~KuzminOscillationDetector()
   delete [] alpha_i_first_order;
   delete [] alpha_i_second_order;  
   delete vol_average;  
-	delete solution;
+
 };
 
 
@@ -75,6 +72,8 @@ void KuzminOscillationDetector::get_delta(Element* e, double &delta_x, double &d
 	if(delta_y==0) Hermes::Exceptions::Exception("delta_y==0. ");  
 }
 
+
+
 void KuzminOscillationDetector::compute_all(bool only_p1)
 {
 		Element* e; Node* vn;
@@ -90,8 +89,8 @@ void KuzminOscillationDetector::compute_all(bool only_p1)
    }
 		
 		bool set_delta= false;
-      for_all_active_elements(e, this->mesh)
-      {
+    for_all_active_elements(e, this->mesh)
+    {
 			alpha_i_first_order[e->id] =1.;
 		   alpha_i_second_order[e->id]=1.;		
 			if(set_delta==false)
@@ -101,8 +100,8 @@ void KuzminOscillationDetector::compute_all(bool only_p1)
 		  }     
 
 		   
-		   double u, u_1,u_2, u_3;
-			 find_centroid_values(e, u);
+		   double u=0.; double u_1=0.; double u_2=0.;double u_3=0.;
+			find_centroid_values(e, u);
 			 u_c[e->id] = u;
 			 find_centroid_derivatives(e, u_1, u_2);
 			 u_dx_K[e->id] = delta_x*u_1;
@@ -135,8 +134,8 @@ void KuzminOscillationDetector::compute_all(bool only_p1)
 		double u_i;
 		double u_dx_i;
 		double u_dy_i;
-		
-      for_all_active_elements(e, this->mesh)
+	 	
+    for_all_active_elements(e, this->mesh)
       {
 			double c_ref_x =0; double c_ref_y=0; 
 			 x_max = e->vn[0]->x; 
@@ -228,34 +227,54 @@ void KuzminOscillationDetector::compute_all(bool only_p1)
 }
 
 
+
+
 void KuzminOscillationDetector::find_centroid_values(Element* e, double &u_c)
 {
-    u_c = vol_average->calculate_Volume_Average(e, 0., solution, space);
-  //  solution->set_active_element(e);  
-   // u_c = solution->get_ref_value(e, 0., 0., 0, 0);
+    u_c = vol_average->calculate_Volume_Average(e,0, solution, space);
+
+   /* solution->set_active_element(e);  
+        if(e->get_mode() == HERMES_MODE_TRIANGLE)
+				{
+          u_c = (dynamic_cast<Solution<double>*>(solution.get()))->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, 0);
+				
+        }else{
+          u_c = (dynamic_cast<Solution<double>*>(solution.get()))->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, 0);
+				}*/
 
 }
 
 void KuzminOscillationDetector::find_centroid_derivatives(Element* e, double &u_dx_c, double &u_dy_c)
 {
-	//	double c_ref_x = 0.;
-		//double c_ref_y = 0.; 
-    solution->set_active_element(e);   
-    u_dx_c = solution->get_ref_value_transformed(e, 0., 0.,  0, 1);
-    u_dy_c = solution->get_ref_value_transformed(e, 0., 0.,  0, 2);
+
+    solution->set_active_element(e);  
+       if(e->get_mode() == HERMES_MODE_TRIANGLE)
+				{
+          u_dx_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, 1);
+					u_dy_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, 2);
+        }else{
+          u_dx_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, 1);
+					u_dy_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, 2);
+				} 
+
   
 }
 
 void KuzminOscillationDetector::find_second_centroid_derivatives(Element* e, double &u_dxx_c, double &u_dxy_c, double &u_dyy_c)
 {
 
-		//double c_ref_x = 0.;
-		//double c_ref_y = 0.; 
-    solution->set_active_element(e);    
-    u_dxx_c = solution->get_ref_value_transformed(e, 0., 0., 0, 3);
-    u_dyy_c = solution->get_ref_value_transformed(e, 0., 0., 0, 4);
-    u_dxy_c = solution->get_ref_value_transformed(e, 0., 0., 0, 5);    
 
+    solution->set_active_element(e);  
+       if(e->get_mode() == HERMES_MODE_TRIANGLE)
+				{
+          u_dxx_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, 3);
+					u_dyy_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, 4);
+					u_dxy_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_TRI_X, CENTROID_TRI_Y, 0, 5);
+        }else{
+          u_dxx_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, 3);
+					u_dyy_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, 4);
+					u_dxy_c = solution.get_solution()->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, 5);
+				}   
   
 }
 
@@ -344,13 +363,13 @@ void KuzminOscillationDetector::find_second_centroid_derivatives(Element* e, dou
   
   
   
-  SlopeLimiterSolution::SlopeLimiterSolution(MeshFunctionSharedPtr<double> ref_sln, SpaceSharedPtr<double> space):Solution<double>(space->get_mesh()),ref_sln(ref_sln), space(space) 
-   { 
- 			 detector = new KuzminOscillationDetector(space, ref_sln); 
+  SlopeLimiterSolution::SlopeLimiterSolution(MeshFunctionSharedPtr<double> ref_sln, SpaceSharedPtr<double> space): Solution<double>(space->get_mesh()), space(space), ref_sln(ref_sln) 
+   {  	
+			detector = new KuzminOscillationDetector(space, ref_sln); 			
   };
+
   
-    
-    
+   
  void SlopeLimiterSolution::limit_solution_according_to_detector(bool p1_only)
     {
      int o;			
@@ -403,24 +422,19 @@ void KuzminOscillationDetector::find_second_centroid_derivatives(Element* e, dou
 
       // Express the solution on elements as a linear combination of monomials.
 
-    double* mono = mono_coeffs;
+   		 double* mono = mono_coeffs;
       TaylorShapeset *shapeset_taylor = new TaylorShapeset;
 	    Shapeset* old_shapeset = space->get_shapeset();
       MeshSharedPtr ref_mesh(new Mesh);
-      Space<double>* ref_space;
-      if(old_shapeset->get_space_type()==HERMES_L2_SPACE)
+				ref_mesh->copy(this->mesh);
+			Space<double>* ref_space = new L2Space<double>(ref_mesh, 2);  
+
+      for_all_active_elements(e, ref_mesh)
       {
-      		ref_space = new L2Space<double>();      		
+        ref_space->set_element_order_internal(e->id, space->get_element_order(e->id));
       }
-      else if(old_shapeset->get_space_type() == HERMES_L2_SEMI_SPACE)
-      {
-      		 ref_space = new L2_SEMI_CG_Space<double>();
-      }		 
-      else
-      	throw Exceptions::Exception("TaylorSolution:: shapeset isn't in L2 or L2_SEMI_CG.");	
-      ref_space->copy(space, ref_mesh);	     
      
-      Quad2D* quad = &g_quad_2d_cheb;
+       Quad2D* quad = &g_quad_2d_cheb;
       double* alpha = new double[2];
       double u_c, u_dx_c, u_dy_c, u_dxx_c, u_dxy_c, u_dyy_c;  
       u_c =0;
@@ -432,34 +446,29 @@ void KuzminOscillationDetector::find_second_centroid_derivatives(Element* e, dou
 	       
       detector->compute_all(p1_only);      
      refmap->set_quad_2d(quad);
-      
+      AsmList<double> al;
       for_all_active_elements(e, this->mesh)
       {
      		 shapeset_taylor->init_data(e, space);
-          PrecalcShapeset *pss_taylor = new PrecalcShapeset(shapeset_taylor);
-          pss_taylor->set_quad_2d(quad);
           
 	 		 ref_space->set_shapeset(shapeset_taylor);
 	     	 ref_space->assign_dofs();
-
 	
-	 	//	alpha[0] = detector->get_alpha_first_order()[e->id];
-			// alpha[1] = detector->get_alpha_second_order()[e->id];  
+	 		alpha[0] = detector->get_alpha_first_order()[e->id];
+			 alpha[1] = detector->get_alpha_second_order()[e->id];  
   			
   			detector->find_centroid_values(e, u_c);
   			detector->find_centroid_derivatives(e, u_dx_c, u_dy_c);
  			detector->find_second_centroid_derivatives(e, u_dxx_c, u_dxy_c, u_dyy_c);
  						
-			alpha[0] = 1.; 
-			alpha[1] = 1.;
+			//alpha[0] = 1.; 
+			//alpha[1] = 1.;
 			
         this->mode = e->get_mode();
         o = elem_orders[e->id];
         int np = quad->get_num_points(o, e->get_mode());
-
-        AsmList<double> al;
-        ref_space->get_element_assembly_list(e, &al);
-        pss_taylor->set_active_element(e);             						
+        
+        ref_space->get_element_assembly_list(e, &al);            						
 						
 		  refmap->set_active_element(e);
 			double* x =  refmap->get_phys_x(o);
@@ -487,20 +496,14 @@ void KuzminOscillationDetector::find_second_centroid_derivatives(Element* e, dou
 					throw Exceptions::Exception("TaylorSolution::set_coeff_vector(), false idx =, %d",al.get_idx()[k]);			   
 				}	
 			  
-				pss_taylor->set_active_shape(al.get_idx()[k]);
-				pss_taylor->set_quad_order(o, H2D_FN_VAL);      
 
 				double coef = al.get_coef()[k] * u_new;  
 				double3* pts  = quad->get_points(o, e->get_mode());				
 
 
-
-				//double* shape = pss_taylor->get_fn_values(l);
 				for (int i = 0; i < np; i++)
-				{
-					//val[i] += shape[i] * coef;				
-				val[i] += pts[i][2]*shapeset_taylor->get_value(0, al.get_idx()[k], x[i], y[i], 0, e->get_mode())* coef;					
-					//val[i] += pts[i][2]*shapeset_taylor->get_value(0, al.get_idx()[k], pts[i][0], pts[i][1], 0, e->get_mode())* coef;	   
+				{			
+					val[i] += pts[i][2]*shapeset_taylor->get_value(0, al.get_idx()[k], x[i], y[i], 0, e->get_mode())* coef;				
 				}        
           }
           mono += np;
@@ -510,7 +513,7 @@ void KuzminOscillationDetector::find_second_centroid_derivatives(Element* e, dou
             mono_lu.mat[this->mode][o] = calc_mono_matrix(o, mono_lu.perm[this->mode][o]);
           lubksb(mono_lu.mat[this->mode][o], np, mono_lu.perm[this->mode][o], val);
         }
-        delete pss_taylor;
+
       }
 
       if(this->mesh == NULL) throw Hermes::Exceptions::Exception("mesh == NULL.\n");
@@ -606,9 +609,7 @@ void SlopeLimiterSolution::set_diff_linear()
       for_all_active_elements(e, this->mesh)
       {
      		 shapeset_taylor->init_data(e, space);
-          PrecalcShapeset *pss_taylor = new PrecalcShapeset(shapeset_taylor);
-          pss_taylor->set_quad_2d(quad);
-          
+
 	 		 ref_space->set_shapeset(shapeset_taylor);
 	     	 ref_space->assign_dofs();			
 	 		alpha[0] = detector->get_alpha_first_order()[e->id];
@@ -623,7 +624,7 @@ void SlopeLimiterSolution::set_diff_linear()
 
         AsmList<double> al;
         ref_space->get_element_assembly_list(e, &al);
-        pss_taylor->set_active_element(e);             						
+           						
 						
 		  refmap->set_active_element(e);
 			double* x =  refmap->get_phys_x(o);
@@ -651,18 +652,15 @@ void SlopeLimiterSolution::set_diff_linear()
 					throw Exceptions::Exception("TaylorSolution::set_coeff_vector(), false idx =, %d",al.get_idx()[k]);			   
 				}	
 			  
-				pss_taylor->set_active_shape(al.get_idx()[k]);
-				pss_taylor->set_quad_order(o, H2D_FN_VAL);      
+   
 
 				double coef = al.get_coef()[k] * u_new;  
 				double3* pts  = quad->get_points(o, e->get_mode());	
 
-				for (int i = 0; i < np; i++)
-				{
-			
-				val[i] += pts[i][2]*shapeset_taylor->get_value(0, al.get_idx()[k], x[i], y[i], 0, e->get_mode())* coef;					
+				for (int i = 0; i < np; i++)			
+						val[i] += pts[i][2]*shapeset_taylor->get_value(0, al.get_idx()[k], x[i], y[i], 0, e->get_mode())* coef;					
  
-				}        
+				        
           }
           mono += np;
 
@@ -671,7 +669,7 @@ void SlopeLimiterSolution::set_diff_linear()
             mono_lu.mat[this->mode][o] = calc_mono_matrix(o, mono_lu.perm[this->mode][o]);
           lubksb(mono_lu.mat[this->mode][o], np, mono_lu.perm[this->mode][o], val);
         }
-        delete pss_taylor;
+ 
       }
 
       if(this->mesh == NULL) throw Hermes::Exceptions::Exception("mesh == NULL.\n");
@@ -687,298 +685,4 @@ void SlopeLimiterSolution::set_diff_linear()
   
 
     
-    
-    
-
-  RegSolution::RegSolution(SpaceSharedPtr<double> space):Solution<double>(space->get_mesh()), space(space)  {  };
-
-void RegSolution::linear_approx(double* u_c, MeshFunctionSharedPtr<double> R_h_1_fct, MeshFunctionSharedPtr<double> R_h_2_fct)
-    {
-     int o;			
-      free();
-      this->space_type = space->get_type();
-      
-		if(this->space_type != HERMES_L2_SPACE)
-			throw Exceptions::Exception("TaylorSolution need to be in L2 Space.");
-      this->num_components = 1.;
-      sln_type = HERMES_SLN;	
-
-Solution<double>* R_h_1 = new Solution<double>; R_h_1= static_cast<Solution<double>* > (R_h_1_fct->clone());
-Solution<double>* R_h_2 = new Solution<double>; R_h_2= static_cast<Solution<double>* > (R_h_2_fct->clone());	
-      
-      // Copy the mesh.
-      this->mesh = space->get_mesh();
-
-      // Allocate the coefficient arrays.
-      num_elems = this->mesh->get_max_element_id();
-      if(elem_orders != NULL)
-        delete [] elem_orders;
-      elem_orders = new int[num_elems];
-      memset(elem_orders, 0, sizeof(int) * num_elems);
-      for (int l = 0; l < this->num_components; l++)
-      {
-        if(elem_coeffs[l] != NULL)
-          delete [] elem_coeffs[l];
-        elem_coeffs[l] = new int[num_elems];
-        memset(elem_coeffs[l], 0, sizeof(int) * num_elems);
-      }
-
-      // Obtain element orders, allocate mono_coeffs.
-      Element* e;
-      num_coeffs = 0;
-      for_all_active_elements(e, this->mesh)
-      {
-        this->mode = e->get_mode();
-        o = 1;  // linear approx!!!!        
-        num_coeffs += this->mode ? sqr(o + 1) : (o + 1)*(o + 2)/2;
-        elem_orders[e->id] = o;
-      }
-      num_coeffs *= this->num_components;
-      if(mono_coeffs != NULL)
-        delete [] mono_coeffs;
-      mono_coeffs = new double[num_coeffs];
-
-      // Express the solution on elements as a linear combination of monomials.
-     double* mono = mono_coeffs;
-      TaylorShapeset *shapeset_taylor = new TaylorShapeset;	    
-      MeshSharedPtr ref_mesh(new Mesh);      
-      Space<double>* ref_space =NULL;
-      Shapeset* old_shapeset = space->get_shapeset();
-      if(old_shapeset->get_space_type()==HERMES_L2_SPACE)
-      {
-      		ref_space = new L2Space<double>();      		
-      }
-      else if(old_shapeset->get_space_type() == HERMES_H1_SPACE)
-      {
-      		 ref_space = new L2_SEMI_CG_Space<double>();
-      }		 
-      else
-      	throw Exceptions::Exception("TaylorSolution:: shapeset isn't in L2 or L2_SEMI_CG.");	
-      	
-      	//ref_space = new L2_SEMI_CG_Space<double>();
-      ref_space->copy(space, ref_mesh);   
-     
-     Quad2D* quad = &g_quad_2d_cheb;          
-   
-     refmap->set_quad_2d(quad);
-        
-      for_all_active_elements(e, this->mesh)
-      {
-     		 shapeset_taylor->init_data(e, space);
-          PrecalcShapeset *pss_taylor = new PrecalcShapeset(shapeset_taylor);
-          pss_taylor->set_quad_2d(quad);
-          
-	 		 ref_space->set_shapeset(shapeset_taylor);
-	     	 ref_space->assign_dofs();
-			
-        this->mode = e->get_mode();
-        o = elem_orders[e->id];
-        int np = quad->get_num_points(o, e->get_mode());
-
-        AsmList<double> al;
-        ref_space->get_element_assembly_list(e, &al);
-        pss_taylor->set_active_element(e);             						
-						
-		  refmap->set_active_element(e);
-			double* x =  refmap->get_phys_x(o);
-			double* y =  refmap->get_phys_y(o);		
-
-       for (int l = 0; l < this->num_components; l++)
-        {
-          // Obtain solution values for the current element.
-          double* val = mono;
-          elem_coeffs[l][e->id] = (int) (mono - mono_coeffs);
-          memset(val, 0, sizeof(double)*np);
-          for (unsigned int k = 0; k < al.get_cnt(); k++)
-          {          
-          if(al.get_idx()[k]==-1) continue; //Bei l2_semi_cg!!!!
-				double u_new=0;
-				switch(al.get_idx()[k])
-				{
-					case 0: 	u_new = u_c[e->id];   break;
-					case 1:	u_new = R_h_1->get_ref_value(e, 0, 0, 0, 0); break;
-					case 2:  u_new = R_h_2->get_ref_value(e, 0, 0, 0, 0); break;
-					case 3:	u_new = 0;break;
-					case 4:	u_new = 0;break;
-					case 5:	u_new = 0;;break;        	
-					default: 
-					throw Exceptions::Exception("TaylorSolution::set_coeff_vector(), false idx =, %d",al.get_idx()[k]);			   
-				}	
-			  
-				pss_taylor->set_active_shape(al.get_idx()[k]);
-				pss_taylor->set_quad_order(o, H2D_FN_VAL);      
-
-				double coef = al.get_coef()[k] * u_new;  
-				double3* pts  = quad->get_points(o, e->get_mode());				
-
-				for (int i = 0; i < np; i++)			
-					val[i] += pts[i][2]*shapeset_taylor->get_value(0, al.get_idx()[k], x[i], y[i], 0, e->get_mode())* coef;					
-
-				       
-          }
-          mono += np;
-
-          // solve for the monomial coefficients
-          if(mono_lu.mat[this->mode][o] == NULL)
-            mono_lu.mat[this->mode][o] = calc_mono_matrix(o, mono_lu.perm[this->mode][o]);
-          lubksb(mono_lu.mat[this->mode][o], np, mono_lu.perm[this->mode][o], val);
-        }
-        delete pss_taylor;
-      }
-
-      if(this->mesh == NULL) throw Hermes::Exceptions::Exception("mesh == NULL.\n");
-      init_dxdy_buffer();
-      this->element = NULL;
-       
-
-        delete ref_space;
-        delete shapeset_taylor;
-				delete R_h_1; delete R_h_2;
-       
-    }
-    
-    
-    
-void RegSolution::linear_approx_d(double* u_c_d, MeshFunctionSharedPtr<double> R_h_fct)
-    {
-     int o;			
-      free();
-      this->space_type = space->get_type();
-      
-		if(this->space_type != HERMES_L2_SPACE)
-			throw Exceptions::Exception("TaylorSolution need to be in L2 Space.");
-      this->num_components = 1.;
-      sln_type = HERMES_SLN;		
- Solution<double>* R_h = new Solution<double>; R_h= static_cast<Solution<double>* > (R_h_fct->clone());     
-      // Copy the mesh.
-      this->mesh = space->get_mesh();
-
-      // Allocate the coefficient arrays.
-      num_elems = this->mesh->get_max_element_id();
-      if(elem_orders != NULL)
-        delete [] elem_orders;
-      elem_orders = new int[num_elems];
-      memset(elem_orders, 0, sizeof(int) * num_elems);
-      for (int l = 0; l < this->num_components; l++)
-      {
-        if(elem_coeffs[l] != NULL)
-          delete [] elem_coeffs[l];
-        elem_coeffs[l] = new int[num_elems];
-        memset(elem_coeffs[l], 0, sizeof(int) * num_elems);
-      }
-
-      // Obtain element orders, allocate mono_coeffs.
-      Element* e;
-      num_coeffs = 0;
-      for_all_active_elements(e, this->mesh)
-      {
-        this->mode = e->get_mode();
-        o = 1;  // linear approx!!!!
-        
-        num_coeffs += this->mode ? sqr(o + 1) : (o + 1)*(o + 2)/2;
-        elem_orders[e->id] = o;
-      }
-      num_coeffs *= this->num_components;
-      if(mono_coeffs != NULL)
-        delete [] mono_coeffs;
-      mono_coeffs = new double[num_coeffs];
-
-      // Express the solution on elements as a linear combination of monomials.
-     double* mono = mono_coeffs;
-      TaylorShapeset *shapeset_taylor = new TaylorShapeset;	    
-      MeshSharedPtr ref_mesh(new Mesh);
-      Space<double>* ref_space =NULL;
-      Shapeset* old_shapeset = space->get_shapeset();
-      if(old_shapeset->get_space_type()==HERMES_L2_SPACE)
-      {
-      		ref_space = new L2Space<double>();      		
-      }
-      else if(old_shapeset->get_space_type() == HERMES_H1_SPACE)
-      {
-      		 ref_space = new L2_SEMI_CG_Space<double>();
-      }		 
-      else
-      	throw Exceptions::Exception("TaylorSolution:: shapeset isn't in L2 or L2_SEMI_CG.");	
-      //	ref_space = new L2_SEMI_CG_Space<double>();
-      ref_space->copy(space, ref_mesh);	    
-     
-     Quad2D* quad = &g_quad_2d_cheb;          
-   
-     refmap->set_quad_2d(quad);
-        
-      for_all_active_elements(e, this->mesh)
-      {
-     		 shapeset_taylor->init_data(e, space);
-          PrecalcShapeset *pss_taylor = new PrecalcShapeset(shapeset_taylor);
-          pss_taylor->set_quad_2d(quad);
-          
-	 		 ref_space->set_shapeset(shapeset_taylor);
-	     	 ref_space->assign_dofs();
-			
-        this->mode = e->get_mode();
-        o = elem_orders[e->id];
-        int np = quad->get_num_points(o, e->get_mode());
-
-        AsmList<double> al;
-        ref_space->get_element_assembly_list(e, &al);
-        pss_taylor->set_active_element(e);             						
-						
-		  refmap->set_active_element(e);
-			double* x =  refmap->get_phys_x(o);
-			double* y =  refmap->get_phys_y(o);		
-
-       for (int l = 0; l < this->num_components; l++)
-        {
-          // Obtain solution values for the current element.
-          double* val = mono;
-          elem_coeffs[l][e->id] = (int) (mono - mono_coeffs);
-          memset(val, 0, sizeof(double)*np);
-          for (unsigned int k = 0; k < al.get_cnt(); k++)
-          {
-            if(al.get_idx()[k]==-1) continue; //Bei l2_semi_cg!!!!
-				double u_new=0;
-				switch(al.get_idx()[k])
-				{
-					case 0: u_new = u_c_d[e->id];   break;
-					case 1:	u_new = R_h->get_ref_value_transformed(e, 0, 0, 0, 1); break;
-					case 2: u_new = R_h->get_ref_value_transformed(e, 0, 0, 0, 2); break;
-					case 3:	u_new = 0;break;
-					case 4:	u_new = 0;break;
-					case 5:	u_new = 0;;break;        	
-					default: 
-					throw Exceptions::Exception("TaylorSolution::set_coeff_vector(), false idx =, %d",al.get_idx()[k]);			   
-				}	
-			  
-				pss_taylor->set_active_shape(al.get_idx()[k]);
-				pss_taylor->set_quad_order(o, H2D_FN_VAL);      
-
-				double coef = al.get_coef()[k] * u_new;  
-				double3* pts  = quad->get_points(o, e->get_mode());				
-
-				for (int i = 0; i < np; i++)			
-					val[i] += pts[i][2]*shapeset_taylor->get_value(0, al.get_idx()[k], x[i], y[i], 0, e->get_mode())* coef;					
-
-				       
-          }
-          mono += np;
-
-          // solve for the monomial coefficients
-          if(mono_lu.mat[this->mode][o] == NULL)
-            mono_lu.mat[this->mode][o] = calc_mono_matrix(o, mono_lu.perm[this->mode][o]);
-          lubksb(mono_lu.mat[this->mode][o], np, mono_lu.perm[this->mode][o], val);
-        }
-        delete pss_taylor;
-      }
-
-      if(this->mesh == NULL) throw Hermes::Exceptions::Exception("mesh == NULL.\n");
-      init_dxdy_buffer();
-      this->element = NULL;
-       
-
-        delete ref_space;
-        delete shapeset_taylor;
-				delete R_h;
-       
-    }
-
- 
+  

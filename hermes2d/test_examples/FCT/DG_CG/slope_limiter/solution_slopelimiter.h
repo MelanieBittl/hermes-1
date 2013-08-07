@@ -1,7 +1,6 @@
 #ifndef __SlopeLimiter_Solution_H
 #define __SlopeLimiter_Solution_H
 #include "hermes2d.h" 
-#include "util.h"
  #include "shapeset_taylor.h"
 
 
@@ -36,7 +35,7 @@ protected:
   /// Members.
     MeshSharedPtr mesh;
   SpaceSharedPtr<double>  space;
-  Solution<double>* solution;
+  MeshFunctionSharedPtr<double> solution;
     VolumeAverage* vol_average;       
 
   
@@ -71,7 +70,7 @@ protected:
  class SlopeLimiterSolution : public Solution<double>
  { 
  public:
- 	SlopeLimiterSolution(MeshFunctionSharedPtr<double> ref_sln, SpaceSharedPtr<double> space);
+ 	SlopeLimiterSolution(MeshFunctionSharedPtr<double> sln, SpaceSharedPtr<double> space);
  	~SlopeLimiterSolution(){ delete detector;};
  	
  	void limit_solution_according_to_detector(bool p1_only=false);
@@ -80,25 +79,15 @@ protected:
  	double* get_alpha_second_order(){return detector->get_alpha_second_order();};
  	
  	void set_diff_linear();
+
  	
- protected:
-   
+ protected:   
    MeshFunctionSharedPtr<double>  ref_sln;
    SpaceSharedPtr<double> space;
    KuzminOscillationDetector* detector;
  
  };
 
- class RegSolution : public Solution<double>
- { 
- public:
- 	RegSolution(SpaceSharedPtr<double> space);
- 	void linear_approx(double* u_c, MeshFunctionSharedPtr<double>  R_h_1, MeshFunctionSharedPtr<double>  R_h_2);
- 	void linear_approx_d(double* u_c_d, MeshFunctionSharedPtr<double>  R_h); 	
- protected:   
-   SpaceSharedPtr<double> space;
- 
- };
 
 
 

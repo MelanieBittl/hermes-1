@@ -80,8 +80,7 @@ namespace Hermes
     {
         if((this->shapeset!=NULL)&& (this->own_shapeset))
      delete this->shapeset;
-      //if((shapeset->get_id() < 10)||(shapeset->get_id() ==31)) // <10=> H1 shapeset, 31=>taylor_shapeset
-			if((shapeset->get_id()==3))
+			if(shapeset->get_id()==3)
       {
         this->shapeset = shapeset;
         this->own_shapeset = false;
