@@ -1438,7 +1438,8 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
 
 void FeistauerPCoarseningLimiter::get_jump_indicators(Element* e, double* values)
 {
-  this->limited_solutions[0]->set_active_element(e);
+  for(int component = 0; component < this->component_count; component++)
+    this->limited_solutions[component]->set_active_element(e);
 
   for (int isurf = 0; isurf < e->nvert; isurf++)
   {

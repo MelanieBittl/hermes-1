@@ -27,6 +27,7 @@ const unsigned int EVERY_NTH_STEP = 100;
 
 bool SHOCK_CAPTURING = true;
 const EulerLimiterType limiter_type = JumpIndicator_P_coarsening;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
 //const EulerLimiterType limiter_type = VertexBased;
 
 // Initial polynomial degree.
