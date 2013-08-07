@@ -69,18 +69,18 @@ bool CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > so
       min_condition = condition;
   }
 
-if(time_step > min_condition * (1 + 1e-4))
-{
-  time_step = min_condition;
+  if(time_step > min_condition * (1 + 1e-4))
+  {
+    time_step = min_condition;
 
-  delete [] sln_vector;
-  return true;
-}
-else
-{
-  delete [] sln_vector;
-  return false;
-}
+    delete [] sln_vector;
+    return true;
+  }
+  else
+  {
+    delete [] sln_vector;
+    return false;
+  }
 }
 
 void CFLCalculation::calculate_semi_implicit(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const
@@ -1367,10 +1367,77 @@ FeistauerPCoarseningLimiter::~FeistauerPCoarseningLimiter()
 {
 }
 
-double FeistauerPCoarseningLimiter::get_jump_indicator(Element* e)
+void FeistauerPCoarseningLimiter::set_type(EulerLimiterType type)
 {
-  double jump_indicator = 0.;
+  this->indicatorType = type;
+}
 
+bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* values)
+{
+  switch(this->indicatorType)
+  {
+  case CoarseningJumpIndicatorDensity:
+    {
+      if(values[0] > 1.0)
+      {
+        AsmList<double> al;
+        this->spaces[0]->get_element_assembly_list(e, &al);
+        for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
+          if(H2D_GET_H_ORDER(spaces[0]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[0]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
+            this->solution_vector[al.get_dof()[shape_i]] = 0.0;
+      }
+    }
+    break;
+  case CoarseningJumpIndicatorDensityToAll:
+    {
+      if(values[0] > 1.0)
+        for(int component = 0; component < this->component_count; component++)
+        {
+          AsmList<double> al;
+          this->spaces[component]->get_element_assembly_list(e, &al);
+          for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
+            if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
+              this->solution_vector[al.get_dof()[shape_i]] = 0.0;
+        }
+    }
+    break;
+  case CoarseningJumpIndicatorAllToThemselves:
+    {
+      for(int component = 0; component < this->component_count; component++)
+        if(values[component] > 1.0)
+        {
+          AsmList<double> al;
+          this->spaces[component]->get_element_assembly_list(e, &al);
+          for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
+            if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
+              this->solution_vector[al.get_dof()[shape_i]] = 0.0;
+        }
+    }
+  case CoarseningJumpIndicatorAllToAll:
+    {
+      bool limit = false;
+      for(int component = 0; component < this->component_count; component++)
+        if(values[component] > 1.0)
+          limit = true;
+
+      if(limit)
+        for(int component = 0; component < this->component_count; component++)
+        {
+          AsmList<double> al;
+          this->spaces[component]->get_element_assembly_list(e, &al);
+          for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
+            if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
+              this->solution_vector[al.get_dof()[shape_i]] = 0.0;
+        }
+    }
+    break;
+  default:
+    throw Exceptions::Exception("Bad limiting type in Feistauer.");
+  }
+}
+
+void FeistauerPCoarseningLimiter::get_jump_indicators(Element* e, double* values)
+{
   this->limited_solutions[0]->set_active_element(e);
 
   for (int isurf = 0; isurf < e->nvert; isurf++)
@@ -1386,15 +1453,13 @@ double FeistauerPCoarseningLimiter::get_jump_indicator(Element* e)
     int num_neighbors = ns->get_num_neighbors();
 
     for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors; neighbor_i++)
-      jump_indicator += this->assemble_one_neighbor(*ns, isurf, neighbor_i);
+      this->assemble_one_neighbor(*ns, isurf, neighbor_i, values);
 
     delete ns;
   }
-
-  return jump_indicator;
 }
 
-double FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i)
+void FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, double* values)
 {
   ns.set_active_segment(neighbor_i);
 
@@ -1413,22 +1478,52 @@ double FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>
   double* jwt;
   int n_quadrature_points = init_surface_geometry_points(&refmap, 1, order, edge, 1, e, jwt);
 
-  DiscontinuousFunc<double>* density = ns.init_ext_fn(this->limited_solutions[0].get());
-
-  double value = 0.;
-  for(int i = 0; i < n_quadrature_points; i++)
-    value += jwt[i] * (density->val[i] - density->val_neighbor[i]) * (density->val[i] - density->val_neighbor[i]);
-
-  value *= 0.5 / (ns.central_el->get_diameter() * std::pow(ns.central_el->get_area(), 0.75));
-
-  if(this->get_verbose_output())
+  if(indicatorType == CoarseningJumpIndicatorDensity || indicatorType == CoarseningJumpIndicatorDensityToAll)
   {
-    std::cout << "\t\tNeighbor: " << neighbor_i << ", h: " << ns.central_el->get_diameter() << ", area: " << ns.central_el->get_area() << std::endl;
-    std::cout << "\t\tNeighbor: " << neighbor_i << ", jump: " << value << std::endl;
-  }
+    double value = 0.;
+    DiscontinuousFunc<double>* density = ns.init_ext_fn(this->limited_solutions[0].get());
 
-  density->free_fn();
-  delete density;
+    for(int i = 0; i < n_quadrature_points; i++)
+      value += jwt[i] * (density->val[i] - density->val_neighbor[i]) * (density->val[i] - density->val_neighbor[i]);
+
+    value *= 0.5 / (ns.central_el->get_diameter() * std::pow(ns.central_el->get_area(), 0.75));
+
+    if(this->get_verbose_output())
+    {
+      std::cout << "\t\tNeighbor: " << neighbor_i << ", h: " << ns.central_el->get_diameter() << ", area: " << ns.central_el->get_area() << std::endl;
+      std::cout << "\t\tNeighbor: " << neighbor_i << ", jump: " << value << std::endl;
+    }
+
+    values[0] += value;
+
+    density->free_fn();
+    delete density;
+  }
+  else
+  {
+    for(int component = 0; component < this->component_count; component++)
+    {
+      double value = 0.;
+      DiscontinuousFunc<double>* func = ns.init_ext_fn(this->limited_solutions[component].get());
+
+      for(int i = 0; i < n_quadrature_points; i++)
+        value += jwt[i] * (func->val[i] - func->val_neighbor[i]) * (func->val[i] - func->val_neighbor[i]);
+
+      value *= 0.5 / (ns.central_el->get_diameter() * std::pow(ns.central_el->get_area(), 0.75));
+
+      if(this->get_verbose_output())
+      {
+        std::cout << "\t\tComponent: " << component << std::endl;
+        std::cout << "\t\tNeighbor: " << neighbor_i << ", h: " << ns.central_el->get_diameter() << ", area: " << ns.central_el->get_area() << std::endl;
+        std::cout << "\t\tNeighbor: " << neighbor_i << ", jump: " << value << std::endl;
+      }
+
+      values[component] += value;
+
+      func->free_fn();
+      delete func;
+    }
+  }
 
   delete [] jwt;
   e->free();
@@ -1438,8 +1533,6 @@ double FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>
   // Clear the transformations from the RefMaps and all functions.
   for(unsigned int fns_i = 0; fns_i < this->component_count; fns_i++)
     this->limited_solutions[fns_i]->set_transform(0);
-
-  return value;
 }
 
 void FeistauerPCoarseningLimiter::process()
@@ -1455,8 +1548,12 @@ void FeistauerPCoarseningLimiter::process()
 
   MeshSharedPtr mesh = this->spaces[0]->get_mesh();
 
+  double* values = new double[this->component_count];
+
   for_all_active_elements(e, mesh)
   {
+    memset(values, 0, sizeof(double)*this->component_count);
+
     bool higher_order = H2D_GET_H_ORDER(this->spaces[0]->get_element_order(e->id)) >= 0 || H2D_GET_V_ORDER(this->spaces[0]->get_element_order(e->id)) >= 0;
     if(!higher_order)
       continue;
@@ -1464,17 +1561,8 @@ void FeistauerPCoarseningLimiter::process()
     if(this->get_verbose_output())
       std::cout << "Element: " << e->id << std::endl;
 
-    if(get_jump_indicator(e) > 1.)
-    {
-      for(int component = 0; component < this->component_count; component++)
-      {
-        AsmList<double> al;
-        this->spaces[component]->get_element_assembly_list(e, &al);
-        for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
-          if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
-            this->solution_vector[al.get_dof()[shape_i]] = 0.0;
-      }
-    }
+    get_jump_indicators(e, values);
+    this->conditionally_coarsen(e, values);
   }
 
   this->tick();
@@ -1495,8 +1583,15 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, S
   if(limiter_type == VertexBased)
     limiter = new PostProcessing::VertexBasedLimiter(space, solution_vector, polynomial_degree);
 
-  if(limiter_type == JumpIndicator_P_coarsening)
-    limiter = new FeistauerPCoarseningLimiter(space, solution_vector);
+  if(limiter_type == CoarseningJumpIndicatorDensity
+  || limiter_type == CoarseningJumpIndicatorDensityToAll
+  || limiter_type == CoarseningJumpIndicatorAllToThemselves
+  || limiter_type == CoarseningJumpIndicatorAllToAll)
+  {
+    FeistauerPCoarseningLimiter* f_limiter = new FeistauerPCoarseningLimiter(space, solution_vector);
+    f_limiter->set_type(limiter_type);
+    limiter = f_limiter;
+  }
 
   limiter->set_verbose_output(verbose);
   return limiter;
@@ -1508,9 +1603,16 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, H
 
   if(limiter_type == VertexBased)
     limiter = new PostProcessing::VertexBasedLimiter(spaces, solution_vector, polynomial_degree);
-
-  if(limiter_type == JumpIndicator_P_coarsening)
-    limiter = new FeistauerPCoarseningLimiter(spaces, solution_vector);
+  
+  if(limiter_type == CoarseningJumpIndicatorDensity
+  || limiter_type == CoarseningJumpIndicatorDensityToAll
+  || limiter_type == CoarseningJumpIndicatorAllToThemselves
+  || limiter_type == CoarseningJumpIndicatorAllToAll)
+  {
+    FeistauerPCoarseningLimiter* f_limiter = new FeistauerPCoarseningLimiter(spaces, solution_vector);
+    f_limiter->set_type(limiter_type);
+    limiter = f_limiter;
+  }
 
   limiter->set_verbose_output(verbose);
   return limiter;

@@ -472,6 +472,16 @@ public:
     double kappa;
 };
 
+enum EulerLimiterType
+{
+  VertexBased,
+  VertexBasedWithLimitingNonConservative,
+  CoarseningJumpIndicatorDensity,
+  CoarseningJumpIndicatorDensityToAll,
+  CoarseningJumpIndicatorAllToThemselves,
+  CoarseningJumpIndicatorAllToAll
+};
+
 void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::Limiter<double>& limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
 
 class FeistauerPCoarseningLimiter : public PostProcessing::Limiter<double>
@@ -481,17 +491,14 @@ public:
   FeistauerPCoarseningLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector);
   ~FeistauerPCoarseningLimiter();
 
+  void set_type(EulerLimiterType indicatorType);
 private:
   void process();
-  double get_jump_indicator(Element* e);
-  double assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i);
-};
+  void get_jump_indicators(Element* e, double* values);
+  void assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, double* values);
+  bool conditionally_coarsen(Element* e, double* values);
 
-enum EulerLimiterType
-{
-  VertexBased,
-  VertexBasedWithLimitingNonConservative,
-  JumpIndicator_P_coarsening
+  EulerLimiterType indicatorType;
 };
 
 PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false);
