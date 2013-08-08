@@ -474,12 +474,12 @@ public:
 
 enum EulerLimiterType
 {
-  VertexBased,
-  VertexBasedWithLimitingNonConservative,
-  CoarseningJumpIndicatorDensity,
-  CoarseningJumpIndicatorDensityToAll,
-  CoarseningJumpIndicatorAllToThemselves,
-  CoarseningJumpIndicatorAllToAll
+  VertexBased = 0,
+  VertexBasedWithLimitingNonConservative = 1,
+  CoarseningJumpIndicatorDensity = 2,
+  CoarseningJumpIndicatorDensityToAll = 3,
+  CoarseningJumpIndicatorAllToThemselves = 4,
+  CoarseningJumpIndicatorAllToAll = 5
 };
 
 template<typename LimiterType>
@@ -494,6 +494,14 @@ public:
 
   void set_type(EulerLimiterType indicatorType);
   EulerLimiterType get_type();
+
+  /// Alpha in the indicator, it is the exponent (h^{alpha}) in the denominator.
+  /// Should be between 1 - 5.
+  static double alpha;
+
+  /// The constant the jump indicator g is compared to and when larger than this, the limiting is carried out.
+  static double thresholdConstant;
+
 private:
   void process();
   void get_jump_indicators(Element* e, double* values);
@@ -501,8 +509,6 @@ private:
   bool conditionally_coarsen(Element* e, double* values);
 
   EulerLimiterType indicatorType;
-
-  const static double constant;
 };
 
 PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false);

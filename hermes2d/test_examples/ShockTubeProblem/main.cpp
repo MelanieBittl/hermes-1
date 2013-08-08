@@ -19,20 +19,20 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = true;
+const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 100;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
-//const EulerLimiterType limiter_type = VertexBased;
+EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 6;
+int INIT_REF_NUM_ISO = 0;
+int INIT_REF_NUM_ANISO = 7;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
@@ -62,10 +62,10 @@ const double KAPPA = 1.4;
 double TIME_INTERVAL_LENGTH = .231;
 
 // Boundary markers.
-const std::string BDY_INLET = "Left";
-const std::string BDY_OUTLET = "Right";
-const std::string BDY_SOLID_WALL_BOTTOM = "Bottom";
-const std::string BDY_SOLID_WALL_TOP = "Top";
+std::string BDY_INLET = "Left";
+std::string BDY_OUTLET = "Right";
+std::string BDY_SOLID_WALL_BOTTOM = "Bottom";
+std::string BDY_SOLID_WALL_TOP = "Top";
 
 // Weak forms.
 #include "forms_explicit.cpp"
@@ -73,17 +73,95 @@ const std::string BDY_SOLID_WALL_TOP = "Top";
 // Initial condition.
 #include "initial_condition.cpp"
 
+std::string filename;
+
+void set_params(int argc, char* argv[])
+{
+  if(argc < 3)
+    return;
+
+  // argv[1]: EulerLimiterType
+  // argv[2]: 1 - quad, 2 - tri-simple, 3 - tri
+  // argv[3] ? alpha
+  limiter_type = (EulerLimiterType)(atoi(argv[1]));
+
+  if(atoi(argv[1]) < 2)
+  {
+    if(atoi(argv[2]) == 1)
+    {
+      INIT_REF_NUM_ISO = 0;
+      INIT_REF_NUM_ANISO = 7;
+    }
+  }
+  else
+  {
+    if(atoi(argv[2]) == 1)
+    {
+      INIT_REF_NUM_ISO = 5;
+      INIT_REF_NUM_ANISO = 2;
+    }
+  }
+
+    if(atoi(argv[2]) == 2)
+    {
+      INIT_REF_NUM_ISO = 6;
+      INIT_REF_NUM_ANISO = 0;
+    }
+    if(atoi(argv[2]) == 3)
+    {
+      INIT_REF_NUM_ISO = 2;
+      INIT_REF_NUM_ANISO = 0;
+    }
+
+  if(atoi(argv[2]) == 1)
+    filename = "/home/staff/korous/hermes/hermes2d/test_examples/ShockTubeProblem/domain.xml";
+  else if (atoi(argv[2]) == 2)
+    filename = "/home/staff/korous/hermes/hermes2d/test_examples/ShockTubeProblem/domain-tri-simple.xml";
+  else
+  {
+    filename = "/home/staff/korous/hermes/hermes2d/test_examples/ShockTubeProblem/domain-tri.xml";
+    BDY_INLET = "0";
+    BDY_OUTLET = "1";
+    BDY_SOLID_WALL_BOTTOM = "2";
+    BDY_SOLID_WALL_TOP = "3";
+  }
+  if(argc == 4)
+  {
+    FeistauerPCoarseningLimiter::alpha = atof(argv[3]);
+  }
+}
+
 int main(int argc, char* argv[])
 {
+  HermesCommonApi.set_integral_param_value(numThreads, 5);
+  set_params(argc, argv);
+  Hermes::Mixins::Loggable logger(true);
+  logger.set_logFile_name("computation.log");
+
+  logger.info("Limiter: %i", limiter_type);
+  logger.info("Aniso refs: %i", INIT_REF_NUM_ANISO);
+  logger.info("Iso refs: %i", INIT_REF_NUM_ISO);
+  if(limiter_type > 1)
+    logger.info("Feist alpha: %f", FeistauerPCoarseningLimiter::alpha);
+  logger.info("File: %s", filename.c_str());
+
 #pragma region 1. Load mesh and initialize spaces.
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
   MeshReaderH2DXML mloader;
-  mloader.load("domain.xml", mesh);
+  Hermes::vector<MeshSharedPtr> meshes;
+  meshes.push_back(mesh);
+if(argc > 2 && atoi(argv[2]) == 3)
+  mloader.load(filename.c_str(), meshes);
+else
+  mloader.load(filename.c_str(), mesh);
 
   // Perform initial mesh refinements.
-  for (int i = 0; i < INIT_REF_NUM; i++) 
+  for (int i = 0; i < INIT_REF_NUM_ANISO; i++) 
     mesh->refine_all_elements(2);
+
+  for (int i = 0; i < INIT_REF_NUM_ISO; i++) 
+    mesh->refine_all_elements(0);
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -93,7 +171,7 @@ int main(int argc, char* argv[])
   Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho, space_rho_v_x, space_rho_v_y, space_e);
 
   int ndof = Space<double>::get_num_dofs(spaces);
-  Hermes::Mixins::Loggable::Static::info("Ndof: %d", ndof);
+  logger.info("Ndof: %d", ndof);
 #pragma endregion
 
   // Set up CFL calculation class.
@@ -139,7 +217,7 @@ int main(int argc, char* argv[])
   for(double t = 0.0; t <= TIME_INTERVAL_LENGTH + Hermes::Epsilon; t += time_step_length)
   {
     // Info.
-    Hermes::Mixins::Loggable::Static::info("---- Time step %d, time %3.5f.", iteration++, t);
+    logger.info("---- Time step %d, time %3.5f.", iteration++, t);
 
     // Set the current time step.
     wf.set_current_time_step(time_step_length);

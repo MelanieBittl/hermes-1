@@ -1386,7 +1386,8 @@ EulerLimiterType FeistauerPCoarseningLimiter::get_type()
   return this->indicatorType;
 }
 
-const double FeistauerPCoarseningLimiter::constant = 0.001;
+double FeistauerPCoarseningLimiter::alpha = 5.0;
+double FeistauerPCoarseningLimiter::thresholdConstant = 1.0;
 
 
 bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* values)
@@ -1395,7 +1396,7 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
   {
   case CoarseningJumpIndicatorDensity:
     {
-      if(values[0] > FeistauerPCoarseningLimiter::constant)
+      if(values[0] > FeistauerPCoarseningLimiter::thresholdConstant)
       {
         AsmList<double> al;
         this->spaces[0]->get_element_assembly_list(e, &al);
@@ -1407,7 +1408,7 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
     break;
   case CoarseningJumpIndicatorDensityToAll:
     {
-      if(values[0] > FeistauerPCoarseningLimiter::constant)
+      if(values[0] > FeistauerPCoarseningLimiter::thresholdConstant)
         for(int component = 0; component < this->component_count; component++)
         {
           AsmList<double> al;
@@ -1421,7 +1422,7 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
   case CoarseningJumpIndicatorAllToThemselves:
     {
       for(int component = 0; component < this->component_count; component++)
-        if(values[component] > FeistauerPCoarseningLimiter::constant)
+        if(values[component] > FeistauerPCoarseningLimiter::thresholdConstant)
         {
           AsmList<double> al;
           this->spaces[component]->get_element_assembly_list(e, &al);
@@ -1434,7 +1435,7 @@ bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* valu
     {
       bool limit = false;
       for(int component = 0; component < this->component_count; component++)
-        if(values[component] > FeistauerPCoarseningLimiter::constant)
+        if(values[component] > FeistauerPCoarseningLimiter::thresholdConstant)
           limit = true;
 
       if(limit)
@@ -1504,7 +1505,7 @@ void FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& 
     for(int i = 0; i < n_quadrature_points; i++)
       value += jwt[i] * (density->val[i] - density->val_neighbor[i]) * (density->val[i] - density->val_neighbor[i]);
 
-    value *= 0.5 / (ns.central_el->get_diameter() * std::pow(ns.central_el->get_area(), 0.75));
+    value *= 0.5 / std::pow(ns.central_el->get_diameter(), FeistauerPCoarseningLimiter::alpha);
 
     if(this->get_verbose_output())
     {
