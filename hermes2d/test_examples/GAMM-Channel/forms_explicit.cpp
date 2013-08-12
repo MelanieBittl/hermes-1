@@ -355,8 +355,8 @@ public:
       delete num_flux;
     }
 
-    double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, 
-      Func<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
+    double value(int n, double *wt, Func<double> **u_ext, 
+      Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
       double w_L[4], w_R[4];
       double result = 0.;
@@ -379,9 +379,15 @@ public:
       return -result * wf->get_current_time_step();
     }
 
+    Ord ord(int n, double *wt, Func<Ord> **u_ext, 
+      Func<Ord> *v, Geom<Ord> *e, Func<Ord>* *ext) const 
+    {
+      return Ord(10);
+    }
+
     VectorFormSurf<double>* clone()  const
     { 
-      EulerEquationsVectorFormInletOutlet* form = new EulerEquationsVectorFormInletOutlet(this->i, this->num_flux->kappa, this->rho_ext, this->rho_v1_ext, this->rho_v2_ext, this->rho_e_ext);
+      EulerEquationsVectorFormInletOutlet* form = new EulerEquationsVectorFormInletOutlet(this->i, this->areas, this->num_flux->kappa, this->rho_ext, this->rho_v1_ext, this->rho_v2_ext, this->rho_e_ext);
       form->wf = this->wf;
       return form;
     }

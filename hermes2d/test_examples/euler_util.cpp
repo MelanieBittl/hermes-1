@@ -75,6 +75,12 @@ bool CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > so
     delete [] sln_vector;
     return true;
   }
+  else if(time_step < min_condition * (1 - 1e-2))
+  {
+    time_step = min_condition;
+    delete [] sln_vector;
+    return true;
+  }
   else
   {
     delete [] sln_vector;
