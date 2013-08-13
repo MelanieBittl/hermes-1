@@ -93,9 +93,9 @@ public:
 
       add_vector_form_surf(new EulerEquationsVectorFormInletOutlet(form_i, inlet_markers, kappa, rho_ext_inflow,  rho_ext_inflow * v1_ext_inflow, rho_ext_inflow * v2_ext_inflow, energy_ext_inflow));
       add_vector_form_surf(new EulerEquationsVectorFormInletOutlet(form_i, outlet_markers, kappa, rho_ext_inflow,  rho_ext_inflow * v1_ext_inflow, rho_ext_inflow * v2_ext_inflow, energy_ext_inflow));
-      
+
       add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, solid_wall_markers, kappa));
-        
+
       for(int form_j = 0; form_j < 4; form_j++)
       {
         if(!fvm_only)
@@ -400,7 +400,7 @@ public:
     EulerFluxes* fluxes;
   };
 
-  
+
   class EulerEquationsLinearFormTime : public VectorFormVol<double>
   {
   public:

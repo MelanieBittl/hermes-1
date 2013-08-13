@@ -89,10 +89,10 @@ namespace Hermes
       }
 
       template<typename Scalar>
-        Scalar* Limiter<Scalar>::get_solution_vector()
-        {
-          return this->solution_vector;
-        }
+      Scalar* Limiter<Scalar>::get_solution_vector()
+      {
+        return this->solution_vector;
+      }
 
       VertexBasedLimiter::VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order)
         : Limiter<double>(space, solution_vector)
@@ -106,9 +106,15 @@ namespace Hermes
         this->init(maximum_polynomial_order);
       }
 
+      void VertexBasedLimiter::set_p_coarsening_only()
+      {
+        this->p_coarsening_only = true;
+      }
+
       void VertexBasedLimiter::init(int maximum_polynomial_order)
       {
         this->maximum_polynomial_order = maximum_polynomial_order;
+        this->p_coarsening_only = false;
 
         // Checking that this is the Taylor shapeset.
         for(int i = 0; i < this->component_count; i++)
@@ -178,7 +184,7 @@ namespace Hermes
               std::cout << "Element: " << e->id << std::endl;
 
             quadratic_correction_done.push_back(this->impose_quadratic_correction_factor(e, component));
-            
+
             if(this->get_verbose_output())
               std::cout << std::endl;
           }
@@ -186,8 +192,8 @@ namespace Hermes
 
         // Adjust the solutions according to the quadratic terms handling.
         Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
-        
-        
+
+
         // 2. Linear
         // Prepare the vertex values for the linear part.
         prepare_min_max_vertex_values(false);
@@ -209,7 +215,7 @@ namespace Hermes
             bool second_order = H2D_GET_H_ORDER(this->spaces[component]->get_element_order(e->id)) >= 2 || H2D_GET_V_ORDER(this->spaces[component]->get_element_order(e->id)) >= 2;
             if(quadratic_correction_done[running_i++] || !second_order)
               this->impose_linear_correction_factor(e, component);
-            
+
             if(this->get_verbose_output())
               std::cout << std::endl;
           }
@@ -279,7 +285,12 @@ namespace Hermes
           {
             int order = this->spaces[component]->get_shapeset()->get_order(al.idx[i_basis_fn], e->get_mode());
             if(H2D_GET_H_ORDER(order) == 1 || H2D_GET_V_ORDER(order) == 1)
-              this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            {
+              if(this->p_coarsening_only)
+                this->solution_vector[al.dof[i_basis_fn]] = 0.;
+              else
+                this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            }
           }
 
           this->changed_element_ids.push_back(e->id);
@@ -295,7 +306,7 @@ namespace Hermes
         double correction_factor = std::numeric_limits<double>::infinity();
 
         Solution<double>* sln = dynamic_cast<Solution<double>*>(this->limited_solutions[component].get());
-        
+
         for(int i_derivative = 1; i_derivative <= 2; i_derivative++)
         {
           double centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
@@ -355,7 +366,12 @@ namespace Hermes
           {
             int order = this->spaces[component]->get_shapeset()->get_order(al.idx[i_basis_fn], e->get_mode());
             if(H2D_GET_H_ORDER(order) == 2 || H2D_GET_V_ORDER(order) == 2)
-              this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            {
+              if(this->p_coarsening_only)
+                this->solution_vector[al.dof[i_basis_fn]] = 0.;
+              else
+                this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            }
           }
 
           this->changed_element_ids.push_back(e->id);

@@ -1605,13 +1605,16 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, S
 {
   PostProcessing::Limiter<double>* limiter;
 
-if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative || limiter_type == VertexBasedPCoarsener)
+  if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative || limiter_type == VertexBasedPCoarsener)
     limiter = new PostProcessing::VertexBasedLimiter(space, solution_vector, polynomial_degree);
+  
+  if(limiter_type == VertexBasedPCoarsener)
+    ((PostProcessing::VertexBasedLimiter*)limiter)->set_p_coarsening_only();
 
   if(limiter_type == CoarseningJumpIndicatorDensity
-  || limiter_type == CoarseningJumpIndicatorDensityToAll
-  || limiter_type == CoarseningJumpIndicatorAllToThemselves
-  || limiter_type == CoarseningJumpIndicatorAllToAll)
+    || limiter_type == CoarseningJumpIndicatorDensityToAll
+    || limiter_type == CoarseningJumpIndicatorAllToThemselves
+    || limiter_type == CoarseningJumpIndicatorAllToAll)
   {
     FeistauerPCoarseningLimiter* f_limiter = new FeistauerPCoarseningLimiter(space, solution_vector);
     f_limiter->set_type(limiter_type);
@@ -1626,13 +1629,16 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, H
 {
   PostProcessing::Limiter<double>* limiter;
 
-if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative || limiter_type == VertexBasedPCoarsener)
+  if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative || limiter_type == VertexBasedPCoarsener)
     limiter = new PostProcessing::VertexBasedLimiter(spaces, solution_vector, polynomial_degree);
-  
+
+  if(limiter_type == VertexBasedPCoarsener)
+    ((PostProcessing::VertexBasedLimiter*)limiter)->set_p_coarsening_only();
+
   if(limiter_type == CoarseningJumpIndicatorDensity
-  || limiter_type == CoarseningJumpIndicatorDensityToAll
-  || limiter_type == CoarseningJumpIndicatorAllToThemselves
-  || limiter_type == CoarseningJumpIndicatorAllToAll)
+    || limiter_type == CoarseningJumpIndicatorDensityToAll
+    || limiter_type == CoarseningJumpIndicatorAllToThemselves
+    || limiter_type == CoarseningJumpIndicatorAllToAll)
   {
     FeistauerPCoarseningLimiter* f_limiter = new FeistauerPCoarseningLimiter(spaces, solution_vector);
     f_limiter->set_type(limiter_type);

@@ -73,7 +73,7 @@ std::string BDY_SOLID_WALL_TOP = "Top";
 // Initial condition.
 #include "initial_condition.cpp"
 
-std::string filename = "/home/staff/korous/hermes/hermes2d/test_examples/ShockTubeProblem/domain-tri-simple.xml";
+std::string filename = "domain-tri-simple.xml";
 
 bool limit_velocities = false;
 
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
   MeshReaderH2DXML mloader;
   Hermes::vector<MeshSharedPtr> meshes;
   meshes.push_back(mesh);
-if(argc > 2 && atoi(argv[2]) == 3)
+if((argc > 2 && atoi(argv[2]) == 3) || argc == 1)
   mloader.load(filename.c_str(), meshes);
 else
   mloader.load(filename.c_str(), mesh);

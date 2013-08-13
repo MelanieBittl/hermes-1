@@ -69,9 +69,11 @@ namespace Hermes
         virtual ~VertexBasedLimiter();
         Hermes::vector<std::pair<int, double> > get_correction_factors() const;
         void print_detailed_info(bool print_details = true);
-
         int maximum_polynomial_order;
+        void set_p_coarsening_only();
+
       private:
+        bool p_coarsening_only;
 
         void init(int maximum_polynomial_order);
 

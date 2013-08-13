@@ -12,10 +12,10 @@ class QuantityCalculator
 public:
   // Calculates energy from other quantities.
   static double calc_energy(double rho, double rho_v_x, double rho_v_y, double pressure, double kappa);
- 
+
   // Calculates pressure from other quantities.
   static double calc_pressure(double rho, double rho_v_x, double rho_v_y, double energy, double kappa);
- 
+
   // Calculates speed of sound.
   static double calc_sound_speed(double rho, double rho_v_x, double rho_v_y, double energy, double kappa);
 };
@@ -30,7 +30,7 @@ public:
   void calculate_semi_implicit(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const;
 
   void set_number(double new_CFL_number);
-  
+
 protected:
   double CFL_number;
   double kappa;
@@ -43,7 +43,7 @@ public:
 
   // If the time step is necessary to decrease / possible to increase, the value time_step will be rewritten.
   void calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step);
-  
+
 protected:
   double AdvectionRelativeConstant;
   double DiffusionRelativeConstant;
@@ -55,10 +55,10 @@ class DiscontinuityDetector
 public:
   /// Constructor.
   DiscontinuityDetector(Hermes::vector<SpaceSharedPtr<double> > spaces, 
-                        Hermes::vector<MeshFunctionSharedPtr<double> > solutions);
+    Hermes::vector<MeshFunctionSharedPtr<double> > solutions);
 
   /// Destructor.
-   ~DiscontinuityDetector();
+  ~DiscontinuityDetector();
 
   /// Return a reference to the inner structures.
   virtual std::set<int>& get_discontinuous_element_ids() = 0;
@@ -85,10 +85,10 @@ class KrivodonovaDiscontinuityDetector : public DiscontinuityDetector
 public:
   /// Constructor.
   KrivodonovaDiscontinuityDetector(Hermes::vector<SpaceSharedPtr<double> > spaces, 
-                        Hermes::vector<MeshFunctionSharedPtr<double> > solutions);
+    Hermes::vector<MeshFunctionSharedPtr<double> > solutions);
 
   /// Destructor.
-   ~KrivodonovaDiscontinuityDetector();
+  ~KrivodonovaDiscontinuityDetector();
 
   /// Return a reference to the inner structures.
   std::set<int>& get_discontinuous_element_ids();
@@ -113,10 +113,10 @@ class KuzminDiscontinuityDetector : public DiscontinuityDetector
 public:
   /// Constructor.
   KuzminDiscontinuityDetector(Hermes::vector<SpaceSharedPtr<double> > spaces, 
-                        Hermes::vector<MeshFunctionSharedPtr<double> > solutions, bool limit_all_orders_independently = false);
+    Hermes::vector<MeshFunctionSharedPtr<double> > solutions, bool limit_all_orders_independently = false);
 
   /// Destructor.
-   ~KuzminDiscontinuityDetector();
+  ~KuzminDiscontinuityDetector();
 
   /// Return a reference to the inner structures.
   std::set<int>& get_discontinuous_element_ids();
@@ -165,17 +165,17 @@ public:
   /// Constructor.
   FluxLimiter(LimitingType type, double* solution_vector, Hermes::vector<SpaceSharedPtr<double> > spaces, bool Kuzmin_limit_all_orders_independently = false);
   FluxLimiter(FluxLimiter::LimitingType type, Hermes::vector<MeshFunctionSharedPtr<double> > solutions, Hermes::vector<SpaceSharedPtr<double>  > spaces, bool Kuzmin_limit_all_orders_independently = false);
-  
+
   /// Destructor.
-   ~FluxLimiter();
+  ~FluxLimiter();
 
   /// Do the limiting.
   /// With the possibility to also limit the spaces from which the spaces in the constructors are refined.
   virtual int limit_according_to_detector(Hermes::vector<SpaceSharedPtr<double> > coarse_spaces_to_limit = Hermes::vector<SpaceSharedPtr<double> >());
-  
+
   /// For Kuzmin's detector.
   virtual void limit_second_orders_according_to_detector(Hermes::vector<SpaceSharedPtr<double> > coarse_spaces_to_limit = Hermes::vector<SpaceSharedPtr<double> >());
-  
+
   void get_limited_solutions(Hermes::vector<MeshFunctionSharedPtr<double> > solutions_to_limit);
   bool limitOscillations;
 protected:
@@ -201,7 +201,7 @@ public:
     for(int i = 0; i < this->num; i++)
       slns.push_back(this->sln[i]->clone());
     MachNumberFilter* filter = new MachNumberFilter(slns, this->kappa);
-    
+
     return filter;
   }
 
@@ -234,7 +234,7 @@ public:
         slns.push_back(this->sln[i]->clone()); 
     }
     PressureFilter* filter = new PressureFilter(slns, this->kappa);
-    
+
     return filter;
   }
 protected:
@@ -287,7 +287,7 @@ public:
     for(int i = 0; i < this->num; i++)
       slns.push_back(this->sln[i]->clone());
     EntropyFilter* filter = new EntropyFilter(slns, this->kappa, rho_ext, p_ext);
-    
+
     return filter;
   }
 protected:
@@ -301,175 +301,175 @@ class EulerFluxes
 public:
   EulerFluxes(double kappa) : kappa(kappa) {}
 
-  
+
   double A_1_0_0(double rho, double rho_v_x, double rho_v_y, double energy) {
 
     return double(0.0);
   }
 
-  
+
   double A_1_0_1(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(1.0);
   }
 
-  
+
   double A_1_0_2(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(0.0);
   }
 
-  
+
   double A_1_0_3(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(0.0);
   }
 
-  
+
   double A_2_0_0(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(0.0);
   }
 
-  
+
   double A_2_0_1(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(0.0);
   }
 
-  
+
   double A_2_0_2(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(1.0);
   }
 
-  
+
   double A_2_0_3(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(0.0);
   }
 
-  
+
   double A_1_1_0(double rho, double rho_v_x, double rho_v_y, double energy) {
     return double(- ((rho_v_x * rho_v_x) / (rho * rho)) + 0.5 * (kappa - 1.0) * 
-            ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) /   (rho * rho)));
+      ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) /   (rho * rho)));
   }
 
-  
+
   double A_1_1_1(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((3. - kappa) * (rho_v_x / rho));
   }
 
-  
+
   double A_1_1_2(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((1.0 - kappa) * (rho_v_y / rho));
   }
 
-  
+
   double A_1_1_3(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(kappa - 1.);
   }
 
-  
+
   double A_2_1_0(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(- rho_v_x * rho_v_y / (rho * rho));
   }
 
-  
+
   double A_2_1_1(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(rho_v_y / rho);
   }
 
-  
+
   double A_2_1_2(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(rho_v_x / rho);
   }
 
-  
+
   double A_2_1_3(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(0);
   }
 
-  
+
   double A_1_2_0(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(- rho_v_x * rho_v_y / (rho * rho));
   }
 
-  
+
   double A_1_2_1(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(rho_v_y / rho);
   }
 
-  
+
   double A_1_2_2(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(rho_v_x / rho);
   }
 
-  
+
   double A_1_2_3(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(0);
   }
 
-  
+
   double A_2_2_0(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(- ((rho_v_y * rho_v_y) / (rho * rho)) + 0.5 * (kappa - 1.0) 
-            * ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) /   (rho * rho)));
+      * ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) /   (rho * rho)));
   }
 
-  
+
   double A_2_2_1(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((1.0 - kappa) * (rho_v_x / rho));
   }
 
-  
+
   double A_2_2_2(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((3.0 - kappa) * (rho_v_y / rho));
   }
 
-  
+
   double A_2_2_3(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(kappa - 1.);
   }
 
-  
+
   double A_1_3_0(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((rho_v_x / rho) * (((kappa - 1.0) * ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) / (rho * rho)))
       - (kappa * energy / rho)));
   }
 
-  
+
   double A_1_3_1(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((kappa * energy / rho) - (kappa - 1.0) * rho_v_x * rho_v_x / (rho * rho)
       - 0.5 * (kappa - 1.0) * (rho_v_x * rho_v_x + rho_v_y * rho_v_y) / (rho * rho));
   }
 
-  
+
   double A_1_3_2(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((1.0 - kappa) * (rho_v_x * rho_v_y) / (rho * rho));
   }
 
-  
+
   double A_1_3_3(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(kappa * (rho_v_x / rho));
   }
 
-  
+
   double A_2_3_0(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(- (rho_v_y * energy) / (rho * rho) - (rho_v_y / (rho * rho)) * (kappa - 1.0) 
-            * (energy - ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) / (2 * rho))) + (rho_v_y / rho) 
-            * (kappa - 1.0) * ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) / (2 * rho * rho)));
+      * (energy - ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) / (2 * rho))) + (rho_v_y / rho) 
+      * (kappa - 1.0) * ((rho_v_x * rho_v_x + rho_v_y * rho_v_y) / (2 * rho * rho)));
   }
 
-  
+
   double A_2_3_1(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((1.0 - kappa) * (rho_v_x * rho_v_y) / (rho * rho));
   }
 
-  
+
   double A_2_3_2(double rho, double rho_v_x, double rho_v_y, double energy){
     return double((energy / rho) + (1 / rho) * (kappa - 1.0) * ( energy - ((rho_v_x * rho_v_x 
-            + rho_v_y * rho_v_y) / (2 * rho))) + (1.0 - kappa) * ((rho_v_y * rho_v_y) / (rho * rho)));
+      + rho_v_y * rho_v_y) / (2 * rho))) + (1.0 - kappa) * ((rho_v_y * rho_v_y) / (rho * rho)));
   }
 
-  
+
   double A_2_3_3(double rho, double rho_v_x, double rho_v_y, double energy){
     return double(kappa * rho_v_y / rho);
   }
-  protected:
-    double kappa;
+protected:
+  double kappa;
 };
 
 enum EulerLimiterType
