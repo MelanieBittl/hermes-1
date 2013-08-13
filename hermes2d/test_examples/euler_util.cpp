@@ -1571,7 +1571,7 @@ void FeistauerPCoarseningLimiter::process()
 
     // Divide by the denominator.
     for(int i = 0; i < this->component_count; i++)
-      values[i] / std::pow(e->get_diameter(), FeistauerPCoarseningLimiter::alpha);
+      values[i] /= std::pow(e->get_diameter(), FeistauerPCoarseningLimiter::alpha);
 
     // And take a look if the coarsening is appropriate.
     this->conditionally_coarsen(e, values);
