@@ -23,7 +23,7 @@ const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 25;
+const unsigned int EVERY_NTH_STEP = 100;
 
 bool SHOCK_CAPTURING = true;
 const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
@@ -31,10 +31,12 @@ const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 6;
+int INIT_REF_NUM = 6;
 // Initial time step.
 double time_step_length = 1E-6;
 double TIME_INTERVAL_LENGTH = 20.;
+
+bool use_triangles = true;
 
 // Kappa.
 const double KAPPA = 1.4;
@@ -57,13 +59,14 @@ const double V2_EXT = 0.0;
 
 // Mesh filename.
 const std::string MESH_FILENAME = "GAMM-channel.mesh";
+const std::string MESH_FILENAME_TRI = "GAMM-channel-tri.mesh";
 // Boundary markers.
 const std::string BDY_INLET = "1";
 const std::string BDY_OUTLET = "2";
 const std::string BDY_SOLID_WALL_BOTTOM = "3";
 const std::string BDY_SOLID_WALL_TOP = "4";
 
-double CFL_NUMBER = .1;
+double CFL_NUMBER = .7;
 
 int main(int argc, char* argv[])
 {
@@ -76,10 +79,39 @@ int main(int argc, char* argv[])
 
 #pragma region 1. Load mesh and initialize spaces.
   // Load the mesh.
+  Hermes::vector<std::string> solid_wall_markers;
+  Hermes::vector<std::string> inlet_markers;
+  Hermes::vector<std::string> outlet_markers;
   MeshSharedPtr mesh(new Mesh);
-  MeshReaderH2D mloader;
-  mloader.load(MESH_FILENAME, mesh);
+  
+  if(use_triangles)
+{
+  INIT_REF_NUM = 1;
+  MeshReaderH2DXML mloader;
+  Hermes::vector<MeshSharedPtr> meshes;
+  meshes.push_back(mesh);
+  mloader.load(MESH_FILENAME_TRI.c_str(), meshes);
+  solid_wall_markers.push_back("1");
+  solid_wall_markers.push_back("2");
+  solid_wall_markers.push_back("3");
 
+  solid_wall_markers.push_back("5");
+  solid_wall_markers.push_back("6");
+  solid_wall_markers.push_back("7");
+
+  inlet_markers.push_back("0");
+  outlet_markers.push_back("4");
+
+}
+else
+{
+  MeshReaderH2D mloader;
+  mloader.load(MESH_FILENAME.c_str(), mesh);
+  solid_wall_markers.push_back(BDY_SOLID_WALL_BOTTOM);
+  solid_wall_markers.push_back(BDY_SOLID_WALL_TOP);
+  inlet_markers.push_back(BDY_INLET);
+  outlet_markers.push_back(BDY_OUTLET);
+}
   // Perform initial mesh refinements.
   for (int i = 0; i < INIT_REF_NUM; i++)
   {
@@ -104,12 +136,6 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double> prev_e(new ConstantSolution<double> (mesh, QuantityCalculator::calc_energy(RHO_EXT, RHO_EXT * V1_EXT, RHO_EXT * V2_EXT, P_EXT, KAPPA)));
   Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
-  Hermes::vector<std::string> solid_wall_markers(BDY_SOLID_WALL_BOTTOM, BDY_SOLID_WALL_TOP);
-  Hermes::vector<std::string> inlet_markers;
-  inlet_markers.push_back(BDY_INLET);
-  Hermes::vector<std::string> outlet_markers;
-  outlet_markers.push_back(BDY_OUTLET);
-  
   EulerEquationsWeakFormSemiImplicit wf(KAPPA, RHO_EXT, V1_EXT, V2_EXT, P_EXT, 
     RHO_EXT, V1_EXT, V2_EXT, P_EXT,
     solid_wall_markers, inlet_markers, outlet_markers,

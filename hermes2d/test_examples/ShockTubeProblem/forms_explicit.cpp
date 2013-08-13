@@ -90,9 +90,6 @@ public:
 
       EulerEquationsVectorFormLinearizableSurfSemiImplicit* formDG = new EulerEquationsVectorFormLinearizableSurfSemiImplicit(form_i, kappa, euler_fluxes, &this->cacheReadyDG, this->P_plus_cache_DG, this->P_minus_cache_DG);
       add_vector_form_DG(formDG);
-
-      add_vector_form_surf(new EulerEquationsVectorFormInletOutlet(form_i, inlet_markers, kappa, rho_ext_inflow,  rho_ext_inflow * v1_ext_inflow, rho_ext_inflow * v2_ext_inflow, energy_ext_inflow));
-      add_vector_form_surf(new EulerEquationsVectorFormInletOutlet(form_i, outlet_markers, kappa, rho_ext_inflow,  rho_ext_inflow * v1_ext_inflow, rho_ext_inflow * v2_ext_inflow, energy_ext_inflow));
       
       add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, solid_wall_markers, kappa));
         
@@ -341,60 +338,6 @@ public:
     EulerFluxes* fluxes;
   };
 
-  class EulerEquationsVectorFormInletOutlet : public VectorFormSurf<double>
-  {
-  public:
-    EulerEquationsVectorFormInletOutlet(int i, Hermes::vector<std::string> areas, double kappa, double rho_ext, double rho_v1_ext, double rho_v2_ext, double rho_e_ext) 
-      : VectorFormSurf<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), rho_ext(rho_ext), rho_v1_ext(rho_v1_ext), rho_v2_ext(rho_v2_ext), rho_e_ext(rho_e_ext)
-    {
-      this->set_areas(areas);
-    }
-
-    ~EulerEquationsVectorFormInletOutlet() 
-    {
-      delete num_flux;
-    }
-
-    double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, 
-      Func<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
-    {
-      double w_L[4], w_R[4];
-      double result = 0.;
-
-      for (int point_i = 0; point_i < n; point_i++)
-      {
-        w_L[0] = ext[0]->val[point_i];
-        w_L[1] = ext[1]->val[point_i];
-        w_L[2] = ext[2]->val[point_i];
-        w_L[3] = ext[3]->val[point_i];
-
-        w_R[0] = rho_ext;
-        w_R[1] = rho_v1_ext;
-        w_R[2] = rho_v2_ext;
-        w_R[3] = rho_e_ext;
-
-        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
-      }
-
-      return -result * wf->get_current_time_step();
-    }
-
-    VectorFormSurf<double>* clone()  const
-    { 
-      EulerEquationsVectorFormInletOutlet* form = new EulerEquationsVectorFormInletOutlet(this->i, this->num_flux->kappa, this->rho_ext, this->rho_v1_ext, this->rho_v2_ext, this->rho_e_ext);
-      form->wf = this->wf;
-      return form;
-    }
-
-    double rho_ext;
-    double rho_v1_ext;
-    double rho_v2_ext;
-    double rho_e_ext;
-    LaxFriedrichsNumericalFlux* num_flux;
-    EulerFluxes* fluxes;
-  };
-
-  
   class EulerEquationsLinearFormTime : public VectorFormVol<double>
   {
   public:
@@ -462,3 +405,4 @@ public:
     LaxFriedrichsNumericalFlux* num_flux;
   };
 };
+

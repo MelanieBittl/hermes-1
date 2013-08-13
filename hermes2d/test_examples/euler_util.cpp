@@ -1605,7 +1605,7 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, S
 {
   PostProcessing::Limiter<double>* limiter;
 
-  if(limiter_type == VertexBased)
+if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative || limiter_type == VertexBasedPCoarsener)
     limiter = new PostProcessing::VertexBasedLimiter(space, solution_vector, polynomial_degree);
 
   if(limiter_type == CoarseningJumpIndicatorDensity
@@ -1626,7 +1626,7 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, H
 {
   PostProcessing::Limiter<double>* limiter;
 
-  if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative)
+if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative || limiter_type == VertexBasedPCoarsener)
     limiter = new PostProcessing::VertexBasedLimiter(spaces, solution_vector, polynomial_degree);
   
   if(limiter_type == CoarseningJumpIndicatorDensity

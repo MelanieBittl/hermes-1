@@ -26,7 +26,7 @@ const bool VTK_VISUALIZATION = true;
 const unsigned int EVERY_NTH_STEP = 100;
 
 bool SHOCK_CAPTURING = true;
-EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
+EulerLimiterType limiter_type = VertexBasedPCoarsener;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
@@ -73,7 +73,7 @@ std::string BDY_SOLID_WALL_TOP = "Top";
 // Initial condition.
 #include "initial_condition.cpp"
 
-std::string filename;
+std::string filename = "/home/staff/korous/hermes/hermes2d/test_examples/ShockTubeProblem/domain-tri-simple.xml";
 
 bool limit_velocities = false;
 

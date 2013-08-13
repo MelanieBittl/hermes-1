@@ -479,7 +479,8 @@ enum EulerLimiterType
   CoarseningJumpIndicatorDensity = 2,
   CoarseningJumpIndicatorDensityToAll = 3,
   CoarseningJumpIndicatorAllToThemselves = 4,
-  CoarseningJumpIndicatorAllToAll = 5
+  CoarseningJumpIndicatorAllToAll = 5,
+  VertexBasedPCoarsener = 6
 };
 
 template<typename LimiterType>
