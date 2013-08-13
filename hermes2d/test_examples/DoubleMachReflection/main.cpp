@@ -19,14 +19,14 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = false;
+const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
 const unsigned int EVERY_NTH_STEP = 10;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = JumpIndicator_P_coarsening;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
@@ -35,6 +35,9 @@ const int INIT_REF_NUM = 5;
 // Initial time step.
 double time_step_length = 1E-4;
 double TIME_INTERVAL_LENGTH = .2;
+
+// Triangles instead of quads.
+bool use_triangles = true;
 
 // Kappa.
 const double KAPPA = 1.4;
@@ -47,6 +50,8 @@ const double KAPPA = 1.4;
 
 int main(int argc, char* argv[])
 {
+  HermesCommonApi.set_integral_param_value(numThreads, 8);
+
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
 
@@ -54,8 +59,15 @@ int main(int argc, char* argv[])
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
   MeshReaderH2DXML mloader;
-  mloader.load("domain.xml", mesh);
+  mloader.load(use_triangles ? "domain-tri.xml" : "domain.xml", mesh);
 
+  if(use_triangles)
+{
+for (int i = 0; i < INIT_REF_NUM; i++)
+  mesh->refine_all_elements();
+}
+else
+{
   // Perform initial mesh refinements.
   for (int i = 0; i < INIT_REF_NUM; i++)
   {
@@ -66,6 +78,7 @@ int main(int argc, char* argv[])
   mesh->refine_all_elements(2);
   mesh->refine_all_elements();
   mesh->refine_all_elements();
+}
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -137,7 +150,7 @@ int main(int argc, char* argv[])
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
       limiter->get_solutions(prev_slns);
       if(limiter_type == VertexBasedWithLimitingNonConservative)
-        limitVelocityAndEnergy(spaces, *limiter, prev_slns);
+        limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
     }
 #pragma endregion

@@ -75,6 +75,8 @@ std::string BDY_SOLID_WALL_TOP = "Top";
 
 std::string filename;
 
+bool limit_velocities = false;
+
 void set_params(int argc, char* argv[])
 {
   if(argc < 3)
@@ -125,10 +127,12 @@ void set_params(int argc, char* argv[])
     BDY_SOLID_WALL_BOTTOM = "2";
     BDY_SOLID_WALL_TOP = "3";
   }
-  if(argc == 4)
+  if(argc > 3)
   {
     FeistauerPCoarseningLimiter::alpha = atof(argv[3]);
   }
+  if(argc >4 && atoi(argv[4]) == 1)
+    limit_velocities = true;
 }
 
 int main(int argc, char* argv[])
@@ -144,6 +148,7 @@ int main(int argc, char* argv[])
   if(limiter_type > 1)
     logger.info("Feist alpha: %f", FeistauerPCoarseningLimiter::alpha);
   logger.info("File: %s", filename.c_str());
+  logger.info("Limit velocities: %i", limit_velocities);
 
 #pragma region 1. Load mesh and initialize spaces.
   // Load the mesh.
@@ -232,7 +237,8 @@ else
     {
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), P_INIT);
       limiter->get_solutions(prev_slns);
-      limitVelocityAndEnergy(spaces, limiter, prev_slns);
+      if(limit_velocities)
+        limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
     }
 #pragma endregion

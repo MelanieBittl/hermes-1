@@ -19,19 +19,19 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = true;
+const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 25;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = VertexBased;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 3;
+const int INIT_REF_NUM = 6;
 // Initial time step.
 double time_step_length = 1E-6;
 double TIME_INTERVAL_LENGTH = 20.;
@@ -63,10 +63,11 @@ const std::string BDY_OUTLET = "2";
 const std::string BDY_SOLID_WALL_BOTTOM = "3";
 const std::string BDY_SOLID_WALL_TOP = "4";
 
-double CFL_NUMBER = .5;
+double CFL_NUMBER = .1;
 
 int main(int argc, char* argv[])
 {
+  HermesCommonApi.set_integral_param_value(numThreads, 10);
   // Set up CFL calculation class.
   CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
@@ -121,7 +122,6 @@ int main(int argc, char* argv[])
 
   ScalarView density_view("Density", new WinGeom(0, 0, 600, 300));
   ScalarView pressure_view("Pressure", new WinGeom(0, 330, 600, 300));
-  pressure_view.set_min_max_range(1, 557.8);
   ScalarView velocity_view("Velocity", new WinGeom(650, 0, 600, 300));
   ScalarView eview("Error - density", new WinGeom(0, 330, 600, 300));
   ScalarView eview1("Error - momentum", new WinGeom(0, 660, 600, 300));

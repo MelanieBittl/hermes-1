@@ -36,7 +36,7 @@ namespace Hermes
       public:
         Limiter(SpaceSharedPtr<Scalar> space, Scalar* solution_vector);
         Limiter(Hermes::vector<SpaceSharedPtr<Scalar> > spaces, Scalar* solution_vector);
-        ~Limiter();
+        virtual ~Limiter();
 
         MeshFunctionSharedPtr<Scalar> get_solution();
         void get_solutions(Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions);
@@ -66,7 +66,7 @@ namespace Hermes
       public:
         VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order);
         VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int maximum_polynomial_order);
-        ~VertexBasedLimiter();
+        virtual ~VertexBasedLimiter();
         Hermes::vector<std::pair<int, double> > get_correction_factors() const;
         void print_detailed_info(bool print_details = true);
 
