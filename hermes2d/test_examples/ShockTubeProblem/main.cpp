@@ -19,11 +19,11 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = false;
+const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = true;
+const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 100;
+const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
 EulerLimiterType limiter_type = VertexBasedPCoarsener;
@@ -31,8 +31,8 @@ EulerLimiterType limiter_type = VertexBasedPCoarsener;
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM_ISO = 0;
-int INIT_REF_NUM_ANISO = 7;
+int INIT_REF_NUM_ISO = 4;
+int INIT_REF_NUM_ANISO = 0;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
@@ -137,7 +137,9 @@ void set_params(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 5);
+#ifndef _WINDOWS
+  HermesCommonApi.set_integral_param_value(numThreads, 10);
+#endif
   set_params(argc, argv);
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -156,7 +158,7 @@ int main(int argc, char* argv[])
   MeshReaderH2DXML mloader;
   Hermes::vector<MeshSharedPtr> meshes;
   meshes.push_back(mesh);
-if((argc > 2 && atoi(argv[2]) == 3) || argc == 1)
+if(argc > 2 && atoi(argv[2]) == 3)
   mloader.load(filename.c_str(), meshes);
 else
   mloader.load(filename.c_str(), mesh);
