@@ -104,16 +104,16 @@ void set_params(int argc, char* argv[])
     }
   }
 
-    if(atoi(argv[2]) == 2)
-    {
-      INIT_REF_NUM_ISO = 6;
-      INIT_REF_NUM_ANISO = 0;
-    }
-    if(atoi(argv[2]) == 3)
-    {
-      INIT_REF_NUM_ISO = 2;
-      INIT_REF_NUM_ANISO = 0;
-    }
+  if(atoi(argv[2]) == 2)
+  {
+    INIT_REF_NUM_ISO = 6;
+    INIT_REF_NUM_ANISO = 0;
+  }
+  if(atoi(argv[2]) == 3)
+  {
+    INIT_REF_NUM_ISO = 2;
+    INIT_REF_NUM_ANISO = 0;
+  }
 
   if(atoi(argv[2]) == 1)
     filename = "/home/staff/korous/hermes/hermes2d/test_examples/ShockTubeProblem/domain.xml";
@@ -158,17 +158,45 @@ int main(int argc, char* argv[])
   MeshReaderH2DXML mloader;
   Hermes::vector<MeshSharedPtr> meshes;
   meshes.push_back(mesh);
-if(argc > 2 && atoi(argv[2]) == 3)
-  mloader.load(filename.c_str(), meshes);
-else
-  mloader.load(filename.c_str(), mesh);
+
+  try
+  {
+    if(argc > 2 && atoi(argv[2]) == 3)
+      mloader.load(filename.c_str(), meshes);
+    else
+      mloader.load(filename.c_str(), mesh);
+  }
+  catch(Hermes::Exceptions::Exception& e)
+  {
+    std::cout << e.what();
+  }
 
   // Perform initial mesh refinements.
   for (int i = 0; i < INIT_REF_NUM_ANISO; i++) 
     mesh->refine_all_elements(2);
-
   for (int i = 0; i < INIT_REF_NUM_ISO; i++) 
     mesh->refine_all_elements(0);
+  
+  /* // Test code.
+  mesh->refine_element_id(3);
+  mesh->refine_element_id(4);
+
+  double values[13] = {1, 2, 3, 0, 0, -4, 4, -4, 4, -5, 5, 5, -5};
+  MeshFunctionSharedPtr<double> exact(new ExactSolutionConstantArray<double, double>(mesh, values));
+  MeshFunctionSharedPtr<double> target_sln(new Solution<double>());
+  SpaceSharedPtr<double> space(new L2Space<double>(mesh, 1, new L2ShapesetTaylor));
+  double* target_vec = new double[space->get_num_dofs()];
+  OGProjection<double>::project_global(space, exact, target_vec);
+  FeistauerPCoarseningLimiter flimiter(space, target_vec);
+  FeistauerPCoarseningLimiter::alpha = 1.0;
+  flimiter.set_verbose_output(true);
+  flimiter.set_type(CoarseningJumpIndicatorAllToThemselves);
+  target_sln = flimiter.get_solution();
+
+  ScalarView s;
+  s.show(target_sln);
+  s.wait_for_close();
+  */
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));

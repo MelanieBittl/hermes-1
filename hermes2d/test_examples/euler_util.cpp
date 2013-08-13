@@ -1503,51 +1503,31 @@ void FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& 
   double* jwt;
   int n_quadrature_points = init_surface_geometry_points(&refmap, 1, order, edge, 1, e, jwt);
 
+  int probed_component_count = this->component_count;
   if(indicatorType == CoarseningJumpIndicatorDensity || indicatorType == CoarseningJumpIndicatorDensityToAll)
+    probed_component_count = 1;
+
+  for(int probed_component = 0; probed_component < probed_component_count; probed_component++)
   {
     double value = 0.;
-    DiscontinuousFunc<double>* density = ns.init_ext_fn(this->limited_solutions[0].get());
+    DiscontinuousFunc<double>* func = ns.init_ext_fn(this->limited_solutions[probed_component].get());
 
     for(int i = 0; i < n_quadrature_points; i++)
-      value += jwt[i] * (density->val[i] - density->val_neighbor[i]) * (density->val[i] - density->val_neighbor[i]);
+      value += jwt[i] * (func->val[i] - func->val_neighbor[i]) * (func->val[i] - func->val_neighbor[i]);
 
-    value *= 0.5 / std::pow(ns.central_el->get_diameter(), FeistauerPCoarseningLimiter::alpha);
+    value *= 0.5;
 
     if(this->get_verbose_output())
     {
+      std::cout << "\t\tComponent: " << probed_component << std::endl;
       std::cout << "\t\tNeighbor: " << neighbor_i << ", h: " << ns.central_el->get_diameter() << ", area: " << ns.central_el->get_area() << std::endl;
       std::cout << "\t\tNeighbor: " << neighbor_i << ", jump: " << value << std::endl;
     }
 
-    values[0] += value;
+    values[probed_component] += value;
 
-    density->free_fn();
-    delete density;
-  }
-  else
-  {
-    for(int component = 0; component < this->component_count; component++)
-    {
-      double value = 0.;
-      DiscontinuousFunc<double>* func = ns.init_ext_fn(this->limited_solutions[component].get());
-
-      for(int i = 0; i < n_quadrature_points; i++)
-        value += jwt[i] * (func->val[i] - func->val_neighbor[i]) * (func->val[i] - func->val_neighbor[i]);
-
-      value *= 0.5 / (ns.central_el->get_diameter() * std::pow(ns.central_el->get_area(), 0.75));
-
-      if(this->get_verbose_output())
-      {
-        std::cout << "\t\tComponent: " << component << std::endl;
-        std::cout << "\t\tNeighbor: " << neighbor_i << ", h: " << ns.central_el->get_diameter() << ", area: " << ns.central_el->get_area() << std::endl;
-        std::cout << "\t\tNeighbor: " << neighbor_i << ", jump: " << value << std::endl;
-      }
-
-      values[component] += value;
-
-      func->free_fn();
-      delete func;
-    }
+    func->free_fn();
+    delete func;
   }
 
   delete [] jwt;
@@ -1579,14 +1559,21 @@ void FeistauerPCoarseningLimiter::process()
   {
     memset(values, 0, sizeof(double)*this->component_count);
 
-    bool higher_order = H2D_GET_H_ORDER(this->spaces[0]->get_element_order(e->id)) >= 0 || H2D_GET_V_ORDER(this->spaces[0]->get_element_order(e->id)) >= 0;
+    bool higher_order = H2D_GET_H_ORDER(this->spaces[0]->get_element_order(e->id)) > 0 || H2D_GET_V_ORDER(this->spaces[0]->get_element_order(e->id)) > 0;
     if(!higher_order)
       continue;
 
     if(this->get_verbose_output())
       std::cout << "Element: " << e->id << std::endl;
 
+    // Get the jumps (the enumerator in the fraction).
     get_jump_indicators(e, values);
+
+    // Divide by the denominator.
+    for(int i = 0; i < this->component_count; i++)
+      values[i] / std::pow(e->get_diameter(), FeistauerPCoarseningLimiter::alpha);
+
+    // And take a look if the coarsening is appropriate.
     this->conditionally_coarsen(e, values);
   }
 
@@ -1607,7 +1594,7 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, S
 
   if(limiter_type == VertexBased || limiter_type == VertexBasedWithLimitingNonConservative || limiter_type == VertexBasedPCoarsener)
     limiter = new PostProcessing::VertexBasedLimiter(space, solution_vector, polynomial_degree);
-  
+
   if(limiter_type == VertexBasedPCoarsener)
     ((PostProcessing::VertexBasedLimiter*)limiter)->set_p_coarsening_only();
 
