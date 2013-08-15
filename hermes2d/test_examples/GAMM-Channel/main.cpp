@@ -23,10 +23,10 @@ const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 100;
+const unsigned int EVERY_NTH_STEP = 200;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
@@ -36,7 +36,7 @@ int INIT_REF_NUM = 6;
 double time_step_length = 1E-6;
 double TIME_INTERVAL_LENGTH = 20.;
 
-bool use_triangles = true;
+bool use_triangles = false;
 
 // Kappa.
 const double KAPPA = 1.4;
@@ -66,7 +66,7 @@ const std::string BDY_OUTLET = "2";
 const std::string BDY_SOLID_WALL_BOTTOM = "3";
 const std::string BDY_SOLID_WALL_TOP = "4";
 
-double CFL_NUMBER = .7;
+double CFL_NUMBER = .5;
 
 int main(int argc, char* argv[])
 {
@@ -176,8 +176,7 @@ else
     {
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
       limiter->get_solutions(prev_slns);
-      if(limiter_type == VertexBasedWithLimitingNonConservative)
-        limitVelocityAndEnergy(spaces, limiter, prev_slns);
+      limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
     }
     

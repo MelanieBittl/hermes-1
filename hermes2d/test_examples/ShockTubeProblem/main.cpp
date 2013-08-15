@@ -23,16 +23,16 @@ const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 10;
 
 bool SHOCK_CAPTURING = true;
-EulerLimiterType limiter_type = VertexBasedPCoarsener;
+EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM_ISO = 4;
-int INIT_REF_NUM_ANISO = 0;
+int INIT_REF_NUM_ISO = 5;
+int INIT_REF_NUM_ANISO = 1;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
@@ -73,9 +73,9 @@ std::string BDY_SOLID_WALL_TOP = "Top";
 // Initial condition.
 #include "initial_condition.cpp"
 
-std::string filename = "domain-tri-simple.xml";
+std::string filename = "domain.xml";
 
-bool limit_velocities = false;
+bool limit_velocities = true;
 
 void set_params(int argc, char* argv[])
 {
