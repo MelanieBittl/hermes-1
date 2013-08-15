@@ -2,7 +2,7 @@
 #define EULER_UTIL_H
 
 #include "hermes2d.h"
-#include "discrete_problem\dg\discrete_problem_dg_assembler.h"
+#include "discrete_problem/dg/discrete_problem_dg_assembler.h"
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;

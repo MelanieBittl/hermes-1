@@ -1715,11 +1715,8 @@ void FeistauerJumpDetector::process()
   OGProjection<double>::project_global(const_spaces, this->limited_solutions, const_slns);
   
   // Calculation.
-  this->wf.set_ext(this->const_slns);
-  int dg_order = DiscreteProblemDGAssembler<double>::dg_order;
-  DiscreteProblemDGAssembler<double>::dg_order = 0;
+  this->wf.set_ext(this->limited_solutions);
   dp.assemble(&data);
-  DiscreteProblemDGAssembler<double>::dg_order = dg_order;
   
   // Data processing.
   int number_of_tested;
