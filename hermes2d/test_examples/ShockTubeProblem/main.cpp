@@ -23,7 +23,7 @@ const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
 const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 10;
+const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
 EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
@@ -31,8 +31,8 @@ EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM_ISO = 5;
-int INIT_REF_NUM_ANISO = 1;
+int INIT_REF_NUM_ISO = 3;
+int INIT_REF_NUM_ANISO = 3;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
@@ -75,7 +75,7 @@ std::string BDY_SOLID_WALL_TOP = "Top";
 
 std::string filename = "domain.xml";
 
-bool limit_velocities = true;
+bool limit_velocities = false;
 
 void set_params(int argc, char* argv[])
 {
@@ -245,7 +245,11 @@ int main(int argc, char* argv[])
 #pragma endregion
 
   LinearSolver<double> solver(&wf, spaces);
+  DiscreteProblemDGAssembler<double>::dg_order = P_INIT + 5;
   solver.set_jacobian_constant();
+
+  FeistauerJumpDetector limiter(spaces, NULL);
+  limiter.set_type(CoarseningJumpIndicatorDensityToAll);
 
 #pragma region 4. Time stepping loop.
   int iteration = 0;
@@ -265,11 +269,10 @@ int main(int argc, char* argv[])
       Solution<double>::vector_to_solutions(solver.get_sln_vector(), spaces, prev_slns);
     else
     {
-      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), P_INIT);
-      limiter->get_solutions(prev_slns);
+      limiter.set_solution_vector(solver.get_sln_vector());
+      limiter.get_solutions(prev_slns);
       if(limit_velocities)
-        limitVelocityAndEnergy(spaces, limiter, prev_slns);
-      delete limiter;
+        limitVelocityAndEnergy(spaces, &limiter, prev_slns);
     }
 #pragma endregion
 
