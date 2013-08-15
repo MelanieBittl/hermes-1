@@ -25,17 +25,20 @@ namespace Hermes
       template<typename Scalar>
       void Limiter<Scalar>::init(Scalar* solution_vector_)
       {
-        try
+        if(solution_vector_)
         {
-          int ndof = Space<Scalar>::get_num_dofs(this->spaces);
-          Scalar value = solution_vector_[ndof - 1];
+          try
+          {
+            int ndof = Space<Scalar>::get_num_dofs(this->spaces);
+            Scalar value = solution_vector_[ndof - 1];
 
-          this->solution_vector = new Scalar[Space<Scalar>::get_num_dofs(this->spaces)];
-          memcpy(this->solution_vector, solution_vector_, sizeof(Scalar) * Space<Scalar>::get_num_dofs(this->spaces));
-        }
-        catch (...)
-        {
-          throw Exceptions::Exception("Wrong combination of space(s) and solution_vector passed to Limiter().");
+            this->solution_vector = new Scalar[Space<Scalar>::get_num_dofs(this->spaces)];
+            memcpy(this->solution_vector, solution_vector_, sizeof(Scalar) * Space<Scalar>::get_num_dofs(this->spaces));
+          }
+          catch (...)
+          {
+            throw Exceptions::Exception("Wrong combination of space(s) and solution_vector passed to Limiter().");
+          }
         }
       }
 
@@ -92,6 +95,26 @@ namespace Hermes
       Scalar* Limiter<Scalar>::get_solution_vector()
       {
         return this->solution_vector;
+      }
+
+      template<typename Scalar>
+      void Limiter<Scalar>::set_solution_vector(Scalar* solution_vector_)
+      {
+        if(solution_vector_)
+        {
+          try
+          {
+            int ndof = Space<Scalar>::get_num_dofs(this->spaces);
+            Scalar value = solution_vector_[ndof - 1];
+
+            this->solution_vector = new Scalar[Space<Scalar>::get_num_dofs(this->spaces)];
+            memcpy(this->solution_vector, solution_vector_, sizeof(Scalar) * Space<Scalar>::get_num_dofs(this->spaces));
+          }
+          catch (...)
+          {
+            throw Exceptions::Exception("Wrong combination of space(s) and solution_vector passed to Limiter().");
+          }
+        }
       }
 
       VertexBasedLimiter::VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order)

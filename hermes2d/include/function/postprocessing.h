@@ -38,13 +38,21 @@ namespace Hermes
         Limiter(Hermes::vector<SpaceSharedPtr<Scalar> > spaces, Scalar* solution_vector);
         virtual ~Limiter();
 
+        /// Get the zero-th solution.
         MeshFunctionSharedPtr<Scalar> get_solution();
+        /// Get all solutions.
         void get_solutions(Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions);
+        /// Get changed element ids.
         Hermes::vector<int> get_changed_element_ids() const;
 
+        /// Helpers for state querying.
         virtual bool isOkay() const;
         inline std::string getClassName() const { return "Limiter"; }
 
+        /// Set the solution vector.
+        void set_solution_vector(Scalar* sln);
+
+        /// Get the solution vector.
         Scalar* get_solution_vector();
 
       protected:
