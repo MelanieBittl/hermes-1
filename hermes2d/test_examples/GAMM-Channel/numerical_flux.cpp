@@ -904,6 +904,41 @@ double LaxFriedrichsNumericalFlux::numerical_flux_i(int component, double w_L[4]
   return (first_flux * nx) + (second_flux * ny) - (std::max(s_left, s_right) * (w_R[component] - w_L[component]));
 }
 
+
+double LaxFriedrichsNumericalFlux::linearized_numerical_flux_i_left(int component, double w_L[4], double w_R[4],
+                                                    double nx, double ny)
+{
+  double s_left = this->calculate_s(w_L, nx, ny);
+  double s_right = this->calculate_s(w_R, nx, ny);
+
+  double first_flux_left = this->Euler_flux_1_i(component, w_L);
+  double first_flux_right = this->Euler_flux_1_i(component, w_R);
+  double first_flux = 0.5 * (first_flux_left + first_flux_right);
+
+  double second_flux_left = this->Euler_flux_2_i(component, w_L);
+  double second_flux_right = this->Euler_flux_2_i(component, w_R);
+  double second_flux = 0.5 * (second_flux_left + second_flux_right);
+
+  return (first_flux * nx) + (second_flux * ny) + (std::max(s_left, s_right));
+}
+
+double LaxFriedrichsNumericalFlux::linearized_numerical_flux_i_right(int component, double w_L[4], double w_R[4],
+                                                    double nx, double ny)
+{
+  double s_left = this->calculate_s(w_L, nx, ny);
+  double s_right = this->calculate_s(w_R, nx, ny);
+
+  double first_flux_left = this->Euler_flux_1_i(component, w_L);
+  double first_flux_right = this->Euler_flux_1_i(component, w_R);
+  double first_flux = 0.5 * (first_flux_left + first_flux_right);
+
+  double second_flux_left = this->Euler_flux_2_i(component, w_L);
+  double second_flux_right = this->Euler_flux_2_i(component, w_R);
+  double second_flux = 0.5 * (second_flux_left + second_flux_right);
+
+  return (first_flux * nx) + (second_flux * ny) - (std::max(s_left, s_right));
+}
+
 void LaxFriedrichsNumericalFlux::Euler_flux_1(double state[4], double result[4])
 {
   result[0] = state[1];

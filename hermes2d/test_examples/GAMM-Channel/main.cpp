@@ -19,24 +19,22 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = false;
+const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = true;
+const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 200;
+const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
+const EulerLimiterType limiter_type = VertexBased;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 6;
+int INIT_REF_NUM = 4;
 // Initial time step.
-double time_step_length = 1E-6;
+double time_step_length = .02;
 double TIME_INTERVAL_LENGTH = 20.;
-
-bool use_triangles = false;
 
 // Kappa.
 const double KAPPA = 1.4;
@@ -59,20 +57,16 @@ const double V2_EXT = 0.0;
 
 // Mesh filename.
 const std::string MESH_FILENAME = "GAMM-channel.mesh";
-const std::string MESH_FILENAME_TRI = "GAMM-channel-tri.mesh";
+
 // Boundary markers.
 const std::string BDY_INLET = "1";
 const std::string BDY_OUTLET = "2";
 const std::string BDY_SOLID_WALL_BOTTOM = "3";
 const std::string BDY_SOLID_WALL_TOP = "4";
 
-double CFL_NUMBER = .5;
-
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 10);
-  // Set up CFL calculation class.
-  CFLCalculation CFL(CFL_NUMBER, KAPPA);
+  HermesCommonApi.set_integral_param_value(numThreads, 3);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -83,35 +77,14 @@ int main(int argc, char* argv[])
   Hermes::vector<std::string> inlet_markers;
   Hermes::vector<std::string> outlet_markers;
   MeshSharedPtr mesh(new Mesh);
-  
-  if(use_triangles)
-{
-  INIT_REF_NUM = 1;
-  MeshReaderH2DXML mloader;
-  Hermes::vector<MeshSharedPtr> meshes;
-  meshes.push_back(mesh);
-  mloader.load(MESH_FILENAME_TRI.c_str(), meshes);
-  solid_wall_markers.push_back("1");
-  solid_wall_markers.push_back("2");
-  solid_wall_markers.push_back("3");
-
-  solid_wall_markers.push_back("5");
-  solid_wall_markers.push_back("6");
-  solid_wall_markers.push_back("7");
-
-  inlet_markers.push_back("0");
-  outlet_markers.push_back("4");
-
-}
-else
-{
+ 
   MeshReaderH2D mloader;
   mloader.load(MESH_FILENAME.c_str(), mesh);
   solid_wall_markers.push_back(BDY_SOLID_WALL_BOTTOM);
   solid_wall_markers.push_back(BDY_SOLID_WALL_TOP);
   inlet_markers.push_back(BDY_INLET);
   outlet_markers.push_back(BDY_OUTLET);
-}
+ 
   // Perform initial mesh refinements.
   for (int i = 0; i < INIT_REF_NUM; i++)
   {
@@ -129,15 +102,20 @@ else
   logger.info("Ndof: %d", ndof);
 #pragma endregion
 
+#pragma region 2. Prev slns
   // Set initial conditions.
   MeshFunctionSharedPtr<double> prev_rho(new ConstantSolution<double>(mesh, RHO_EXT));
   MeshFunctionSharedPtr<double> prev_rho_v_x(new ConstantSolution<double> (mesh, RHO_EXT * V1_EXT));
   MeshFunctionSharedPtr<double> prev_rho_v_y(new ConstantSolution<double> (mesh, RHO_EXT * V2_EXT));
   MeshFunctionSharedPtr<double> prev_e(new ConstantSolution<double> (mesh, QuantityCalculator::calc_energy(RHO_EXT, RHO_EXT * V1_EXT, RHO_EXT * V2_EXT, P_EXT, KAPPA)));
   Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+#pragma endregion
 
-  EulerEquationsWeakFormSemiImplicit wf(KAPPA, RHO_EXT, V1_EXT, V2_EXT, P_EXT, 
-    RHO_EXT, V1_EXT, V2_EXT, P_EXT,
+  EulerEquationsWeakFormSemiImplicit wf_implicit(KAPPA, RHO_EXT, V1_EXT, V2_EXT, P_EXT,
+    solid_wall_markers, inlet_markers, outlet_markers,
+    prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, (P_INIT == 0));
+
+  EulerEquationsWeakFormExplicit wf_explicit(KAPPA, RHO_EXT, V1_EXT, V2_EXT, P_EXT,
     solid_wall_markers, inlet_markers, outlet_markers,
     prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, (P_INIT == 0));
 
@@ -154,9 +132,8 @@ else
   OrderView order_view("Orders", new WinGeom(650, 330, 600, 300));
 #pragma endregion
 
-  LinearSolver<double> solver(&wf, spaces);
-  solver.set_jacobian_constant();
-  //solver.set_verbose_output(false);
+  LinearSolver<double> solver_implicit(&wf_implicit, spaces);
+  LinearSolver<double> solver_explicit(&wf_explicit, spaces);
 
 #pragma region 4. Time stepping loop.
   int iteration = 0;
@@ -164,11 +141,38 @@ else
   {
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
-      
+
     // Solve.
     wf.set_current_time_step(time_step_length);
+    double* previous_sln_vector = new double[ndof];
+    OGProjection<double>::project_global(spaces, prev_slns, previous_sln_vector);
+    solver.solve();
+    {
+      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
+      limiter->get_solutions(prev_slns);
+      limitVelocityAndEnergy(spaces, limiter, prev_slns);
+      delete limiter;
+    }
     solver.solve();
 
+    for(int component = 0; component < 4; component++)
+    {
+      Element* e;
+      for_all_active_elements(e, mesh)
+      {
+        AsmList<double> al;
+        spaces[component]->get_element_assembly_list(e, &al);
+        for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
+          if(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode()) == 0)
+            previous_sln_vector[al.get_dof()[shape_i]] = solver.get_sln_vector()[al.get_dof()[shape_i]];
+      }
+    }
+
+    Solution<double>::vector_to_solutions(previous_sln_vector, spaces, prev_slns);
+
+    delete [] previous_sln_vector;
+
+    solver.solve();
 #pragma region *. Get the solution with optional shock capturing.
     if(!SHOCK_CAPTURING)
       Solution<double>::vector_to_solutions(solver.get_sln_vector(), spaces, prev_slns);
@@ -179,12 +183,6 @@ else
       limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
     }
-    
-    // Calculate time step according to CFL condition.
-    if(CFL.calculate(prev_slns, (spaces)[0]->get_mesh(), time_step_length))
-      solver.set_jacobian_constant(false);
-    else
-      solver.set_jacobian_constant(true);
 #pragma endregion
 
 #pragma region 4.1. Visualization
