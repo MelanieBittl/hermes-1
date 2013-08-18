@@ -29,7 +29,7 @@ public:
 
   // Fluxes for calculation.
   EulerFluxes* euler_fluxes;
-  
+
   EulerEquationsWeakFormExplicit(double kappa, 
     double rho_ext, double v1_ext, double v2_ext, double pressure_ext,
     Hermes::vector<std::string> solid_wall_markers, Hermes::vector<std::string> inlet_markers, Hermes::vector<std::string> outlet_markers, 
@@ -271,7 +271,7 @@ public:
       form->wf = this->wf;
       return form;
     }
-    
+
     LaxFriedrichsNumericalFlux* num_flux;
     EulerFluxes* fluxes;
   };
@@ -448,18 +448,14 @@ public:
       add_matrix_form(new EulerEquationsBilinearFormTime(form_i));
 
       add_vector_form(new EulerEquationsLinearFormTime(form_i));
-
       add_vector_form_surf(new EulerEquationsVectorFormSemiImplicitInletOutlet(form_i, rho_ext, v1_ext, v2_ext, energy_ext, inlet_markers, kappa));
-
-      if(outlet_markers.size() > 0)
-        add_vector_form_surf(new EulerEquationsVectorFormSemiImplicitInletOutlet(form_i, rho_ext, v1_ext, v2_ext, energy_ext, outlet_markers, kappa));
 
       for(int form_j = 0; form_j < 4; form_j++)
       {
         if(!fvm_only) 
           add_matrix_form(new EulerEquationsBilinearForm(form_i, form_j, euler_fluxes));
 
-        EulerEquationsMatrixFormSurfSemiImplicit* formDG = new EulerEquationsMatrixFormSurfSemiImplicit(form_i, form_j, kappa, euler_fluxes);
+        EulerEquationsMatrixFormSurfSemiImplicit* formDG = new EulerEquationsMatrixFormSurfSemiImplicit(form_i, form_j, kappa);
         add_matrix_form_DG(formDG);
 
         EulerEquationsMatrixFormSemiImplicitInletOutlet* formSurf = new EulerEquationsMatrixFormSemiImplicitInletOutlet(form_i, form_j, rho_ext, v1_ext, v2_ext, energy_ext, inlet_markers, kappa);
@@ -486,7 +482,7 @@ public:
   WeakForm<double>* clone() const
   {
     EulerEquationsWeakFormSemiImplicit* wf;
-      wf = new EulerEquationsWeakFormSemiImplicit(this->kappa, this->rho_ext, this->v1_ext, this->v2_ext, this->pressure_ext, 
+    wf = new EulerEquationsWeakFormSemiImplicit(this->kappa, this->rho_ext, this->v1_ext, this->v2_ext, this->pressure_ext, 
       this->solid_wall_markers, this->inlet_markers, this->outlet_markers, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->fvm_only, this->neq);
 
     wf->ext.clear();
@@ -640,8 +636,8 @@ public:
   class EulerEquationsMatrixFormSurfSemiImplicit : public MatrixFormDG<double>
   {
   public:
-    EulerEquationsMatrixFormSurfSemiImplicit(int i, int j, double kappa, EulerFluxes* fluxe) 
-      : MatrixFormDG<double>(i, j), num_flux(new StegerWarmingNumericalFlux(kappa)), fluxes(fluxes) 
+    EulerEquationsMatrixFormSurfSemiImplicit(int i, int j, double kappa)
+      : MatrixFormDG<double>(i, j), num_flux(new StegerWarmingNumericalFlux(kappa))
     {
     }
 
@@ -653,88 +649,57 @@ public:
     double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, DiscontinuousFunc<double> *u, 
       DiscontinuousFunc<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
     {
-      double w[4];
+      double w_L[4], w_R[4];
       double result = 0.;
 
       for (int point_i = 0; point_i < n; point_i++) 
       {
-        {
-          w[0] = ext[0]->val[point_i];
-          w[1] = ext[1]->val[point_i];
-          w[2] = ext[2]->val[point_i];
-          w[3] = ext[3]->val[point_i];
+        w_L[0] = ext[0]->val[point_i];
+        w_L[1] = ext[1]->val[point_i];
+        w_L[2] = ext[2]->val[point_i];
+        w_L[3] = ext[3]->val[point_i];
 
-          double e_1_1[4] = {1, 0, 0, 0};
-          double e_2_1[4] = {0, 1, 0, 0};
-          double e_3_1[4] = {0, 0, 1, 0};
-          double e_4_1[4] = {0, 0, 0, 1};
+        w_R[0] = ext[0]->val_neighbor[point_i];
+        w_R[1] = ext[1]->val_neighbor[point_i];
+        w_R[2] = ext[2]->val_neighbor[point_i];
+        w_R[3] = ext[3]->val_neighbor[point_i];
 
-          num_flux->P_plus(this->P_plus_cache[point_i], w, e_1_1, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_plus(this->P_plus_cache[point_i] + 4, w, e_2_1, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_plus(this->P_plus_cache[point_i] + 8, w, e_3_1, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_plus(this->P_plus_cache[point_i] + 12, w, e_4_1, e->nx[point_i], e->ny[point_i]);
+        if(u->val == NULL)
+          if(v->val == NULL)
+            result -= wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val_neighbor[point_i] * v->val_neighbor[point_i];
+          else
+            result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val_neighbor[point_i] * v->val[point_i];
+        else
+          if(v->val == NULL)
+            result -= wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val[point_i] * v->val_neighbor[point_i];
+          else
+            result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val[point_i] * v->val[point_i];
 
-          w[0] = ext[0]->val_neighbor[point_i];
-          w[1] = ext[1]->val_neighbor[point_i];
-          w[2] = ext[2]->val_neighbor[point_i];
-          w[3] = ext[3]->val_neighbor[point_i];
-
-          double e_1_2[4] = {1, 0, 0, 0};
-          double e_2_2[4] = {0, 1, 0, 0};
-          double e_3_2[4] = {0, 0, 1, 0};
-          double e_4_2[4] = {0, 0, 0, 1};
-
-          num_flux->P_minus(this->P_minus_cache[point_i], w, e_1_2, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_minus(this->P_minus_cache[point_i] + 4, w, e_2_2, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_minus(this->P_minus_cache[point_i] + 8, w, e_3_2, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_minus(this->P_minus_cache[point_i] + 12, w, e_4_2, e->nx[point_i], e->ny[point_i]);
-        }
       }
-
-      int index = j * 4 + i;
-
-      if(u->val == NULL)
-        if(v->val == NULL)
-          for (int point_i = 0; point_i < n; point_i++) 
-            result -= wt[point_i] * (this->P_minus_cache[point_i][index] * u->val_neighbor[point_i]) * v->val_neighbor[point_i];
-        else
-          for (int point_i = 0; point_i < n; point_i++) 
-            result += wt[point_i] * (this->P_minus_cache[point_i][index] * u->val_neighbor[point_i]) * v->val[point_i];
-      else
-        if(v->val == NULL)
-          for (int point_i = 0; point_i < n; point_i++) 
-            result -= wt[point_i] * (this->P_plus_cache[point_i][index] * u->val[point_i]) * v->val_neighbor[point_i];
-        else
-          for (int point_i = 0; point_i < n; point_i++) 
-            result += wt[point_i] * (this->P_plus_cache[point_i][index] * u->val[point_i]) * v->val[point_i];
 
       return result * wf->get_current_time_step();
     }
 
     MatrixFormDG<double>* clone()  const
     { 
-      EulerEquationsMatrixFormSurfSemiImplicit* form = new EulerEquationsMatrixFormSurfSemiImplicit(this->i, this->j, this->num_flux->kappa, this->fluxes, this->cacheReady, this->P_plus_cache, this->P_minus_cache);
+      EulerEquationsMatrixFormSurfSemiImplicit* form = new EulerEquationsMatrixFormSurfSemiImplicit(this->i, this->j, this->num_flux->kappa);
       form->wf = this->wf;
       return form;
     }
 
-    bool* cacheReady;
-    double** P_plus_cache;
-    double** P_minus_cache;
     StegerWarmingNumericalFlux* num_flux;
-    EulerFluxes* fluxes;
   };
 
-  class EulerEquationsMatrixFormSemiImplicitInletOutlet : public MatrixFormSurf<double>
+  class EulerEquationsMatrixFormSemiImplicitInletOutlet  : public MatrixFormSurf<double>
   {
   public:
-    EulerEquationsMatrixFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, std::string marker, double kappa, bool* cacheReady, double** P_plus_cache, double** P_minus_cache) 
-      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa)), cacheReady(cacheReady), P_plus_cache(P_plus_cache), P_minus_cache(P_minus_cache)
+    EulerEquationsMatrixFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, std::string marker, double kappa) 
+      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
     { 
       set_area(marker);
     }
-    EulerEquationsMatrixFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, Hermes::vector<std::string> markers, double kappa, bool* cacheReady, double** P_plus_cache, double** P_minus_cache) 
-      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa)), cacheReady(cacheReady), P_plus_cache(P_plus_cache), P_minus_cache(P_minus_cache)
+    EulerEquationsMatrixFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, Hermes::vector<std::string> markers, double kappa) 
+      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
     { 
       set_areas(markers); 
     }
@@ -747,100 +712,22 @@ public:
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
       Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
+      double w_L[4], w_R[4];
       double result = 0.;
 
-      if(!(*this->cacheReady))
-      {
-        for (int point_i = 0; point_i < n; point_i++) 
-        {
-          double w_B[4], w_L[4], eigenvalues[4], alpha[4], q_ji_star[4], beta[4], q_ji[4], w_ji[4];
-
-          // Inner state.
-          w_L[0] = ext[0]->val[point_i];
-          w_L[1] = ext[1]->val[point_i];
-          w_L[2] = ext[2]->val[point_i];
-          w_L[3] = ext[3]->val[point_i];
-
-          // Transformation of the inner state to the local coordinates.
-          num_flux->Q(num_flux->get_q(), w_L, e->nx[point_i], e->ny[point_i]);
-
-          // Initialize the matrices.
-          double T[4][4];
-          double T_inv[4][4];
-          for(unsigned int ai = 0; ai < 4; ai++) 
-          {
-            for(unsigned int aj = 0; aj < 4; aj++) 
-            {
-              T[ai][aj] = 0.0;
-              T_inv[ai][aj] = 0.0;
-            }
-            alpha[ai] = 0;
-            beta[ai] = 0;
-            q_ji[ai] = 0;
-            w_ji[ai] = 0;
-            eigenvalues[ai] = 0;
-          }
-
-          // Calculate Lambda^-.
-          num_flux->Lambda(eigenvalues);
-          num_flux->T_1(T);
-          num_flux->T_2(T);
-          num_flux->T_3(T);
-          num_flux->T_4(T);
-          num_flux->T_inv_1(T_inv);
-          num_flux->T_inv_2(T_inv);
-          num_flux->T_inv_3(T_inv);
-          num_flux->T_inv_4(T_inv);
-
-          // "Prescribed" boundary state.
-          w_B[0] = this->rho_ext;
-          w_B[1] = this->rho_ext * this->v1_ext;
-          w_B[2] = this->rho_ext * this->v2_ext;
-          w_B[3] = this->energy_ext;
-
-          num_flux->Q(q_ji_star, w_B, e->nx[point_i], e->ny[point_i]);
-
-          for(unsigned int ai = 0; ai < 4; ai++)
-            for(unsigned int aj = 0; aj < 4; aj++)
-              alpha[ai] += T_inv[ai][aj] * num_flux->get_q()[aj];
-
-          for(unsigned int bi = 0; bi < 4; bi++)
-            for(unsigned int bj = 0; bj < 4; bj++)
-              beta[bi] += T_inv[bi][bj] * q_ji_star[bj];
-
-          for(unsigned int si = 0; si< 4; si++)
-            for(unsigned int sj = 0; sj < 4; sj++)
-              if(eigenvalues[sj] < 0)
-                q_ji[si] += beta[sj] * T[si][sj];
-              else
-                q_ji[si] += alpha[sj] * T[si][sj];
-
-          num_flux->Q_inv(w_ji, q_ji, e->nx[point_i], e->ny[point_i]);
-
-          double w_temp[4];
-          w_temp[0] = (w_ji[0] + w_L[0]) / 2;
-          w_temp[1] = (w_ji[1] + w_L[1]) / 2;
-          w_temp[2] = (w_ji[2] + w_L[2]) / 2;
-          w_temp[3] = (w_ji[3] + w_L[3]) / 2;
-
-          double e_1[4] = {1, 0, 0, 0};
-          double e_2[4] = {0, 1, 0, 0};
-          double e_3[4] = {0, 0, 1, 0};
-          double e_4[4] = {0, 0, 0, 1};
-
-          num_flux->P_plus(this->P_plus_cache[point_i], w_temp, e_1, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_plus(this->P_plus_cache[point_i] + 4, w_temp, e_2, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_plus(this->P_plus_cache[point_i] + 8, w_temp, e_3, e->nx[point_i], e->ny[point_i]);
-          num_flux->P_plus(this->P_plus_cache[point_i] + 12, w_temp, e_4, e->nx[point_i], e->ny[point_i]);
-        }
-
-        *(const_cast<EulerEquationsMatrixFormSemiImplicitInletOutlet*>(this))->cacheReady = true;
-      }
-
-      int index = j * 4 + i;
       for (int point_i = 0; point_i < n; point_i++) 
       {
-        result += wt[point_i] * P_plus_cache[point_i][index] * u->val[point_i] * v->val[point_i];
+        w_L[0] = ext[0]->val[point_i];
+        w_L[1] = ext[1]->val[point_i];
+        w_L[2] = ext[2]->val[point_i];
+        w_L[3] = ext[3]->val[point_i];
+
+        w_R[0] = rho_ext;
+        w_R[1] = rho_ext * v1_ext;
+        w_R[2] = rho_ext * v1_ext;
+        w_R[3] = energy_ext;
+
+        result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val[point_i] * v->val[point_i];
       }
 
       return result * wf->get_current_time_step();
@@ -854,7 +741,7 @@ public:
 
     MatrixFormSurf<double>* clone()  const
     { 
-      EulerEquationsMatrixFormSemiImplicitInletOutlet* form = new EulerEquationsMatrixFormSemiImplicitInletOutlet(this->i, this->j, this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->areas, this->num_flux->kappa, this->cacheReady, this->P_plus_cache, this->P_minus_cache);
+      EulerEquationsMatrixFormSemiImplicitInletOutlet* form = new EulerEquationsMatrixFormSemiImplicitInletOutlet(this->i, this->j, this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->areas, this->num_flux->kappa);
       form->wf = this->wf;
       return form;
     }
@@ -863,26 +750,21 @@ public:
     double v1_ext;
     double v2_ext;
     double energy_ext;
-    bool* cacheReady;
-    double** P_plus_cache;
-    double** P_minus_cache;
     StegerWarmingNumericalFlux* num_flux;
   };
 
-  class EulerEquationsVectorFormSemiImplicitInletOutlet : public VectorFormSurf<double>
+  class EulerEquationsVectorFormSemiImplicitInletOutlet  : public VectorFormSurf<double>
   {
   public:
     EulerEquationsVectorFormSemiImplicitInletOutlet(int i, double rho_ext, double v1_ext, double v2_ext, double energy_ext, std::string marker, double kappa) 
-      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext),
-      num_flux(new StegerWarmingNumericalFlux(kappa)) 
-    {
+      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
+    { 
       set_area(marker);
     }
     EulerEquationsVectorFormSemiImplicitInletOutlet(int i, double rho_ext, double v1_ext, double v2_ext, double energy_ext, Hermes::vector<std::string> markers, double kappa) 
-      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext),
-      num_flux(new StegerWarmingNumericalFlux(kappa)) 
-    {
-      set_areas(markers);
+      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
+    { 
+      set_areas(markers); 
     }
 
     ~EulerEquationsVectorFormSemiImplicitInletOutlet() 
@@ -890,91 +772,28 @@ public:
       delete num_flux;
     }
 
-    double value(int n, double *wt, Func<double> *u_ext[],
+    double value(int n, double *wt, Func<double> *u_ext[], 
       Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
+      double w_L[4], w_R[4];
       double result = 0.;
-
-      double w_B[4], w_L[4], eigenvalues[4], alpha[4], q_ji_star[4], beta[4], q_ji[4], w_ji[4];
 
       for (int point_i = 0; point_i < n; point_i++) 
       {
-        // Inner state.
         w_L[0] = ext[0]->val[point_i];
         w_L[1] = ext[1]->val[point_i];
         w_L[2] = ext[2]->val[point_i];
         w_L[3] = ext[3]->val[point_i];
 
-        // Transformation of the inner state to the local coordinates.
-        num_flux->Q(num_flux->get_q(), w_L, e->nx[point_i], e->ny[point_i]);
+        w_R[0] = rho_ext;
+        w_R[1] = rho_ext * v1_ext;
+        w_R[2] = rho_ext * v1_ext;
+        w_R[3] = energy_ext;
 
-        // Initialize the matrices.
-        double T[4][4];
-        double T_inv[4][4];
-        for(unsigned int ai = 0; ai < 4; ai++) 
-        {
-          for(unsigned int aj = 0; aj < 4; aj++) 
-          {
-            T[ai][aj] = 0.0;
-            T_inv[ai][aj] = 0.0;
-          }
-          alpha[ai] = 0;
-          beta[ai] = 0;
-          q_ji[ai] = 0;
-          w_ji[ai] = 0;
-          eigenvalues[ai] = 0;
-        }
-
-        // Calculate Lambda^-.
-        num_flux->Lambda(eigenvalues);
-        num_flux->T_1(T);
-        num_flux->T_2(T);
-        num_flux->T_3(T);
-        num_flux->T_4(T);
-        num_flux->T_inv_1(T_inv);
-        num_flux->T_inv_2(T_inv);
-        num_flux->T_inv_3(T_inv);
-        num_flux->T_inv_4(T_inv);
-
-        // "Prescribed" boundary state.
-        w_B[0] = this->rho_ext;
-        w_B[1] = this->rho_ext * this->v1_ext;
-        w_B[2] = this->rho_ext * this->v2_ext;
-        w_B[3] = this->energy_ext;
-
-        num_flux->Q(q_ji_star, w_B, e->nx[point_i], e->ny[point_i]);
-
-        for(unsigned int ai = 0; ai < 4; ai++)
-          for(unsigned int aj = 0; aj < 4; aj++)
-            alpha[ai] += T_inv[ai][aj] * num_flux->get_q()[aj];
-
-        for(unsigned int bi = 0; bi < 4; bi++)
-          for(unsigned int bj = 0; bj < 4; bj++)
-            beta[bi] += T_inv[bi][bj] * q_ji_star[bj];
-
-        for(unsigned int si = 0; si< 4; si++)
-          for(unsigned int sj = 0; sj < 4; sj++)
-            if(eigenvalues[sj] < 0)
-              q_ji[si] += beta[sj] * T[si][sj];
-            else
-              q_ji[si] += alpha[sj] * T[si][sj];
-
-        num_flux->Q_inv(w_ji, q_ji, e->nx[point_i], e->ny[point_i]);
-
-        double P_minus[4];
-
-        double w_temp[4];
-        w_temp[0] = (w_ji[0] + w_L[0]) / 2;
-        w_temp[1] = (w_ji[1] + w_L[1]) / 2;
-        w_temp[2] = (w_ji[2] + w_L[2]) / 2;
-        w_temp[3] = (w_ji[3] + w_L[3]) / 2;
-
-        num_flux->P_minus(P_minus, w_temp, w_ji, e->nx[point_i], e->ny[point_i]);
-
-        result += wt[point_i] * (P_minus[i]) * v->val[point_i];
+        result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * w_R[this->i] * v->val[point_i];
       }
 
-      return - result * wf->get_current_time_step();
+      return result * wf->get_current_time_step();
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, 

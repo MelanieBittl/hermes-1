@@ -31,7 +31,7 @@ const EulerLimiterType limiter_type = VertexBased;
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 4;
+int INIT_REF_NUM = 3;
 // Initial time step.
 double time_step_length = .02;
 double TIME_INTERVAL_LENGTH = 20.;
@@ -98,6 +98,12 @@ int main(int argc, char* argv[])
   SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
   Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho, space_rho_v_x, space_rho_v_y, space_e);
 
+  SpaceSharedPtr<double> const_space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
+  SpaceSharedPtr<double> const_space_rho_v_x(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
+  SpaceSharedPtr<double> const_space_rho_v_y(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
+  SpaceSharedPtr<double> const_space_e(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
+  Hermes::vector<SpaceSharedPtr<double> > const_spaces(const_space_rho, const_space_rho_v_x, const_space_rho_v_y, const_space_e);
+
   int ndof = Space<double>::get_num_dofs(spaces);
   logger.info("Ndof: %d", ndof);
 #pragma endregion
@@ -132,7 +138,7 @@ int main(int argc, char* argv[])
   OrderView order_view("Orders", new WinGeom(650, 330, 600, 300));
 #pragma endregion
 
-  LinearSolver<double> solver_implicit(&wf_implicit, spaces);
+  LinearSolver<double> solver_implicit(&wf_implicit, const_spaces);
   LinearSolver<double> solver_explicit(&wf_explicit, spaces);
 
 #pragma region 4. Time stepping loop.
@@ -143,42 +149,47 @@ int main(int argc, char* argv[])
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
 
     // Solve.
-    wf.set_current_time_step(time_step_length);
+    wf_explicit.set_current_time_step(time_step_length);
+    wf_implicit.set_current_time_step(time_step_length);
     double* previous_sln_vector = new double[ndof];
     OGProjection<double>::project_global(spaces, prev_slns, previous_sln_vector);
-    solver.solve();
-    {
-      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
-      limiter->get_solutions(prev_slns);
-      limitVelocityAndEnergy(spaces, limiter, prev_slns);
-      delete limiter;
-    }
-    solver.solve();
+
+    solver_implicit.solve();
+
+    ScalarView s1;
+    Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_spaces, prev_slns);
+    s1.show(prev_rho);
+    s1.wait_for_keypress();
 
     for(int component = 0; component < 4; component++)
     {
       Element* e;
       for_all_active_elements(e, mesh)
       {
-        AsmList<double> al;
-        spaces[component]->get_element_assembly_list(e, &al);
-        for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
-          if(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode()) == 0)
-            previous_sln_vector[al.get_dof()[shape_i]] = solver.get_sln_vector()[al.get_dof()[shape_i]];
+        AsmList<double> al_coarse;
+        AsmList<double> al_fine;
+        const_spaces[component]->get_element_assembly_list(e, &al_coarse);
+        spaces[component]->get_element_assembly_list(e, &al_fine);
+        for(unsigned int shape_i = 0; shape_i < al_fine.get_cnt(); shape_i++)
+          if(spaces[component]->get_shapeset()->get_order(al_fine.get_idx()[shape_i], e->get_mode()) == 0)
+            previous_sln_vector[al_fine.get_dof()[shape_i]] = solver_implicit.get_sln_vector()[al_coarse.get_dof()[0]];
       }
     }
 
     Solution<double>::vector_to_solutions(previous_sln_vector, spaces, prev_slns);
+    ScalarView s2;
+    s2.show(prev_rho);
+    s2.wait_for_keypress();
 
     delete [] previous_sln_vector;
 
-    solver.solve();
+    solver_explicit.solve();
 #pragma region *. Get the solution with optional shock capturing.
     if(!SHOCK_CAPTURING)
-      Solution<double>::vector_to_solutions(solver.get_sln_vector(), spaces, prev_slns);
+      Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), spaces, prev_slns);
     else
     {
-      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
+      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver_implicit.get_sln_vector(), 1);
       limiter->get_solutions(prev_slns);
       limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
