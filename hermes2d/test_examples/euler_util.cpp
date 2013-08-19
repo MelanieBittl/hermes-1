@@ -1345,8 +1345,8 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Limi
       real_component_limiter = new PostProcessing::VertexBasedLimiter(spaces[0], real_vector, dynamic_cast<PostProcessing::VertexBasedLimiter*>(limiter)->maximum_polynomial_order);
     else
     {
-      real_component_limiter = new FeistauerPCoarseningLimiter(spaces[0], real_vector);
-      dynamic_cast<FeistauerPCoarseningLimiter*>(real_component_limiter)->set_type(dynamic_cast<FeistauerPCoarseningLimiter*>(limiter)->get_type());
+      real_component_limiter = new FeistauerJumpDetector(spaces[0], real_vector);
+      dynamic_cast<FeistauerJumpDetector*>(real_component_limiter)->set_type(dynamic_cast<FeistauerJumpDetector*>(limiter)->get_type());
     }
 
     delete [] real_vector;
