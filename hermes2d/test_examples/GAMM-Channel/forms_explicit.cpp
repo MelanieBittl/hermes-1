@@ -446,29 +446,22 @@ public:
     for(int form_i = 0; form_i < 4; form_i++)
     {
       add_matrix_form(new EulerEquationsBilinearFormTime(form_i));
-
       add_vector_form(new EulerEquationsLinearFormTime(form_i));
-      add_vector_form_surf(new EulerEquationsVectorFormSemiImplicitInletOutlet(form_i, rho_ext, v1_ext, v2_ext, energy_ext, inlet_markers, kappa));
 
       for(int form_j = 0; form_j < 4; form_j++)
       {
         if(!fvm_only) 
           add_matrix_form(new EulerEquationsBilinearForm(form_i, form_j, euler_fluxes));
-
-        EulerEquationsMatrixFormSurfSemiImplicit* formDG = new EulerEquationsMatrixFormSurfSemiImplicit(form_i, form_j, kappa);
-        add_matrix_form_DG(formDG);
-
-        EulerEquationsMatrixFormSemiImplicitInletOutlet* formSurf = new EulerEquationsMatrixFormSemiImplicitInletOutlet(form_i, form_j, rho_ext, v1_ext, v2_ext, energy_ext, inlet_markers, kappa);
-        add_matrix_form_surf(formSurf);
-
-        if(outlet_markers.size() > 0)
-        {
-          formSurf = new EulerEquationsMatrixFormSemiImplicitInletOutlet(form_i, form_j, rho_ext, v1_ext, v2_ext, energy_ext, outlet_markers, kappa);
-          add_matrix_form_surf(formSurf);
-        }
-
-        add_matrix_form_surf(new EulerEquationsMatrixFormSolidWall(form_i, form_j, solid_wall_markers, kappa));
       }
+
+      add_matrix_form_DG(new EulerEquationsMatrixFormSurfSemiImplicit(form_i, form_i, kappa));
+      add_matrix_form_surf(new EulerEquationsMatrixFormSolidWall(form_i, form_i, solid_wall_markers, kappa));
+
+      add_matrix_form_surf(new EulerEquationsMatrixFormSemiImplicitInletOutlet(form_i, form_i, rho_ext, v1_ext, v2_ext, energy_ext, inlet_markers, kappa));
+      add_vector_form_surf(new EulerEquationsVectorFormSemiImplicitInletOutlet(form_i, form_i, rho_ext, v1_ext, v2_ext, energy_ext, inlet_markers, kappa));
+      
+      add_matrix_form_surf(new EulerEquationsMatrixFormSemiImplicitInletOutlet(form_i, form_i, rho_ext, v1_ext, v2_ext, energy_ext, outlet_markers, kappa));
+      add_vector_form_surf(new EulerEquationsVectorFormSemiImplicitInletOutlet(form_i, form_i, rho_ext, v1_ext, v2_ext, energy_ext, outlet_markers, kappa));
     }
 
     this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy));
@@ -637,7 +630,7 @@ public:
   {
   public:
     EulerEquationsMatrixFormSurfSemiImplicit(int i, int j, double kappa)
-      : MatrixFormDG<double>(i, j), num_flux(new StegerWarmingNumericalFlux(kappa))
+      : MatrixFormDG<double>(i, j), num_flux(new LaxFriedrichsNumericalFlux(kappa))
     {
     }
 
@@ -666,14 +659,14 @@ public:
 
         if(u->val == NULL)
           if(v->val == NULL)
-            result -= wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val_neighbor[point_i] * v->val_neighbor[point_i];
+            result -= wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i], u->val_neighbor[point_i]) * v->val_neighbor[point_i];
           else
-            result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val_neighbor[point_i] * v->val[point_i];
+            result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i], u->val_neighbor[point_i]) * v->val[point_i];
         else
           if(v->val == NULL)
-            result -= wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val[point_i] * v->val_neighbor[point_i];
+            result -= wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i], u->val[point_i]) * v->val_neighbor[point_i];
           else
-            result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val[point_i] * v->val[point_i];
+            result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i], u->val[point_i]) * v->val[point_i];
 
       }
 
@@ -687,19 +680,19 @@ public:
       return form;
     }
 
-    StegerWarmingNumericalFlux* num_flux;
+    LaxFriedrichsNumericalFlux* num_flux;
   };
 
   class EulerEquationsMatrixFormSemiImplicitInletOutlet  : public MatrixFormSurf<double>
   {
   public:
     EulerEquationsMatrixFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, std::string marker, double kappa) 
-      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
+      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new LaxFriedrichsNumericalFlux(kappa))
     { 
       set_area(marker);
     }
     EulerEquationsMatrixFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, Hermes::vector<std::string> markers, double kappa) 
-      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
+      : MatrixFormSurf<double>(i, j), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new LaxFriedrichsNumericalFlux(kappa))
     { 
       set_areas(markers); 
     }
@@ -715,6 +708,11 @@ public:
       double w_L[4], w_R[4];
       double result = 0.;
 
+      w_R[0] = rho_ext;
+      w_R[1] = rho_ext * v1_ext;
+      w_R[2] = rho_ext * v2_ext;
+      w_R[3] = energy_ext;
+
       for (int point_i = 0; point_i < n; point_i++) 
       {
         w_L[0] = ext[0]->val[point_i];
@@ -722,12 +720,7 @@ public:
         w_L[2] = ext[2]->val[point_i];
         w_L[3] = ext[3]->val[point_i];
 
-        w_R[0] = rho_ext;
-        w_R[1] = rho_ext * v1_ext;
-        w_R[2] = rho_ext * v1_ext;
-        w_R[3] = energy_ext;
-
-        result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i]) * u->val[point_i] * v->val[point_i];
+        result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_left(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i], u->val[point_i]) * v->val[point_i];
       }
 
       return result * wf->get_current_time_step();
@@ -750,20 +743,22 @@ public:
     double v1_ext;
     double v2_ext;
     double energy_ext;
-    StegerWarmingNumericalFlux* num_flux;
+    LaxFriedrichsNumericalFlux* num_flux;
   };
 
   class EulerEquationsVectorFormSemiImplicitInletOutlet  : public VectorFormSurf<double>
   {
   public:
-    EulerEquationsVectorFormSemiImplicitInletOutlet(int i, double rho_ext, double v1_ext, double v2_ext, double energy_ext, std::string marker, double kappa) 
-      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
+    EulerEquationsVectorFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, std::string marker, double kappa) 
+      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new LaxFriedrichsNumericalFlux(kappa))
     { 
+      this->j = j;
       set_area(marker);
     }
-    EulerEquationsVectorFormSemiImplicitInletOutlet(int i, double rho_ext, double v1_ext, double v2_ext, double energy_ext, Hermes::vector<std::string> markers, double kappa) 
-      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new StegerWarmingNumericalFlux(kappa))
+    EulerEquationsVectorFormSemiImplicitInletOutlet(int i, int j, double rho_ext, double v1_ext, double v2_ext, double energy_ext, Hermes::vector<std::string> markers, double kappa) 
+      : VectorFormSurf<double>(i), rho_ext(rho_ext), v1_ext(v1_ext), v2_ext(v2_ext), energy_ext(energy_ext), num_flux(new LaxFriedrichsNumericalFlux(kappa))
     { 
+      this->j = j;
       set_areas(markers); 
     }
 
@@ -778,6 +773,11 @@ public:
       double w_L[4], w_R[4];
       double result = 0.;
 
+      w_R[0] = rho_ext;
+      w_R[1] = rho_ext * v1_ext;
+      w_R[2] = rho_ext * v2_ext;
+      w_R[3] = energy_ext;
+
       for (int point_i = 0; point_i < n; point_i++) 
       {
         w_L[0] = ext[0]->val[point_i];
@@ -785,15 +785,10 @@ public:
         w_L[2] = ext[2]->val[point_i];
         w_L[3] = ext[3]->val[point_i];
 
-        w_R[0] = rho_ext;
-        w_R[1] = rho_ext * v1_ext;
-        w_R[2] = rho_ext * v1_ext;
-        w_R[3] = energy_ext;
-
-        result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * w_R[this->i] * v->val[point_i];
+        result += wt[point_i] * this->num_flux->linearized_numerical_flux_i_right(this->j, w_L, w_R, e->nx[point_i], e->ny[point_i], w_R[this->i]) * v->val[point_i];
       }
 
-      return result * wf->get_current_time_step();
+      return -result * wf->get_current_time_step();
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, 
@@ -804,16 +799,17 @@ public:
 
     VectorFormSurf<double>* clone()  const
     { 
-      EulerEquationsVectorFormSemiImplicitInletOutlet* form = new EulerEquationsVectorFormSemiImplicitInletOutlet(this->i, this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->areas, this->num_flux->kappa);
+      EulerEquationsVectorFormSemiImplicitInletOutlet* form = new EulerEquationsVectorFormSemiImplicitInletOutlet(this->i, this->j, this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->areas, this->num_flux->kappa);
       form->wf = this->wf;
       return form;
     }
 
     double rho_ext;
+    int j;
     double v1_ext;
     double v2_ext;
     double energy_ext;
-    StegerWarmingNumericalFlux* num_flux;
+    LaxFriedrichsNumericalFlux* num_flux;
   };
 
   class EulerEquationsLinearFormTime : public VectorFormVol<double>

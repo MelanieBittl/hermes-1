@@ -19,7 +19,7 @@ public:
 
   /// Returns the number by which the left part of the basis function should be multiplied by.
   virtual double linearized_numerical_flux_i_left(int component, double w_L[4], double w_R[4],
-    double nx, double ny)
+    double nx, double ny, double multiplied_basis_fn)
   {
     throw Exceptions::MethodNotOverridenException("linearized_numerical_flux_i_left");
     return 0.;
@@ -27,7 +27,7 @@ public:
 
   /// Returns the number by which the right part of the basis function should be multiplied by.
   virtual double linearized_numerical_flux_i_right(int component, double w_L[4], double w_R[4],
-    double nx, double ny)
+    double nx, double ny, double multiplied_basis_fn)
   {
     throw Exceptions::MethodNotOverridenException("linearized_numerical_flux_i_right");
     return 0.;
@@ -212,10 +212,10 @@ public:
     double nx, double ny);
 
   double linearized_numerical_flux_i_left(int component, double w_L[4], double w_R[4],
-    double nx, double ny);
+    double nx, double ny, double multiplied_basis_fn);
 
   double linearized_numerical_flux_i_right(int component, double w_L[4], double w_R[4],
-    double nx, double ny);
+    double nx, double ny, double multiplied_basis_fn);
 
 private:
   void Euler_flux_1(double state[4], double result[4]);

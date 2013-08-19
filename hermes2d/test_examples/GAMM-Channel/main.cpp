@@ -27,13 +27,14 @@ const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
 const EulerLimiterType limiter_type = VertexBased;
+bool limit_velocities = false;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 3;
+int INIT_REF_NUM = 5;
 // Initial time step.
-double time_step_length = .02;
+double time_step_length = .001;
 double TIME_INTERVAL_LENGTH = 20.;
 
 // Kappa.
@@ -87,9 +88,7 @@ int main(int argc, char* argv[])
  
   // Perform initial mesh refinements.
   for (int i = 0; i < INIT_REF_NUM; i++)
-  {
     mesh->refine_all_elements();
-  }
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -98,10 +97,10 @@ int main(int argc, char* argv[])
   SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
   Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho, space_rho_v_x, space_rho_v_y, space_e);
 
-  SpaceSharedPtr<double> const_space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
-  SpaceSharedPtr<double> const_space_rho_v_x(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
-  SpaceSharedPtr<double> const_space_rho_v_y(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
-  SpaceSharedPtr<double> const_space_e(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
+  SpaceSharedPtr<double> const_space_rho(new L2Space<double>(mesh, 0, new L2ShapesetTaylor));
+  SpaceSharedPtr<double> const_space_rho_v_x(new L2Space<double>(mesh, 0, new L2ShapesetTaylor));
+  SpaceSharedPtr<double> const_space_rho_v_y(new L2Space<double>(mesh, 0, new L2ShapesetTaylor));
+  SpaceSharedPtr<double> const_space_e(new L2Space<double>(mesh, 0, new L2ShapesetTaylor));
   Hermes::vector<SpaceSharedPtr<double> > const_spaces(const_space_rho, const_space_rho_v_x, const_space_rho_v_y, const_space_e);
 
   int ndof = Space<double>::get_num_dofs(spaces);
@@ -132,15 +131,16 @@ int main(int argc, char* argv[])
 
   ScalarView density_view("Density", new WinGeom(0, 0, 600, 300));
   ScalarView pressure_view("Pressure", new WinGeom(0, 330, 600, 300));
-  ScalarView velocity_view("Velocity", new WinGeom(650, 0, 600, 300));
-  ScalarView eview("Error - density", new WinGeom(0, 330, 600, 300));
-  ScalarView eview1("Error - momentum", new WinGeom(0, 660, 600, 300));
-  OrderView order_view("Orders", new WinGeom(650, 330, 600, 300));
+  ScalarView M_view("Mach number", new WinGeom(630, 0, 600, 300));
 #pragma endregion
 
   LinearSolver<double> solver_implicit(&wf_implicit, const_spaces);
   LinearSolver<double> solver_explicit(&wf_explicit, spaces);
-
+  wf_explicit.set_current_time_step(time_step_length);
+  wf_implicit.set_current_time_step(time_step_length);
+  solver_implicit.output_matrix();
+  solver_implicit.output_rhs();
+    
 #pragma region 4. Time stepping loop.
   int iteration = 0;
   for(double t = 0.0; t <= TIME_INTERVAL_LENGTH + Hermes::Epsilon; t += time_step_length)
@@ -149,49 +149,53 @@ int main(int argc, char* argv[])
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
 
     // Solve.
-    wf_explicit.set_current_time_step(time_step_length);
-    wf_implicit.set_current_time_step(time_step_length);
+    // 0 - store the sln vector.
     double* previous_sln_vector = new double[ndof];
     OGProjection<double>::project_global(spaces, prev_slns, previous_sln_vector);
-
+    // 1 - solve implicit.
     solver_implicit.solve();
-
-    ScalarView s1;
+    double* mean_values = new double[ndof];
     Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_spaces, prev_slns);
-    s1.show(prev_rho);
-    s1.wait_for_keypress();
+    OGProjection<double>::project_global(spaces, prev_slns, mean_values);
 
+    // 2 - Update the mean values.
+    Space<double>::assign_dofs(spaces);
     for(int component = 0; component < 4; component++)
     {
       Element* e;
       for_all_active_elements(e, mesh)
       {
-        AsmList<double> al_coarse;
         AsmList<double> al_fine;
-        const_spaces[component]->get_element_assembly_list(e, &al_coarse);
         spaces[component]->get_element_assembly_list(e, &al_fine);
-        for(unsigned int shape_i = 0; shape_i < al_fine.get_cnt(); shape_i++)
-          if(spaces[component]->get_shapeset()->get_order(al_fine.get_idx()[shape_i], e->get_mode()) == 0)
-            previous_sln_vector[al_fine.get_dof()[shape_i]] = solver_implicit.get_sln_vector()[al_coarse.get_dof()[0]];
+        for(unsigned int shape_i = 0; shape_i < al_fine.cnt; shape_i++)
+        {
+          int order = spaces[component]->get_shapeset()->get_order(al_fine.idx[shape_i], e->get_mode());
+          if(order == 0)
+          {
+            int dof = al_fine.dof[shape_i];
+            previous_sln_vector[dof] = mean_values[dof];
+          }
+        }
       }
     }
 
+    // Solve explicit.
     Solution<double>::vector_to_solutions(previous_sln_vector, spaces, prev_slns);
-    ScalarView s2;
-    s2.show(prev_rho);
-    s2.wait_for_keypress();
-
-    delete [] previous_sln_vector;
-
     solver_explicit.solve();
+    
+    // Clean up.
+    delete [] previous_sln_vector;
+    delete [] mean_values;
+
 #pragma region *. Get the solution with optional shock capturing.
     if(!SHOCK_CAPTURING)
       Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), spaces, prev_slns);
     else
     {
-      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver_implicit.get_sln_vector(), 1);
+      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver_explicit.get_sln_vector(), 1);
       limiter->get_solutions(prev_slns);
-      limitVelocityAndEnergy(spaces, limiter, prev_slns);
+      if(limit_velocities)
+        limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
     }
 #pragma endregion
@@ -204,23 +208,21 @@ int main(int argc, char* argv[])
       {        
         Mach_number->reinit();
         pressure->reinit();
-        velocity->reinit();
         density_view.show(prev_slns[0]);
         pressure_view.show(pressure);
-        velocity_view.show(velocity);
-        order_view.show(space_rho);
+        M_view.show(Mach_number);
       }
       // Output solution in VTK format.
       if(VTK_VISUALIZATION)
       {
         pressure->reinit();
-        velocity->reinit();
+        Mach_number->reinit();
         Linearizer lin;
         char filename[40];
         sprintf(filename, "Pressure-%i.vtk", iteration - 1);
         lin.save_solution_vtk(pressure, filename, "Pressure", false);
-        sprintf(filename, "Velocity-%i.vtk", iteration - 1);
-        lin.save_solution_vtk(velocity, filename, "Velocity", false);
+        sprintf(filename, "Mach-%i.vtk", iteration - 1);
+        lin.save_solution_vtk(Mach_number, filename, "Velocity", false);
         sprintf(filename, "Rho-%i.vtk", iteration - 1);
         lin.save_solution_vtk(prev_rho, filename, "Rho", false);
       }
