@@ -56,8 +56,8 @@ mloader.load("unit.mesh", basemesh);
  // EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
-  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
-  SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();

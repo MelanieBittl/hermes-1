@@ -273,7 +273,7 @@ for(int i=0; i<ndof; i++) coeff_vec[i] = u_L[i];
   	//	pressure_view.show(&pressure);
   		
 
-	View::wait(HERMES_WAIT_KEYPRESS);
+	//View::wait(HERMES_WAIT_KEYPRESS);
 
 
 

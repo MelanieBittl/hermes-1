@@ -3,9 +3,9 @@
 
 const double EPS = 1.;
 
-const double penalty_parameter = 10.;
+const double penalty_parameter = 1.;
 
-enum DG_TYPE {Baumann_Oden,	IP,	NIPG, NONE, BDRY_ONLY, DGCG};
+enum DG_TYPE {Baumann_Oden,	IP,	NIPG, CG, NONE};
 DG_TYPE type = NIPG;
 
 
@@ -72,44 +72,6 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
   Scalar result = Scalar(0);
 	Real flux_u = Real(0);
 	double diam = e->diam;
-/*
-bool u_vertex_x = true;
-bool u_vertex_y = true;
-bool v_vertex_x = true;
-bool v_vertex_y = true;
-
-bool u_vertex = true;
-bool v_vertex = true;
-
-Real u_dx_val = (u->fn_central == NULL ? u->dx_neighbor[0]  : u->dx[0] );
-Real v_dx_val = (v->fn_central == NULL ? v->dx_neighbor[0]  : v->dx[0] );
-
-Real u_dy_val = (u->fn_central == NULL ? u->dy_neighbor[0]  : u->dy[0] );
-Real v_dy_val = (v->fn_central == NULL ? v->dy_neighbor[0]  : v->dy[0] );
-
-for(int i =1;i<n;i++)
-{
-		if(v->fn_central==NULL) {
-				if(v->dx_neighbor[i]!= v_dx_val) v_vertex_x = false;
-				if(v->dy_neighbor[i]!= v_dy_val) v_vertex_y = false;
-		}else{
-					if(v->dx[i]!= v_dx_val) v_vertex_x = false;
-					if(v->dy[i]!= v_dy_val) v_vertex_y = false;
-		}		
-		if((v_vertex_x==false)&&(v_vertex_y==false)){v_vertex = false; break;}
-}
-for(int i =1;i<n;i++)
-{
-		if(u->fn_central==NULL) {
-				if(u->dx_neighbor[i]!= u_dx_val) u_vertex_x = false;
-				if(u->dy_neighbor[i]!= u_dy_val) u_vertex_y = false;
-		}else{
-					if(u->dx[i]!= u_dx_val) u_vertex_x = false;
-					if(u->dy[i]!= u_dy_val) u_vertex_y = false;
-		}		
-		if((u_vertex_x==false)&&(u_vertex_y==false)) {u_vertex = false; break;}
-}
-*/
 
 
   for (int i = 0; i < n; i++) 
@@ -150,31 +112,6 @@ Real jump_v_y = (v->fn_central == NULL ?-v->dy_neighbor[i] :v->dy[i]);
 			result -= wt[i]*EPS*flux_u*jump_v/2.;
 			result += wt[i]*EPS*jump_u*mid_v_dx/2.;
 			result += wt[i]*jump_u/diam*jump_v*penalty_parameter;
-		}else if(type ==DGCG)
-		{
-
-			/*	if((u_vertex==false)&&(v_vertex==true))
-				{	
-					//result -= wt[i]*EPS*mid_v*jump_u_dx/2.;
-					//result += wt[i]*EPS*jump_u*mid_v/2.;
-
-
-				}else if((u_vertex==true)&&(v_vertex==false))
-				{
-						//result -= wt[i]*EPS*mid_u_dx*jump_v/2.;
-
-				}else	if((u_vertex==false)&&(v_vertex==false))
-				{
-					//result -= wt[i]*EPS*jump_v*mid_u_dx/2.;
-					//result += wt[i]*EPS*mid_v*jump_u_dx/2.;
-					//result += wt[i]*EPS*jump_u*mid_v_dx/2.;
-					//result += wt[i]*EPS*mid_u*jump_v_dx/2.;
-					//result += wt[i]*EPS*jump_u_dx*jump_v_dx;
-					//result += wt[i]*EPS*u_v_dx;
-
-					//result += wt[i]*EPS*jump_u*mid_v_dx/2.;
-				}*/
-
 		}
 		
   }
@@ -221,12 +158,9 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
 				result += wt[i]*EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i]) *u->val[i];
 				result -= wt[i]*EPS*(u->dx[i]*e->nx[i]+u->dy[i]* e->ny[i]) *v->val[i];
 				result += wt[i]*v->val[i]*u->val[i]/diam*penalty_parameter;
-			}else if(type ==BDRY_ONLY)
-			{	
-				result += wt[i]*v->val[i]*u->val[i]/diam;
-			}else if(type==DGCG)
+			}else if(type == CG)
 			{
-				result += wt[i]*v->val[i]*u->val[i]/diam; 
+				result += wt[i]*v->val[i]*u->val[i]/diam;
 			}
 		}
 		
@@ -270,14 +204,10 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
 			{
 					result += wt[i]* EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i])*exact->val[i];
 					result += wt[i]*v->val[i]*exact->val[i]/diam*penalty_parameter;		
-			}else if(type==BDRY_ONLY)
+			}else if(type == CG)
 			{
-				result += wt[i]* EPS*(exact->dx[i]*e->nx[i]+exact->dy[i]* e->ny[i])*v->val[i];			
-				result += wt[i]*v->val[i]*exact->val[i]/diam;
-			}else if(type==DGCG)
-			{
-				result += wt[i]* EPS*(exact->dx[i]*e->nx[i]+exact->dy[i]* e->ny[i])*v->val[i];			
-				result += wt[i]*v->val[i]*exact->val[i]/diam;
+					result += wt[i]* EPS*(exact->dx[i]*e->nx[i]+exact->dy[i]* e->ny[i])*v->val[i];
+					result += wt[i]*v->val[i]*exact->val[i]/diam;		
 			}
 
 	}
@@ -352,7 +282,7 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
 		dx =(y*y-1.)*2.*x;
 		dy =(x*x-1.)*2.*y;
 
-		//dx = 1+y; dy = 1+x;
+
 };
 
  double CustomInitialCondition::value(double x, double y) const { 
@@ -360,7 +290,6 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
   double result = 0.0;
 
 result = (x*x-1.)*(y*y-1.);
- //result = x+y;
 	
 return result;
 

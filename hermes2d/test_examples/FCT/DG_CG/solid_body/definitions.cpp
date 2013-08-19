@@ -202,7 +202,7 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
       result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], Real(0), a_dot_n) * jump_v;
       
   }
-  return result;
+  return result*theta;
 }
 
 double CustomWeakForm::CustomMatrixFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e, DiscontinuousFunc<double> **ext) const
@@ -239,8 +239,6 @@ DiscontinuousFunc<double>* exact = ext[0];
     double jump_v =  v->val[i];
 
       result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(exact->val[i], exact->val_neighbor[i], a_dot_n) * jump_v;
-
-
       
   }
   return (-result*(1.-theta));

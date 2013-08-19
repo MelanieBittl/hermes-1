@@ -6,7 +6,7 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 

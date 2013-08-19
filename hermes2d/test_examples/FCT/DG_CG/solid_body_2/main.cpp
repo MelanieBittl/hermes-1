@@ -11,17 +11,17 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 6;                   // Number of initial refinements.
+const int INIT_REF_NUM = 4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
-const double time_step =25e-6;                           // Time step.
-//const double T_FINAL = 2.5*PI;                         // Time interval length. 
+const double time_step =1e-3;                           // Time step.
+const double T_FINAL = 2.5*PI;                         // Time interval length. 
 
- const double T_FINAL = 2.;   
+ //const double T_FINAL = 2.;   
 
 
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
-const double theta_DG =	0.5;
+const double theta_DG =0.5;
 
 const bool all = true;
 const bool DG = true;
@@ -62,9 +62,9 @@ mloader.load("unit.mesh", basemesh);
   int ndof = space->get_num_dofs();
   
 
-    //double current_time = PI/2.;
+    double current_time = PI/2.;
 
-double current_time = 0.;
+//double current_time = 0.;
 
 
   // Previous time level solution (initialized by the initial condition).
@@ -74,7 +74,7 @@ double current_time = 0.;
 // Output solution in VTK format.
 	Linearizer lin;
 	bool mode_3D = true;
-//lin.save_solution_vtk(u_exact, "init.vtk", "solution", mode_3D);
+lin.save_solution_vtk(u_exact, "init.vtk", "solution", mode_3D);
  
   // Initialize views.
 	ScalarView sview("Loesung", new WinGeom(500, 500, 500, 400));
@@ -83,20 +83,19 @@ double current_time = 0.;
 //sview.set_min_max_range(0,1);
 //View::wait(HERMES_WAIT_KEYPRESS);
 
+
   OGProjection<double> ogProjection;
  
 	char title[100];
     int ts = 1;
-
 	
 	int ref_ndof = space->get_num_dofs();	
-	//Hermes::Mixins::Loggable::Static::info(" ndof = %d ", ref_ndof); 
 
 
 dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 
 CustomWeakForm wf(u_exact, u_exact, mesh,time_step, theta,theta_DG, all, DG,  false);
-CustomWeakForm wf_rhs(u_exact, u_exact, mesh,time_step, theta,theta_DG, false, false,  true);
+CustomWeakForm wf_rhs(u_exact, u_exact, mesh,time_step, theta,theta_DG, false, DG,  true);
 
 
 	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double> ; 
@@ -129,7 +128,7 @@ dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
       Solution<double>::vector_to_solution(vec_new, space, u_new);
 
 			//sview.show(u_new);
-			//lview.show(u_exact);
+		//	lview.show(u_exact);
  		if(ts==1) wf_rhs.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(u_exact, u_new) );
 		 	current_time += time_step;
 		 	ts++;

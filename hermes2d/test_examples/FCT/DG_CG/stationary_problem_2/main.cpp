@@ -6,7 +6,7 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 
@@ -55,7 +55,7 @@ m1view.show(mesh);*/
 SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh, P_INIT));
   //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
-  //SpaceSharedPtr<double> space_h1(new H1Space<double>(mesh,P_INIT));
+ // SpaceSharedPtr<double> space(new H1Space<double>(mesh,P_INIT));
 
 /* BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
   bview.show(space);
@@ -113,7 +113,7 @@ Solution<double>::vector_to_solution(coeff_vec, space_h1, u_test);*/
 			Solution<double>::vector_to_solution(vec_new, space, u_new);
 			for(int i=0; i<ndof; i++) coeff_vec_2[i] = vec_new[i];
 
-		sview.show(u_new);
+		//sview.show(u_new);
 /*
 dg_surface_matrix->multiply_with_vector(coeff_vec, coeff_vec_3); 
 

@@ -1,10 +1,10 @@
 #include "definitions.h"
 
-const double EPS = 1e-6;
-const double penalty_parameter = 1.;
+const double EPS = 1e-3;
+const double penalty_parameter = 10.;
 
 enum DG_TYPE {Baumann_Oden,	IP,	NIPG, NONE};
-DG_TYPE type = Baumann_Oden;
+DG_TYPE type =Baumann_Oden;
 
 
 double calc_abs_v(Element* e)
@@ -47,9 +47,8 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_exact,MeshFunct
 
   if(all) 
 	{ 
-    add_matrix_form(new CustomMatrixFormVolConvection(0, 0, time_step, theta));
+   add_matrix_form(new CustomMatrixFormVolConvection(0, 0, time_step, theta));
 	 add_matrix_form_surf(new CustomMatrixFormSurface(0, 0));
-
 	}
   
 	if(right_hand_side)
@@ -58,13 +57,10 @@ CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_exact,MeshFunct
 		add_vector_form_surf(new CustomVectorFormSurface(0) );
 		if(DG)
 			 add_vector_form_DG(new CustomVectorFormInterface(0, theta_DG));
-
 	}
 		
    if(DG)				
-		 add_matrix_form_DG(new CustomMatrixFormInterface(0, 0, theta_DG));
-		
-		
+		 add_matrix_form_DG(new CustomMatrixFormInterface(0, 0, theta_DG));	
 
 }
 
@@ -82,12 +78,12 @@ WeakForm<double>* CustomWeakForm::clone() const
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
 {
-/*	Real v_x =-e->y[i];
+	Real v_x =-e->y[i];
 	Real v_y =e->x[i];
-		result += wt[i] *( (u->val[i] *(v->val[i]/time_step - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]) );*/
-
+		result += wt[i] *( (u->val[i] *(v->val[i]/time_step - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]) );
+/*
 double v_x =2.; double v_y =3.;
-		result += wt[i] *( (u->val[i] *(v->val[i]/time_step + theta*v->val[i] - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]) );
+		result += wt[i] *( (u->val[i] *(v->val[i]/time_step + theta*v->val[i] - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]) );*/
 }
   return result;
 
@@ -116,15 +112,14 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
 	double diam = e->diam;
 	for (int i = 0; i < n; i++)
 	{
-		//	double v_x =-e->y[i];	double v_y =e->x[i];
-
-double v_x =2.; double v_y =3.;
+			double v_x =-e->y[i];	double v_y =e->x[i];
+//double v_x =2.; double v_y =3.;
 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
    result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
 
 			if(type == Baumann_Oden)
-			{	
+			{					result += wt[i]*v->val[i]*u->val[i]/diam*penalty_parameter;
 				result += wt[i]*EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i]) *u->val[i];
 				result -= wt[i]*EPS*(u->dx[i]*e->nx[i]+u->dy[i]* e->ny[i]) *v->val[i];
 			}else if(type == IP)
@@ -169,9 +164,9 @@ Real flux_u = Real(0);
 
   for (int i = 0; i < n; i++) 
   {
-	//Real v_x =-e->y[i];	Real v_y =e->x[i];
+	Real v_x =-e->y[i];	Real v_y =e->x[i];
 
-double v_x =2.; double v_y =3.;
+//double v_x =2.; double v_y =3.;
 
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 
@@ -236,34 +231,29 @@ MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
      double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
         Geom<double> *e, DiscontinuousFunc<double> **ext) const
 {
-DiscontinuousFunc<double>* exact = ext[1];		
+DiscontinuousFunc<double>* sln_prev_time = ext[1];		
   double result = double(0);
 	double diam = e->diam;
 
-
-
   for (int i = 0; i < n; i++) 
   {
-			//double v_x =  (- e->y[i]);	double v_y = (e->x[i]) ;
+			double v_x =  (- e->y[i]);	double v_y = (e->x[i]) ;
 
-double v_x =2.; double v_y =3.; 
+//double v_x =2.; double v_y =3.; 
 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     double jump_v =  v->val[i];
-	double	flux_u =(exact->dx_neighbor[i]*e->nx[i]+exact->dy_neighbor[i]* e->ny[i])  + (exact->dx[i]* e->nx[i]+exact->dy[i]* e->ny[i]);
-	double jump_u =(exact->val[i] -exact->val_neighbor[i] );
+	double	flux_u =(sln_prev_time->dx_neighbor[i]*e->nx[i]+sln_prev_time->dy_neighbor[i]* e->ny[i])  + (sln_prev_time->dx[i]* e->nx[i]+sln_prev_time->dy[i]* e->ny[i]);
+	double jump_u =(sln_prev_time->val[i] -sln_prev_time->val_neighbor[i] );
 	double mid_v_dx = (v->dx[i]* e->nx[i]+v->dy[i]* e->ny[i]) ; 
 double jump_v_dx = mid_v_dx;
-  double mid_u = (exact->val[i] + exact->val_neighbor[i] );
+  double mid_u = (sln_prev_time->val[i] + sln_prev_time->val_neighbor[i] );
 
 double mid_u_dx = flux_u;
-double jump_u_dx =  (exact->dx[i]* e->nx[i]+exact->dy[i]* e->ny[i])-(exact->dx_neighbor[i]*e->nx[i]+exact->dy_neighbor[i]* e->ny[i])  ;
+double jump_u_dx =  (sln_prev_time->dx[i]* e->nx[i]+sln_prev_time->dy[i]* e->ny[i])-(sln_prev_time->dx_neighbor[i]*e->nx[i]+sln_prev_time->dy_neighbor[i]* e->ny[i])  ;
 double mid_v= v->val[i];
 
-
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(exact->val[i], exact->val_neighbor[i], a_dot_n) * jump_v;
-
-	
+      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(sln_prev_time->val[i], sln_prev_time->val_neighbor[i], a_dot_n) * jump_v;	
 
 		if(type == Baumann_Oden)
 		{
@@ -311,8 +301,8 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
 	double diam = e->diam;
    for (int i = 0; i < n; i++)
 	{ 		 
-			//double v_x = -e->y[i];			double v_y = e->x[i]; 
-double v_x =2.; double v_y =3.;
+			double v_x = -e->y[i];			double v_y = e->x[i]; 
+//double v_x =2.; double v_y =3.;
 
 			double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
 			double grad_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(exact->dx[i], exact->dy[i], e->nx[i], e->ny[i]);
@@ -321,7 +311,7 @@ double v_x =2.; double v_y =3.;
 				result -= wt[i]*(static_cast<CustomWeakForm*>(wf)->upwind_flux(0., exact->val[i], a_dot_n))*v->val[i];
 
 			if(type == Baumann_Oden)
-			{	
+			{	result += wt[i]*v->val[i]*exact->val[i]/diam*penalty_parameter;
 					result += wt[i]* EPS*(v->dx[i]*e->nx[i]+v->dy[i]* e->ny[i])*exact->val[i];
 			}else if(type == IP)
 			{	
@@ -361,9 +351,10 @@ double t = static_cast<CustomWeakForm*>(wf)->get_current_time();
    for (int i = 0; i < n; i++)
 		{ 
 
-		//	double v_x =(- e->y[i]);			double v_y = (e->x[i]) ; 
-			//result += wt[i] *(sln_prev_time->val[i]* (v->val[i]/time_step +(1.-theta)*( v_x*v->dx[i] + v_y*v->dy[i]))- (1.-theta)*EPS*(sln_prev_time->dx[i]*v->dx[i]+sln_prev_time->dy[i]*v->dy[i]));
+			double v_x =(- e->y[i]);			double v_y = (e->x[i]) ; 
+			result += wt[i] *(sln_prev_time->val[i]* (v->val[i]/time_step +(1.-theta)*( v_x*v->dx[i] + v_y*v->dy[i]))- (1.-theta)*EPS*(sln_prev_time->dx[i]*v->dx[i]+sln_prev_time->dy[i]*v->dy[i]));
 
+/*
 double x = e->x[i]; double y = e->y[i];
 double v_x =2.; double v_y =3.;
 
@@ -388,7 +379,7 @@ double byy = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-1.) - 1./(M_PI*Her
 double a_t = 16.*Hermes::cos(M_PI*t)*x*(1.-x)*y*(1.-y)*M_PI;
 double laplace = axx*b+bxx*a+ax*bx*2. + ayy*b+byy*a+ay*by*2.;
 
-result += wt[i]*(a_t*b+ 2.*exact->dx[i] + 3.*exact->dy[i] + exact->val[i]- laplace*EPS)*v->val[i] ;
+result += wt[i]*(a_t*b+ 2.*exact->dx[i] + 3.*exact->dy[i] + exact->val[i]- laplace*EPS)*v->val[i] ;*/
 		}
  return result;
 }
@@ -513,13 +504,14 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
 void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const 
 {
 	double t = time;
-/*	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
+	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
 	double y_real = y_0*Hermes::cos(t) - x_0*Hermes::sin(t);
 	double radius_2 = Hermes::sqr(x-x_real) + Hermes::sqr(y-y_real);
 
 dx = -2*PI/Hermes::sqr(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t))*(x-x_real);
-dy = -2*PI/Hermes::sqr(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t))*(y-y_real);*/
+dy = -2*PI/Hermes::sqr(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t))*(y-y_real);
 
+/*
 double a = 16.*Hermes::sin(M_PI*t)*x*(1.-x)*y*(1.-y);
 double arg = Hermes::sqr(0.25)-Hermes::sqr(x-0.5)-Hermes::sqr(y-0.5);
 arg *= 2./Hermes::sqrt(EPS);
@@ -531,7 +523,7 @@ double ay =	16.*Hermes::sin(M_PI*t)*x*(1.-x)*(1.-2.*y);
 double bx = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-x+0.5);
 double by = 1./(M_PI*(1.+arg*arg))*2./Hermes::sqrt(EPS)*2.*(-y+0.5); 
 dx = ax*b + a*bx;
-dy = ay*b + a*by;
+dy = ay*b + a*by;*/
 };
 
 
@@ -541,19 +533,18 @@ dy = ay*b + a*by;
 {
        double t = time;
   double result = 0.0;
-/*	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
+	double x_real = x_0*Hermes::cos(t) - y_0*Hermes::sin(t);
 	double y_real = y_0*Hermes::cos(t) - x_0*Hermes::sin(t);
 	double radius_2 = Hermes::sqr(x-x_real) + Hermes::sqr(y-y_real);
+		result= 1./(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t));
 
 
-		result= 1./(4.*PI*EPS*t)*std::exp(-radius_2/(4.*EPS*t));*/
-
+/*
 double a = 16.*Hermes::sin(M_PI*t)*x*(1.-x)*y*(1.-y);
 double arg = Hermes::sqr(0.25)-Hermes::sqr(x-0.5)-Hermes::sqr(y-0.5);
 arg *= 2./Hermes::sqrt(EPS);
 double b = (0.5+std::atan(arg)/M_PI);
-
-result = a*b;
+result = a*b;*/
 
        return result;
 
