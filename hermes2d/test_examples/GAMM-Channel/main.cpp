@@ -57,13 +57,13 @@ const double V1_EXT = 1.25;
 const double V2_EXT = 0.0;        
 
 // Mesh filename.
-const std::string MESH_FILENAME = "GAMM-channel.mesh";
+const std::string MESH_FILENAME = "new.xml";
 
 // Boundary markers.
-const std::string BDY_INLET = "1";
-const std::string BDY_OUTLET = "2";
-const std::string BDY_SOLID_WALL_BOTTOM = "3";
-const std::string BDY_SOLID_WALL_TOP = "4";
+const std::string BDY_INLET = "Inlet";
+const std::string BDY_OUTLET = "Outlet";
+const std::string BDY_SOLID_WALL_BOTTOM = "Bottom";
+const std::string BDY_SOLID_WALL_TOP = "Top";
 
 int main(int argc, char* argv[])
 {
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
   Hermes::vector<std::string> outlet_markers;
   MeshSharedPtr mesh(new Mesh);
  
-  MeshReaderH2D mloader;
+  MeshReaderH2DXML mloader;
   mloader.load(MESH_FILENAME.c_str(), mesh);
   solid_wall_markers.push_back(BDY_SOLID_WALL_BOTTOM);
   solid_wall_markers.push_back(BDY_SOLID_WALL_TOP);
@@ -140,6 +140,8 @@ int main(int argc, char* argv[])
   wf_implicit.set_current_time_step(time_step_length);
   solver_implicit.output_matrix();
   solver_implicit.output_rhs();
+
+  DiscreteProblemDGAssembler<double>::dg_order = 6;
     
 #pragma region 4. Time stepping loop.
   int iteration = 0;
