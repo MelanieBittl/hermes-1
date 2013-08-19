@@ -19,22 +19,22 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = true;
+const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 200;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = VertexBased;
-bool limit_velocities = false;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
+bool limit_velocities = true;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
 int INIT_REF_NUM = 5;
 // Initial time step.
-double time_step_length = .001;
+double time_step_length = .0005;
 double TIME_INTERVAL_LENGTH = 20.;
 
 // Kappa.
@@ -67,7 +67,7 @@ const std::string BDY_SOLID_WALL_TOP = "Top";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 3);
+  HermesCommonApi.set_integral_param_value(numThreads, 12);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -86,6 +86,8 @@ int main(int argc, char* argv[])
   inlet_markers.push_back(BDY_INLET);
   outlet_markers.push_back(BDY_OUTLET);
  
+  mesh->refine_element_id(1);
+  mesh->refine_element_id(4);
   // Perform initial mesh refinements.
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements();
