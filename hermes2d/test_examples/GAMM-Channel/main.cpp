@@ -32,12 +32,12 @@ bool limit_velocities = true;
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 5;
+int INIT_REF_NUM = 4;
 // Initial time step.
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
 // CFL value.
-double CFL_NUMBER = 5.;
+double CFL_NUMBER = 2.;
 // Kappa.
 const double KAPPA = 1.4;
 // Set up CFL calculation class.
@@ -164,13 +164,10 @@ int main(int argc, char* argv[])
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
     // Calculate time step according to CFL condition.
-    if(iteration)
-    {
-      CFL.calculate(prev_slns, mesh, time_step_length);
-      wf_explicit.set_current_time_step(time_step_length);
-      wf_implicit.set_current_time_step(time_step_length);
-    }
-
+    CFL.calculate(prev_slns, mesh, time_step_length);
+    wf_explicit.set_current_time_step(time_step_length);
+    wf_implicit.set_current_time_step(time_step_length);
+    
     // Solve.
     // 0 - store the sln vector.
     double* previous_sln_vector = new double[ndof];
