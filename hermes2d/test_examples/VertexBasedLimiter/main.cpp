@@ -4,9 +4,9 @@
 const int polynomialDegree = 1;
 const int initialRefinementsCount = 5;
 const double logPercentTimeSteps = .01;
-const TimeSteppingType timeSteppingType = Explicit;
-const SolvedExample solvedExample = SolidBodyRotation;
-const EulerLimiterType limiter_type = JumpIndicator_P_coarsening;
+const TimeSteppingType timeSteppingType = Implicit;
+const SolvedExample solvedExample = AdvectedCube;
+const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
 bool VTKView = false;
