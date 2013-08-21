@@ -383,8 +383,8 @@ public:
         w_L[3] = ext[7]->val[point_i];
 
         w_R[0] = ext[4]->val[point_i];
-        w_R[1] = ext[5]->val[point_i] - 2 * e->nx[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
-        w_R[2] = ext[6]->val[point_i] - 2 * e->ny[point_i] * ((ext[1]->val[point_i] * e->nx[i]) + (ext[2]->val[point_i] * e->ny[i]));
+        w_R[1] = ext[5]->val[point_i] - 2 * e->nx[point_i] * ((ext[5]->val[point_i] * e->nx[i]) + (ext[6]->val[point_i] * e->ny[i]));
+        w_R[2] = ext[6]->val[point_i] - 2 * e->ny[point_i] * ((ext[5]->val[point_i] * e->nx[i]) + (ext[6]->val[point_i] * e->ny[i]));
         w_R[3] = ext[7]->val[point_i];
 
         result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
