@@ -153,8 +153,7 @@ int main(int argc, char* argv[])
 
   LinearSolver<double> solver_implicit(&wf_implicit, const_spaces);
   LinearSolver<double> solver_explicit(&wf_explicit, spaces);
-  solver_implicit.output_matrix();
-  solver_implicit.output_rhs();
+  solver_explicit.set_jacobian_constant();
 
   DiscreteProblemDGAssembler<double>::dg_order = 6;
     
@@ -165,10 +164,13 @@ int main(int argc, char* argv[])
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
     // Calculate time step according to CFL condition.
-    CFL.calculate(prev_slns, mesh, time_step_length);
-    wf_explicit.set_current_time_step(time_step_length);
-    wf_implicit.set_current_time_step(time_step_length);
-  
+    if(iteration)
+    {
+      CFL.calculate(prev_slns, mesh, time_step_length);
+      wf_explicit.set_current_time_step(time_step_length);
+      wf_implicit.set_current_time_step(time_step_length);
+    }
+
     // Solve.
     // 0 - store the sln vector.
     double* previous_sln_vector = new double[ndof];
