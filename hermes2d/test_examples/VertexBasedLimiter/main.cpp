@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
     // 1st step.
     solver_1.solve();
     PostProcessing::Limiter<double>* limiter_1 = create_limiter(limiter_type, space, solver_1.get_sln_vector(), polynomialDegree);
-    previous_solution->copy(limiter_1->get_solution());
+    solution->copy(limiter_1->get_solution());
 
     // 2nd step.
     solver_2.solve();
