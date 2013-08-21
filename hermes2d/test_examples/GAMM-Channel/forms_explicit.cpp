@@ -1060,7 +1060,8 @@ public:
         EulerEquationsMatrixFormSemiImplicitInletOutlet* formSurf = new EulerEquationsMatrixFormSemiImplicitInletOutlet(form_i, form_j, 0,0,0,0, outlet_markers, kappa, &this->cacheReadySurf, this->P_plus_cache_surf, this->P_minus_cache_surf);
         add_matrix_form_surf(formSurf);
 
-        add_matrix_form_surf(new EulerEquationsMatrixFormSolidWall(form_i, form_j, solid_wall_markers, kappa));
+        if(form_i == 1 || form_i == 2)
+          add_matrix_form_surf(new EulerEquationsMatrixFormSolidWall(form_i, form_j, solid_wall_markers, kappa));
       }
     }
 
@@ -1655,9 +1656,6 @@ public:
         double v_2 = ext[2]->val[point_i] / rho;
 
         double P[4][4];
-        for(unsigned int P_i = 0; P_i < 4; P_i++)
-          for(unsigned int P_j = 0; P_j < 4; P_j++)
-            P[P_i][P_j] = 0.0;
 
         P[1][0] = (kappa - 1) * (v_1 * v_1 + v_2 * v_2) * e->nx[point_i] / 2;
         P[1][1] = (kappa - 1) * (-v_1) * e->nx[point_i];

@@ -27,17 +27,17 @@ const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
 const EulerLimiterType limiter_type = VertexBased;
-bool limit_velocities = false;
+bool limit_velocities = true;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 3;
+int INIT_REF_NUM = 5;
 // Initial time step.
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
 // CFL value.
-double CFL_NUMBER = 1.;
+double CFL_NUMBER = 5.;
 // Kappa.
 const double KAPPA = 1.4;
 // Set up CFL calculation class.
@@ -70,7 +70,7 @@ const std::string BDY_SOLID_WALL_TOP = "Top";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 3);
+  HermesCommonApi.set_integral_param_value(numThreads, 16);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -89,8 +89,8 @@ int main(int argc, char* argv[])
   inlet_markers.push_back(BDY_INLET);
   outlet_markers.push_back(BDY_OUTLET);
  
-  mesh->refine_element_id(1);
-  mesh->refine_element_id(4);
+  mesh->refine_element_id(1, 2);
+  mesh->refine_element_id(4, 2);
   // Perform initial mesh refinements.
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements();
