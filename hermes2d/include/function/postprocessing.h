@@ -92,6 +92,8 @@ namespace Hermes
         /// Get mean value of the mixed derivative (mixed_derivative_index) on element e, of the "component" - component
         /// of the solution.
         double get_centroid_value_multiplied(Element* e, int component, int mixed_derivative_index);
+        
+        double get_edge_midpoint_value_multiplied(Element* e, int component, int mixed_derivative_index, int edge);
 
         void impose_linear_correction_factor(Element* e, int component);
 

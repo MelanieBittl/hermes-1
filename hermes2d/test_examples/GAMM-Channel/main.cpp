@@ -19,26 +19,29 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = false;
+const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = true;
+const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 200;
+const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
-bool limit_velocities = true;
+const EulerLimiterType limiter_type = VertexBased;
+bool limit_velocities = false;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 5;
+int INIT_REF_NUM = 3;
 // Initial time step.
-double time_step_length = .0005;
+double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
-
+// CFL value.
+double CFL_NUMBER = 1.;
 // Kappa.
 const double KAPPA = 1.4;
+// Set up CFL calculation class.
+CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
 // Weak forms.
 #include "forms_explicit.cpp"
@@ -67,7 +70,7 @@ const std::string BDY_SOLID_WALL_TOP = "Top";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 12);
+  HermesCommonApi.set_integral_param_value(numThreads, 3);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -111,25 +114,37 @@ int main(int argc, char* argv[])
 
 #pragma region 2. Prev slns
   // Set initial conditions.
+  MeshFunctionSharedPtr<double> sln_rho(new ConstantSolution<double>(mesh, RHO_EXT));
+  MeshFunctionSharedPtr<double> sln_rho_v_x(new ConstantSolution<double> (mesh, RHO_EXT * V1_EXT));
+  MeshFunctionSharedPtr<double> sln_rho_v_y(new ConstantSolution<double> (mesh, RHO_EXT * V2_EXT));
+  MeshFunctionSharedPtr<double> sln_e(new ConstantSolution<double> (mesh, QuantityCalculator::calc_energy(RHO_EXT, RHO_EXT * V1_EXT, RHO_EXT * V2_EXT, P_EXT, KAPPA)));
+  Hermes::vector<MeshFunctionSharedPtr<double> > slns(sln_rho, sln_rho_v_x, sln_rho_v_y, sln_e);
+  // Set initial conditions.
   MeshFunctionSharedPtr<double> prev_rho(new ConstantSolution<double>(mesh, RHO_EXT));
   MeshFunctionSharedPtr<double> prev_rho_v_x(new ConstantSolution<double> (mesh, RHO_EXT * V1_EXT));
   MeshFunctionSharedPtr<double> prev_rho_v_y(new ConstantSolution<double> (mesh, RHO_EXT * V2_EXT));
   MeshFunctionSharedPtr<double> prev_e(new ConstantSolution<double> (mesh, QuantityCalculator::calc_energy(RHO_EXT, RHO_EXT * V1_EXT, RHO_EXT * V2_EXT, P_EXT, KAPPA)));
   Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+  // Set initial conditions.
+  MeshFunctionSharedPtr<double> updated_prev_rho(new ConstantSolution<double>(mesh, RHO_EXT));
+  MeshFunctionSharedPtr<double> updated_prev_rho_v_x(new ConstantSolution<double> (mesh, RHO_EXT * V1_EXT));
+  MeshFunctionSharedPtr<double> updated_prev_rho_v_y(new ConstantSolution<double> (mesh, RHO_EXT * V2_EXT));
+  MeshFunctionSharedPtr<double> updated_prev_e(new ConstantSolution<double> (mesh, QuantityCalculator::calc_energy(RHO_EXT, RHO_EXT * V1_EXT, RHO_EXT * V2_EXT, P_EXT, KAPPA)));
+  Hermes::vector<MeshFunctionSharedPtr<double> > updated_prev_slns(updated_prev_rho, updated_prev_rho_v_x, updated_prev_rho_v_y, updated_prev_e);
 #pragma endregion
 
   EulerEquationsWeakFormSemiImplicit wf_implicit(KAPPA, RHO_EXT, V1_EXT, V2_EXT, P_EXT,
     solid_wall_markers, inlet_markers, outlet_markers,
-    prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, (P_INIT == 0));
+    prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, true);
 
   EulerEquationsWeakFormExplicit wf_explicit(KAPPA, RHO_EXT, V1_EXT, V2_EXT, P_EXT,
     solid_wall_markers, inlet_markers, outlet_markers,
-    prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, (P_INIT == 0));
+    prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, updated_prev_rho, updated_prev_rho_v_x, updated_prev_rho_v_y, updated_prev_e, (P_INIT == 0));
 
 #pragma region 3. Filters for visualization of Mach number, pressure + visualization setup.
-  MeshFunctionSharedPtr<double>  Mach_number(new MachNumberFilter(prev_slns, KAPPA));
-  MeshFunctionSharedPtr<double>  pressure(new PressureFilter(prev_slns, KAPPA));
-  MeshFunctionSharedPtr<double>  velocity(new VelocityFilter(prev_slns));
+  MeshFunctionSharedPtr<double>  Mach_number(new MachNumberFilter(slns, KAPPA));
+  MeshFunctionSharedPtr<double>  pressure(new PressureFilter(slns, KAPPA));
+  MeshFunctionSharedPtr<double>  velocity(new VelocityFilter(slns));
 
   ScalarView density_view("Density", new WinGeom(0, 0, 600, 300));
   ScalarView pressure_view("Pressure", new WinGeom(0, 330, 600, 300));
@@ -138,8 +153,6 @@ int main(int argc, char* argv[])
 
   LinearSolver<double> solver_implicit(&wf_implicit, const_spaces);
   LinearSolver<double> solver_explicit(&wf_explicit, spaces);
-  wf_explicit.set_current_time_step(time_step_length);
-  wf_implicit.set_current_time_step(time_step_length);
   solver_implicit.output_matrix();
   solver_implicit.output_rhs();
 
@@ -151,11 +164,16 @@ int main(int argc, char* argv[])
   {
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
-
+    // Calculate time step according to CFL condition.
+    CFL.calculate(prev_slns, mesh, time_step_length);
+    wf_explicit.set_current_time_step(time_step_length);
+    wf_implicit.set_current_time_step(time_step_length);
+  
     // Solve.
     // 0 - store the sln vector.
     double* previous_sln_vector = new double[ndof];
     OGProjection<double>::project_global(spaces, prev_slns, previous_sln_vector);
+    
     // 1 - solve implicit.
     solver_implicit.solve();
     double* mean_values = new double[ndof];
@@ -186,20 +204,20 @@ int main(int argc, char* argv[])
     // Solve explicit.
     Solution<double>::vector_to_solutions(previous_sln_vector, spaces, prev_slns);
     solver_explicit.solve();
-    
+
     // Clean up.
     delete [] previous_sln_vector;
     delete [] mean_values;
 
 #pragma region *. Get the solution with optional shock capturing.
     if(!SHOCK_CAPTURING)
-      Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), spaces, prev_slns);
+      Solution<double>::vector_to_solutions(solver_explicit.get_sln_vector(), spaces, slns);
     else
     {
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver_explicit.get_sln_vector(), 1);
-      limiter->get_solutions(prev_slns);
+      limiter->get_solutions(slns);
       if(limit_velocities)
-        limitVelocityAndEnergy(spaces, limiter, prev_slns);
+        limitVelocityAndEnergy(spaces, limiter, slns);
       delete limiter;
     }
 #pragma endregion
@@ -212,7 +230,7 @@ int main(int argc, char* argv[])
       {        
         Mach_number->reinit();
         pressure->reinit();
-        density_view.show(prev_slns[0]);
+        density_view.show(slns[0]);
         pressure_view.show(pressure);
         M_view.show(Mach_number);
       }
@@ -232,6 +250,16 @@ int main(int argc, char* argv[])
       }
     }
 #pragma endregion
+
+    prev_rho->copy(sln_rho);
+    prev_rho_v_x->copy(sln_rho_v_x);
+    prev_rho_v_y->copy(sln_rho_v_y);
+    prev_e->copy(sln_e);
+
+    updated_prev_rho->copy(sln_rho);
+    updated_prev_rho_v_x->copy(sln_rho_v_x);
+    updated_prev_rho_v_y->copy(sln_rho_v_y);
+    updated_prev_e->copy(sln_e);
 
     iteration++;
   }

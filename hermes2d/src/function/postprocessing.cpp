@@ -430,6 +430,17 @@ namespace Hermes
                 double element_centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
                 this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
                 this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
+                if(e->en[i_vertex]->bnd)
+                {
+                  double element_mid_edge_value_multiplied = this->get_edge_midpoint_value_multiplied(e, component, i_derivative, i_vertex);
+
+                  this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_mid_edge_value_multiplied);
+                  this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_mid_edge_value_multiplied);
+
+                  Node* next_vertex = e->vn[(i_vertex + 1) % e->get_nvert()];
+                  this->vertex_min_values[component][next_vertex->id][i_derivative] = std::min(this->vertex_min_values[component][next_vertex->id][i_derivative], element_mid_edge_value_multiplied);
+                  this->vertex_max_values[component][next_vertex->id][i_derivative] = std::max(this->vertex_max_values[component][next_vertex->id][i_derivative], element_mid_edge_value_multiplied);
+                }
               }
             }
           }
@@ -451,30 +462,67 @@ namespace Hermes
         else
           result = sln->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, mixed_derivative_index);
 
-        // No multiplication.
-        /*
-        switch(mixed_derivative_index)
+        return result;
+      }
+
+      double VertexBasedLimiter::get_edge_midpoint_value_multiplied(Element* e, int component, int mixed_derivative_index, int edge)
+      {
+        if(mixed_derivative_index > 5)
         {
-        case 1:
-        result *= ELEMENT_DELTA_X;
-        break;
-        case 2:
-        result *= ELEMENT_DELTA_Y;
-        break;
-        case 3:
-        result *= ELEMENT_DELTA_X;
-        result *= ELEMENT_DELTA_X;
-        break;
-        case 4:
-        result *= ELEMENT_DELTA_Y;
-        result *= ELEMENT_DELTA_Y;
-        break;
-        case 5:
-        result *= ELEMENT_DELTA_Y;
-        result *= ELEMENT_DELTA_X;
-        break;
+          throw Exceptions::MethodNotImplementedException("VertexBasedLimiter::get_centroid_value_multiplied only works for first and second derivatives.");
+          return 0.;
         }
-        */
+
+        Solution<double>* sln = dynamic_cast<Solution<double>*>(this->limited_solutions[component].get());
+        double result;
+
+        double x;
+        double y;
+
+        if(e->get_mode() == HERMES_MODE_TRIANGLE)
+        {
+          if(edge == 0)
+          {
+            x = 0.;
+            y = -1;
+          }
+          else if (edge == 1)
+          {
+            x = 0;
+            y = 0;
+          }
+          else if(edge == 2)
+          {
+            x = -1.;
+            y = 0;
+          }
+          result = sln->get_ref_value_transformed(e, x, y, 0, mixed_derivative_index);
+        }
+        else
+        {
+          if(edge == 0)
+          {
+            x = 0.;
+            y = -1;
+          }
+          else if (edge == 1)
+          {
+            x = 1;
+            y = 0;
+          }
+          else if(edge == 2)
+          {
+            x = 0.;
+            y = 1.;
+          }
+          else if(edge == 3)
+          {
+            x = -1.;
+            y = 0.;
+          }
+          result = sln->get_ref_value_transformed(e, x, y, 0, mixed_derivative_index);
+        }
+
         return result;
       }
 
