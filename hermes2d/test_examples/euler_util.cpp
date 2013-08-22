@@ -1389,6 +1389,7 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Limi
       dynamic_cast<FeistauerJumpDetector*>(real_component_limiter)->set_type(dynamic_cast<FeistauerJumpDetector*>(limiter)->get_type());
     }
 
+    real_component_limiter->set_verbose_output(limiter->get_verbose_output());
     delete [] real_vector;
     real_component_limiter->get_solution();
     real_vector = real_component_limiter->get_solution_vector();
@@ -1674,10 +1675,6 @@ double FeistauerJumpDetector::thresholdConstant = 1.0;
 
 bool FeistauerJumpDetector::conditionally_coarsen(double max_value, double* values, Element* e)
 {
-  // First check this.
-  if(max_value < FeistauerJumpDetector::thresholdConstant)
-    return false;
-
   int number_of_influenced;
 
   switch(this->indicatorType)
@@ -1779,20 +1776,37 @@ void FeistauerJumpDetector::process()
   Element* e;
   AsmList<double> al;
   double* values = new double[number_of_tested];
-  double max_value = 0.;
+  Space<double>::assign_dofs(const_spaces);
   for_all_active_elements(e, const_spaces[0]->get_mesh())
   {
+    double max_value = 0.;
     for(int component = 0; component < number_of_tested; component++)
     {
       const_spaces[component]->get_element_assembly_list(e, &al);
-      values[component] = data_values[al.dof[0]] / std::pow(e->get_diameter(), FeistauerPCoarseningLimiter::alpha);
+      values[component] = data_values[al.dof[0]] / std::pow(e->get_diameter(), FeistauerJumpDetector::alpha);
       max_value = std::max(max_value, values[component]);
+    }
+    
+    if(max_value < FeistauerJumpDetector::thresholdConstant)
+      continue;
+  
+    if(this->get_verbose_output())
+    {
+      std::cout << "Element #" << e->id << ": " << max_value << "(";
+      for(int component = 0; component < number_of_tested; component++)
+      {
+        std::cout << values[component];
+        if(component !=  (number_of_tested - 1))
+          std::cout << ",";
+      }
+      std::cout << ")" << std::endl;
     }
     this->conditionally_coarsen(max_value, values, e);
   }
 
   this->tick();
-  std::cout << "Feistauer limiter took " << this->last_str() << " time." << std::endl;
+  if(this->get_verbose_output())
+    std::cout << "Feistauer limiter took " << this->last_str() << " time." << std::endl;
 
   if(this->get_verbose_output())
     std::cout << std::endl;
@@ -1816,7 +1830,7 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, S
     || limiter_type == CoarseningJumpIndicatorAllToThemselves
     || limiter_type == CoarseningJumpIndicatorAllToAll)
   {
-    FeistauerPCoarseningLimiter* f_limiter = new FeistauerPCoarseningLimiter(space, solution_vector);
+    FeistauerJumpDetector* f_limiter = new FeistauerJumpDetector(space, solution_vector);
     f_limiter->set_type(limiter_type);
     limiter = f_limiter;
   }

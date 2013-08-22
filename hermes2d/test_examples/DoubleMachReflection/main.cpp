@@ -26,13 +26,13 @@ const bool VTK_VISUALIZATION = false;
 const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = VertexBased;
-bool limit_velocities = false;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToThemselves;
+bool limit_velocities = true;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 2;
+const int INIT_REF_NUM = 3;
 // Initial time step.
 double time_step_length = 1e-4;
 double TIME_INTERVAL_LENGTH = .2;
