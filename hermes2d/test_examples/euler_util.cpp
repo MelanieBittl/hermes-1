@@ -24,7 +24,8 @@ double QuantityCalculator::calc_pressure(double rho, double rho_v_x, double rho_
 // Calculates speed of sound.
 double QuantityCalculator::calc_sound_speed(double rho, double rho_v_x, double rho_v_y, double energy, double kappa)
 {
-  double to_return = std::sqrt(kappa * calc_pressure(rho, rho_v_x, rho_v_y, energy, kappa) / rho);
+  double to_return = std::sqrt((kappa * (kappa - 1.0)) * ((energy / rho) - (rho_v_x*rho_v_x + rho_v_y*rho_v_y) / (2.0*rho*rho)));
+
   if(std::abs(to_return) < 1E-12 || to_return < 0.0)
     return 1E-12;
   return to_return;
@@ -32,6 +33,45 @@ double QuantityCalculator::calc_sound_speed(double rho, double rho_v_x, double r
 
 CFLCalculation::CFLCalculation(double CFL_number, double kappa) : CFL_number(CFL_number), kappa(kappa)
 {
+}
+
+bool CFLCalculation::calculate(double* sln_vector, Hermes::vector<SpaceSharedPtr<double> > spaces, double & time_step) const
+{
+  // Determine the time step according to the CFL condition.
+  double min_condition = 0;
+  Element *e;
+  for_all_active_elements(e, spaces[0]->get_mesh())
+  {
+    AsmList<double> al;
+    spaces[0]->get_element_assembly_list(e, &al);
+    double rho = sln_vector[al.dof[0]];
+    spaces[1]->get_element_assembly_list(e, &al);
+    double rho_v1 = sln_vector[al.dof[0]];
+    double v1 = rho_v1 / rho;
+    spaces[2]->get_element_assembly_list(e, &al);
+    double rho_v2 = sln_vector[al.dof[0]];
+    double v2 = rho_v2 / rho;
+    spaces[3]->get_element_assembly_list(e, &al);
+    double energy = sln_vector[al.dof[0]];
+
+    double condition = e->get_area() * CFL_number / (std::sqrt(v1*v1 + v2*v2) + QuantityCalculator::calc_sound_speed(rho, rho_v1, rho_v2, energy, kappa));
+
+    if(condition < min_condition || min_condition == 0.)
+      min_condition = condition;
+  }
+
+  if(time_step > min_condition * (1 + 1e-4))
+  {
+    time_step = min_condition;
+    return true;
+  }
+  else if(time_step < min_condition * (1 - 1e-1))
+  {
+    time_step = min_condition;
+    return true;
+  }
+  else
+    return false;
 }
 
 bool CFLCalculation::calculate(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, MeshSharedPtr mesh, double & time_step) const
