@@ -21,26 +21,31 @@ using namespace Hermes::Hermes2D::Views;
 // Set to "true" to enable Hermes OpenGL visualization. 
 const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = true;
+const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 10;
+const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
+const EulerLimiterType limiter_type = VertexBased;
+bool limit_velocities = false;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 5;
+const int INIT_REF_NUM = 2;
 // Initial time step.
-double time_step_length = 1E-4;
-double TIME_INTERVAL_LENGTH = .2;
+double time_step_length = 1e-6;
+double TIME_INTERVAL_LENGTH = .005;
+// CFL value.
+double CFL_NUMBER = 2.;
 
 // Triangles instead of quads.
-bool use_triangles = true;
+bool use_triangles = false;
 
 // Kappa.
 const double KAPPA = 1.4;
+// Set up CFL calculation class.
+CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
 // Weak forms.
 #include "forms_explicit.cpp"
@@ -50,7 +55,7 @@ const double KAPPA = 1.4;
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 8);
+  HermesCommonApi.set_integral_param_value(numThreads, 3);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -74,8 +79,8 @@ else
     mesh->refine_in_area("Post", 1, 1);
     mesh->refine_in_area("Pre", 1, 0);
   }
-  mesh->refine_all_elements(2);
-  mesh->refine_all_elements(2);
+  
+  mesh->refine_in_area("Pre", 2, 2);
   mesh->refine_all_elements();
   mesh->refine_all_elements();
 }
@@ -115,17 +120,11 @@ else
 
   ScalarView density_view("Density", new WinGeom(0, 0, 600, 300));
   ScalarView pressure_view("Pressure", new WinGeom(0, 330, 600, 300));
-  pressure_view.set_min_max_range(1, 557.8);
-  ScalarView velocity_view("Velocity", new WinGeom(650, 0, 600, 300));
-  ScalarView eview("Error - density", new WinGeom(0, 330, 600, 300));
-  ScalarView eview1("Error - momentum", new WinGeom(0, 660, 600, 300));
-  OrderView order_view("Orders", new WinGeom(650, 330, 600, 300));
+  ScalarView M_view("Mach number", new WinGeom(630, 0, 600, 300));
 #pragma endregion
 
   LinearSolver<double> solver(&wf, spaces);
   solver.set_jacobian_constant();
-  solver.set_verbose_output(false);
-  // Set the current time step.
   wf.set_current_time_step(time_step_length);
 
 #pragma region 4. Time stepping loop.
@@ -134,7 +133,7 @@ else
   {
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
-      
+    
     // Solve.
     ((CustomInitialCondition*)exact_rho.get())->time = t;
     ((CustomInitialCondition*)exact_rho_v_x.get())->time = t;
@@ -149,7 +148,7 @@ else
     {
       PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, spaces, solver.get_sln_vector(), 1);
       limiter->get_solutions(prev_slns);
-      if(limiter_type == VertexBasedWithLimitingNonConservative)
+      if(limit_velocities)
         limitVelocityAndEnergy(spaces, limiter, prev_slns);
       delete limiter;
     }
@@ -163,27 +162,30 @@ else
       {        
         Mach_number->reinit();
         pressure->reinit();
-        velocity->reinit();
         density_view.show(prev_slns[0]);
         pressure_view.show(pressure);
-        velocity_view.show(velocity);
-        order_view.show(space_rho);
+        M_view.show(Mach_number);
       }
       // Output solution in VTK format.
       if(VTK_VISUALIZATION)
       {
         pressure->reinit();
-        velocity->reinit();
+        Mach_number->reinit();
         Linearizer lin;
         char filename[40];
         sprintf(filename, "Pressure-%i.vtk", iteration - 1);
         lin.save_solution_vtk(pressure, filename, "Pressure", false);
-        sprintf(filename, "Velocity-%i.vtk", iteration - 1);
-        lin.save_solution_vtk(velocity, filename, "Velocity", false);
+        sprintf(filename, "Mach-%i.vtk", iteration - 1);
+        lin.save_solution_vtk(Mach_number, filename, "Velocity", false);
         sprintf(filename, "Rho-%i.vtk", iteration - 1);
         lin.save_solution_vtk(prev_rho, filename, "Rho", false);
       }
     }
+
+    // Calculate time step according to CFL condition.
+    CFL.calculate(solver.get_sln_vector(), spaces, time_step_length);
+    wf.set_current_time_step(time_step_length);
+      
 #pragma endregion
 
     iteration++;
