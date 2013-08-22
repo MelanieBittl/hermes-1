@@ -201,7 +201,17 @@ public:
   {
     Hermes::vector<MeshFunctionSharedPtr<double> > slns;
     for(int i = 0; i < this->num; i++)
-      slns.push_back(this->sln[i]->clone());
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        slns.push_back(new Solution<double>());
+        slns.back()->copy(this->sln[i]);
+      }
+      else
+        slns.push_back(this->sln[i]->clone()); 
+    }
+
     MachNumberFilter* filter = new MachNumberFilter(slns, this->kappa);
 
     return filter;
