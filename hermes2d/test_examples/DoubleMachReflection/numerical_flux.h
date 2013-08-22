@@ -219,7 +219,7 @@ public:
   void Euler_flux_2(double state[4], double result[4]);
   double Euler_flux_2_i(int i, double state[4]);
 
-  double calculate_s_L(double state_L[4], double state_R[4], double nx, double ny);
-  double calculate_s_R(double state_L[4], double state_R[4], double nx, double ny);
+  double calculate_s_L(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R);
+  double calculate_s_R(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R);
 };
 #endif

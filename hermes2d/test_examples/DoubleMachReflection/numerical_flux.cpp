@@ -970,7 +970,14 @@ void HLLNumericalFlux::numerical_flux(double result[4], double w_L[4], double w_
 double HLLNumericalFlux::numerical_flux_i(int component, double w_L[4], double w_R[4],
                                           double nx, double ny)
 {
-  double s_left = this->calculate_s_L(w_L, w_R, nx, ny);
+  double speed_of_sound_L = QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->kappa);
+  double speed_of_sound_R;
+  if(std::abs(w_L[0] - w_R[0]) > Hermes::Epsilon || std::abs(w_L[1] - w_R[1]) > Hermes::Epsilon || std::abs(w_L[2] - w_R[2]) > Hermes::Epsilon || std::abs(w_L[3] - w_R[3]) > Hermes::Epsilon)
+    speed_of_sound_R = QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->kappa);
+  else
+    speed_of_sound_R = speed_of_sound_L;
+
+  double s_left = this->calculate_s_L(w_L, w_R, nx, ny, speed_of_sound_L, speed_of_sound_R);
   if(s_left > 0.)
   {
     double first_flux_left = this->Euler_flux_1_i(component, w_L);
@@ -978,7 +985,7 @@ double HLLNumericalFlux::numerical_flux_i(int component, double w_L[4], double w
     return (first_flux_left * nx) + (second_flux_left * ny);
   }
   
-  double s_right = this->calculate_s_R(w_L, w_R, nx, ny);
+  double s_right = this->calculate_s_R(w_L, w_R, nx, ny, speed_of_sound_L, speed_of_sound_R);
   if(s_right < 0.)
   {
     double first_flux_right = this->Euler_flux_1_i(component, w_R);
@@ -1039,11 +1046,8 @@ double HLLNumericalFlux::Euler_flux_2_i(int i, double state[4])
   }
 }
 
-double HLLNumericalFlux::calculate_s_L(double state_L[4], double state_R[4], double nx, double ny)
+double HLLNumericalFlux::calculate_s_L(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R)
 {
-  double speed_of_sound_L = QuantityCalculator::calc_sound_speed(state_L[0], state_L[1], state_L[2], state_L[3], this->kappa);
-  double speed_of_sound_R = QuantityCalculator::calc_sound_speed(state_R[0], state_R[1], state_R[2], state_R[3], this->kappa);
-
   double max_speed_of_sound = std::max(speed_of_sound_L, speed_of_sound_R);
 
   double first_component = ((nx * state_L[1]) + (ny * state_L[2])) / state_L[0];
@@ -1052,11 +1056,8 @@ double HLLNumericalFlux::calculate_s_L(double state_L[4], double state_R[4], dou
   return std::min(first_component, second_component) - max_speed_of_sound;
 }
 
-double HLLNumericalFlux::calculate_s_R(double state_L[4], double state_R[4], double nx, double ny)
+double HLLNumericalFlux::calculate_s_R(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R)
 {
-  double speed_of_sound_L = QuantityCalculator::calc_sound_speed(state_L[0], state_L[1], state_L[2], state_L[3], this->kappa);
-  double speed_of_sound_R = QuantityCalculator::calc_sound_speed(state_R[0], state_R[1], state_R[2], state_R[3], this->kappa);
-
   double max_speed_of_sound = std::max(speed_of_sound_L, speed_of_sound_R);
 
   double first_component = ((nx * state_L[1]) + (ny * state_L[2])) / state_L[0];
