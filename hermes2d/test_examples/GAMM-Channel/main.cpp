@@ -60,13 +60,13 @@ const double V1_EXT = 1.25;
 const double V2_EXT = 0.0;        
 
 // Mesh filename.
-const std::string MESH_FILENAME = "new.xml";
+const std::string MESH_FILENAME = "GAMM-channel.mesh";
 
 // Boundary markers.
-const std::string BDY_INLET = "Inlet";
-const std::string BDY_OUTLET = "Outlet";
-const std::string BDY_SOLID_WALL_BOTTOM = "Bottom";
-const std::string BDY_SOLID_WALL_TOP = "Top";
+const std::string BDY_INLET = "1";
+const std::string BDY_OUTLET = "2";
+const std::string BDY_SOLID_WALL_BOTTOM = "3";
+const std::string BDY_SOLID_WALL_TOP = "4";
 
 int main(int argc, char* argv[])
 {
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
   Hermes::vector<std::string> outlet_markers;
   MeshSharedPtr mesh(new Mesh);
  
-  MeshReaderH2DXML mloader;
+  MeshReaderH2D mloader;
   mloader.load(MESH_FILENAME.c_str(), mesh);
   solid_wall_markers.push_back(BDY_SOLID_WALL_BOTTOM);
   solid_wall_markers.push_back(BDY_SOLID_WALL_TOP);
@@ -90,8 +90,8 @@ int main(int argc, char* argv[])
   outlet_markers.push_back(BDY_OUTLET);
  
   mesh->refine_element_id(1, 2);
-  mesh->refine_element_id(4, 2);
   // Perform initial mesh refinements.
+  mesh->refine_all_elements(1);
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements();
 
@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
   LinearSolver<double> solver_explicit(&wf_explicit, spaces);
   solver_explicit.set_jacobian_constant();
 
-  DiscreteProblemDGAssembler<double>::dg_order = 6;
+  DiscreteProblemDGAssembler<double>::dg_order = 10;
     
 #pragma region 4. Time stepping loop.
   int iteration = 0;
