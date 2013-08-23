@@ -9,6 +9,8 @@ namespace Hermes
   {
     namespace PostProcessing
     {
+      bool VertexBasedLimiter::wider_bounds_on_boundary = false;
+      
       template<typename Scalar>
       Limiter<Scalar>::Limiter(SpaceSharedPtr<Scalar> space, Scalar* solution_vector) : component_count(1)
       {
@@ -430,7 +432,7 @@ namespace Hermes
                 double element_centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
                 this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
                 this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
-                if(e->en[i_vertex]->bnd)
+                if(e->en[i_vertex]->bnd && this->wider_bounds_on_boundary)
                 {
                   double element_mid_edge_value_multiplied = this->get_edge_midpoint_value_multiplied(e, component, i_derivative, i_vertex);
 

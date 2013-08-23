@@ -79,6 +79,7 @@ namespace Hermes
         void print_detailed_info(bool print_details = true);
         int maximum_polynomial_order;
         void set_p_coarsening_only();
+        static bool wider_bounds_on_boundary;
 
       private:
         bool p_coarsening_only;
