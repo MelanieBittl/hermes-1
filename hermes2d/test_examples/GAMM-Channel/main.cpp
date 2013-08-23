@@ -26,18 +26,18 @@ const bool VTK_VISUALIZATION = false;
 const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = VertexBased;
-bool limit_velocities = true;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
+bool limit_velocities = false;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 4;
+int INIT_REF_NUM = 3;
 // Initial time step.
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
 // CFL value.
-double CFL_NUMBER = 2.;
+double CFL_NUMBER = 1.;
 // Kappa.
 const double KAPPA = 1.4;
 // Set up CFL calculation class.
@@ -70,7 +70,7 @@ const std::string BDY_SOLID_WALL_TOP = "4";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 16);
+  HermesCommonApi.set_integral_param_value(numThreads, 4);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -81,14 +81,14 @@ int main(int argc, char* argv[])
   Hermes::vector<std::string> inlet_markers;
   Hermes::vector<std::string> outlet_markers;
   MeshSharedPtr mesh(new Mesh);
- 
+
   MeshReaderH2D mloader;
   mloader.load(MESH_FILENAME.c_str(), mesh);
   solid_wall_markers.push_back(BDY_SOLID_WALL_BOTTOM);
   solid_wall_markers.push_back(BDY_SOLID_WALL_TOP);
   inlet_markers.push_back(BDY_INLET);
   outlet_markers.push_back(BDY_OUTLET);
- 
+
   mesh->refine_element_id(1, 2);
   // Perform initial mesh refinements.
   mesh->refine_all_elements(1);
@@ -151,62 +151,67 @@ int main(int argc, char* argv[])
   ScalarView M_view("Mach number", new WinGeom(630, 0, 600, 300));
 #pragma endregion
 
+  HermesCommonApi.set_integral_param_value(matrixSolverType, SOLVER_PARALUTION_ITERATIVE);
   LinearSolver<double> solver_implicit(&wf_implicit, const_spaces);
+  ((IterSolver<double>*)solver_implicit.get_linear_solver())->set_tolerance(1e-6, IterSolver<double>::AbsoluteTolerance);
+  HermesCommonApi.set_integral_param_value(matrixSolverType, SOLVER_UMFPACK);
   LinearSolver<double> solver_explicit(&wf_explicit, spaces);
   solver_explicit.set_jacobian_constant();
+  wf_explicit.set_current_time_step(time_step_length);
+  wf_implicit.set_current_time_step(time_step_length);
 
   DiscreteProblemDGAssembler<double>::dg_order = 10;
-    
+
 #pragma region 4. Time stepping loop.
   int iteration = 0;
   for(double t = 0.0; t <= TIME_INTERVAL_LENGTH + Hermes::Epsilon; t += time_step_length)
   {
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
-    // Calculate time step according to CFL condition.
-    CFL.calculate(prev_slns, mesh, time_step_length);
-    wf_explicit.set_current_time_step(time_step_length);
-    wf_implicit.set_current_time_step(time_step_length);
-    
-    // Solve.
-    // 0 - store the sln vector.
-    double* previous_sln_vector = new double[ndof];
-    OGProjection<double>::project_global(spaces, prev_slns, previous_sln_vector);
-    
-    // 1 - solve implicit.
-    solver_implicit.solve();
-    double* mean_values = new double[ndof];
-    Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_spaces, prev_slns);
-    OGProjection<double>::project_global(spaces, prev_slns, mean_values);
 
-    // 2 - Update the mean values.
-    Space<double>::assign_dofs(spaces);
-    for(int component = 0; component < 4; component++)
+    if(iteration)
     {
-      Element* e;
-      for_all_active_elements(e, mesh)
+      // Solve.
+      // 0 - store the sln vector.
+      double* previous_sln_vector = new double[ndof];
+      OGProjection<double>::project_global(spaces, prev_slns, previous_sln_vector);
+
+      // 1 - solve implicit.
+      solver_implicit.solve();
+      double* mean_values = new double[ndof];
+      Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_spaces, prev_slns);
+      OGProjection<double>::project_global(spaces, prev_slns, mean_values);
+
+      // 2 - Update the mean values.
+      Space<double>::assign_dofs(spaces);
+      for(int component = 0; component < 4; component++)
       {
-        AsmList<double> al_fine;
-        spaces[component]->get_element_assembly_list(e, &al_fine);
-        for(unsigned int shape_i = 0; shape_i < al_fine.cnt; shape_i++)
+        Element* e;
+        for_all_active_elements(e, mesh)
         {
-          int order = spaces[component]->get_shapeset()->get_order(al_fine.idx[shape_i], e->get_mode());
-          if(order == 0)
+          AsmList<double> al_fine;
+          spaces[component]->get_element_assembly_list(e, &al_fine);
+          for(unsigned int shape_i = 0; shape_i < al_fine.cnt; shape_i++)
           {
-            int dof = al_fine.dof[shape_i];
-            previous_sln_vector[dof] = mean_values[dof];
+            int order = spaces[component]->get_shapeset()->get_order(al_fine.idx[shape_i], e->get_mode());
+            if(order == 0)
+            {
+              int dof = al_fine.dof[shape_i];
+              previous_sln_vector[dof] = mean_values[dof];
+            }
           }
         }
       }
+
+      // Solve explicit.
+      Solution<double>::vector_to_solutions(previous_sln_vector, spaces, prev_slns);
+
+      // Clean up.
+      delete [] previous_sln_vector;
+      delete [] mean_values;
     }
 
-    // Solve explicit.
-    Solution<double>::vector_to_solutions(previous_sln_vector, spaces, prev_slns);
     solver_explicit.solve();
-
-    // Clean up.
-    delete [] previous_sln_vector;
-    delete [] mean_values;
 
 #pragma region *. Get the solution with optional shock capturing.
     if(!SHOCK_CAPTURING)
@@ -249,6 +254,11 @@ int main(int argc, char* argv[])
       }
     }
 #pragma endregion
+    
+    // Calculate time step according to CFL condition.
+    CFL.calculate(solver_explicit.get_sln_vector(), spaces, time_step_length);
+    wf_explicit.set_current_time_step(time_step_length);
+    wf_implicit.set_current_time_step(time_step_length);
 
     prev_rho->copy(sln_rho);
     prev_rho_v_x->copy(sln_rho_v_x);
@@ -259,6 +269,7 @@ int main(int argc, char* argv[])
     updated_prev_rho_v_x->copy(sln_rho_v_x);
     updated_prev_rho_v_y->copy(sln_rho_v_y);
     updated_prev_e->copy(sln_e);
+
 
     iteration++;
   }
