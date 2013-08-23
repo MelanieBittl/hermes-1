@@ -34,10 +34,10 @@ const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
 const int INIT_REF_NUM = 2;
 // Initial time step.
-double time_step_length = 1e-6;
-double TIME_INTERVAL_LENGTH = .005;
+double time_step_length = 1e-4;
+double TIME_INTERVAL_LENGTH = .2;
 // CFL value.
-double CFL_NUMBER = 2.;
+double CFL_NUMBER = .5;
 
 // Triangles instead of quads.
 bool use_triangles = false;
@@ -55,7 +55,7 @@ CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 3);
+  HermesCommonApi.set_integral_param_value(numThreads, 1);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -181,11 +181,6 @@ else
         lin.save_solution_vtk(prev_rho, filename, "Rho", false);
       }
     }
-
-    // Calculate time step according to CFL condition.
-    CFL.calculate(solver.get_sln_vector(), spaces, time_step_length);
-    wf.set_current_time_step(time_step_length);
-      
 #pragma endregion
 
     iteration++;
