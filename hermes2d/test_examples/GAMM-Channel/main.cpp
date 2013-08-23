@@ -32,7 +32,7 @@ bool limit_velocities = false;
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 3;
+int INIT_REF_NUM = 4;
 // Initial time step.
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
@@ -70,7 +70,7 @@ const std::string BDY_SOLID_WALL_TOP = "4";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 4);
+  HermesCommonApi.set_integral_param_value(numThreads, 1);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");

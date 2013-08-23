@@ -1574,6 +1574,7 @@ void FeistauerJumpDetector::process()
   Element* e;
   AsmList<double> al;
   double* values = new double[number_of_tested];
+  Space<double>::assign_dofs(spaces);
   for_all_active_elements(e, spaces[0]->get_mesh())
   {
     memset(values, 0, sizeof(double) * number_of_tested);
