@@ -19,20 +19,20 @@ using namespace Hermes::Hermes2D::Views;
 
 // Visualization.
 // Set to "true" to enable Hermes OpenGL visualization. 
-const bool HERMES_VISUALIZATION = true;
+const bool HERMES_VISUALIZATION = false;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 10;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = VertexBased;
-bool limit_velocities = false;
+const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
+bool limit_velocities = true;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 5;
+const int INIT_REF_NUM = 2;
 // Initial time step.
 double time_step_length = 1e-4;
 double TIME_INTERVAL_LENGTH = .2;
@@ -51,7 +51,7 @@ const double KAPPA = 1.4;
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 1);
+  HermesCommonApi.set_integral_param_value(numThreads, 24);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");

@@ -21,18 +21,19 @@ using namespace Hermes::Hermes2D::Views;
 // Set to "true" to enable Hermes OpenGL visualization. 
 const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 50;
 
 bool SHOCK_CAPTURING = true;
-EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToAll;
+EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
+bool limit_velocities = false;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM_ISO = 3;
-int INIT_REF_NUM_ANISO = 3;
+int INIT_REF_NUM_ISO = 5;
+int INIT_REF_NUM_ANISO = 2;
 // CFL value.
 double CFL_NUMBER = 0.1;
 // Initial time step.
@@ -74,8 +75,6 @@ std::string BDY_SOLID_WALL_TOP = "Top";
 #include "initial_condition.cpp"
 
 std::string filename = "domain.xml";
-
-bool limit_velocities = false;
 
 void set_params(int argc, char* argv[])
 {
@@ -138,7 +137,7 @@ void set_params(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
 #ifndef _WINDOWS
-  HermesCommonApi.set_integral_param_value(numThreads, 10);
+  HermesCommonApi.set_integral_param_value(numThreads, 1);
 #endif
   set_params(argc, argv);
   Hermes::Mixins::Loggable logger(true);
@@ -245,11 +244,11 @@ int main(int argc, char* argv[])
 #pragma endregion
 
   LinearSolver<double> solver(&wf, spaces);
-  DiscreteProblemDGAssembler<double>::dg_order = P_INIT + 5;
+  DiscreteProblemDGAssembler<double>::dg_order = 6;
   solver.set_jacobian_constant();
 
   FeistauerJumpDetector limiter(spaces, NULL);
-  limiter.set_type(CoarseningJumpIndicatorDensityToAll);
+  limiter.set_type(limiter_type);
 
 #pragma region 4. Time stepping loop.
   int iteration = 0;
