@@ -26,26 +26,22 @@ const bool VTK_VISUALIZATION = false;
 const unsigned int EVERY_NTH_STEP = 1;
 
 bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = CoarseningJumpIndicatorAllToThemselves;
-bool limit_velocities = true;
+const EulerLimiterType limiter_type = VertexBased;
+bool limit_velocities = false;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-const int INIT_REF_NUM = 3;
+const int INIT_REF_NUM = 5;
 // Initial time step.
 double time_step_length = 1e-4;
 double TIME_INTERVAL_LENGTH = .2;
-// CFL value.
-double CFL_NUMBER = .5;
 
 // Triangles instead of quads.
 bool use_triangles = false;
 
 // Kappa.
 const double KAPPA = 1.4;
-// Set up CFL calculation class.
-CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
 // Weak forms.
 #include "forms_explicit.cpp"
@@ -126,6 +122,7 @@ else
   LinearSolver<double> solver(&wf, spaces);
   solver.set_jacobian_constant();
   wf.set_current_time_step(time_step_length);
+  DiscreteProblemDGAssembler<double>::dg_order = 6;
 
 #pragma region 4. Time stepping loop.
   int iteration = 0;
