@@ -498,32 +498,6 @@ enum EulerLimiterType
 template<typename LimiterType>
 void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, LimiterType* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
 
-class FeistauerPCoarseningLimiter : public PostProcessing::Limiter<double>
-{
-public:
-  FeistauerPCoarseningLimiter(SpaceSharedPtr<double> space, double* solution_vector);
-  FeistauerPCoarseningLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector);
-  ~FeistauerPCoarseningLimiter();
-
-  void set_type(EulerLimiterType indicatorType);
-  EulerLimiterType get_type();
-
-  /// Alpha in the indicator, it is the exponent (h^{alpha}) in the denominator.
-  /// Should be between 1 - 5.
-  static double alpha;
-
-  /// The constant the jump indicator g is compared to and when larger than this, the limiting is carried out.
-  static double thresholdConstant;
-
-private:
-  void process();
-  void get_jump_indicators(Element* e, double* values);
-  void assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, double* values);
-  bool conditionally_coarsen(Element* e, double* values);
-
-  EulerLimiterType indicatorType;
-};
-
 class FeistauerJumpDetector : public PostProcessing::Limiter<double>
 {
 public:
@@ -544,34 +518,11 @@ public:
 
 private:
   void process();
+  void get_jump_indicators(Element* e, double* values);
+  void assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, double* values);
   bool conditionally_coarsen(double max_value, double* values, Element* e);
-  EulerLimiterType indicatorType;
-  Hermes::Algebra::UMFPackVector<double> data;
-  Hermes::vector<SpaceSharedPtr<double> > const_spaces;
-  Hermes::vector<MeshFunctionSharedPtr<double> > const_slns;
-  DiscreteProblem<double> dp;
   
-  class JumpIndicatorCalculator : public WeakForm<double>
-  {
-  public:
-    JumpIndicatorCalculator(int neq);
-
-    class JumpIndicatorForm : public VectorFormDG<double>
-    {
-    public:
-      JumpIndicatorForm(int i);
-
-      virtual double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
-        Geom<double> *e, DiscontinuousFunc<double> **ext) const;
-
-      virtual Hermes::Ord ord(int n, double *wt, DiscontinuousFunc<Hermes::Ord> **u_ext, Func<Hermes::Ord> *v, Geom<Hermes::Ord> *e,
-        DiscontinuousFunc<Ord> **ext) const;
-
-      virtual VectorFormDG* clone() const;
-    };
-  };
-
-  JumpIndicatorCalculator wf;
+  EulerLimiterType indicatorType;
 };
 
 PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false);

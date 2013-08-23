@@ -1411,98 +1411,69 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Limi
   }
 }
 
-FeistauerPCoarseningLimiter::FeistauerPCoarseningLimiter(SpaceSharedPtr<double> space, double* solution_vector) : PostProcessing::Limiter<double>(space, solution_vector)
+FeistauerJumpDetector::FeistauerJumpDetector(SpaceSharedPtr<double> space, double* solution_vector) : PostProcessing::Limiter<double>(space, solution_vector), wf(1)
 {
+  this->init();
 }
 
-FeistauerPCoarseningLimiter::FeistauerPCoarseningLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector)
+FeistauerJumpDetector::FeistauerJumpDetector(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector)
   : PostProcessing::Limiter<double>(spaces, solution_vector)
 {
+  this->init();
 }
 
-FeistauerPCoarseningLimiter::~FeistauerPCoarseningLimiter()
+void FeistauerJumpDetector::init()
 {
 }
 
-void FeistauerPCoarseningLimiter::set_type(EulerLimiterType type)
+FeistauerJumpDetector::~FeistauerJumpDetector()
+{
+}
+
+void FeistauerJumpDetector::set_type(EulerLimiterType type)
 {
   this->indicatorType = type;
 }
 
-EulerLimiterType FeistauerPCoarseningLimiter::get_type()
+EulerLimiterType FeistauerJumpDetector::get_type()
 {
   return this->indicatorType;
 }
 
-double FeistauerPCoarseningLimiter::alpha = 2.5;
-double FeistauerPCoarseningLimiter::thresholdConstant = 1.0;
+double FeistauerJumpDetector::alpha = 2.5;
+double FeistauerJumpDetector::thresholdConstant = 1.0;
 
-
-bool FeistauerPCoarseningLimiter::conditionally_coarsen(Element* e, double* values)
+bool FeistauerJumpDetector::conditionally_coarsen(double max_value, double* values, Element* e)
 {
+  int number_of_influenced;
+
   switch(this->indicatorType)
   {
   case CoarseningJumpIndicatorDensity:
-    {
-      if(values[0] > FeistauerPCoarseningLimiter::thresholdConstant)
-      {
-        AsmList<double> al;
-        this->spaces[0]->get_element_assembly_list(e, &al);
-        for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
-          if(H2D_GET_H_ORDER(spaces[0]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[0]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
-            this->solution_vector[al.get_dof()[shape_i]] = 0.0;
-      }
-    }
+    number_of_influenced = 1;
     break;
   case CoarseningJumpIndicatorDensityToAll:
-    {
-      if(values[0] > FeistauerPCoarseningLimiter::thresholdConstant)
-        for(int component = 0; component < this->component_count; component++)
-        {
-          AsmList<double> al;
-          this->spaces[component]->get_element_assembly_list(e, &al);
-          for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
-            if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
-              this->solution_vector[al.get_dof()[shape_i]] = 0.0;
-        }
-    }
-    break;
   case CoarseningJumpIndicatorAllToThemselves:
-    {
-      for(int component = 0; component < this->component_count; component++)
-        if(values[component] > FeistauerPCoarseningLimiter::thresholdConstant)
-        {
-          AsmList<double> al;
-          this->spaces[component]->get_element_assembly_list(e, &al);
-          for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
-            if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
-              this->solution_vector[al.get_dof()[shape_i]] = 0.0;
-        }
-    }
   case CoarseningJumpIndicatorAllToAll:
-    {
-      bool limit = false;
-      for(int component = 0; component < this->component_count; component++)
-        if(values[component] > FeistauerPCoarseningLimiter::thresholdConstant)
-          limit = true;
-
-      if(limit)
-        for(int component = 0; component < this->component_count; component++)
-        {
-          AsmList<double> al;
-          this->spaces[component]->get_element_assembly_list(e, &al);
-          for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
-            if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
-              this->solution_vector[al.get_dof()[shape_i]] = 0.0;
-        }
-    }
+    number_of_influenced = this->component_count;
     break;
   default:
     throw Exceptions::Exception("Bad limiting type in Feistauer.");
   }
+
+  AsmList<double> al;
+  for(int component = 0; component < number_of_influenced; component++)
+  {
+    if(this->indicatorType == CoarseningJumpIndicatorAllToThemselves && values[component] < FeistauerJumpDetector::thresholdConstant)
+       continue;
+    this->spaces[component]->get_element_assembly_list(e, &al);
+    for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
+      if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
+        this->solution_vector[al.get_dof()[shape_i]] = 0.0;
+  }
 }
 
-void FeistauerPCoarseningLimiter::get_jump_indicators(Element* e, double* values)
+void FeistauerJumpDetector::get_jump_indicators(Element* e, double* values)
 {
   for(int component = 0; component < this->component_count; component++)
     this->limited_solutions[component]->set_active_element(e);
@@ -1526,7 +1497,7 @@ void FeistauerPCoarseningLimiter::get_jump_indicators(Element* e, double* values
   }
 }
 
-void FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, double* values)
+void FeistauerJumpDetector::assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, double* values)
 {
   ns.set_active_segment(neighbor_i);
 
@@ -1536,8 +1507,7 @@ void FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& 
       ns.central_transformations[neighbor_i]->apply_on(this->limited_solutions[component].get());
   }
 
-  int order = std::max(H2D_GET_H_ORDER(this->spaces[0]->get_element_order(ns.central_el->id)), H2D_GET_V_ORDER(this->spaces[0]->get_element_order(ns.central_el->id)));
-  order += this->limited_solutions[0]->get_refmap()->get_inv_ref_order();
+  int order = DiscreteProblemDGAssembler<double>::dg_order;
   ns.set_quad_order(order);
 
   RefMap* refmap = this->limited_solutions[0]->get_refmap();
@@ -1545,11 +1515,7 @@ void FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& 
   double* jwt;
   int n_quadrature_points = init_surface_geometry_points(&refmap, 1, order, edge, 1, e, jwt);
 
-  int probed_component_count = this->component_count;
-  if(indicatorType == CoarseningJumpIndicatorDensity || indicatorType == CoarseningJumpIndicatorDensityToAll)
-    probed_component_count = 1;
-
-  for(int probed_component = 0; probed_component < probed_component_count; probed_component++)
+  for(int probed_component = 0; probed_component < this->component_count; probed_component++)
   {
     double value = 0.;
     DiscontinuousFunc<double>* func = ns.init_ext_fn(this->limited_solutions[probed_component].get());
@@ -1582,164 +1548,6 @@ void FeistauerPCoarseningLimiter::assemble_one_neighbor(NeighborSearch<double>& 
     this->limited_solutions[fns_i]->set_transform(0);
 }
 
-void FeistauerPCoarseningLimiter::process()
-{
-  this->tick();
-
-  // 0. Preparation.
-  // Start by creating temporary solutions and states for paralelism.
-  Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
-
-  // Use those to incorporate the correction factor.
-  Element* e;
-
-  MeshSharedPtr mesh = this->spaces[0]->get_mesh();
-
-  double* values = new double[this->component_count];
-
-  for_all_active_elements(e, mesh)
-  {
-    memset(values, 0, sizeof(double)*this->component_count);
-
-    bool higher_order = H2D_GET_H_ORDER(this->spaces[0]->get_element_order(e->id)) > 0 || H2D_GET_V_ORDER(this->spaces[0]->get_element_order(e->id)) > 0;
-    if(!higher_order)
-      continue;
-
-    if(this->get_verbose_output())
-      std::cout << "Element: " << e->id << std::endl;
-
-    // Get the jumps (the enumerator in the fraction).
-    get_jump_indicators(e, values);
-
-    // Divide by the denominator.
-    for(int i = 0; i < this->component_count; i++)
-      values[i] /= std::pow(e->get_diameter(), FeistauerPCoarseningLimiter::alpha);
-
-    // And take a look if the coarsening is appropriate.
-    this->conditionally_coarsen(e, values);
-  }
-
-  this->tick();
-
-  std::cout << "Feistauer limiter took " << this->accumulated_str() << " time." << std::endl;
-
-  if(this->get_verbose_output())
-    std::cout << std::endl;
-
-  // Create the final solutions.
-  Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
-}
-
-FeistauerJumpDetector::FeistauerJumpDetector(SpaceSharedPtr<double> space, double* solution_vector) : PostProcessing::Limiter<double>(space, solution_vector), wf(1)
-{
-  this->init();
-}
-
-FeistauerJumpDetector::FeistauerJumpDetector(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector)
-  : PostProcessing::Limiter<double>(spaces, solution_vector), wf(spaces.size())
-{
-  this->init();
-}
-
-void FeistauerJumpDetector::init()
-{
-  const_spaces.clear();
-  const_slns.clear();
-  for(int i = 0; i < this->component_count; i++)
-  {
-    const_spaces.push_back(new L2Space<double>(this->spaces[i]->get_mesh()));
-    const_slns.push_back(new Solution<double>());
-  }
-  this->dp.set_spaces(const_spaces);
-  this->dp.set_weak_formulation(&this->wf);
-  this->dp.set_linear(true);
-}
-
-FeistauerJumpDetector::~FeistauerJumpDetector()
-{
-}
-
-void FeistauerJumpDetector::set_type(EulerLimiterType type)
-{
-  this->indicatorType = type;
-}
-
-EulerLimiterType FeistauerJumpDetector::get_type()
-{
-  return this->indicatorType;
-}
-
-double FeistauerJumpDetector::alpha = 2.5;
-double FeistauerJumpDetector::thresholdConstant = 1.0;
-
-
-bool FeistauerJumpDetector::conditionally_coarsen(double max_value, double* values, Element* e)
-{
-  int number_of_influenced;
-
-  switch(this->indicatorType)
-  {
-  case CoarseningJumpIndicatorDensity:
-    number_of_influenced = 1;
-    break;
-  case CoarseningJumpIndicatorDensityToAll:
-  case CoarseningJumpIndicatorAllToThemselves:
-  case CoarseningJumpIndicatorAllToAll:
-    number_of_influenced = this->component_count;
-    break;
-  default:
-    throw Exceptions::Exception("Bad limiting type in Feistauer.");
-  }
-
-  AsmList<double> al;
-  for(int component = 0; component < number_of_influenced; component++)
-  {
-    if(this->indicatorType == CoarseningJumpIndicatorAllToThemselves && values[component] < FeistauerJumpDetector::thresholdConstant)
-       continue;
-    this->spaces[component]->get_element_assembly_list(e, &al);
-    for(unsigned int shape_i = 0; shape_i < al.get_cnt(); shape_i++)
-      if(H2D_GET_H_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0 || H2D_GET_V_ORDER(spaces[component]->get_shapeset()->get_order(al.get_idx()[shape_i], e->get_mode())) > 0)
-        this->solution_vector[al.get_dof()[shape_i]] = 0.0;
-  }
-}
-
-FeistauerJumpDetector::JumpIndicatorCalculator::JumpIndicatorCalculator(int neq) : WeakForm<double>(neq)
-{
-  for(int i = 0; i < neq; i++)
-  {
-    JumpIndicatorForm* form = new JumpIndicatorForm(i);
-    this->add_vector_form_DG(form);
-  }
-}
-
-FeistauerJumpDetector::JumpIndicatorCalculator::JumpIndicatorForm::JumpIndicatorForm(int i) : VectorFormDG<double>(i)
-{
-}
-
-double FeistauerJumpDetector::JumpIndicatorCalculator::JumpIndicatorForm::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
-                                                                                Geom<double> *e, DiscontinuousFunc<double> **ext) const
-{
-  DiscontinuousFunc<double>* func = ext[this->i];
-  double result = 0.;
-  
-  for(int pt_i = 0; pt_i < n; pt_i++)
-    result += wt[pt_i] * (func->val[pt_i] - func->val_neighbor[pt_i]) * (func->val[pt_i] - func->val_neighbor[pt_i]);
-
-  return result;
-}
-
-Hermes::Ord FeistauerJumpDetector::JumpIndicatorCalculator::JumpIndicatorForm::ord(int n, double *wt, DiscontinuousFunc<Hermes::Ord> **u_ext, Func<Hermes::Ord> *v, Geom<Hermes::Ord> *e,
-                                                                                   DiscontinuousFunc<Ord> **ext) const
-{
-  DiscontinuousFunc<Ord>* func = ext[this->i];
-  return func->val[0] + func->val_neighbor[0];
-}
-
-VectorFormDG<double>* FeistauerJumpDetector::JumpIndicatorCalculator::JumpIndicatorForm::clone() const
-{
-  return new FeistauerJumpDetector::JumpIndicatorCalculator::JumpIndicatorForm(this->i);
-}
-
 void FeistauerJumpDetector::process()
 {
   this->tick();
@@ -1748,13 +1556,6 @@ void FeistauerJumpDetector::process()
   // Start by creating temporary solutions and states for paralelism.
   Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
 
-  // 1. Creation.
-  OGProjection<double>::project_global(const_spaces, this->limited_solutions, const_slns);
-  
-  // Calculation.
-  this->wf.set_ext(this->limited_solutions);
-  dp.assemble(&data);
-  
   // Data processing.
   int number_of_tested;
   switch(this->indicatorType)
@@ -1770,23 +1571,23 @@ void FeistauerJumpDetector::process()
   default:
     throw Exceptions::Exception("Bad limiting type in Feistauer.");
   }
-  double* data_values = this->data.get_c_array();
 
   // Use those to incorporate the correction factor.
   Element* e;
   AsmList<double> al;
   double* values = new double[number_of_tested];
-  Space<double>::assign_dofs(const_spaces);
-  for_all_active_elements(e, const_spaces[0]->get_mesh())
+  for_all_active_elements(e, spaces[0]->get_mesh())
   {
+    memset(values, 0, sizeof(double) * number_of_tested);
+    this->get_jump_indicators(e, values);
+
     double max_value = 0.;
     for(int component = 0; component < number_of_tested; component++)
     {
-      const_spaces[component]->get_element_assembly_list(e, &al);
-      values[component] = data_values[al.dof[0]] / std::pow(e->get_diameter(), FeistauerJumpDetector::alpha);
+      values[component] /= std::pow(e->get_diameter(), FeistauerJumpDetector::alpha);
       max_value = std::max(max_value, values[component]);
     }
-    
+
     if(max_value < FeistauerJumpDetector::thresholdConstant)
       continue;
   
