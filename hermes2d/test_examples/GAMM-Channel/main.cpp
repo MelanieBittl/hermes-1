@@ -32,12 +32,12 @@ bool limit_velocities = false;
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 4;
+int INIT_REF_NUM = 5;
 // Initial time step.
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
 // CFL value.
-double CFL_NUMBER = 1.;
+double CFL_NUMBER = 2.5;
 // Kappa.
 const double KAPPA = 1.4;
 // Set up CFL calculation class.
@@ -70,7 +70,7 @@ const std::string BDY_SOLID_WALL_TOP = "4";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 1);
+  HermesCommonApi.set_integral_param_value(numThreads, 24);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
 
-    if(iteration)
+    if(iteration > 3)
     {
       // Solve.
       // 0 - store the sln vector.
@@ -269,7 +269,6 @@ int main(int argc, char* argv[])
     updated_prev_rho_v_x->copy(sln_rho_v_x);
     updated_prev_rho_v_y->copy(sln_rho_v_y);
     updated_prev_e->copy(sln_e);
-
 
     iteration++;
   }

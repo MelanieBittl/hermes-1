@@ -1513,7 +1513,7 @@ void FeistauerJumpDetector::assemble_one_neighbor(NeighborSearch<double>& ns, in
   double* jwt;
   int n_quadrature_points = init_surface_geometry_points(&refmap, 1, order, edge, 1, e, jwt);
 
-  for(int probed_component = 0; probed_component < this->component_count; probed_component++)
+  for(int probed_component = 0; probed_component < ((this->indicatorType == CoarseningJumpIndicatorDensity||this->indicatorType == CoarseningJumpIndicatorDensityToAll) ? 1 : component_count); probed_component++)
   {
     double value = 0.;
     DiscontinuousFunc<double>* func = ns.init_ext_fn(this->limited_solutions[probed_component].get());
@@ -1603,6 +1603,8 @@ void FeistauerJumpDetector::process()
     }
     this->conditionally_coarsen(max_value, values, e);
   }
+
+  delete [] values;
 
   this->tick();
   if(this->get_verbose_output())
