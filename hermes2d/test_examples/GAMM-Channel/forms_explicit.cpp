@@ -333,49 +333,103 @@ public:
     double value(int n, double *wt, Func<double> *u_ext[],
       Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
-      double w[4];
       double result = 0.;
+
+      double w_B[4], w_L[4], eigenvalues[4], alpha[4], q_ji_star[4], beta[4], q_ji[4], w_ji[4];
 
       for (int point_i = 0; point_i < n; point_i++) 
       {
-        double P_plus[16], P_minus[16];
-        w[0] = ext[0]->val[point_i];
-        w[1] = ext[1]->val[point_i];
-        w[2] = ext[2]->val[point_i];
-        w[3] = ext[3]->val[point_i];
+        // Inner state.
+        w_L[0] = ext[0]->val[point_i];
+        w_L[1] = ext[1]->val[point_i];
+        w_L[2] = ext[2]->val[point_i];
+        w_L[3] = ext[3]->val[point_i];
 
-        double e_1_1[4] = {1, 0, 0, 0};
-        double e_2_1[4] = {0, 1, 0, 0};
-        double e_3_1[4] = {0, 0, 1, 0};
-        double e_4_1[4] = {0, 0, 0, 1};
+        // Transformation of the inner state to the local coordinates.
+        num_flux->Q(num_flux->get_q(), w_L, e->nx[point_i], e->ny[point_i]);
 
-        num_flux->P_plus(P_plus, w, e_1_1, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_plus(P_plus + 4, w, e_2_1, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_plus(P_plus + 8, w, e_3_1, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_plus(P_plus + 12, w, e_4_1, e->nx[point_i], e->ny[point_i]);
+        // Initialize the matrices.
+        double T[4][4];
+        double T_inv[4][4];
+        for(unsigned int ai = 0; ai < 4; ai++) 
+        {
+          for(unsigned int aj = 0; aj < 4; aj++) 
+          {
+            T[ai][aj] = 0.0;
+            T_inv[ai][aj] = 0.0;
+          }
+          alpha[ai] = 0;
+          beta[ai] = 0;
+          q_ji[ai] = 0;
+          w_ji[ai] = 0;
+          eigenvalues[ai] = 0;
+        }
 
-        w[0] = this->rho_ext;
-        w[1] = this->rho_v1_ext;
-        w[2] = this->rho_v2_ext;
-        w[3] = this->rho_e_ext;
+        // Calculate Lambda^-.
+        num_flux->Lambda(eigenvalues);
+        num_flux->T_1(T);
+        num_flux->T_2(T);
+        num_flux->T_3(T);
+        num_flux->T_4(T);
+        num_flux->T_inv_1(T_inv);
+        num_flux->T_inv_2(T_inv);
+        num_flux->T_inv_3(T_inv);
+        num_flux->T_inv_4(T_inv);
 
-        double e_1_2[4] = {1, 0, 0, 0};
-        double e_2_2[4] = {0, 1, 0, 0};
-        double e_3_2[4] = {0, 0, 1, 0};
-        double e_4_2[4] = {0, 0, 0, 1};
+        // "Prescribed" boundary state.
+        w_B[0] = this->rho_ext;
+        w_B[1] = this->rho_v1_ext;
+        w_B[2] = this->rho_v2_ext;
+        w_B[3] = this->rho_e_ext;
 
-        num_flux->P_minus(P_minus, w, e_1_2, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_minus(P_minus + 4, w, e_2_2, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_minus(P_minus + 8, w, e_3_2, e->nx[point_i], e->ny[point_i]);
-        num_flux->P_minus(P_minus + 12, w, e_4_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->Q(q_ji_star, w_B, e->nx[point_i], e->ny[point_i]);
 
-        for (int j = 0; j < 4; j++)
+        for(unsigned int ai = 0; ai < 4; ai++)
+          for(unsigned int aj = 0; aj < 4; aj++)
+            alpha[ai] += T_inv[ai][aj] * num_flux->get_q()[aj];
+
+        for(unsigned int bi = 0; bi < 4; bi++)
+          for(unsigned int bj = 0; bj < 4; bj++)
+            beta[bi] += T_inv[bi][bj] * q_ji_star[bj];
+
+        for(unsigned int si = 0; si< 4; si++)
+          for(unsigned int sj = 0; sj < 4; sj++)
+            if(eigenvalues[sj] < 0)
+              q_ji[si] += beta[sj] * T[si][sj];
+            else
+              q_ji[si] += alpha[sj] * T[si][sj];
+
+        num_flux->Q_inv(w_ji, q_ji, e->nx[point_i], e->ny[point_i]);
+
+        double P_minus[4];
+        double P_plus[16];
+
+        double w_temp[4];
+        w_temp[0] = (w_ji[0] + w_L[0]) / 2;
+        w_temp[1] = (w_ji[1] + w_L[1]) / 2;
+        w_temp[2] = (w_ji[2] + w_L[2]) / 2;
+        w_temp[3] = (w_ji[3] + w_L[3]) / 2;
+
+        num_flux->P_minus(P_minus, w_temp, w_ji, e->nx[point_i], e->ny[point_i]);
+
+        double e_1[4] = {1, 0, 0, 0};
+        double e_2[4] = {0, 1, 0, 0};
+        double e_3[4] = {0, 0, 1, 0};
+        double e_4[4] = {0, 0, 0, 1};
+
+        num_flux->P_plus(P_plus, w_temp, e_1, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 4, w_temp, e_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 8, w_temp, e_3, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 12, w_temp, e_4, e->nx[point_i], e->ny[point_i]);
+
+        result += wt[point_i] * (P_minus[this->i]) * v->val[point_i];
+        for (int j = 0; j < 4; j++) 
         {
           int index = j * 4 + i;
-          double difference = (P_plus[index] * ext[j]->val[point_i]) + (P_minus[index] * w[j]);
-          result += wt[point_i] * difference * v->val[point_i];
-        } 
+          result += wt[point_i] * P_plus[index] * ext[j]->val[point_i] * v->val[point_i];
+        }
       }
+
       return -result * wf->get_current_time_step();
     }
 
@@ -452,7 +506,7 @@ public:
           result += wt[point_i] * P[i][j] * ext[j]->val[point_i] * v->val[point_i];
       }
 
-      return result * wf->get_current_time_step();
+      return -result * wf->get_current_time_step();
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>* *ext) const 
