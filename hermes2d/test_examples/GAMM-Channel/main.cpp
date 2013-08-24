@@ -70,7 +70,7 @@ const std::string BDY_SOLID_WALL_TOP = "4";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 24);
+  HermesCommonApi.set_integral_param_value(numThreads, 1);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -89,9 +89,7 @@ int main(int argc, char* argv[])
   inlet_markers.push_back(BDY_INLET);
   outlet_markers.push_back(BDY_OUTLET);
 
-  mesh->refine_element_id(1, 2);
   // Perform initial mesh refinements.
-  mesh->refine_all_elements(1);
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements();
 
@@ -169,7 +167,7 @@ int main(int argc, char* argv[])
     // Info.
     logger.info("---- Time step %d, time %3.5f.", iteration, t);
 
-    if(iteration > 3)
+    if(iteration)
     {
       // Solve.
       // 0 - store the sln vector.

@@ -56,13 +56,14 @@ public:
 
       add_vector_form(new EulerEquationsLinearFormTime(form_i));
 
-      EulerEquationsVectorFormLinearizableSurfSemiImplicit* formDG = new EulerEquationsVectorFormLinearizableSurfSemiImplicit(form_i, kappa, euler_fluxes);
-      add_vector_form_DG(formDG);
+      add_vector_form_DG(new EulerEquationsVectorFormLinearizableSurfSemiImplicit(form_i, kappa, euler_fluxes));
 
       add_vector_form_surf(new EulerEquationsVectorFormInletOutlet(form_i, inlet_markers, kappa, rho_ext,  rho_ext * v1_ext, rho_ext * v2_ext, energy_ext));
+      
       add_vector_form_surf(new EulerEquationsVectorFormInletOutlet(form_i, outlet_markers, kappa, rho_ext,  rho_ext * v1_ext, rho_ext * v2_ext, energy_ext));
 
-      add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, solid_wall_markers, kappa));
+      if(form_i == 1 || form_i == 2)
+        add_vector_form_surf(new EulerEquationsVectorFormSolidWall(form_i, solid_wall_markers, kappa));
 
       for(int form_j = 0; form_j < 4; form_j++)
       {
@@ -247,7 +248,7 @@ public:
   {
   public:
     EulerEquationsVectorFormLinearizableSurfSemiImplicit(int i, double kappa, EulerFluxes* fluxes) 
-      : VectorFormDG<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), fluxes(fluxes) 
+      : VectorFormDG<double>(i), num_flux(new StegerWarmingNumericalFlux(kappa)), fluxes(fluxes) 
     {
     }
 
@@ -256,27 +257,51 @@ public:
       delete num_flux;
     }
 
-    double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, 
-      Func<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
+    double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
     {
-      double w_L[4], w_R[4];
+      double w[4];
       double result = 0.;
 
-      for (int point_i = 0; point_i < n; point_i++)
+      for (int point_i = 0; point_i < n; point_i++) 
       {
-        w_L[0] = ext[4]->val[point_i];
-        w_L[1] = ext[5]->val[point_i];
-        w_L[2] = ext[6]->val[point_i];
-        w_L[3] = ext[7]->val[point_i];
+        double P_plus[16], P_minus[16];
+        w[0] = ext[0]->val[point_i];
+        w[1] = ext[1]->val[point_i];
+        w[2] = ext[2]->val[point_i];
+        w[3] = ext[3]->val[point_i];
 
-        w_R[0] = ext[4]->val_neighbor[point_i];
-        w_R[1] = ext[5]->val_neighbor[point_i];
-        w_R[2] = ext[6]->val_neighbor[point_i];
-        w_R[3] = ext[7]->val_neighbor[point_i];
+        double e_1_1[4] = {1, 0, 0, 0};
+        double e_2_1[4] = {0, 1, 0, 0};
+        double e_3_1[4] = {0, 0, 1, 0};
+        double e_4_1[4] = {0, 0, 0, 1};
 
-        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+        num_flux->P_plus(P_plus, w, e_1_1, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 4, w, e_2_1, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 8, w, e_3_1, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 12, w, e_4_1, e->nx[point_i], e->ny[point_i]);
+
+        w[0] = ext[0]->val_neighbor[point_i];
+        w[1] = ext[1]->val_neighbor[point_i];
+        w[2] = ext[2]->val_neighbor[point_i];
+        w[3] = ext[3]->val_neighbor[point_i];
+
+        double e_1_2[4] = {1, 0, 0, 0};
+        double e_2_2[4] = {0, 1, 0, 0};
+        double e_3_2[4] = {0, 0, 1, 0};
+        double e_4_2[4] = {0, 0, 0, 1};
+
+        num_flux->P_minus(P_minus, w, e_1_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_minus(P_minus + 4, w, e_2_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_minus(P_minus + 8, w, e_3_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_minus(P_minus + 12, w, e_4_2, e->nx[point_i], e->ny[point_i]);
+
+        for (int j = 0; j < 4; j++)
+        {
+          int index = j * 4 + i;
+          double difference = (P_plus[index] * ext[j]->val[point_i]) + (P_minus[index] * ext[j]->val_neighbor[point_i]);
+          result += wt[point_i] * difference * v->val[point_i];
+        } 
       }
-
       return -result * wf->get_current_time_step();
     }
 
@@ -287,7 +312,7 @@ public:
       return form;
     }
 
-    LaxFriedrichsNumericalFlux* num_flux;
+    StegerWarmingNumericalFlux* num_flux;
     EulerFluxes* fluxes;
   };
 
@@ -295,7 +320,7 @@ public:
   {
   public:
     EulerEquationsVectorFormInletOutlet(int i, Hermes::vector<std::string> areas, double kappa, double rho_ext, double rho_v1_ext, double rho_v2_ext, double rho_e_ext) 
-      : VectorFormSurf<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), rho_ext(rho_ext), rho_v1_ext(rho_v1_ext), rho_v2_ext(rho_v2_ext), rho_e_ext(rho_e_ext)
+      : VectorFormSurf<double>(i), num_flux(new StegerWarmingNumericalFlux(kappa)), rho_ext(rho_ext), rho_v1_ext(rho_v1_ext), rho_v2_ext(rho_v2_ext), rho_e_ext(rho_e_ext)
     {
       this->set_areas(areas);
     }
@@ -305,27 +330,52 @@ public:
       delete num_flux;
     }
 
-    double value(int n, double *wt, Func<double> **u_ext, 
+    double value(int n, double *wt, Func<double> *u_ext[],
       Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
-      double w_L[4], w_R[4];
+      double w[4];
       double result = 0.;
 
-      for (int point_i = 0; point_i < n; point_i++)
+      for (int point_i = 0; point_i < n; point_i++) 
       {
-        w_L[0] = ext[4]->val[point_i];
-        w_L[1] = ext[5]->val[point_i];
-        w_L[2] = ext[6]->val[point_i];
-        w_L[3] = ext[7]->val[point_i];
+        double P_plus[16], P_minus[16];
+        w[0] = ext[0]->val[point_i];
+        w[1] = ext[1]->val[point_i];
+        w[2] = ext[2]->val[point_i];
+        w[3] = ext[3]->val[point_i];
 
-        w_R[0] = rho_ext;
-        w_R[1] = rho_v1_ext;
-        w_R[2] = rho_v2_ext;
-        w_R[3] = rho_e_ext;
+        double e_1_1[4] = {1, 0, 0, 0};
+        double e_2_1[4] = {0, 1, 0, 0};
+        double e_3_1[4] = {0, 0, 1, 0};
+        double e_4_1[4] = {0, 0, 0, 1};
 
-        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+        num_flux->P_plus(P_plus, w, e_1_1, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 4, w, e_2_1, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 8, w, e_3_1, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_plus(P_plus + 12, w, e_4_1, e->nx[point_i], e->ny[point_i]);
+
+        w[0] = this->rho_ext;
+        w[1] = this->rho_v1_ext;
+        w[2] = this->rho_v2_ext;
+        w[3] = this->rho_e_ext;
+
+        double e_1_2[4] = {1, 0, 0, 0};
+        double e_2_2[4] = {0, 1, 0, 0};
+        double e_3_2[4] = {0, 0, 1, 0};
+        double e_4_2[4] = {0, 0, 0, 1};
+
+        num_flux->P_minus(P_minus, w, e_1_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_minus(P_minus + 4, w, e_2_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_minus(P_minus + 8, w, e_3_2, e->nx[point_i], e->ny[point_i]);
+        num_flux->P_minus(P_minus + 12, w, e_4_2, e->nx[point_i], e->ny[point_i]);
+
+        for (int j = 0; j < 4; j++)
+        {
+          int index = j * 4 + i;
+          double difference = (P_plus[index] * ext[j]->val[point_i]) + (P_minus[index] * w[j]);
+          result += wt[point_i] * difference * v->val[point_i];
+        } 
       }
-
       return -result * wf->get_current_time_step();
     }
 
@@ -346,10 +396,9 @@ public:
     double rho_v1_ext;
     double rho_v2_ext;
     double rho_e_ext;
-    LaxFriedrichsNumericalFlux* num_flux;
+    StegerWarmingNumericalFlux* num_flux;
     EulerFluxes* fluxes;
   };
-
 
   class EulerEquationsLinearFormTime : public VectorFormVol<double>
   {
@@ -376,29 +425,34 @@ public:
   {
   public:
     EulerEquationsVectorFormSolidWall(int i, Hermes::vector<std::string> markers, double kappa)
-      : VectorFormSurf<double>(i), num_flux(new LaxFriedrichsNumericalFlux(kappa)), kappa(kappa) {set_areas(markers);}
+      : VectorFormSurf<double>(i), num_flux(new StegerWarmingNumericalFlux(kappa)), kappa(kappa) {set_areas(markers);}
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>* *ext) const 
     {
-      double w_L[4], w_R[4];
       double result = 0.;
-
       for (int point_i = 0; point_i < n; point_i++)
       {
-        w_L[0] = ext[4]->val[point_i];
-        w_L[1] = ext[5]->val[point_i];
-        w_L[2] = ext[6]->val[point_i];
-        w_L[3] = ext[7]->val[point_i];
+        double rho = ext[0]->val[point_i];
+        double v_1 = ext[1]->val[point_i] / rho;
+        double v_2 = ext[2]->val[point_i] / rho;
 
-        w_R[0] = ext[4]->val[point_i];
-        w_R[1] = ext[5]->val[point_i] - 2 * e->nx[point_i] * ((ext[5]->val[point_i] * e->nx[i]) + (ext[6]->val[point_i] * e->ny[i]));
-        w_R[2] = ext[6]->val[point_i] - 2 * e->ny[point_i] * ((ext[5]->val[point_i] * e->nx[i]) + (ext[6]->val[point_i] * e->ny[i]));
-        w_R[3] = ext[7]->val[point_i];
+        double P[4][4];
 
-        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+        P[1][0] = (kappa - 1) * (v_1 * v_1 + v_2 * v_2) * e->nx[point_i] / 2;
+        P[1][1] = (kappa - 1) * (-v_1) * e->nx[point_i];
+        P[1][2] = (kappa - 1) * (-v_2) * e->nx[point_i];
+        P[1][3] = (kappa - 1) * e->nx[point_i];
+
+        P[2][0] = (kappa - 1) * (v_1 * v_1 + v_2 * v_2) * e->ny[point_i] / 2;
+        P[2][1] = (kappa - 1) * (-v_1) * e->ny[point_i];
+        P[2][2] = (kappa - 1) * (-v_2) * e->ny[point_i];
+        P[2][3] = (kappa - 1) * e->ny[point_i];
+
+        for(int j = 0; j < 4; j++)
+          result += wt[point_i] * P[i][j] * ext[j]->val[point_i] * v->val[point_i];
       }
 
-      return -result * wf->get_current_time_step();
+      return result * wf->get_current_time_step();
     }
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord>* *ext) const 
@@ -415,7 +469,7 @@ public:
 
     // Members.
     double kappa;
-    LaxFriedrichsNumericalFlux* num_flux;
+    StegerWarmingNumericalFlux* num_flux;
   };
 };
 
@@ -556,7 +610,7 @@ public:
   WeakForm<double>* clone() const
   {
     EulerEquationsWeakFormSemiImplicit* wf = new EulerEquationsWeakFormSemiImplicit(this->kappa, this->rho_ext[0], this->v1_ext[0], this->v2_ext[0], this->pressure_ext[0], 
-    this->solid_wall_markers, this->inlet_markers, this->outlet_markers, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->fvm_only, this->neq);
+      this->solid_wall_markers, this->inlet_markers, this->outlet_markers, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->fvm_only, this->neq);
 
     wf->ext.clear();
 
@@ -788,7 +842,7 @@ public:
         else
           for (int point_i = 0; point_i < n; point_i++) 
             result += wt[point_i] * (this->P_plus_cache[point_i][index] * u->val[point_i]) * v->val[point_i];
-        
+
       return result * wf->get_current_time_step();
     }
 
