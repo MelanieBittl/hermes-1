@@ -265,10 +265,10 @@ public:
       for (int point_i = 0; point_i < n; point_i++) 
       {
         double P_plus[16], P_minus[16];
-        w[0] = ext[0]->val[point_i];
-        w[1] = ext[1]->val[point_i];
-        w[2] = ext[2]->val[point_i];
-        w[3] = ext[3]->val[point_i];
+        w[0] = ext[4]->val[point_i];
+        w[1] = ext[5]->val[point_i];
+        w[2] = ext[6]->val[point_i];
+        w[3] = ext[7]->val[point_i];
 
         double e_1_1[4] = {1, 0, 0, 0};
         double e_2_1[4] = {0, 1, 0, 0};
@@ -280,10 +280,10 @@ public:
         num_flux->P_plus(P_plus + 8, w, e_3_1, e->nx[point_i], e->ny[point_i]);
         num_flux->P_plus(P_plus + 12, w, e_4_1, e->nx[point_i], e->ny[point_i]);
 
-        w[0] = ext[0]->val_neighbor[point_i];
-        w[1] = ext[1]->val_neighbor[point_i];
-        w[2] = ext[2]->val_neighbor[point_i];
-        w[3] = ext[3]->val_neighbor[point_i];
+        w[0] = ext[4]->val_neighbor[point_i];
+        w[1] = ext[5]->val_neighbor[point_i];
+        w[2] = ext[6]->val_neighbor[point_i];
+        w[3] = ext[7]->val_neighbor[point_i];
 
         double e_1_2[4] = {1, 0, 0, 0};
         double e_2_2[4] = {0, 1, 0, 0};

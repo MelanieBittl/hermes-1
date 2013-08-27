@@ -25,23 +25,21 @@ const bool VTK_VISUALIZATION = false;
 // Set visual output for every nth step.
 const unsigned int EVERY_NTH_STEP = 1;
 
-bool SHOCK_CAPTURING = true;
-const EulerLimiterType limiter_type = CoarseningJumpIndicatorDensityToAll;
+bool SHOCK_CAPTURING = false;
+const EulerLimiterType limiter_type = VertexBased;
 bool limit_velocities = false;
 
 // Initial polynomial degree.
 const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 5;
+int INIT_REF_NUM = 4;
 // Initial time step.
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
 // CFL value.
-double CFL_NUMBER = 2.5;
+double CFL_NUMBER = 1.0;
 // Kappa.
 const double KAPPA = 1.4;
-// Set up CFL calculation class.
-CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
 // Weak forms.
 #include "forms_explicit.cpp"
@@ -71,6 +69,8 @@ const std::string BDY_SOLID_WALL_TOP = "4";
 int main(int argc, char* argv[])
 {
   HermesCommonApi.set_integral_param_value(numThreads, 1);
+  // Set up CFL calculation class.
+  CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -90,6 +90,8 @@ int main(int argc, char* argv[])
   outlet_markers.push_back(BDY_OUTLET);
 
   // Perform initial mesh refinements.
+  mesh->refine_element_id(1, 2);
+  mesh->refine_all_elements(1);
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements();
 
