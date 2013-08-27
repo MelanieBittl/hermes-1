@@ -749,7 +749,7 @@ namespace Hermes
       /// Call to the OVERRIDABLE handling method.
       this->handle_orders(ref_space);
 
-      /// Finish - MUST BE CALLED BEFOR E RETURN.
+      /// Finish - MUST BE CALLED BEFORE RETURN.
       this->finish_construction(ref_space);
 
       // Assign dofs?
