@@ -953,21 +953,6 @@ namespace Hermes
 
       resize_tables();
 
-      Element* e;
-
-      //check validity of orders
-      for_all_active_elements(e, mesh)
-      {
-        if(e->id >= esize || edata[e->id].order < 0)
-        {
-          printf("e->id = %d\n", e->id);
-          printf("esize = %d\n", esize);
-          printf("edata[%d].order = %d\n", e->id, edata[e->id].order);
-          throw
-            Hermes::Exceptions::Exception("Uninitialized element order in Space::assign_dofs().");
-        }
-      }
-
       this->first_dof = next_dof = first_dof;
       this->stride = stride;
 

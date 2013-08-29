@@ -1665,6 +1665,126 @@ PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, H
   return limiter;
 }
 
+DensityErrorCalculator::DensityErrorCalculator() : element_alloc_size(0)
+{
+}
+
+DensityErrorCalculator::~DensityErrorCalculator()
+{
+  ::free(this->element_errors);
+  ::free(this->edge_errors);
+}
+
+void DensityErrorCalculator::init()
+{
+  int local_element_count = this->density->get_mesh()->get_max_element_id();
+  int local_allocation_size = local_element_count * 1.5;
+  if(this->element_alloc_size == 0)
+  {
+    this->element_errors = (double*)malloc(sizeof(double) * local_allocation_size);
+    this->edge_errors = (double4*)malloc(sizeof(double4) * local_allocation_size);
+  }
+  else
+  {
+    this->element_errors = (double*)realloc(this->element_errors, sizeof(double) * local_allocation_size);
+    this->edge_errors = (double4*)realloc(this->edge_errors, sizeof(double4) * local_allocation_size);
+  }
+  this->element_alloc_size = local_allocation_size;
+}
+
+void DensityErrorCalculator::process(MeshFunctionSharedPtr<double> density_, SpaceSharedPtr<double> density_space)
+{
+  this->density = density_;
+  this->init();
+
+  // Use those to incorporate the correction factor.
+  Element* e;
+  for_all_active_elements(e, this->density->get_mesh())
+  {
+    this->density->set_quad_2d(&g_quad_2d_std);
+    this->density->set_active_element(e);
+    int encoded_element_order = density_space->get_element_order(e->id);
+    int h_order = std::max((2 * H2D_GET_H_ORDER(encoded_element_order)) - 2, 0);
+    int v_order = std::max((2 * H2D_GET_V_ORDER(encoded_element_order)) - 2, 0);
+    int element_order = H2D_MAKE_QUAD_ORDER(h_order, v_order);
+    this->get_element_error(e, element_order);
+    // This is just an assumption that the neighboring poly-order is not higher than 2* this order.
+    int edge_order = std::max(H2D_GET_H_ORDER(encoded_element_order), H2D_GET_V_ORDER(encoded_element_order)) * 2;
+    this->get_edges_error(e, edge_order);
+  }
+}
+
+void DensityErrorCalculator::get_element_error(Element* e, int order)
+{
+  Func<double>* density_local = init_fn(this->density.get(), order);
+  Geom<double>* geom;
+  double* jacobian_x_weights;
+  RefMap* refmap = density->get_refmap(false);
+  int n_quadrature_points = init_geometry_points(&refmap, 1, order, geom, jacobian_x_weights);
+
+  double value = 0.;
+  for(int i = 0; i < n_quadrature_points; i++)
+    value += jacobian_x_weights[i] * (density_local->dx[i] * density_local->dx[i] + density_local->dy[i] * density_local->dy[i]);
+  this->element_errors[e->id] = value;
+
+  density_local->free_fn();
+  delete density_local;
+  delete [] jacobian_x_weights;
+  geom->free();
+  delete geom;
+}
+
+void DensityErrorCalculator::get_edges_error(Element* e, int order)
+{
+  for (int isurf = 0; isurf < e->nvert; isurf++)
+  {
+    if(e->en[isurf]->bnd)
+      continue;
+    MeshSharedPtr mesh = this->density->get_mesh();
+    NeighborSearch<double>* ns = new NeighborSearch<double>(e, mesh);
+    ns->set_active_edge_multimesh(isurf);
+    int num_neighbors = ns->get_num_neighbors();
+
+    for(unsigned int neighbor_i = 0; neighbor_i < num_neighbors; neighbor_i++)
+      this->assemble_one_neighbor(*ns, isurf, neighbor_i, order);
+
+    delete ns;
+  }
+}
+
+void DensityErrorCalculator::assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, int order)
+{
+  ns.set_active_segment(neighbor_i);
+  ns.set_quad_order(order);
+
+  if(ns.get_central_n_trans(neighbor_i))
+    ns.central_transformations[neighbor_i]->apply_on(this->density.get());
+
+  RefMap* refmap = this->density->get_refmap();
+  Geom<double>* geom;
+  double* jacobian_x_weights;
+  int n_quadrature_points = init_surface_geometry_points(&refmap, 1, order, edge, 1, geom, jacobian_x_weights);
+
+  double value = 0.;
+  DiscontinuousFunc<double>* density_local = ns.init_ext_fn(this->density.get());
+
+  for(int i = 0; i < n_quadrature_points; i++)
+    value += jacobian_x_weights[i] * (density_local->val[i] - density_local->val_neighbor[i]) * (density_local->val[i] - density_local->val_neighbor[i]);
+
+  value *= 0.5;
+
+  this->edge_errors[ns.central_el->id][edge] = value;
+
+  density_local->free_fn();
+  delete density_local;
+  delete [] jacobian_x_weights;
+  geom->free();
+  delete geom;
+
+  // Re-set the transform.
+  this->density->set_transform(0);
+}
+
 template void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::Limiter<double>* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
 template void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, PostProcessing::VertexBasedLimiter* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);
 template void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, FeistauerJumpDetector* limiter, Hermes::vector<MeshFunctionSharedPtr<double> > slns);

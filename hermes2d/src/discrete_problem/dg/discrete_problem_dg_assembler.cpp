@@ -195,7 +195,7 @@ namespace Hermes
       for(unsigned int fns_i = 0; fns_i < current_state->num; fns_i++)
       {
         NeighborSearch<Scalar>* ns = current_neighbor_searches[fns_i];
-        if(ns->central_transformations[neighbor_i])
+        if(neighbor_i < ns->central_transformations_alloc_size && ns->central_transformations[neighbor_i])
           ns->central_transformations[neighbor_i]->apply_on(fns[fns_i]);
       }
 
@@ -206,7 +206,7 @@ namespace Hermes
         {
           NeighborSearch<Scalar>* ns = current_neighbor_searches[idx_i];
           npss[idx_i]->set_active_element((*ns->get_neighbors())[neighbor_i]);
-          if(ns->neighbor_transformations[neighbor_i])
+          if(neighbor_i < ns->neighbor_transformations_alloc_size && ns->neighbor_transformations[neighbor_i])
             ns->neighbor_transformations[neighbor_i]->apply_on(npss[idx_i]);
         }
       }

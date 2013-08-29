@@ -527,6 +527,27 @@ private:
   EulerLimiterType indicatorType;
 };
 
+class DensityErrorCalculator
+{
+public:
+  DensityErrorCalculator();
+  ~DensityErrorCalculator();
+  void process(MeshFunctionSharedPtr<double> density, SpaceSharedPtr<double> density_space);
+
+  double* element_errors;
+  double4* edge_errors;
+  
+private:
+  void init();
+  void get_element_error(Element* e, int order);
+  void get_edges_error(Element* e, int order);
+  void assemble_one_neighbor(NeighborSearch<double>& ns, int edge, unsigned int neighbor_i, int order);
+
+  // number of elements * (1 + number of edges) - for the volumetric and jump errors.
+  int element_alloc_size;
+  MeshFunctionSharedPtr<double> density;
+};
+
 PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, SpaceSharedPtr<double> space, double* solution_vector, int polynomial_degree = 1, bool verbose = false);
 PostProcessing::Limiter<double>* create_limiter(EulerLimiterType limiter_type, Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int polynomial_degree = 1, bool verbose = false);
 

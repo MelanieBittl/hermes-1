@@ -1,7 +1,9 @@
 #include "hermes2d.h"
 #include "../euler_util.h"
 
-double CFL_NUMBER = 1.0;
+double CFL_NUMBER = 10.0;
+
+#define REFERENCE_SOLUTION_APPROACH
 
 #pragma region Visulization + Utilities
 double LAST_UNREF = 0.;
@@ -50,83 +52,35 @@ const std::string BDY_SOLID_WALL_TOP = "4";
 
 #pragma region Limiting
 // Limiting
-bool SHOCK_CAPTURING = false;
+bool SHOCK_CAPTURING = true;
 const EulerLimiterType limiter_type = VertexBased;
 bool limit_velocities = false;
 #pragma endregion
 
 // Initial polynomial degree.
 const int P_INIT = 1;
-class CustomErrorCalculator : public ErrorCalculator<double>
-{
-public:
-  CustomErrorCalculator(CalculatedErrorType errorType, int component_count) : ErrorCalculator<double>(errorType)
-  {
-    for(int i = 0; i < component_count; i++)
-    {
-      //this->add_error_form(new CustomNormFormVol(i, i));
-      this->add_error_form(new CustomNormFormDG(i, i));
-    }
-  }
-
-  class CustomNormFormVol : public NormFormVol<double>
-  {
-  public:
-    CustomNormFormVol(int i, int j) : NormFormVol<double>(i, j)
-    {
-      //this->functionType = CoarseSolutions;
-    }
-
-    double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
-    {
-      double result_values = 0., result_derivatives = 0.;
-      for (int point_i = 0; point_i < n; point_i++)
-      {
-        result_values += wt[point_i] * (u->val[point_i] * v->val[point_i]);
-        result_derivatives += wt[point_i] * (u->dx[i] * v->dx[i] + u->dy[i] * v->dy[i]);
-      }
-      return result_values;// + result_derivatives;
-    }
-  };
-
-  class CustomNormFormDG : public NormFormDG<double>
-  {
-  public:
-    CustomNormFormDG(int i, int j) : NormFormDG<double>(i, j)
-    {
-      this->functionType = CoarseSolutions;
-    }
-
-    double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const
-    {
-      double result = double(0);
-      for (int i = 0; i < n; i++)
-        result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i]);
-      return result;
-    }
-  };
-};
-
-bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
-{
-  if(iteration == 0)
-    return true;
-  return false;
-  return error < .001;
-}
 
 // Number of initial uniform mesh refinements.
-int INIT_REF_NUM = 2;
+int INIT_REF_NUM = 1;
 
 // Every UNREF_FREQth time step the mesh is unrefined.
 double UNREF_FREQ = 1e-2;
 
+#ifdef REFERENCE_SOLUTION_APPROACH
+bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
+{
+  return (error < .01);
+}
+
 // Error calculation.
-CustomErrorCalculator errorCalculator(AbsoluteError, 1);
+DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(AbsoluteError, 1);
 // Stopping criterion for an adaptivity step.
 AdaptStoppingCriterionCumulative<double> stoppingCriterion(.6);
 // Initialize refinement selector.
 HOnlySelector<double> selector;
+#else
+#endif
+
 int order_increase = 0;
 int max_p = 0;
 
@@ -134,6 +88,8 @@ int main(int argc, char* argv[])
 {
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
+  Hermes::Mixins::Loggable::set_static_logFile_name("computation.log");
+  PostProcessing::VertexBasedLimiter::wider_bounds_on_boundary = true;
 
 #pragma region 1. Load mesh and initialize spaces.
   // Load the mesh.
@@ -155,10 +111,10 @@ int main(int argc, char* argv[])
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements(0, true);
 
-  mesh->refine_towards_vertex(1, 2);
-  mesh->refine_towards_vertex(2, 2);
-    mesh->refine_all_elements(0, true);
-  
+  mesh->refine_towards_vertex(1, 3);
+  mesh->refine_towards_vertex(2, 3);
+  mesh->refine_all_elements(0, false);
+
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
   SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -218,9 +174,12 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double>  pressure(new PressureFilter(rslns, KAPPA));
   MeshFunctionSharedPtr<double>  velocity(new VelocityFilter(rslns));
 
-  ScalarView pressure_view("Pressure", new WinGeom(0, 0, 600, 300));
-  ScalarView Mach_number_view("Mach number", new WinGeom(650, 0, 600, 300));
-  ScalarView eview("Error - density", new WinGeom(0, 330, 600, 300));
+  ScalarView pressure_view("Pressure", new WinGeom(0, 0, 400, 200));
+  ScalarView Mach_number_view("Mach number", new WinGeom(400, 0, 400, 200));
+  ScalarView eview_element("Error - element", new WinGeom(0, 200, 400, 200));
+  ScalarView ref_element("Refined - element", new WinGeom(400, 200, 400, 200));
+  ScalarView eview_edge("Error - max-edge", new WinGeom(0, 400, 400, 200));
+  ScalarView ref_edge("Refined - max-edge", new WinGeom(400, 400, 400, 200));
   OrderView order_view("Orders", new WinGeom(650, 330, 600, 300));
 #pragma endregion
 
@@ -233,17 +192,18 @@ int main(int argc, char* argv[])
   solver_explicit.set_jacobian_constant();
   wf_explicit.set_current_time_step(time_step_length);
   wf_implicit.set_current_time_step(time_step_length);
-  DiscreteProblemDGAssembler<double>::dg_order = 10;
+  DiscreteProblemDGAssembler<double>::dg_order = 20;
 #pragma endregion
 
+#ifdef REFERENCE_SOLUTION_APPROACH
 #pragma region Adaptivity setup
   Hermes::vector<RefinementSelectors::Selector<double> *> selectors(&selector, &selector, &selector, &selector);
   Adapt<double> adaptivity(space_rho, &errorCalculator, &stoppingCriterion);
 #pragma endregion
+#endif
 
 #pragma region 3.1 Set up reference mesh and spaces.
   Mesh::ReferenceMeshCreator refMeshCreatorFlow(mesh);
-  MeshSharedPtr ref_mesh;
   SpaceSharedPtr<double> ref_space_rho;
   SpaceSharedPtr<double> ref_space_rho_v_x;
   SpaceSharedPtr<double> ref_space_rho_v_y;
@@ -264,23 +224,44 @@ int main(int argc, char* argv[])
     // Info.
     logger.info("Time step %d, time %3.5f, time step %3.5f.", iteration, t, time_step_length);
 
+    if(iteration == 100)
+      CFL_NUMBER *= 1.5;
+
+    if(iteration == 200)
+      CFL_NUMBER *= 1.5;
+
+    if(iteration == 300)
+      CFL_NUMBER *= 1.25;
+
 #pragma region 4.1. Periodic global derefinements.
     if (iteration > 1 && t > LAST_UNREF + UNREF_FREQ)
     {
       LAST_UNREF = t;
       Hermes::Mixins::Loggable::Static::info("Global mesh derefinement.");
-      space_rho->unrefine_all_mesh_elements(true);
-      space_rho->adjust_element_order(-1, P_INIT);
-      space_rho_v_x->adjust_element_order(-1, P_INIT);
-      space_rho_v_y->adjust_element_order(-1, P_INIT);
-      space_e->adjust_element_order(-1, P_INIT);
+      if(order_increase > 0)
+      {
+        space_rho->unrefine_all_mesh_elements(true);
+        space_rho->adjust_element_order(-1, P_INIT, 0, 0);
+        space_rho_v_x->adjust_element_order(-1, P_INIT, 0, 0);
+        space_rho_v_y->adjust_element_order(-1, P_INIT, 0, 0);
+        space_e->adjust_element_order(-1, P_INIT, 0, 0);
+      }
+      else
+      {
+        mesh->unrefine_all_elements();
+        space_rho->set_uniform_order(P_INIT);
+        space_rho_v_x->set_uniform_order(P_INIT);
+        space_rho_v_y->set_uniform_order(P_INIT);
+        space_e->set_uniform_order(P_INIT);
+      }
+      Space<double>::assign_dofs(spaces);
 
       const_space_rho->set_uniform_order(0);
       const_space_rho_v_x->set_uniform_order(0);
       const_space_rho_v_y->set_uniform_order(0);
       const_space_e->set_uniform_order(0);
 
-      Space<double>::assign_dofs(spaces);
+      Space<double>::assign_dofs(const_spaces);
     }
 #pragma endregion
 
@@ -289,7 +270,12 @@ int main(int argc, char* argv[])
     do
     {
 #pragma region 7.1 Create reference mesh and spaces.
-      ref_mesh = refMeshCreatorFlow.create_ref_mesh();
+#ifdef REFERENCE_SOLUTION_APPROACH
+      MeshSharedPtr ref_mesh = refMeshCreatorFlow.create_ref_mesh();
+#else
+      MeshSharedPtr ref_mesh(new Mesh);
+      ref_mesh->copy(mesh);
+#endif
       Space<double>::ReferenceSpaceCreator refSpaceCreatorRho(space_rho, ref_mesh, order_increase);
       Space<double>::ReferenceSpaceCreator refSpaceCreatorRhoVx(space_rho_v_x, ref_mesh, order_increase);
       Space<double>::ReferenceSpaceCreator refSpaceCreatorRhoVy(space_rho_v_y, ref_mesh, order_increase);
@@ -328,8 +314,8 @@ int main(int argc, char* argv[])
         // 1 - solve implicit.
         solver_implicit.solve();
         double* mean_values = new double[ref_ndof];
-        Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_ref_spaces, prev_slns);
-        OGProjection<double>::project_global(ref_spaces, prev_slns, mean_values);
+        Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_ref_spaces, updated_prev_slns);
+        OGProjection<double>::project_global(ref_spaces, updated_prev_slns, mean_values);
 
         // 2 - Update the mean values.
         Space<double>::assign_dofs(ref_spaces);
@@ -353,7 +339,7 @@ int main(int argc, char* argv[])
         }
 
         // Solve explicit.
-        Solution<double>::vector_to_solutions(previous_sln_vector, ref_spaces, prev_slns);
+        Solution<double>::vector_to_solutions(previous_sln_vector, ref_spaces, updated_prev_slns);
 
         // Clean up.
         delete [] previous_sln_vector;
@@ -367,32 +353,13 @@ int main(int argc, char* argv[])
         Solution<double>::vector_to_solutions(solver_explicit.get_sln_vector(), ref_spaces, rslns);
       else
       {
-        PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, ref_spaces, solver_explicit.get_sln_vector(), max_p);
+        PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, ref_spaces, solver_explicit.get_sln_vector(), 1);
         limiter->get_solutions(rslns);
         if(limit_velocities)
           limitVelocityAndEnergy(ref_spaces, limiter, rslns);
         delete limiter;
       }
 #pragma endregion
-
-#pragma region 7.4 Project to coarse mesh -> error estimation -> space adaptivity
-      // Project the fine mesh solution onto the coarse mesh.
-      Hermes::Mixins::Loggable::Static::info("\t\tProjecting reference solution on coarse mesh.");
-      OGProjection<double>::project_global(spaces, rslns, slns, Hermes::vector<NormType>(HERMES_L2_NORM, HERMES_L2_NORM, HERMES_L2_NORM, HERMES_L2_NORM)); 
-
-      // Calculate element errors and total error estimate.
-      errorCalculator.calculate_errors(sln_rho, rsln_rho);
-      double density_error = errorCalculator.get_error_squared(0) * 100;
-      if(iteration)
-      {
-        std::cout << errorCalculator.get_element_error_squared(0, 38) << std::endl;
-        std::cout << errorCalculator.get_element_error_squared(0, 21) << std::endl;
-      }
-      if(HERMES_VISUALIZATION)
-        eview.show(errorCalculator.get_errorMeshFunction(0));
-
-      // Report results.
-      logger.info("\t\tDensity error: %g%%.", density_error);
 
 #pragma region 7.3.1 Visualization
       if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
@@ -402,9 +369,8 @@ int main(int argc, char* argv[])
         {        
           pressure->reinit();
           Mach_number->reinit();
-          pressure_view.show(slns[0]);
+          pressure_view.show(pressure);
           Mach_number_view.show(Mach_number);
-          View::wait_for_keypress();
         }
         // Output solution in VTK format.
         if(VTK_VISUALIZATION)
@@ -419,10 +385,32 @@ int main(int argc, char* argv[])
           lin.save_solution_vtk(Mach_number, filename, "Velocity", false);
           Orderizer ord;
           sprintf(filename, "Mesh-%i.vtk", iteration - 1);
-          ord.save_mesh_vtk(ref_space_rho, filename);
+          ord.save_mesh_vtk(ref_spaces[0], filename);
         }
       }
 #pragma endregion
+
+      CFL.calculate(solver_explicit.get_sln_vector(), ref_spaces, time_step_length);
+
+#ifdef REFERENCE_SOLUTION_APPROACH
+#pragma region 7.4 Project to coarse mesh -> error estimation -> space adaptivity
+      // Project the fine mesh solution onto the coarse mesh.
+      Hermes::Mixins::Loggable::Static::info("\t\tProjecting reference solution on coarse mesh.");
+      OGProjection<double>::project_global(spaces, rslns, slns, Hermes::vector<NormType>(HERMES_L2_NORM, HERMES_L2_NORM, HERMES_L2_NORM, HERMES_L2_NORM)); 
+
+      // Calculate element errors and total error estimate.
+      errorCalculator.calculate_errors(sln_rho, rsln_rho);
+      double density_error = errorCalculator.get_error_squared(0) * 100;
+      if(iteration)
+      {
+        std::cout << errorCalculator.get_element_error_squared(0, 38) << std::endl;
+        std::cout << errorCalculator.get_element_error_squared(0, 21) << std::endl;
+      }
+      if(HERMES_VISUALIZATION)
+        eview_element.show(errorCalculator.get_errorMeshFunction(0));
+
+      // Report results.
+      logger.info("\t\tDensity error: %g%%.", density_error);
 
       // If err_est too large, adapt the mesh.
       if (adaptivityErrorStop(iteration, t, density_error, ref_ndof))
@@ -447,14 +435,143 @@ int main(int argc, char* argv[])
         const_space_e->set_uniform_order(0);
 
         Space<double>::assign_dofs(const_spaces);
-        as++;
       }
 #pragma endregion
+
+#else
+      DensityErrorCalculator eC;
+      double element_error_threshold = 1e-4;
+      double element_size_threshold = 1e-4;
+      double element_length_threshold = 1e-2;
+      double edge_error_power = -1.0;
+      double edge_error_threshold = 1e-6;
+
+      eC.process(rsln_rho, ref_spaces[0]);
+
+      std::set<int> element_numbers_to_be_refined_0;
+      std::set<int> element_numbers_to_be_refined_1;
+      std::set<int> element_numbers_to_be_refined_2;
+
+      bool* refinements_element = (bool*)calloc(ref_mesh->get_max_element_id(), sizeof(bool));
+      bool* refinements_edge = (bool*)calloc(ref_mesh->get_max_element_id(), sizeof(bool));
+
+      Element* e;
+      for_all_active_elements(e, ref_mesh)
+      {
+        // Adjust errors.
+        double element_size = e->get_area();
+        double element_diam = e->get_diameter();
+        eC.element_errors[e->id] *= element_size;
+
+        for(int edge = 0; edge < e->nvert; edge++)
+          eC.edge_errors[e->id][edge] /= std::pow(element_diam, edge_error_power);
+
+        // Take a look at element sizes.
+        bool element_too_small = false;
+        if(element_size < element_size_threshold)
+          element_too_small = true;
+        for(int edge = 0; edge < e->nvert; edge++)
+        {
+          if(std::abs(e->vn[edge]->x - e->vn[(edge+1)%e->nvert]->x) < element_length_threshold)
+            element_too_small = true;
+          if(std::abs(e->vn[edge]->y - e->vn[(edge+1)%e->nvert]->y) < element_length_threshold)
+            element_too_small = true;
+        }
+        if(element_too_small)
+          continue;
+
+        if(eC.element_errors[e->id] > element_error_threshold)
+        {
+          element_numbers_to_be_refined_0.insert(e->id);
+          refinements_element[e->id] = true;
+          continue;
+        }
+
+        if(e->is_quad())
+        {
+          bool jump_vertical = false;
+          bool jump_horizontal = false;
+          if((eC.edge_errors[e->id][0] > edge_error_threshold) || (eC.edge_errors[e->id][2] > edge_error_threshold))
+            jump_horizontal = true;
+          if((eC.edge_errors[e->id][1] > edge_error_threshold) || (eC.edge_errors[e->id][3] > edge_error_threshold))
+            jump_vertical = true;
+
+          if(!(jump_vertical || jump_horizontal))
+            continue;
+          if(jump_vertical && jump_horizontal)
+            element_numbers_to_be_refined_0.insert(e->id);
+          else if(jump_horizontal)
+            element_numbers_to_be_refined_1.insert(e->id);
+          else if(jump_vertical)
+            element_numbers_to_be_refined_2.insert(e->id);
+          refinements_edge[e->id] = true;
+        }
+        else
+        {
+          for(int edge = 0; edge < 3; edge++)
+            if(eC.edge_errors[e->id][edge] > edge_error_threshold)
+            {
+              element_numbers_to_be_refined_0.insert(e->id);
+              refinements_edge[e->id] = true;
+            }
+        }
+      }
+
+      double* max_errors_edge = new double[ref_mesh->get_max_element_id()];
+      memset(max_errors_edge, 0, sizeof(double) * ref_mesh->get_max_element_id());
+      for_all_active_elements(e, ref_mesh)
+      {
+        for(int j = 0; j < e->nvert; j++)
+          if(eC.edge_errors[e->id][j] > max_errors_edge[e->id])
+            max_errors_edge[e->id] = eC.edge_errors[e->id][j];
+      }
+
+      MeshFunctionSharedPtr<double> error_fn_element(new ExactSolutionConstantArray<double, double>(ref_mesh, eC.element_errors));
+      MeshFunctionSharedPtr<double> error_fn_edge(new ExactSolutionConstantArray<double, double>(ref_mesh, max_errors_edge));
+
+      MeshFunctionSharedPtr<double> ref_fn_element(new ExactSolutionConstantArray<double, bool>(ref_mesh, refinements_element));
+      MeshFunctionSharedPtr<double> ref_fn_edge(new ExactSolutionConstantArray<double, bool>(ref_mesh, refinements_edge));
+
+      ref_element.show(ref_fn_element);
+      ref_edge.show(ref_fn_edge);
+
+      eview_element.show(error_fn_element);
+      eview_edge.show(error_fn_edge);
+
+      delete [] max_errors_edge;
+      ::free(refinements_element);
+      ::free(refinements_edge);
+
+      if(element_numbers_to_be_refined_0.size() == 0 &&
+        element_numbers_to_be_refined_1.size() == 0 &&
+        element_numbers_to_be_refined_2.size() == 0)
+        break;
+      else
+      {
+        as++;
+
+        for(std::set<int>::iterator it = element_numbers_to_be_refined_0.begin(); it != element_numbers_to_be_refined_0.end(); it++)
+          mesh->refine_element_id(*it, 0);
+        for(std::set<int>::iterator it = element_numbers_to_be_refined_1.begin(); it != element_numbers_to_be_refined_1.end(); it++)
+          mesh->refine_element_id(*it, 1);
+        for(std::set<int>::iterator it = element_numbers_to_be_refined_2.begin(); it != element_numbers_to_be_refined_2.end(); it++)
+          mesh->refine_element_id(*it, 2);
+
+        space_rho->set_uniform_order(P_INIT);
+        space_rho_v_x->set_uniform_order(P_INIT);
+        space_rho_v_y->set_uniform_order(P_INIT);
+        space_e->set_uniform_order(P_INIT);
+        Space<double>::assign_dofs(spaces);
+
+        const_space_rho->set_uniform_order(0);
+        const_space_rho_v_x->set_uniform_order(0);
+        const_space_rho_v_y->set_uniform_order(0);
+        const_space_e->set_uniform_order(0);
+        Space<double>::assign_dofs(const_spaces);
+      }
+#endif
     }
     while (true);
-
-    // Calculate time step according to CFL condition.
-    CFL.calculate(solver_explicit.get_sln_vector(), ref_spaces, time_step_length);
 
     wf_explicit.set_current_time_step(time_step_length);
     wf_implicit.set_current_time_step(time_step_length);
