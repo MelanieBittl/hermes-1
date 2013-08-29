@@ -21,11 +21,11 @@ using namespace Hermes::Hermes2D::Views;
 // Set to "true" to enable Hermes OpenGL visualization. 
 const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 100;
 
-bool SHOCK_CAPTURING = false;
+bool SHOCK_CAPTURING = true;
 const EulerLimiterType limiter_type = VertexBased;
 bool limit_velocities = false;
 
@@ -37,9 +37,12 @@ int INIT_REF_NUM = 4;
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
 // CFL value.
-double CFL_NUMBER = 1.0;
+double CFL_NUMBER = 10.0;
 // Kappa.
 const double KAPPA = 1.4;
+
+// Set up CFL calculation class.
+CFLCalculation CFL(CFL_NUMBER, KAPPA);
 
 // Weak forms.
 #include "forms_explicit.cpp"
@@ -68,9 +71,9 @@ const std::string BDY_SOLID_WALL_TOP = "4";
 
 int main(int argc, char* argv[])
 {
-  HermesCommonApi.set_integral_param_value(numThreads, 1);
-  // Set up CFL calculation class.
-  CFLCalculation CFL(CFL_NUMBER, KAPPA);
+  HermesCommonApi.set_integral_param_value(numThreads, 16);
+  PostProcessing::VertexBasedLimiter::wider_bounds_on_boundary = true;
+
 
   Hermes::Mixins::Loggable logger(true);
   logger.set_logFile_name("computation.log");
@@ -92,6 +95,8 @@ int main(int argc, char* argv[])
   // Perform initial mesh refinements.
   mesh->refine_element_id(1, 2);
   mesh->refine_all_elements(1);
+  mesh->refine_towards_boundary(BDY_SOLID_WALL_BOTTOM, 2, false);
+  
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements();
 
@@ -179,8 +184,8 @@ int main(int argc, char* argv[])
       // 1 - solve implicit.
       solver_implicit.solve();
       double* mean_values = new double[ndof];
-      Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_spaces, prev_slns);
-      OGProjection<double>::project_global(spaces, prev_slns, mean_values);
+      Solution<double>::vector_to_solutions(solver_implicit.get_sln_vector(), const_spaces, updated_prev_slns);
+      OGProjection<double>::project_global(spaces, updated_prev_slns, mean_values);
 
       // 2 - Update the mean values.
       Space<double>::assign_dofs(spaces);
@@ -204,7 +209,7 @@ int main(int argc, char* argv[])
       }
 
       // Solve explicit.
-      Solution<double>::vector_to_solutions(previous_sln_vector, spaces, prev_slns);
+      Solution<double>::vector_to_solutions(previous_sln_vector, spaces, updated_prev_slns);
 
       // Clean up.
       delete [] previous_sln_vector;
@@ -226,10 +231,7 @@ int main(int argc, char* argv[])
     }
 #pragma endregion
 
-#pragma region 4.1. Visualization
-    if(((iteration - 1) % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
-    {
-      // Hermes visualization.
+     // Hermes visualization.
       if(HERMES_VISUALIZATION)
       {        
         Mach_number->reinit();
@@ -238,6 +240,10 @@ int main(int argc, char* argv[])
         pressure_view.show(pressure);
         M_view.show(Mach_number);
       }
+ 
+#pragma region 4.1. Visualization
+    if(((iteration - 1) % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
+    {
       // Output solution in VTK format.
       if(VTK_VISUALIZATION)
       {
