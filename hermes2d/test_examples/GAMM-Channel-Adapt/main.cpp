@@ -1,7 +1,7 @@
 #include "hermes2d.h"
 #include "../euler_util.h"
 
-double CFL_NUMBER = 10.0;
+double CFL_NUMBER = 20.0;
 
 #define REFERENCE_SOLUTION_APPROACH
 
@@ -20,9 +20,9 @@ CFLCalculation CFL(CFL_NUMBER, KAPPA);
 // Set to "true" to enable Hermes OpenGL visualization. 
 const bool HERMES_VISUALIZATION = true;
 // Set to "true" to enable VTK output.
-const bool VTK_VISUALIZATION = false;
+const bool VTK_VISUALIZATION = true;
 // Set visual output for every nth step.
-const unsigned int EVERY_NTH_STEP = 1;
+const unsigned int EVERY_NTH_STEP = 100;
 
 // Equation parameters.
 // Exterior pressure (dimensionless).
@@ -69,7 +69,10 @@ double UNREF_FREQ = 1e-2;
 #ifdef REFERENCE_SOLUTION_APPROACH
 bool adaptivityErrorStop(int iteration, double time, double error, int ref_ndof)
 {
-  return (error < .01);
+  if(time < 0.1)
+    return (error < .005);
+  else
+    return (error < .0005);
 }
 
 // Error calculation.
@@ -111,9 +114,9 @@ int main(int argc, char* argv[])
   for (int i = 0; i < INIT_REF_NUM; i++)
     mesh->refine_all_elements(0, true);
 
-  mesh->refine_towards_vertex(1, 3);
-  mesh->refine_towards_vertex(2, 3);
-  mesh->refine_all_elements(0, false);
+  mesh->refine_towards_vertex(1, 2);
+  mesh->refine_towards_vertex(2, 2);
+  mesh->refine_all_elements(0, true);
 
   // Initialize boundary condition types and spaces with default shapesets.
   SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT, new L2ShapesetTaylor));
@@ -361,17 +364,18 @@ int main(int argc, char* argv[])
       }
 #pragma endregion
 
+      // Hermes visualization.
+      if(HERMES_VISUALIZATION)
+      {        
+        pressure->reinit();
+        Mach_number->reinit();
+        pressure_view.show(pressure);
+        Mach_number_view.show(Mach_number);
+      }
+        
 #pragma region 7.3.1 Visualization
       if((iteration % EVERY_NTH_STEP == 0) || (t > TIME_INTERVAL_LENGTH - (time_step_length + Hermes::Epsilon)))
       {
-        // Hermes visualization.
-        if(HERMES_VISUALIZATION)
-        {        
-          pressure->reinit();
-          Mach_number->reinit();
-          pressure_view.show(pressure);
-          Mach_number_view.show(Mach_number);
-        }
         // Output solution in VTK format.
         if(VTK_VISUALIZATION)
         {

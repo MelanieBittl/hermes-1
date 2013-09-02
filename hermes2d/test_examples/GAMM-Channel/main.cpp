@@ -37,7 +37,7 @@ int INIT_REF_NUM = 4;
 double time_step_length = 1e-6;
 double TIME_INTERVAL_LENGTH = 20.;
 // CFL value.
-double CFL_NUMBER = 10.0;
+double CFL_NUMBER = 2.0;
 // Kappa.
 const double KAPPA = 1.4;
 
