@@ -2,7 +2,7 @@
 #include "../euler_util.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 7;
+const int initialRefinementsCount = 6;
 const TimeSteppingType timeSteppingType = ImplicitEuler;
 const SolvedExample solvedExample = CircularConvection;
 const EulerLimiterType limiter_type = VertexBased;
@@ -23,6 +23,7 @@ int main(int argc, char* argv[])
 {
   // test();
   Hermes::Mixins::Loggable::set_static_logFile_name("logfile.h2d");
+  HermesCommonApi.set_integral_param_value(numThreads, 16);
 
   switch(solvedExample)
   {
@@ -69,6 +70,7 @@ int main(int argc, char* argv[])
 
   // Previous time level solution (initialized by the initial condition).
   ExactSolutionScalar<double>* previous_initial_condition;
+  ExactSolutionScalar<double>* updated_previous_initial_condition;
   ExactSolutionScalar<double>* initial_condition;
   switch(solvedExample)
   {
@@ -83,12 +85,13 @@ int main(int argc, char* argv[])
   case CircularConvection:
     initial_condition = new ZeroSolution<double>(mesh);
     previous_initial_condition = new ZeroSolution<double>(mesh);
+    updated_previous_initial_condition = new ZeroSolution<double>(mesh);
     break;
   }
 
   MeshFunctionSharedPtr<double>previous_solution(previous_initial_condition);
   MeshFunctionSharedPtr<double>previous_solution_time_step(initial_condition);
-  MeshFunctionSharedPtr<double>updated_previous_solution_time_step(initial_condition);
+  MeshFunctionSharedPtr<double>updated_previous_solution_time_step(updated_previous_initial_condition);
   MeshFunctionSharedPtr<double>exact_solution_circular(new InitialConditionCircularConvection(mesh));
 
   // Visualization.
@@ -155,7 +158,6 @@ int main(int argc, char* argv[])
     }
     else if(timeSteppingType == ImplicitEuler)
     {
-      if(time_step)
       {
         // 0th - step
         double* previous_sln_vector = new double[ndofs];
@@ -167,7 +169,7 @@ int main(int argc, char* argv[])
         mean_values = new double[ndofs];
         Solution<double>::vector_to_solution(solver_implicit.get_sln_vector(), const_space, updated_previous_solution_time_step);
         OGProjection<double>::project_global(space, updated_previous_solution_time_step, mean_values);
-
+        
         // 2 - Update the mean values.
         Element* e;
         for_all_active_elements(e, mesh)
@@ -191,14 +193,19 @@ int main(int argc, char* argv[])
         // 3 - Solve explicit.
         Solution<double>::vector_to_solution(previous_sln_vector, space, updated_previous_solution_time_step);
         delete [] previous_sln_vector;
+        
       }
+      
       solver_explicit.solve();
+      
       if(polynomialDegree)
       {
         PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, space, solver_explicit.get_sln_vector(), polynomialDegree);
         solution->copy(limiter->get_solution());
         delete limiter;
       }
+      else
+        Solution<double>::vector_to_solution(solver_explicit.get_sln_vector(), space, solution);
     }
 
     if(HermesView)
