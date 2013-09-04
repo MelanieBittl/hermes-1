@@ -230,7 +230,7 @@ public:
   {
   };
 
-  double CustomVectorFormSurf::value(int n, double *wt, Func<double> **u_ext, Func<double> *v,
+  double value(int n, double *wt, Func<double> **u_ext, Func<double> *v,
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
@@ -247,13 +247,13 @@ public:
     return -result * wf->get_current_time_step();
   }
 
-  Ord CustomVectorFormSurf::ord(int n, double *wt, Func<Ord> **u_ext, Func<Ord> *v,
+  Ord ord(int n, double *wt, Func<Ord> **u_ext, Func<Ord> *v,
     Geom<Ord> *e, Func<Ord> **ext) const
   {
     return ext[this->ext_bnd]->val[0] * v->val[0];
   }
 
-  VectorFormSurf<double>* CustomVectorFormSurf::clone() const
+  VectorFormSurf<double>* clone() const
   {
     return new CustomVectorFormSurf(*this);
   }

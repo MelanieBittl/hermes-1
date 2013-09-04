@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
     {
       solution_view.set_title("Solution - time step: %i, time: %f.", time_step, current_time);
       solution_view.show(solution);
-      DefaultErrorCalculator<double, NormType::HERMES_L2_NORM> errorCalculator(CalculatedErrorType::RelativeErrorToGlobalNorm, 1);
+      DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(RelativeErrorToGlobalNorm, 1);
       errorCalculator.calculate_errors(solution, exact_solution_circular, true);
       std::cout << "Error: " << errorCalculator.get_error_squared(0) << std::endl;
 
