@@ -46,9 +46,9 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
 
   // Numerical flux - inner-edge element outlet - matrix
-  add_matrix_form_DG(new CustomMatrixFormInterface(0, 0, false, true));
+  add_matrix_form_DG(new CustomMatrixFormInterface(0, 0, false, true, false));
   // Numerical flux - inner-edge inlet - mean values - rhs
-  add_vector_form_DG(new CustomVectorFormInterface(0, 0, true, false));
+  add_vector_form_DG(new CustomVectorFormInterface(0, 0, false, false));
   // Numerical flux - inner-edge inlet+outlet - derivatives - rhs
   add_vector_form_DG(new CustomVectorFormInterface(0, 1, true, true));
 
@@ -89,7 +89,7 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
   
   // Numerical flux - inner-edge element outlet - matrix
-  add_matrix_form_DG(new CustomMatrixFormInterface(0, 0, false, true));
+  add_matrix_form_DG(new CustomMatrixFormInterface(0, 0, false, true, true));
   // Numerical flux - inner-edge inlet+outlet - mean values - rhs
   add_vector_form_DG(new CustomVectorFormInterface(0, 0, true, true));
   // Numerical flux - inner-edge inlet - derivatives - rhs

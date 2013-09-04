@@ -134,17 +134,20 @@ public:
 class CustomMatrixFormInterface : public MatrixFormDG<double>
 {
 public:
-  CustomMatrixFormInterface(int i, int j, bool on_K_in, bool on_K_out) : MatrixFormDG<double>(i, j), on_K_in(on_K_in), on_K_out(on_K_out)
+  CustomMatrixFormInterface(int i, int j, bool on_K_in, bool on_K_out, bool local) : MatrixFormDG<double>(i, j), on_K_in(on_K_in), on_K_out(on_K_out), local(local)
   {
   };
 
   double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v,
     Geom<double> *e, DiscontinuousFunc<double> **ext) const
   {
-    if(!on_K_in || !on_K_out)
-      if(!((v->fn_central && u->fn_central) || (!v->fn_central && !u->fn_central)))
+    if(local)
+    {
+      if(u->fn_central == NULL && v->fn_central != NULL)
         return 0.;
-
+      if(u->fn_central != NULL && v->fn_central == NULL)
+        return 0.;
+    }
     double result = 0.;
     for (int i = 0; i < n; i++) 
     {
@@ -182,6 +185,7 @@ public:
   }
   bool on_K_in;
   bool on_K_out;
+  bool local;
 };
 
 class CustomMatrixFormSurf : public MatrixFormSurf<double>
@@ -215,6 +219,7 @@ public:
   {
     return new CustomMatrixFormSurf(*this);
   }
+
 };
 
 class CustomVectorFormSurf : public VectorFormSurf<double>

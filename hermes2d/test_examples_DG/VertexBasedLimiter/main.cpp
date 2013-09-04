@@ -2,7 +2,7 @@
 #include "../euler_util.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 7;
+const int initialRefinementsCount = 5;
 const TimeSteppingType timeSteppingType = ImplicitEuler;
 const SolvedExample solvedExample = CircularConvection;
 const EulerLimiterType limiter_type = VertexBased;
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
   weakform_explicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, exact_solution_circular));
   weakform_explicit.set_current_time_step(time_step_length);
   LinearSolver<double> solver_implicit(&weakform_implicit, const_space);
-  LinearSolver<double> solver_explicit(&weakform_explicit, full_space);
+  LinearSolver<double> solver_explicit(&weakform_explicit, space);
 #pragma endregion
 
   // Solution.
@@ -142,22 +142,23 @@ int main(int argc, char* argv[])
   for(int time_step = 0; time_step <= number_of_steps; time_step++)
   { 
     std::cout << "Iteration " << time_step << std::endl;
-    //solver_implicit.solve();
-    //Solution<double>::vector_to_solution(solver_implicit.get_sln_vector(), const_space, previous_mean_values);
+    solver_implicit.solve();
+    Solution<double>::vector_to_solution(solver_implicit.get_sln_vector(), const_space, previous_mean_values);
 
     if(polynomialDegree)
     {
       solver_explicit.solve();
-      //double* merged_sln = merge_slns(solver_implicit.get_sln_vector(), const_space,solver_explicit.get_sln_vector(), space, full_space);
+      double* merged_sln = merge_slns(solver_implicit.get_sln_vector(), const_space,solver_explicit.get_sln_vector(), space, full_space);
 
-      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, full_space, solver_explicit.get_sln_vector(), polynomialDegree);
+      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, full_space, merged_sln, polynomialDegree);
       solution->copy(limiter->get_solution());
-      //for(int i = 0; i < full_space->get_num_dofs(); i++)
-      //  if(!(i%3))
-      //    limiter->get_solution_vector()[i] = 0;
+      for(int i = 0; i < full_space->get_num_dofs(); i++)
+        if(!(i%3))
+          limiter->get_solution_vector()[i] = 0;
       Solution<double>::vector_to_solution(limiter->get_solution_vector(), full_space, previous_derivatives);
       delete limiter;
-      //delete [] merged_sln;
+    
+      delete [] merged_sln;
     }
     else
     {
