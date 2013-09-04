@@ -27,7 +27,7 @@ static double advection_term_circular_convection(double x, double y, double vx, 
 
 scalar_product_with_advection_direction advection_term;
 
-ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet) : WeakForm<double>(1)
+ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1)
 {
   switch(solvedExample)
   {
@@ -54,6 +54,7 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
 
   // No convection - test functions have zero gradient
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
+  add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
 
   if(add_inlet)
   {
@@ -70,7 +71,7 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   
 }
 
-ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType timeSteppingType, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet) : WeakForm<double>(1) 
+ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType timeSteppingType, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
 {
   switch(solvedExample)
   {
@@ -107,9 +108,11 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType
 
   // Convective term - matrix
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
+  add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
   // Convective term - rhs
   add_vector_form(new CustomVectorFormVolConvection(0, 0));
-
+  add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
+  
   // Mass matrix - rhs
   add_vector_form(new CustomVectorFormVol(0, 1, 1.));
 }

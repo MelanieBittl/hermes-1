@@ -31,13 +31,13 @@ extern scalar_product_with_advection_direction advection_term;
 class ImplicitWeakForm : public WeakForm<double>
 {
 public:
-  ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "");
+  ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0.);
 };
 
 class ExplicitWeakForm  : public WeakForm<double>     
 {
 public:
-  ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType timeSteppingType, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "");
+  ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType timeSteppingType, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0.);
 };
 
 class ExplicitWeakFormLocal  : public WeakForm<double>     
@@ -72,6 +72,35 @@ public:
   {
     return new CustomMatrixFormVolConvection(*this);
   }
+};
+
+class CustomMatrixFormVolDiffusion : public MatrixFormVol<double>   
+{
+public:
+  CustomMatrixFormVolDiffusion(int i, int j, double diffusivity) : MatrixFormVol<double>(i, j), diffusivity(diffusivity) {}
+
+
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+    Func<double> *v, Geom<double> *e, Func<double>  **ext) const                  
+  {
+    double result = 0.;
+    for (int i = 0; i < n; i++)
+      result += wt[i] * (u->dx[i] * v->dx[i] + u->dy[i] * v->dy[i]);
+    return result * wf->get_current_time_step() * diffusivity;
+  }
+
+  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+    Geom<Ord> *e, Func<Ord> **ext) const 
+  {
+    return u->dx[0] * v->dx[0] + u->dy[0] * v->dy[0];
+  }
+
+  MatrixFormVol<double>* clone() const
+  {
+    return new CustomMatrixFormVolDiffusion(*this);
+  }
+  
+  double diffusivity;
 };
 
 class CustomMatrixFormVol : public MatrixFormVol<double>   
@@ -329,7 +358,34 @@ public:
   int ext_i;
 };
 
+class CustomVectorFormVolDiffusion : public VectorFormVol<double>   
+{
+public:
 
+  CustomVectorFormVolDiffusion(int i, int ext_i, double diffusivity) : VectorFormVol<double>(i), ext_i(ext_i), diffusivity(diffusivity)
+  {
+  }
+
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>  **ext) const                  
+  {
+    double result = 0.;
+    for (int i = 0; i < n; i++)
+      result += wt[i] * (ext[ext_i]->dx[i] * v->dx[i] + ext[ext_i]->dy[i] * v->dy[i]);
+    return -result * wf->get_current_time_step() * diffusivity;
+  }
+
+  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const 
+  {
+    return ext[ext_i]->val[0] * v->dx[0] * e->x[0];
+  }
+
+  VectorFormVol<double>* clone() const
+  {
+    return new CustomVectorFormVolDiffusion(*this);
+  }
+  int ext_i;
+  double diffusivity;
+};
 
 
 class InitialConditionAdvectedCube : public ExactSolutionScalar<double>

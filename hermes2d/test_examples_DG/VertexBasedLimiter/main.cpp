@@ -14,6 +14,8 @@ double time_step_length;
 double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
+double diffusivity = 1e-3;
+
 //int main(int argc, char* argv[])
 //{
 //  return test();
@@ -122,10 +124,10 @@ int main(int argc, char* argv[])
   ScalarView solution_view("Solution", new WinGeom(520, 10, 500, 500));
 
 #pragma region ImplicitEuler
-  ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Bdy");
+  ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Bdy", diffusivity);
   weakform_implicit.set_current_time_step(time_step_length);
   weakform_implicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, exact_solution_circular));
-  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, true, "Inlet", "Bdy");
+  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, true, "Inlet", "Bdy", diffusivity);
   weakform_explicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, exact_solution_circular));
   weakform_explicit.set_current_time_step(time_step_length);
   LinearSolver<double> solver_implicit(&weakform_implicit, const_space);
