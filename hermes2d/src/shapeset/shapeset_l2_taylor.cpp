@@ -195,7 +195,7 @@ namespace Hermes
     {
       return 0.;
     }
-    
+
     static double taylor_dy_4_tri(double x, double y)
     {
       return ((2. * y) + (2. * minus_triangle_y_c)) / (2. * ELEMENT_DELTA_Y * ELEMENT_DELTA_Y);
@@ -245,7 +245,7 @@ namespace Hermes
     {
       return y / (2 * ELEMENT_DELTA_X * ELEMENT_DELTA_Y);
     }
-    
+
     static double taylor_dy_5_tri(double x, double y)
     {
       return (x + minus_triangle_x_c) / (2 * ELEMENT_DELTA_X * ELEMENT_DELTA_Y);
@@ -328,12 +328,16 @@ namespace Hermes
     Shapeset::shape_fn_t* mode_shape_fn_table_dyy[1]  = { fn_dyy };
 
     static int qb_0[] = { 0, };
-    static int qb_1[] = { 0, 1, 2, };
-    static int qb_2[] = { 0, 1, 2, 3, 4, 5 };
+    static int qb_1_hierarchic[] = { 0, 1, 2, };
+    static int qb_1[] = { 1, 2, };
+    static int qb_2_hierarchic[] = { 0, 1, 2, 3, 4, 5 };
+    static int qb_2[] = { 1, 2, 3, 4, 5 };
 
+    int* mode_bubble_indices_hierarchic[3] = {  qb_0,   qb_1_hierarchic,  qb_2_hierarchic };
     int* mode_bubble_indices[3] = {  qb_0,   qb_1,  qb_2 };
 
-    int mode_bubble_count[3] = { 1,  3,  6 };
+    int mode_bubble_count_hierarchic[3] = { 1,  3,  6 };
+    int mode_bubble_count[3] = { 1,  2,  5 };
 
     int mode_vertex_indices[4] = { -1, -1, -1, -1 };
 
@@ -403,10 +407,22 @@ namespace Hermes
       mode_edge_indices
     };
 
+    static int** s_bubble_indices_hierarchic[2] =
+    {
+      mode_bubble_indices_hierarchic,
+      mode_bubble_indices_hierarchic
+    };
+
     static int** s_bubble_indices[2] =
     {
       mode_bubble_indices,
       mode_bubble_indices
+    };
+
+    static int* s_bubble_count_hierarchic[2] =
+    {
+      mode_bubble_count_hierarchic,
+      mode_bubble_count_hierarchic
     };
 
     static int* s_bubble_count[2] =
@@ -421,7 +437,7 @@ namespace Hermes
       mode_index_to_order
     };
 
-    L2ShapesetTaylor::L2ShapesetTaylor()
+    L2ShapesetTaylor::L2ShapesetTaylor(bool hierarchic)
     {
       shape_table[0] = shape_fn_table;
       shape_table[1] = shape_fn_table_dx;
@@ -432,8 +448,16 @@ namespace Hermes
 
       vertex_indices = s_vertex_indices;
       edge_indices = s_edge_indices;
-      bubble_indices = s_bubble_indices;
-      bubble_count = s_bubble_count;
+      if(hierarchic)
+        bubble_indices = s_bubble_indices_hierarchic;
+      else
+        bubble_indices = s_bubble_indices;
+
+      if(hierarchic)
+        bubble_count = s_bubble_count_hierarchic;
+      else
+        bubble_count = s_bubble_count;
+
       index_to_order = s_index_to_order;
 
       ref_vert[0][0][0] = -1.0;
@@ -482,7 +506,7 @@ namespace Hermes
       else
         return Shapeset::get_num_bubbles(order, mode);
     }
-    
+
     const int L2ShapesetTaylor::max_index[2] = { 5, 5 };
     int L2ShapesetTaylor::get_max_index(ElementMode2D mode) { return max_index[mode]; }
   }
