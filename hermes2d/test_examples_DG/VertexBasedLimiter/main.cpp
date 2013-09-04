@@ -14,7 +14,7 @@ double time_step_length;
 double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
-double diffusivity = 1e-3;
+double diffusivity = 1e-4;
 
 //int main(int argc, char* argv[])
 //{
@@ -41,6 +41,8 @@ double* merge_slns(double* solution_vector_coarse, SpaceSharedPtr<double> space_
 
 int main(int argc, char* argv[])
 {
+  if(argc > 1)
+    diffusivity = atof(argv[1]);
   // test();
   Hermes::Mixins::Loggable::set_static_logFile_name("logfile.h2d");
   HermesCommonApi.set_integral_param_value(numThreads, 16);
