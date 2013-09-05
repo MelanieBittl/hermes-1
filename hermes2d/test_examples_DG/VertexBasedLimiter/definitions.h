@@ -21,7 +21,8 @@ enum SolvedExample
   AdvectedCube,
   SolidBodyRotation,
   CircularConvection,
-  MovingPeak
+  MovingPeak,
+  Benchmark
 };
 
 extern double upwind_flux(double u_cent, double u_neib, double a_dot_n);
@@ -601,10 +602,10 @@ public:
   MeshFunction<double>* clone() const;
 };
 
-class InitialConditionCircularConvection : public ExactSolutionScalar<double>
+class ExactSolutionCircularConvection : public ExactSolutionScalar<double>
 {
 public:
-  InitialConditionCircularConvection(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh) {};
+  ExactSolutionCircularConvection(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh) {};
 
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
@@ -634,6 +635,38 @@ public:
   double current_time;
   double diffusivity, x_hat, y_hat;
 };
+
+class InitialConditionBenchmark : public ExactSolutionScalar<double>
+{
+public:
+  InitialConditionBenchmark(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh) {};
+  
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+  virtual Ord ord(double x, double y) const ;
+
+  MeshFunction<double>* clone() const;
+};
+
+class ExactSolutionBenchmark : public ExactSolutionScalar<double>
+{
+public:
+  ExactSolutionBenchmark(MeshSharedPtr mesh, double diffusivity, double time) : ExactSolutionScalar<double>(mesh), diffusivity(diffusivity), time(time) {};
+  
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+  virtual Ord ord(double x, double y) const ;
+
+  MeshFunction<double>* clone() const;
+  double sigma() const;
+  double diffusivity;
+  double time;
+};
+
 #pragma endregion
 
 

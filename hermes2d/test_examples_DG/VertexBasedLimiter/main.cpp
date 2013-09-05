@@ -4,7 +4,7 @@
 const int polynomialDegree = 1;
 const int initialRefinementsCount = 7;
 const TimeSteppingType timeSteppingType = ImplicitEuler;
-const SolvedExample solvedExample = MovingPeak;
+const SolvedExample solvedExample = Benchmark;
 const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
@@ -65,6 +65,11 @@ int main(int argc, char* argv[])
     time_step_length = 1e-2;
     time_interval_length = 4. * M_PI / 2.;
     break;
+  case Benchmark:
+    time_step_length = 1e-1;
+    time_interval_length = .6;
+    diffusivity = std::pow(2., -initialRefinementsCount);
+    break;
   }
 
   // Load the mesh.
@@ -92,6 +97,11 @@ int main(int argc, char* argv[])
     for(int i = 0; i < initialRefinementsCount; i++)
       mesh->refine_all_elements();
     break;
+  case Benchmark:
+    mloader.load("domain_benchmark.xml", mesh);
+    for(int i = 0; i < initialRefinementsCount; i++)
+      mesh->refine_all_elements();
+    break;
   }
 
   // Standard L2 space.
@@ -103,7 +113,6 @@ int main(int argc, char* argv[])
 
   // Previous time level solution (initialized by the initial condition).
   ExactSolutionScalar<double>* previous_initial_condition;
-  ExactSolutionScalar<double>* updated_previous_initial_condition;
   ExactSolutionScalar<double>* initial_condition;
   ExactSolutionScalar<double>* initial_condition_der;
   switch(solvedExample)
@@ -120,34 +129,38 @@ int main(int argc, char* argv[])
     initial_condition = new ZeroSolution<double>(mesh);
     initial_condition_der = new ZeroSolution<double>(mesh);
     previous_initial_condition = new ZeroSolution<double>(mesh);
-    updated_previous_initial_condition = new ZeroSolution<double>(mesh);
     break;
-    case MovingPeak:
+  case MovingPeak:
     initial_condition = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
     initial_condition_der = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
     previous_initial_condition = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
-    updated_previous_initial_condition = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
+    break;
+  case Benchmark:
+    initial_condition = new ZeroSolution<double>(mesh);
+    initial_condition_der = new ZeroSolution<double>(mesh);
+    previous_initial_condition = new ZeroSolution<double>(mesh);
     break;
   }
 
   MeshFunctionSharedPtr<double>previous_solution(previous_initial_condition);
   MeshFunctionSharedPtr<double>previous_mean_values(initial_condition);
   MeshFunctionSharedPtr<double>previous_derivatives(initial_condition_der);
+
   OGProjection<double>::project_global(const_space, previous_mean_values, previous_mean_values);
   OGProjection<double>::project_global(space, previous_derivatives, previous_derivatives);
 
   // Visualization.
   ScalarView solution_view("Solution", new WinGeom(520, 10, 500, 500));
 
-  MeshFunctionSharedPtr<double>updated_previous_mean_values(updated_previous_initial_condition);
-  MeshFunctionSharedPtr<double>exact_solution_circular(new ZeroSolution<double>(mesh));
+  MeshFunctionSharedPtr<double>initial_solution(new InitialConditionBenchmark(mesh));
+  MeshFunctionSharedPtr<double>exact_solution(new ExactSolutionBenchmark(mesh, diffusivity, time_interval_length));
 
 #pragma region ImplicitEuler
-  ImplicitWeakForm weakform_implicit(solvedExample, false, "Inlet", "Bdy", diffusivity);
+  ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Bdy", diffusivity);
   weakform_implicit.set_current_time_step(time_step_length);
-  weakform_implicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, exact_solution_circular));
-  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, false, "Inlet", "Bdy", diffusivity);
-  weakform_explicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, exact_solution_circular));
+  weakform_implicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, initial_solution));
+  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, true, "Inlet", "Bdy", diffusivity);
+  weakform_explicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, initial_solution));
   weakform_explicit.set_current_time_step(time_step_length);
   LinearSolver<double> solver_implicit(&weakform_implicit, const_space);
   LinearSolver<double> solver_explicit(&weakform_explicit, space);
@@ -170,15 +183,8 @@ int main(int argc, char* argv[])
     {
       solver_explicit.solve();
       double* merged_sln = merge_slns(solver_implicit.get_sln_vector(), const_space,solver_explicit.get_sln_vector(), space, full_space);
-
-      PostProcessing::Limiter<double>* limiter = create_limiter(limiter_type, full_space, merged_sln, polynomialDegree);
-      solution->copy(limiter->get_solution());
-      for(int i = 0; i < full_space->get_num_dofs(); i++)
-        if(!(i%3))
-          limiter->get_solution_vector()[i] = 0;
-      Solution<double>::vector_to_solution(limiter->get_solution_vector(), full_space, previous_derivatives);
-      delete limiter;
-    
+      Solution<double>::vector_to_solution(solver_explicit.get_sln_vector(), space, previous_derivatives);
+      Solution<double>::vector_to_solution(merged_sln, full_space, solution);
       delete [] merged_sln;
     }
     else
@@ -190,7 +196,7 @@ int main(int argc, char* argv[])
       solution_view.set_title("Solution - time step: %i, time: %f.", time_step, current_time);
       solution_view.show(solution);
       DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(RelativeErrorToGlobalNorm, 1);
-      errorCalculator.calculate_errors(solution, exact_solution_circular, true);
+      errorCalculator.calculate_errors(solution, exact_solution, true);
       std::cout << "Error: " << errorCalculator.get_error_squared(0) << std::endl;
 
       //View::wait_for_keypress();

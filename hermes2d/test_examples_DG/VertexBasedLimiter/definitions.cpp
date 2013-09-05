@@ -30,6 +30,10 @@ static double advection_term_moving_peak(double x, double y, double vx, double v
   return -(vx * y) + (vy * x);
 }
 
+static double advection_term_benchmark(double x, double y, double vx, double vy)
+{
+  return vx + vy;
+}
 scalar_product_with_advection_direction advection_term;
 
 ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1)
@@ -47,6 +51,9 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
     break;
   case MovingPeak:
     advection_term = advection_term_moving_peak;
+    break;
+  case Benchmark:
+    advection_term = advection_term_benchmark;
     break;
   }
 
@@ -100,6 +107,12 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType
     break;
   case CircularConvection:
     advection_term = advection_term_circular_convection;
+    break;
+  case MovingPeak:
+    advection_term = advection_term_moving_peak;
+    break;
+  case Benchmark:
+    advection_term = advection_term_benchmark;
     break;
   }
 
@@ -251,7 +264,7 @@ MeshFunction<double>* InitialConditionSolidBodyRotation::clone() const
 }
 
 
-void InitialConditionCircularConvection::derivatives(double x, double y, double& dx, double& dy) const 
+void ExactSolutionCircularConvection::derivatives(double x, double y, double& dx, double& dy) const 
 {
   double radius = std::sqrt(std::pow(x - 1, 2.) + std::pow(y, 2.));
   double radius_dx = (2 * x - 2.) / radius;
@@ -267,7 +280,7 @@ void InitialConditionCircularConvection::derivatives(double x, double y, double&
     dx = dy = 0.;
 };
 
-double InitialConditionCircularConvection::value(double x, double y) const 
+double ExactSolutionCircularConvection::value(double x, double y) const 
 {
   double radius = std::sqrt(std::pow(x - 1, 2.) + std::pow(y, 2.));
   if(radius >= 0.2 && radius <= 0.4)
@@ -278,13 +291,13 @@ double InitialConditionCircularConvection::value(double x, double y) const
     return 0.;
 };
 
-Ord InitialConditionCircularConvection::ord(double x, double y) const 
+Ord ExactSolutionCircularConvection::ord(double x, double y) const 
 {
   return Ord(20);
 };
-MeshFunction<double>* InitialConditionCircularConvection::clone() const
+MeshFunction<double>* ExactSolutionCircularConvection::clone() const
 {
-  return new InitialConditionCircularConvection(this->mesh);
+  return new ExactSolutionCircularConvection(this->mesh);
 }
 
 void ExactSolutionMovingPeak::set_current_time(double time)
@@ -324,3 +337,58 @@ double ExactSolutionMovingPeak::get_current_time() const
 {
   return this->current_time;
 }
+
+
+
+void InitialConditionBenchmark::derivatives(double x, double y, double& dx, double& dy) const 
+{
+  double x_0 = 2./15.;
+  double l = 7. * std::sqrt(2.0)  / 300.;
+  double fn_value = this->value(x, y);
+  dx = fn_value * (-2. * (x - x_0) / l);
+};
+
+double InitialConditionBenchmark::value(double x, double y) const 
+{
+  double x_0 = 2./15.;
+  double l = 7. * std::sqrt(2.0)  / 300.;
+  return (5./7.) * std::exp(-std::pow((x - x_0) / l, 2.));
+};
+
+Ord InitialConditionBenchmark::ord(double x, double y) const 
+{
+  return Ord(20);
+};
+MeshFunction<double>* InitialConditionBenchmark::clone() const
+{
+  return new InitialConditionBenchmark(this->mesh);
+}
+
+void ExactSolutionBenchmark::derivatives(double x, double y, double& dx, double& dy) const 
+{
+  dx = dy = 0.;
+};
+
+double ExactSolutionBenchmark::value(double x, double y) const 
+{
+  double x_0 = 2./15.;
+  double l = 7. * std::sqrt(2.0)  / 300.;
+  double fraction = 5./7. * sigma();
+  return fraction * std::exp(-std::pow((x - x_0 - this->time) / (l * sigma()), 2.));
+};
+
+double ExactSolutionBenchmark::sigma() const
+{
+  double l = 7. * std::sqrt(2.0)  / 300.;
+  return std::sqrt(1. + 4. * this->diffusivity * this->time / (l*l));
+}
+
+Ord ExactSolutionBenchmark::ord(double x, double y) const 
+{
+  return Ord(20);
+};
+MeshFunction<double>* ExactSolutionBenchmark::clone() const
+{
+  return new ExactSolutionBenchmark(this->mesh, this->diffusivity, this->time);
+}
+
