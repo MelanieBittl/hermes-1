@@ -45,6 +45,7 @@ namespace Hermes
       /// set area
       /// \todo use this - it is not used so far.
       void set_area(std::string area);
+      inline std::string get_area() const { return this->area; };
 
       /// Coordinates.
       int i, j;
@@ -91,6 +92,18 @@ namespace Hermes
     {
     public:
       DefaultNormFormVol(int i, int j, NormType normType);
+      
+      Scalar value(int n, double *wt, Func<Scalar> *u, Func<Scalar> *v, Geom<double> *e) const;
+
+    protected:
+      NormType normType;
+    };
+
+    template <typename Scalar>
+    class HERMES_API DefaultNormFormSurf : public NormFormSurf<Scalar>
+    {
+    public:
+      DefaultNormFormSurf(int i, int j, NormType normType);
       
       Scalar value(int n, double *wt, Func<Scalar> *u, Func<Scalar> *v, Geom<double> *e) const;
 

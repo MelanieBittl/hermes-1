@@ -314,7 +314,7 @@ namespace Hermes
         norm_func[1] = error_func[1];
         break;
       case FineSolutions:
-          error_func[0] = init_fn(rslns[mf->i], order);
+        error_func[0] = init_fn(rslns[mf->i], order);
         if(mf->i != mf->j)
           error_func[1] = init_fn(rslns[mf->j], order);
         else
@@ -386,7 +386,6 @@ namespace Hermes
       for(int i = 0; i < this->errorCalculator->mfvol.size(); i++)
       {
         NormFormVol<Scalar>* form = this->errorCalculator->mfvol[i];
-
         double* error = &this->errorCalculator->errors[form->i][current_state->e[form->i]->id];
         double* norm = &this->errorCalculator->norms[form->i][current_state->e[form->i]->id];
 
@@ -416,6 +415,36 @@ namespace Hermes
       for(int i = 0; i < this->errorCalculator->mfsurf.size(); i++)
       {
         NormFormSurf<Scalar>* form = this->errorCalculator->mfsurf[i];
+
+        bool assemble = false;
+        if(form->get_area() == HERMES_ANY)
+          assemble = true;
+        else
+        {
+          if(this->slns[form->i])
+          {
+            Mesh::MarkersConversion::StringValid marker_to_check = this->slns[form->i]->get_mesh()->get_boundary_markers_conversion().get_user_marker(current_state->e[form->i]->en[current_state->isurf]->marker);
+            if(marker_to_check.valid)
+            {
+              std::string marker = marker_to_check.marker;
+              if(form->get_area() == marker)
+                assemble = true;
+            }
+          }
+          if(this->rslns[form->i])
+          {
+            Mesh::MarkersConversion::StringValid marker_to_check = this->rslns[form->i]->get_mesh()->get_boundary_markers_conversion().get_user_marker(current_state->e[form->i]->en[current_state->isurf]->marker);
+            if(marker_to_check.valid)
+            {
+              std::string marker = marker_to_check.marker;
+              if(form->get_area() == marker)
+                assemble = true;
+            }
+          }
+        }
+
+        if(!assemble)
+          continue;
 
         double* error = &this->errorCalculator->errors[form->i][current_state->e[form->i]->id];
         double* norm = &this->errorCalculator->norms[form->i][current_state->e[form->i]->id];

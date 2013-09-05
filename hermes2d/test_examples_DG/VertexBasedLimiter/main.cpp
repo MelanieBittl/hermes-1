@@ -2,7 +2,7 @@
 #include "../euler_util.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 7;
+const int initialRefinementsCount = 4;
 const TimeSteppingType timeSteppingType = ImplicitEuler;
 const SolvedExample solvedExample = Benchmark;
 const EulerLimiterType limiter_type = VertexBased;
@@ -16,10 +16,17 @@ Hermes::Mixins::Loggable logger(true);
 
 double diffusivity = 1e-3;
 
-//int main(int argc, char* argv[])
-//{
-//  return test();
-//}
+class MyErrorCalculator : public ErrorCalculator<double>
+{
+public:
+  MyErrorCalculator(CalculatedErrorType errorType, int component_count) : ErrorCalculator<double>(errorType)
+  {
+    DefaultNormFormSurf<double>* form = new DefaultNormFormSurf<double>(0, 0, HERMES_L2_NORM);
+    form->set_area("Outlet");
+    this->add_error_form(form);
+  }
+  virtual ~MyErrorCalculator() {}
+};
 
 double* merge_slns(double* solution_vector_coarse, SpaceSharedPtr<double> space_coarse, double* solution_vector_fine, SpaceSharedPtr<double> space_fine, SpaceSharedPtr<double> space_full)
 {
@@ -67,7 +74,7 @@ int main(int argc, char* argv[])
     break;
   case Benchmark:
     time_step_length = 1e-1;
-    time_interval_length = .6;
+    time_interval_length = .6 + time_step_length / 10.;
     diffusivity = std::pow(2., -initialRefinementsCount);
     break;
   }
@@ -155,9 +162,6 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double>initial_solution(new InitialConditionBenchmark(mesh));
   MeshFunctionSharedPtr<double>exact_solution(new ExactSolutionBenchmark(mesh, diffusivity, time_interval_length));
 
-      solution_view.show(exact_solution);
-    
-    View::wait_for_keypress();
 #pragma region ImplicitEuler
   ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Bdy", diffusivity);
   weakform_implicit.set_current_time_step(time_step_length);
@@ -198,11 +202,9 @@ int main(int argc, char* argv[])
     {
       solution_view.set_title("Solution - time step: %i, time: %f.", time_step, current_time);
       solution_view.show(solution);
-      DefaultErrorCalculator<double, HERMES_L2_NORM> errorCalculator(RelativeErrorToGlobalNorm, 1);
+      MyErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 1);
       errorCalculator.calculate_errors(solution, exact_solution, true);
       std::cout << "Error: " << errorCalculator.get_error_squared(0) << std::endl;
-
-      //View::wait_for_keypress();
     }
     if(VTKView)
     {
