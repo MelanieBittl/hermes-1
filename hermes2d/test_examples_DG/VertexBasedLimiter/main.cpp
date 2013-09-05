@@ -155,6 +155,9 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double>initial_solution(new InitialConditionBenchmark(mesh));
   MeshFunctionSharedPtr<double>exact_solution(new ExactSolutionBenchmark(mesh, diffusivity, time_interval_length));
 
+      solution_view.show(exact_solution);
+    
+    View::wait_for_keypress();
 #pragma region ImplicitEuler
   ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Bdy", diffusivity);
   weakform_implicit.set_current_time_step(time_step_length);

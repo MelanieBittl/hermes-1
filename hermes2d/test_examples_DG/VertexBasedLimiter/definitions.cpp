@@ -373,14 +373,14 @@ double ExactSolutionBenchmark::value(double x, double y) const
 {
   double x_0 = 2./15.;
   double l = 7. * std::sqrt(2.0)  / 300.;
-  double fraction = 5./7. * sigma();
+  double fraction = 5./(7. * sigma());
   return fraction * std::exp(-std::pow((x - x_0 - this->time) / (l * sigma()), 2.));
 };
 
 double ExactSolutionBenchmark::sigma() const
 {
   double l = 7. * std::sqrt(2.0)  / 300.;
-  return std::sqrt(1. + 4. * this->diffusivity * this->time / (l*l));
+  return std::sqrt(1. + ((4. * this->diffusivity * this->time) / (l*l)));
 }
 
 Ord ExactSolutionBenchmark::ord(double x, double y) const 
