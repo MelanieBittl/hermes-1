@@ -8,13 +8,13 @@ const SolvedExample solvedExample = MovingPeak;
 const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
-bool VTKView = true;
+bool VTKView = false;
 
 double time_step_length;
 double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
-double diffusivity = 1e-4;
+double diffusivity = 1e-3;
 
 //int main(int argc, char* argv[])
 //{
@@ -62,8 +62,8 @@ int main(int argc, char* argv[])
     time_interval_length = 1e4;
     break;
   case MovingPeak:
-    time_step_length = 1e-1;
-    time_interval_length = 5. * M_PI / 2.;
+    time_step_length = 1e-2;
+    time_interval_length = 4. * M_PI / 2.;
     break;
   }
 
@@ -131,15 +131,16 @@ int main(int argc, char* argv[])
   }
 
   MeshFunctionSharedPtr<double>previous_solution(previous_initial_condition);
-
   MeshFunctionSharedPtr<double>previous_mean_values(initial_condition);
-
   MeshFunctionSharedPtr<double>previous_derivatives(initial_condition_der);
-  MeshFunctionSharedPtr<double>updated_previous_mean_values(updated_previous_initial_condition);
-  MeshFunctionSharedPtr<double>exact_solution_circular(new InitialConditionCircularConvection(mesh));
+  OGProjection<double>::project_global(const_space, previous_mean_values, previous_mean_values);
+  OGProjection<double>::project_global(space, previous_derivatives, previous_derivatives);
 
   // Visualization.
   ScalarView solution_view("Solution", new WinGeom(520, 10, 500, 500));
+
+  MeshFunctionSharedPtr<double>updated_previous_mean_values(updated_previous_initial_condition);
+  MeshFunctionSharedPtr<double>exact_solution_circular(new ZeroSolution<double>(mesh));
 
 #pragma region ImplicitEuler
   ImplicitWeakForm weakform_implicit(solvedExample, false, "Inlet", "Bdy", diffusivity);

@@ -54,6 +54,7 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
   // Mass matrix - rhs
   add_vector_form(new CustomVectorFormVol(0, 0, 1.));
+  add_vector_form(new CustomVectorFormVol(0, 1, 1.));
 
   // Convection.
   // Numerical flux - inner-edge element outlet - matrix
@@ -142,6 +143,7 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType
   }
 
   // Mass matrix - rhs
+  add_vector_form(new CustomVectorFormVol(0, 0, 1.));
   add_vector_form(new CustomVectorFormVol(0, 1, 1.));
 }
 
