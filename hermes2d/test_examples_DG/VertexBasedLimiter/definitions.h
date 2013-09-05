@@ -20,7 +20,8 @@ enum SolvedExample
 {
   AdvectedCube,
   SolidBodyRotation,
-  CircularConvection
+  CircularConvection,
+  MovingPeak
 };
 
 extern double upwind_flux(double u_cent, double u_neib, double a_dot_n);
@@ -615,6 +616,24 @@ public:
   MeshFunction<double>* clone() const;
 };
 
+class ExactSolutionMovingPeak : public ExactSolutionScalar<double>
+{
+public:
+  ExactSolutionMovingPeak(MeshSharedPtr mesh, double diffusivity, double time) : ExactSolutionScalar<double>(mesh), diffusivity(diffusivity) { this->set_current_time(time); }
+
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+  virtual Ord ord(double x, double y) const ;
+
+  MeshFunction<double>* clone() const;
+
+  double get_current_time() const;
+  void set_current_time(double time);
+  double current_time;
+  double diffusivity, x_hat, y_hat;
+};
 #pragma endregion
 
 

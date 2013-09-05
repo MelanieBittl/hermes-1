@@ -25,6 +25,11 @@ static double advection_term_circular_convection(double x, double y, double vx, 
   return (vx * y) + (vy * (1 - x));
 }
 
+static double advection_term_moving_peak(double x, double y, double vx, double vy)
+{
+  return -(vx * y) + (vy * x);
+}
+
 scalar_product_with_advection_direction advection_term;
 
 ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1)
@@ -39,6 +44,9 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
     break;
   case CircularConvection:
     advection_term = advection_term_circular_convection;
+    break;
+  case MovingPeak:
+    advection_term = advection_term_moving_peak;
     break;
   }
 
@@ -65,7 +73,7 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
     // Numerical flux - boundary outlet - derivatives - rhs
     this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 1, false, true));
   }
-  
+
   // Diffusion.
   // No Diffusion - when test functions have zero gradient
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
@@ -96,7 +104,7 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType
 
   // Mass matrix
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
-  
+
   // Convection.
   // Convective term - matrix
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
@@ -132,7 +140,7 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType
     // Numerical flux - boundary inlet - exact solution - rhs
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, -1, 1. * 100., inlet));
   }
-  
+
   // Mass matrix - rhs
   add_vector_form(new CustomVectorFormVol(0, 1, 1.));
 }
@@ -275,4 +283,42 @@ Ord InitialConditionCircularConvection::ord(double x, double y) const
 MeshFunction<double>* InitialConditionCircularConvection::clone() const
 {
   return new InitialConditionCircularConvection(this->mesh);
+}
+
+void ExactSolutionMovingPeak::set_current_time(double time)
+{
+  this->current_time = time;
+  double x_0 = 0.;
+  double y_0 = 0.5;
+  this->x_hat = x_0 * std::cos(this->current_time) - y_0 * std::sin(this->current_time);
+  this->y_hat = -x_0 * std::sin(this->current_time) + y_0 * std::cos(this->current_time);
+}
+
+void ExactSolutionMovingPeak::derivatives(double x, double y, double& dx, double& dy) const 
+{
+  double fraction_times_pi = 1. / (4. * this->diffusivity * this->current_time);
+  double fn_value = this->value(x, y);
+  dx = fn_value * 2. * (x - this->x_hat) * fraction_times_pi;
+  dy = fn_value * 2. * (x - this->x_hat) * fraction_times_pi;
+};
+
+double ExactSolutionMovingPeak::value(double x, double y) const 
+{
+  double fraction_times_pi = 1. / (4. * this->diffusivity * this->current_time);
+  double r_squared = ( (x - this->x_hat) * (x - this->x_hat) ) + ( (y - this->y_hat) * (y - this->y_hat) );
+  return fraction_times_pi * std::pow(2.718281828, -r_squared * fraction_times_pi) / M_PI;
+};
+
+Ord ExactSolutionMovingPeak::ord(double x, double y) const 
+{
+  return Ord(20);
+};
+MeshFunction<double>* ExactSolutionMovingPeak::clone() const
+{
+  return new ExactSolutionMovingPeak(this->mesh, this->diffusivity, this->current_time);
+}
+
+double ExactSolutionMovingPeak::get_current_time() const
+{
+  return this->current_time;
 }

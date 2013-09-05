@@ -2,9 +2,9 @@
 #include "../euler_util.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 5;
+const int initialRefinementsCount = 7;
 const TimeSteppingType timeSteppingType = ImplicitEuler;
-const SolvedExample solvedExample = CircularConvection;
+const SolvedExample solvedExample = MovingPeak;
 const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
@@ -61,6 +61,10 @@ int main(int argc, char* argv[])
     time_step_length = 1;
     time_interval_length = 1e4;
     break;
+  case MovingPeak:
+    time_step_length = 1e-1;
+    time_interval_length = 5. * M_PI / 2.;
+    break;
   }
 
   // Load the mesh.
@@ -80,6 +84,11 @@ int main(int argc, char* argv[])
     break;
   case CircularConvection:
     mloader.load("domain_circular_convection.xml", mesh);
+    for(int i = 0; i < initialRefinementsCount; i++)
+      mesh->refine_all_elements();
+    break;
+  case MovingPeak:
+    mloader.load("domain.xml", mesh);
     for(int i = 0; i < initialRefinementsCount; i++)
       mesh->refine_all_elements();
     break;
@@ -113,11 +122,18 @@ int main(int argc, char* argv[])
     previous_initial_condition = new ZeroSolution<double>(mesh);
     updated_previous_initial_condition = new ZeroSolution<double>(mesh);
     break;
+    case MovingPeak:
+    initial_condition = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
+    initial_condition_der = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
+    previous_initial_condition = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
+    updated_previous_initial_condition = new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.);
+    break;
   }
 
   MeshFunctionSharedPtr<double>previous_solution(previous_initial_condition);
 
   MeshFunctionSharedPtr<double>previous_mean_values(initial_condition);
+
   MeshFunctionSharedPtr<double>previous_derivatives(initial_condition_der);
   MeshFunctionSharedPtr<double>updated_previous_mean_values(updated_previous_initial_condition);
   MeshFunctionSharedPtr<double>exact_solution_circular(new InitialConditionCircularConvection(mesh));
@@ -126,10 +142,10 @@ int main(int argc, char* argv[])
   ScalarView solution_view("Solution", new WinGeom(520, 10, 500, 500));
 
 #pragma region ImplicitEuler
-  ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Bdy", diffusivity);
+  ImplicitWeakForm weakform_implicit(solvedExample, false, "Inlet", "Bdy", diffusivity);
   weakform_implicit.set_current_time_step(time_step_length);
   weakform_implicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, exact_solution_circular));
-  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, true, "Inlet", "Bdy", diffusivity);
+  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, false, "Inlet", "Bdy", diffusivity);
   weakform_explicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, exact_solution_circular));
   weakform_explicit.set_current_time_step(time_step_length);
   LinearSolver<double> solver_implicit(&weakform_implicit, const_space);
