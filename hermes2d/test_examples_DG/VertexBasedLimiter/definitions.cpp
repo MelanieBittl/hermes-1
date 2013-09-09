@@ -85,13 +85,13 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   // Diffusion.
   // No Diffusion - when test functions have zero gradient
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, false, diffusivity, -1, 1. * 100.));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, false, diffusivity, 0, 0 * 100.));
   if(add_inlet)
   {
     // Numerical flux - boundary outlet - matrix
-    this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, -1, 1. * 100., inlet));
+    this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
     // Numerical flux - boundary inlet - exact solution - rhs
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, -1, 1. * 100., inlet));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
   }
 }
 
@@ -146,13 +146,13 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, TimeSteppingType
   // Diffusive term - rhs - for mean values - zero
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
   // Numerical flux - inner-edge element outlet - matrix
-  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, true, diffusivity, -1, 1. * 100.));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, true, diffusivity, 0, 0 * 100.));
   if(add_inlet)
   {
     // Numerical flux - boundary outlet - matrix
-    this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, -1, 1. * 100., inlet));
+    this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
     // Numerical flux - boundary inlet - exact solution - rhs
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, -1, 1. * 100., inlet));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
   }
 
   // Mass matrix - rhs
@@ -313,8 +313,8 @@ void ExactSolutionMovingPeak::derivatives(double x, double y, double& dx, double
 {
   double fraction_times_pi = 1. / (4. * this->diffusivity * this->current_time);
   double fn_value = this->value(x, y);
-  dx = fn_value * 2. * (x - this->x_hat) * fraction_times_pi;
-  dy = fn_value * 2. * (x - this->x_hat) * fraction_times_pi;
+  dx = -fn_value * 2. * (x - this->x_hat) * fraction_times_pi;
+  dy = -fn_value * 2. * (y - this->y_hat) * fraction_times_pi;
 };
 
 double ExactSolutionMovingPeak::value(double x, double y) const 
@@ -342,17 +342,19 @@ double ExactSolutionMovingPeak::get_current_time() const
 
 void InitialConditionBenchmark::derivatives(double x, double y, double& dx, double& dy) const 
 {
-  double x_0 = 2./15.;
-  double l = 7. * std::sqrt(2.0)  / 300.;
-  double fn_value = this->value(x, y);
-  dx = fn_value * (-2. * (x - x_0) / l);
+  double fn_value = this->value(x, 0.);
+  double denominator = 4. * (this->diffusivity * y + 0.001);
+  dx = fn_value * (-2. * (x - 0.2) / denominator);
+  dy = 0;
 };
 
 double InitialConditionBenchmark::value(double x, double y) const 
 {
-  double x_0 = 2./15.;
-  double l = 7. * std::sqrt(2.0)  / 300.;
-  return (5./7.) * std::exp(-std::pow((x - x_0) / l, 2.));
+  y = 0.;
+  double fraction = 0.1 / (std::sqrt(4. * M_PI * (this->diffusivity * y + 0.001)));
+  double denominator = 4. * (this->diffusivity * y + 0.001);
+  double enumerator = -std::pow(x - y - 0.2, 2.);
+  return fraction * std::exp(enumerator/denominator);
 };
 
 Ord InitialConditionBenchmark::ord(double x, double y) const 
@@ -361,7 +363,7 @@ Ord InitialConditionBenchmark::ord(double x, double y) const
 };
 MeshFunction<double>* InitialConditionBenchmark::clone() const
 {
-  return new InitialConditionBenchmark(this->mesh);
+  return new InitialConditionBenchmark(this->mesh, this->diffusivity);
 }
 
 void ExactSolutionBenchmark::derivatives(double x, double y, double& dx, double& dy) const 
@@ -371,17 +373,12 @@ void ExactSolutionBenchmark::derivatives(double x, double y, double& dx, double&
 
 double ExactSolutionBenchmark::value(double x, double y) const 
 {
-  double x_0 = 2./15.;
-  double l = 7. * std::sqrt(2.0)  / 300.;
-  double fraction = 5./(7. * sigma());
-  return fraction * std::exp(-std::pow((x - x_0 - this->time) / (l * sigma()), 2.));
+  double fraction = 0.1 / (std::sqrt(4. * M_PI * (this->diffusivity * y + 0.001)));
+  double denominator = 4. * (this->diffusivity * y + 0.001);
+  double enumerator = -std::pow(x - y - 0.2, 2.);
+  return fraction * std::exp(enumerator/denominator);
 };
 
-double ExactSolutionBenchmark::sigma() const
-{
-  double l = 7. * std::sqrt(2.0)  / 300.;
-  return std::sqrt(1. + ((4. * this->diffusivity * this->time) / (l*l)));
-}
 
 Ord ExactSolutionBenchmark::ord(double x, double y) const 
 {
@@ -389,6 +386,6 @@ Ord ExactSolutionBenchmark::ord(double x, double y) const
 };
 MeshFunction<double>* ExactSolutionBenchmark::clone() const
 {
-  return new ExactSolutionBenchmark(this->mesh, this->diffusivity, this->time);
+  return new ExactSolutionBenchmark(this->mesh, this->diffusivity);
 }
 

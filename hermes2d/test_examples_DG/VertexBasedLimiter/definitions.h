@@ -639,7 +639,7 @@ public:
 class InitialConditionBenchmark : public ExactSolutionScalar<double>
 {
 public:
-  InitialConditionBenchmark(MeshSharedPtr mesh) : ExactSolutionScalar<double>(mesh) {};
+  InitialConditionBenchmark(MeshSharedPtr mesh, double diffusivity) : ExactSolutionScalar<double>(mesh), diffusivity(diffusivity){};
   
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 
@@ -648,12 +648,13 @@ public:
   virtual Ord ord(double x, double y) const ;
 
   MeshFunction<double>* clone() const;
+  double diffusivity;
 };
 
 class ExactSolutionBenchmark : public ExactSolutionScalar<double>
 {
 public:
-  ExactSolutionBenchmark(MeshSharedPtr mesh, double diffusivity, double time) : ExactSolutionScalar<double>(mesh), diffusivity(diffusivity), time(time) {};
+  ExactSolutionBenchmark(MeshSharedPtr mesh, double diffusivity) : ExactSolutionScalar<double>(mesh), diffusivity(diffusivity) {};
   
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 
@@ -662,9 +663,7 @@ public:
   virtual Ord ord(double x, double y) const ;
 
   MeshFunction<double>* clone() const;
-  double sigma() const;
   double diffusivity;
-  double time;
 };
 
 #pragma endregion

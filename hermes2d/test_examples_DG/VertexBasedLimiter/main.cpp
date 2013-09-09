@@ -2,9 +2,9 @@
 #include "../euler_util.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 4;
+const int initialRefinementsCount = 5;
 const TimeSteppingType timeSteppingType = ImplicitEuler;
-const SolvedExample solvedExample = Benchmark;
+const SolvedExample solvedExample = MovingPeak;
 const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
@@ -21,8 +21,7 @@ class MyErrorCalculator : public ErrorCalculator<double>
 public:
   MyErrorCalculator(CalculatedErrorType errorType, int component_count) : ErrorCalculator<double>(errorType)
   {
-    DefaultNormFormSurf<double>* form = new DefaultNormFormSurf<double>(0, 0, HERMES_L2_NORM);
-    form->set_area("Outlet");
+    DefaultNormFormVol<double>* form = new DefaultNormFormVol<double>(0, 0, HERMES_L2_NORM);
     this->add_error_form(form);
   }
   virtual ~MyErrorCalculator() {}
@@ -40,8 +39,8 @@ double* merge_slns(double* solution_vector_coarse, SpaceSharedPtr<double> space_
     space_full->get_element_assembly_list(e, &al_target);
 
     target[al_target.dof[0]] = solution_vector_coarse[al_coarse.dof[0]];
-    target[al_target.dof[1]] = solution_vector_fine[al_fine.dof[0]];
-    target[al_target.dof[2]] = solution_vector_fine[al_fine.dof[1]];
+    for(int i = 1; i < al_target.cnt; i++)
+      target[al_target.dof[i]] = solution_vector_fine[al_fine.dof[i-1]];
   }
   return target;
 }
@@ -53,6 +52,7 @@ int main(int argc, char* argv[])
   // test();
   Hermes::Mixins::Loggable::set_static_logFile_name("logfile.h2d");
   HermesCommonApi.set_integral_param_value(numThreads, 16);
+
 
   switch(solvedExample)
   {
@@ -69,13 +69,12 @@ int main(int argc, char* argv[])
     time_interval_length = 1e4;
     break;
   case MovingPeak:
-    time_step_length = 1e-2;
-    time_interval_length = 4. * M_PI / 2.;
+    time_step_length = 5e-3;
+    time_interval_length = (2. * M_PI) + (time_step_length / 10.);
     break;
   case Benchmark:
-    time_step_length = 1e-1;
-    time_interval_length = .6 + time_step_length / 10.;
-    diffusivity = std::pow(2., -initialRefinementsCount);
+    time_step_length = 1.;
+    time_interval_length = 10.5 + time_step_length / 10.;
     break;
   }
 
@@ -105,9 +104,14 @@ int main(int argc, char* argv[])
       mesh->refine_all_elements();
     break;
   case Benchmark:
-    mloader.load("domain_benchmark.xml", mesh);
-    for(int i = 0; i < initialRefinementsCount; i++)
-      mesh->refine_all_elements();
+    Hermes::vector<MeshSharedPtr> meshes;
+    meshes.push_back(mesh);
+    mloader.load("domain.msh", meshes);
+    mesh->refine_all_elements();
+//    mesh->refine_all_elements(2);
+  //  mesh->refine_all_elements(2);
+   // for(int i = 0; i < initialRefinementsCount; i++)
+    //  mesh->refine_all_elements();
     break;
   }
 
@@ -126,10 +130,12 @@ int main(int argc, char* argv[])
   {
   case SolidBodyRotation:
     initial_condition = new InitialConditionSolidBodyRotation(mesh);
+    initial_condition_der = new InitialConditionSolidBodyRotation(mesh);
     previous_initial_condition = new InitialConditionSolidBodyRotation(mesh);
     break;
   case AdvectedCube:
     initial_condition = new InitialConditionAdvectedCube(mesh);
+    initial_condition_der = new InitialConditionAdvectedCube(mesh);
     previous_initial_condition = new InitialConditionAdvectedCube(mesh);
     break;
   case CircularConvection:
@@ -153,20 +159,23 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double>previous_mean_values(initial_condition);
   MeshFunctionSharedPtr<double>previous_derivatives(initial_condition_der);
 
+  
   OGProjection<double>::project_global(const_space, previous_mean_values, previous_mean_values);
   OGProjection<double>::project_global(space, previous_derivatives, previous_derivatives);
 
   // Visualization.
   ScalarView solution_view("Solution", new WinGeom(520, 10, 500, 500));
+  MeshFunctionSharedPtr<double>initial_solution(new InitialConditionBenchmark(mesh, diffusivity));
+  MeshFunctionSharedPtr<double>exact_solution(new ExactSolutionMovingPeak(mesh, diffusivity, (5./2.) * M_PI));
+ 
+  ScalarView exact_view("Exact solution", new WinGeom(520, 510, 500, 500));
 
-  MeshFunctionSharedPtr<double>initial_solution(new InitialConditionBenchmark(mesh));
-  MeshFunctionSharedPtr<double>exact_solution(new ExactSolutionBenchmark(mesh, diffusivity, time_interval_length));
 
 #pragma region ImplicitEuler
-  ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Bdy", diffusivity);
+  ImplicitWeakForm weakform_implicit(solvedExample, false, "0", "2", diffusivity);
   weakform_implicit.set_current_time_step(time_step_length);
   weakform_implicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, initial_solution));
-  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, true, "Inlet", "Bdy", diffusivity);
+  ExplicitWeakForm weakform_explicit(solvedExample, ExplicitEuler, 1, false, "0", "2", diffusivity);
   weakform_explicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, initial_solution));
   weakform_explicit.set_current_time_step(time_step_length);
   LinearSolver<double> solver_implicit(&weakform_implicit, const_space);
@@ -201,7 +210,9 @@ int main(int argc, char* argv[])
     if(HermesView)
     {
       solution_view.set_title("Solution - time step: %i, time: %f.", time_step, current_time);
+      ((ExactSolutionMovingPeak*)(exact_solution.get()))->set_current_time(current_time + (M_PI / 2.));
       solution_view.show(solution);
+      exact_view.show(exact_solution);
       MyErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 1);
       errorCalculator.calculate_errors(solution, exact_solution, true);
       std::cout << "Error: " << errorCalculator.get_error_squared(0) << std::endl;
