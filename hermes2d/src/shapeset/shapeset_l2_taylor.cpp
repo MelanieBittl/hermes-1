@@ -328,15 +328,15 @@ namespace Hermes
     Shapeset::shape_fn_t* mode_shape_fn_table_dyy[1]  = { fn_dyy };
 
     static int qb_0[] = { 0, };
-    static int qb_1_hierarchic[] = { 0, 1, 2, };
+    static int qb_1_contains_means[] = { 0, 1, 2, };
     static int qb_1[] = { 1, 2, };
-    static int qb_2_hierarchic[] = { 0, 1, 2, 3, 4, 5 };
+    static int qb_2_contains_means[] = { 0, 1, 2, 3, 4, 5 };
     static int qb_2[] = { 1, 2, 3, 4, 5 };
 
-    int* mode_bubble_indices_hierarchic[3] = {  qb_0,   qb_1_hierarchic,  qb_2_hierarchic };
+    int* mode_bubble_indices_contains_means[3] = {  qb_0,   qb_1_contains_means,  qb_2_contains_means };
     int* mode_bubble_indices[3] = {  qb_0,   qb_1,  qb_2 };
 
-    int mode_bubble_count_hierarchic[3] = { 1,  3,  6 };
+    int mode_bubble_count_contains_means[3] = { 1,  3,  6 };
     int mode_bubble_count[3] = { 1,  2,  5 };
 
     int mode_vertex_indices[4] = { -1, -1, -1, -1 };
@@ -407,10 +407,10 @@ namespace Hermes
       mode_edge_indices
     };
 
-    static int** s_bubble_indices_hierarchic[2] =
+    static int** s_bubble_indices_contains_means[2] =
     {
-      mode_bubble_indices_hierarchic,
-      mode_bubble_indices_hierarchic
+      mode_bubble_indices_contains_means,
+      mode_bubble_indices_contains_means
     };
 
     static int** s_bubble_indices[2] =
@@ -419,10 +419,10 @@ namespace Hermes
       mode_bubble_indices
     };
 
-    static int* s_bubble_count_hierarchic[2] =
+    static int* s_bubble_count_contains_means[2] =
     {
-      mode_bubble_count_hierarchic,
-      mode_bubble_count_hierarchic
+      mode_bubble_count_contains_means,
+      mode_bubble_count_contains_means
     };
 
     static int* s_bubble_count[2] =
@@ -437,7 +437,7 @@ namespace Hermes
       mode_index_to_order
     };
 
-    L2ShapesetTaylor::L2ShapesetTaylor(bool hierarchic)
+    L2ShapesetTaylor::L2ShapesetTaylor(bool contains_means)
     {
       shape_table[0] = shape_fn_table;
       shape_table[1] = shape_fn_table_dx;
@@ -448,13 +448,13 @@ namespace Hermes
 
       vertex_indices = s_vertex_indices;
       edge_indices = s_edge_indices;
-      if(hierarchic)
-        bubble_indices = s_bubble_indices_hierarchic;
+      if(contains_means)
+        bubble_indices = s_bubble_indices_contains_means;
       else
         bubble_indices = s_bubble_indices;
 
-      if(hierarchic)
-        bubble_count = s_bubble_count_hierarchic;
+      if(contains_means)
+        bubble_count = s_bubble_count_contains_means;
       else
         bubble_count = s_bubble_count;
 
