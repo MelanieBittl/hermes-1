@@ -472,7 +472,17 @@ Ord ExactSolutionMovingPeak::ord(double x, double y) const
 };
 MeshFunction<double>* ExactSolutionMovingPeak::clone() const
 {
-  return new ExactSolutionMovingPeak(this->mesh, this->diffusivity, this->current_time);
+  Solution<double>* newSln;
+
+  if(this->get_type() == HERMES_SLN)
+  {
+    newSln = new Solution<double>;
+    newSln->copy(this);
+  }
+  else
+    newSln = new ExactSolutionMovingPeak(this->mesh, this->diffusivity, this->current_time);
+
+  return newSln;
 }
 
 double ExactSolutionMovingPeak::get_current_time() const
@@ -505,7 +515,17 @@ Ord InitialConditionBenchmark::ord(double x, double y) const
 };
 MeshFunction<double>* InitialConditionBenchmark::clone() const
 {
-  return new InitialConditionBenchmark(this->mesh, this->diffusivity);
+  Solution<double>* newSln;
+
+  if(this->get_type() == HERMES_SLN)
+  {
+    newSln = new Solution<double>;
+    newSln->copy(this);
+  }
+  else
+    newSln = new InitialConditionBenchmark(this->mesh, this->diffusivity);
+
+  return newSln;
 }
 
 void ExactSolutionBenchmark::derivatives(double x, double y, double& dx, double& dy) const 
