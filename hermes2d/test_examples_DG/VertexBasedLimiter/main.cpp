@@ -15,7 +15,7 @@ double time_step_length;
 double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
-double diffusivity = 5e-3;
+double diffusivity = 1e-3;
 
 int main(int argc, char* argv[])
 {
@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     diffusivity = atof(argv[1]);
   // test();
   Hermes::Mixins::Loggable::set_static_logFile_name("logfile.h2d");
-  HermesCommonApi.set_integral_param_value(numThreads, 3);
+  HermesCommonApi.set_integral_param_value(numThreads, 10);
 
 
   switch(solvedExample)
@@ -76,10 +76,9 @@ int main(int argc, char* argv[])
       mesh->refine_all_elements();
     break;
   case Benchmark:
-    Hermes::vector<MeshSharedPtr> meshes;
-    meshes.push_back(mesh);
-    mloader.load("domain.msh", meshes);
-    mesh->refine_all_elements();
+    mloader.load("domain_benchmark.xml", mesh);
+    for(int i = 0; i < initialRefinementsCount; i++)
+      mesh->refine_all_elements();
     break;
   }
   
@@ -141,6 +140,6 @@ int main(int argc, char* argv[])
       solution, exact_solution, solution_view, exact_view);
   }
 
-  View::wait();
+  View::wait_for_keypress();
   return 0;
 }
