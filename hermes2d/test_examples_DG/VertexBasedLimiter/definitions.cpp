@@ -37,7 +37,7 @@ static double advection_term_benchmark(double x, double y, double vx, double vy)
 }
 scalar_product_with_advection_direction advection_term;
 
-SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
+SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
 {
   switch(solvedExample)
   {
@@ -64,15 +64,15 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, int explicitSc
   // A_tilde  
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false, true, true));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, true, diffusivity, 0, 0 * 100.));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, !local, true, local));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, local, diffusivity, 0, 0 * 100.));
   // BC
+  this->add_matrix_form_surf(new CustomMatrixFormSurfConvection(0, 0));
   if(add_inlet)
     this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
-
-
   // RHS
   // M
+  add_vector_form(new CustomVectorFormVol(0, 0, -1.));
   add_vector_form(new CustomVectorFormVol(0, 1, 1.));
   // BC
   if(add_inlet)
@@ -81,12 +81,13 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, int explicitSc
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet, 1.));
   }
   // Residual
-  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, false));
+  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, true));
   // A_tilde
-  add_vector_form(new CustomVectorFormVolConvection(0, 0, -1.));
-  add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity, 1.));
-  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, false, true, 1.));
-  add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 0, diffusivity, 0, 0 * 100., 1.));
+  add_vector_form(new CustomVectorFormVolConvection(0, 0));
+  add_vector_form_surf(new CustomVectorFormSurfConvection(0, 0, false, true));
+
+  add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
+  add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 0, diffusivity, 0, 0 * 100.));
   if(add_inlet)
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet, 1.));
 }
@@ -166,18 +167,15 @@ SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample
     break;
   }
 
-  // Semi-implicit term.
-  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, false, true, 1.));
-  add_vector_form(new CustomVectorFormVolConvection(0, 0, -1.));
+  add_vector_form(new CustomVectorFormVol(0, 0, 1.));
+  add_vector_form(new CustomVectorFormVol(0, 1, -1.));
+  // Residual
+  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, true, 1.));
   add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 0, diffusivity, 0, 0 * 100., 1.));
+  // A_tilde
+  add_vector_form(new CustomVectorFormVolConvection(0, 0, -1.));
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity, 1.));
   add_vector_form_surf(new CustomVectorFormSurfConvection(0, 0, false, true, 1.));
-
-  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 1, false, true, -1.));
-  add_vector_form(new CustomVectorFormVolConvection(0, 1, 1.));
-  add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 1, diffusivity, 0, 0 * 100., -1.));
-  add_vector_form(new CustomVectorFormVolDiffusion(0, 1, diffusivity, -1.));
-  add_vector_form_surf(new CustomVectorFormSurfConvection(0, 1, false, true, -1.));
 }
 
 ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1)

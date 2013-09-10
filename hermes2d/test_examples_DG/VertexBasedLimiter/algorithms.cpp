@@ -85,24 +85,28 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
   MeshFunctionSharedPtr<double> prev_iter_solution(new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.));
 
   // 1 - solver
-  SmoothingWeakForm weakform_1(solvedExample);
+  SmoothingWeakForm weakform_1(solvedExample, true, 1, false, "", "", diffusivity);
   weakform_1.set_current_time_step(time_step_length);
   weakform_1.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_iter_solution, previous_sln));
   LinearSolver<double> solver_1(&weakform_1, space_1);
+  solver_1.set_verbose_output(false);
 
   // 1 - Residual measurement.
-  MeshFunctionSharedPtr<double> aux_solution(new ExactSolutionMovingPeak(mesh, diffusivity, M_PI / 2.));
-  SmoothingWeakFormResidual weakform_residual(solvedExample);
+  SmoothingWeakFormResidual weakform_residual(solvedExample, 1, false, "", "", diffusivity);
   weakform_residual.set_current_time_step(time_step_length);
-  weakform_residual.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_iter_solution, aux_solution));
+  weakform_residual.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_iter_solution, previous_sln));
   DiscreteProblem<double> dp(&weakform_residual, space_1);
   Algebra::UMFPackVector<double> vec;
 
   // 0 - solver
-  CoarseWeakForm weakform_0(solvedExample);
+  SmoothingWeakForm weakform_0(solvedExample, false, 1, false, "", "", diffusivity);
   weakform_0.set_current_time_step(time_step_length);
   weakform_0.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_iter_solution, previous_sln));
   LinearSolver<double> solver_0(&weakform_0, space_0);
+  solver_0.set_verbose_output(false);
+
+  double* slnv_1 = new double[ndofs_1];
+  double* slnv_0 = new double[ndofs_0];
 
   double current_time = 0.;
   int number_of_steps = (time_interval_length - current_time) / time_step_length;
@@ -115,37 +119,41 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
     for(int iteration_1 = 1; iteration_1 < 15; iteration_1++)
     {
       solver_1.solve();
-      Solution<double>::vector_to_solution(solver_1.get_sln_vector(), space_1, prev_iter_solution);
+      OGProjection<double>::project_global(space_1, prev_iter_solution, slnv_1);
+      for(int k = 0; k < ndofs_1; k++)
+        slnv_1[k] += solver_1.get_sln_vector()[k];
+      Solution<double>::vector_to_solution(slnv_1, space_1, prev_iter_solution);
       solution_view.show(prev_iter_solution);
       
       dp.assemble(&vec);
-      aux_solution->copy(prev_iter_solution);
       double residual_norm = Hermes2D::get_l2_norm(&vec);
-      std::cout << "\tIteration - 1: " << iteration_1 << ", residual norm: " << residual_norm << std::endl;
-      if(residual_norm < 1e-4)
+      std::cout << "\tIteration - (P = 1): " << iteration_1 << ", residual norm: " << residual_norm << std::endl;
+      if(residual_norm < 1e-6)
         break;
     }
 
     // Take only the 0 - part of the previous solution
-    aux_solution->copy(prev_iter_solution);
+    OGProjection<double>::project_global(space_0, previous_sln, previous_sln);
+    prev_iter_solution->copy(previous_sln);
     dp.set_space(space_0);
     for(int iteration_0 = 1; iteration_0 < 15; iteration_0++)
     {
       solver_0.solve();
-      Solution<double>::vector_to_solution(solver_0.get_sln_vector(), space_0, prev_iter_solution);
+      OGProjection<double>::project_global(space_0, prev_iter_solution, slnv_0);
+      for(int k = 0; k < ndofs_0; k++)
+        slnv_0[k] += solver_0.get_sln_vector()[k];
+      Solution<double>::vector_to_solution(slnv_0, space_0, prev_iter_solution);
       solution_view.show(prev_iter_solution);
       
       dp.assemble(&vec);
-      aux_solution->copy(prev_iter_solution);
       double residual_norm = Hermes2D::get_l2_norm(&vec);
-      std::cout << "\tIteration - 2: " << iteration_0 << ", residual norm: " << residual_norm << std::endl;
-      if(residual_norm < 1e-4)
+      std::cout << "\tIteration - (P = 0): " << iteration_0 << ", residual norm: " << residual_norm << std::endl;
+      if(residual_norm < 1e-6)
         break;
     }
 
-    double* solution_vector = merge_slns(solver_0.get_sln_vector(), space_0, solver_1.get_sln_vector(), space_1, space_1);
+    double* solution_vector = merge_slns(slnv_0, space_0, slnv_1, space_1, space_1);
     Solution<double>::vector_to_solution(solution_vector, space_1, previous_sln);
-    
     solution_view.show(previous_sln);
 
     ((ExactSolutionMovingPeak*)(exact_solution.get()))->set_current_time(current_time + (M_PI / 2.));

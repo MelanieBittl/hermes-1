@@ -494,7 +494,7 @@ public:
 class CustomVectorFormSurfDiffusion : public VectorFormSurf<double>
 {
 public:
-  CustomVectorFormSurfDiffusion(int i, int ext_bnd, double diffusivity, double s, double sigma, std::string inlet, double multiplier = -1.) : 
+  CustomVectorFormSurfDiffusion(int i, int ext_bnd, double diffusivity, double s, double sigma, std::string inlet, double multiplier = 1.) : 
     VectorFormSurf<double>(i), ext_bnd(ext_bnd), diffusivity(diffusivity), s(s), sigma(sigma), multiplier(multiplier)
   {
     this->set_area(inlet);

@@ -3,7 +3,7 @@
 #include "algorithms.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 5;
+const int initialRefinementsCount = 6;
 const Algorithm algorithm = pMultigridBessiRebay;
 const SolvedExample solvedExample = MovingPeak;
 const EulerLimiterType limiter_type = VertexBased;
@@ -15,7 +15,7 @@ double time_step_length;
 double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
-double diffusivity = 1e-3;
+double diffusivity = 5e-3;
 
 int main(int argc, char* argv[])
 {
@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     diffusivity = atof(argv[1]);
   // test();
   Hermes::Mixins::Loggable::set_static_logFile_name("logfile.h2d");
-  HermesCommonApi.set_integral_param_value(numThreads, 16);
+  HermesCommonApi.set_integral_param_value(numThreads, 3);
 
 
   switch(solvedExample)
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     time_interval_length = 1e4;
     break;
   case MovingPeak:
-    time_step_length = 1e-3;
+    time_step_length = 1e-2;
     time_interval_length = (2. * M_PI) + (time_step_length / 10.);
     break;
   case Benchmark:
