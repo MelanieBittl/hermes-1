@@ -167,7 +167,8 @@ class MyErrorCalculator : public ErrorCalculator<double>
 public:
   MyErrorCalculator(CalculatedErrorType errorType, int component_count) : ErrorCalculator<double>(errorType)
   {
-    DefaultNormFormVol<double>* form = new DefaultNormFormVol<double>(0, 0, HERMES_L2_NORM);
+    DefaultNormFormSurf<double>* form = new DefaultNormFormSurf<double>(0, 0, HERMES_L2_NORM);
+    form->set_area("Outlet");
     this->add_error_form(form);
   }
   virtual ~MyErrorCalculator() {}

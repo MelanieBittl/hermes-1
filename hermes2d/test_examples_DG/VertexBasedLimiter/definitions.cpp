@@ -78,7 +78,7 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, in
   if(add_inlet)
   {
     this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 2, true, false));
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet, 1.));
+//    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
   }
   // Residual
   add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, true));
@@ -88,62 +88,8 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, in
 
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
   add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 0, diffusivity, 0, 0 * 100.));
-  if(add_inlet)
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet, 1.));
-}
-
-CoarseWeakForm::CoarseWeakForm(SolvedExample solvedExample, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
-{
-  switch(solvedExample)
-  {
-  case AdvectedCube:
-    advection_term = advection_term_cube;
-    break;
-  case SolidBodyRotation:
-    advection_term = advection_term_solid_body_rotation;
-    break;
-  case CircularConvection:
-    advection_term = advection_term_circular_convection;
-    break;
-  case MovingPeak:
-    advection_term = advection_term_moving_peak;
-    break;
-  case Benchmark:
-    advection_term = advection_term_benchmark;
-    break;
-  }
-
-  // Matrix
-  // M
-  add_matrix_form(new CustomMatrixFormVol(0, 0, -1.));
-  // A_tilde  
-  add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
-  add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false, true, false));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, true, diffusivity, 0, 0 * 100.));
-  // BC
-  if(add_inlet)
-    this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
-
-
-  // RHS
-  // M
-  add_vector_form(new CustomVectorFormVol(0, 0, -1.));
-  // BC
-  if(add_inlet)
-  {
-    this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 2, true, false, 1.));
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet, 1.));
-  }
-  // Residual
-  // Nothing here.
-  // A_tilde
-  add_vector_form(new CustomVectorFormVolConvection(0, 0, -1.));
-  add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity, 1.));
-  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, false, true, 1.));
-  add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 0, diffusivity, 0, 0 * 100., 1.));
-  if(add_inlet)
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet, 1.));
+  //if(add_inlet)
+    //this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
 }
 
 SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
@@ -176,6 +122,12 @@ SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample
   add_vector_form(new CustomVectorFormVolConvection(0, 0, -1.));
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity, 1.));
   add_vector_form_surf(new CustomVectorFormSurfConvection(0, 0, false, true, 1.));
+  if(add_inlet)
+  {
+    this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 2, true, false, 1.));
+//    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet, 1.));
+  }
 }
 
 ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1)

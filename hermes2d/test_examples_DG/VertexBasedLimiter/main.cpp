@@ -3,9 +3,9 @@
 #include "algorithms.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 6;
+const int initialRefinementsCount = 5;
 const Algorithm algorithm = pMultigridBessiRebay;
-const SolvedExample solvedExample = MovingPeak;
+const SolvedExample solvedExample = Benchmark;
 const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
@@ -41,11 +41,11 @@ int main(int argc, char* argv[])
     time_interval_length = 1e4;
     break;
   case MovingPeak:
-    time_step_length = 1e-2;
+    time_step_length = 1e-3;
     time_interval_length = (2. * M_PI) + (time_step_length / 10.);
     break;
   case Benchmark:
-    time_step_length = 1.;
+    time_step_length = 5e-2;
     time_interval_length = 10.5 + time_step_length / 10.;
     break;
   }
@@ -77,6 +77,8 @@ int main(int argc, char* argv[])
     break;
   case Benchmark:
     mloader.load("domain_benchmark.xml", mesh);
+    mesh->refine_all_elements(2);
+    mesh->refine_all_elements(2);
     for(int i = 0; i < initialRefinementsCount; i++)
       mesh->refine_all_elements();
     break;
