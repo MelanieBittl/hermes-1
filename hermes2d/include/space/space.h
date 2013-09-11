@@ -87,7 +87,8 @@ namespace Hermes
     template<typename Scalar> class H1Space;
     template<typename Scalar> class HcurlSpace;
     template<typename Scalar> class HdivSpace;
-	template<typename Scalar> class L2_SEMI_CG_Space;
+		template<typename Scalar> class L2_SEMI_CG_Space;
+	  template<typename Scalar> class SpaceBB;
 
     /** @defgroup spaces FEM Spaces
     * \brief Collection of classes that represent and specify FE spaces.
@@ -268,6 +269,7 @@ namespace Hermes
         SpaceSharedPtr<Scalar> init_construction_h1();
         SpaceSharedPtr<Scalar> init_construction_hcurl();
         SpaceSharedPtr<Scalar> init_construction_hdiv();
+        SpaceSharedPtr<Scalar> init_construction_l2_semi_cg();
 
         /// Construction finalization.
         virtual void finish_construction(SpaceSharedPtr<Scalar> ref_space);

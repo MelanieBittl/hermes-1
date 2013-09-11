@@ -120,7 +120,7 @@ namespace Hermes
 
       /// Obtains the value of the given shape function. (x,y) is a coordinate in the reference
       /// domain, component is 0 for Scalar shapesets and 0 or 1 for vector shapesets.
-      double get_value(int n, int index, double x, double y, int component, ElementMode2D mode);
+      virtual double get_value(int n, int index, double x, double y, int component, ElementMode2D mode);
 
       double get_fn_value (int index, double x, double y, int component, ElementMode2D mode);
       double get_dx_value (int index, double x, double y, int component, ElementMode2D mode);
@@ -197,7 +197,7 @@ namespace Hermes
 
       /// Constructs the linear combination of edge functions, forming a constrained edge function.
       ///
-      double get_constrained_value(int n, int index, double x, double y, int component, ElementMode2D mode);
+      virtual double get_constrained_value(int n, int index, double x, double y, int component, ElementMode2D mode);
 
       template<typename Scalar> friend class DiscreteProblem;
       template<typename Scalar> friend class Solution;
@@ -218,6 +218,7 @@ namespace Hermes
       template<typename Scalar> friend class HcurlSpace;
       template<typename Scalar> friend class HdivSpace;
       template<typename Scalar> friend class L2_SEMI_CG_Space;
+      template<typename Scalar> friend class SpaceBB;
       template<typename Scalar> friend class L2MarkerWiseConstSpace;
 
     };
