@@ -148,19 +148,9 @@ public:
       double jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
 
       if(a_dot_n < 0)
-      {
-        if(on_K_in)
-          result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? u->val_neighbor[i] : 0.) * jump_v;
-        if(on_K_out)
-          result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? u->val_neighbor[i] : 0.) * jump_v;
-      }
+        result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? u->val_neighbor[i] : 0.) * jump_v;
       if(a_dot_n > 0)
-      {
-        if(on_K_in)
-          result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? 0. : u->val[i]) * jump_v;
-        if(on_K_out)
-          result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? 0. : u->val[i]) * jump_v;
-      }
+        result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? 0. : u->val[i]) * jump_v;
     }
     return result * wf->get_current_time_step();
   }

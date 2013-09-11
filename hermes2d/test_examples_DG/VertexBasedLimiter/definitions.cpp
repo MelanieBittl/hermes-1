@@ -66,30 +66,28 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, in
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
   add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, !local, true, local));
   add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, local, diffusivity, 0, 0 * 100.));
-  // BC
+  
   this->add_matrix_form_surf(new CustomMatrixFormSurfConvection(0, 0));
   if(add_inlet)
+  {
     this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
+  }
+
   // RHS
   // M
   add_vector_form(new CustomVectorFormVol(0, 0, -1.));
   add_vector_form(new CustomVectorFormVol(0, 1, 1.));
-  // BC
-  if(add_inlet)
-  {
-    this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 2, true, false));
-//    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
-  }
-  // Residual
-  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, true));
-  // A_tilde
-  add_vector_form(new CustomVectorFormVolConvection(0, 0));
-  add_vector_form_surf(new CustomVectorFormSurfConvection(0, 0, false, true));
 
+  add_vector_form(new CustomVectorFormVolConvection(0, 0));
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
+  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, true));
   add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 0, diffusivity, 0, 0 * 100.));
-  //if(add_inlet)
-    //this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
+
+  // BC
+  add_vector_form_surf(new CustomVectorFormSurfConvection(0, 0, false, true));
+  if(add_inlet)
+    this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 2, true, false));
 }
 
 SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
@@ -125,8 +123,8 @@ SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample
   if(add_inlet)
   {
     this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 2, true, false, 1.));
-//    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet, 1.));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet, -1.));
   }
 }
 
