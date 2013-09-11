@@ -47,7 +47,13 @@ public:
 class SmoothingWeakFormResidual  : public WeakForm<double>     
 {
 public:
-  SmoothingWeakFormResidual(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0.);
+  SmoothingWeakFormResidual(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., bool add_time_der = true);
+};
+
+class FullImplicitWeakForm : public WeakForm<double>
+{
+public:
+  FullImplicitWeakForm(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0.);
 };
 
 class ImplicitWeakForm : public WeakForm<double>
