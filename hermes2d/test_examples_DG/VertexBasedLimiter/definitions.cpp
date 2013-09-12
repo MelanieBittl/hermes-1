@@ -558,3 +558,18 @@ double* merge_slns(double* solution_vector_coarse, SpaceSharedPtr<double> space_
   }
   return target;
 }
+
+Hermes::Algebra::Vector<double>* cut_off_linear_part(Hermes::Algebra::Vector<double>* src_vector, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine)
+{
+  UMFPackVector<double>* vector = new UMFPackVector<double>(space_coarse->get_num_dofs());
+  Element *e;
+  for_all_active_elements(e, space_coarse->get_mesh())
+  {
+    AsmList<double> al_coarse, al_fine;
+    space_coarse->get_element_assembly_list(e, &al_coarse);
+    space_fine->get_element_assembly_list(e, &al_fine);
+
+    vector->set(al_coarse.dof[0],  src_vector->get(al_fine.dof[0]));
+  }
+  return vector;
+}

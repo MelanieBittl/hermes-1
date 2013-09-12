@@ -80,9 +80,9 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
   int ndofs_0 = space_0->get_num_dofs();
 
   // Previous iteration solution
-  MeshFunctionSharedPtr<double> prev_iter_solution(new ZeroSolution<double>(mesh));
   MeshFunctionSharedPtr<double>initial_sln(new InitialConditionBenchmark(mesh, diffusivity));
-  
+  ScalarView coarse_solution_view("Coarse solution", new WinGeom(0, 360, 600, 350));
+
   // 1 - solver
   SmoothingWeakForm weakform_1(solvedExample, true, 1, true, "Inlet", "Outlet", diffusivity);
   weakform_1.set_current_time_step(time_step_length);
@@ -102,6 +102,7 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
   weakform_0.set_current_time_step(time_step_length);
   weakform_0.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_sln, initial_sln));
   DiscreteProblem<double> dp_0(&weakform_0, space_0);
+  UMFPackMatrix<double> matrix;
 
   double* slnv_1 = new double[ndofs_1];
   double* slnv_0 = new double[ndofs_0];
@@ -133,16 +134,18 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
     }
 
     // 2 - Solve the problem on the coarse level exactly
-    //// Take only the 0 - part of the previous solution
-    //OGProjection<double>::project_global(space_0, prev_iter_solution, prev_iter_solution);
-    //solution_view->show(prev_iter_solution);
-    //solution_view->wait_for_keypress();
     //// Solve
-    dp_0.assemble
-    Solution<double>::vector_to_solution(solver_0.get_sln_vector(), space_0, previous_sln);
+    dp_0.assemble(&matrix);
+    UMFPackLinearMatrixSolver<double> solver_0(&matrix, (Algebra::UMFPackVector<double>*)cut_off_linear_part(&vec, space_0, space_1));
+    OGProjection<double>::project_global(space_0, previous_sln, slnv_0);
+    solver_0.solve();
+    for(int k = 0; k < ndofs_0; k++)
+      slnv_0[k] += solver_0.get_sln_vector()[k];
+    Solution<double>::vector_to_solution(slnv_0, space_0, previous_sln);
+    coarse_solution_view.show(previous_sln);
     
     // 3 - Prolongation and replacement
-    double* solution_vector = merge_slns(solver_0.get_sln_vector(), space_0, slnv_1, space_1, space_1);
+    double* solution_vector = merge_slns(slnv_0, space_0, slnv_1, space_1, space_1);
     Solution<double>::vector_to_solution(solution_vector, space_1, previous_sln);
     delete [] solution_vector;
     

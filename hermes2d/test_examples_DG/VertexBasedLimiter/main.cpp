@@ -3,7 +3,7 @@
 #include "algorithms.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 5;
+const int initialRefinementsCount = 6;
 const Algorithm algorithm = pMultigridBessiRebay;
 const SolvedExample solvedExample = Benchmark;
 const EulerLimiterType limiter_type = VertexBased;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     time_interval_length = (2. * M_PI) + (time_step_length / 10.);
     break;
   case Benchmark:
-    time_step_length = 5e-1;
+    time_step_length = 1e0;
     time_interval_length = 1000. + time_step_length / 10.;
     break;
   }
@@ -127,8 +127,8 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double> exact_solution(exact_sln);
 
   // Visualization.
-  ScalarView solution_view("Solution", new WinGeom(520, 10, 500, 500));
-  ScalarView exact_view("Exact solution", new WinGeom(520, 510, 500, 500));
+  ScalarView solution_view("Solution", new WinGeom(0, 0, 600, 350));
+  ScalarView exact_view("Exact solution", new WinGeom(610, 0, 600, 350));
 
   if(algorithm == MultiscaleDecomposition)
   {
