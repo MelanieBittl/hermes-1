@@ -149,9 +149,10 @@ public:
 
       if(a_dot_n < 0)
         result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? u->val_neighbor[i] : 0.) * jump_v;
-      if(a_dot_n > 0)
+      if(a_dot_n >= 0)
         result += wt[i] * a_dot_n * ((u->fn_central == NULL) ? 0. : u->val[i]) * jump_v;
     }
+
     return result * wf->get_current_time_step();
   }
 
@@ -259,7 +260,7 @@ public:
     {
       double a_dot_n = advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
 
-      if(a_dot_n > 0 && on_K_out)
+      if(a_dot_n >= 0 && on_K_out)
         result += wt[i] * a_dot_n * ext[this->ext_bnd]->val[i] * v->val[i];
       if(a_dot_n < 0 && on_K_in)
         result += wt[i] * a_dot_n * ext[this->ext_bnd]->val[i] * v->val[i];

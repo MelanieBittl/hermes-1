@@ -86,24 +86,22 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
   // 1 - solver
   SmoothingWeakForm weakform_1(solvedExample, true, 1, true, "Inlet", "Outlet", diffusivity);
   weakform_1.set_current_time_step(time_step_length);
-  weakform_1.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_iter_solution, previous_sln, initial_sln));
+  weakform_1.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_sln, initial_sln));
   LinearSolver<double> solver_1(&weakform_1, space_1);
   solver_1.set_verbose_output(false);
 
   // 1 - Residual measurement.
   SmoothingWeakFormResidual weakform_residual_1(solvedExample, 1, true, "Inlet", "Outlet", diffusivity);
-  SmoothingWeakFormResidual weakform_residual_0(solvedExample, 1, true, "Inlet", "Outlet", diffusivity, false);
   weakform_residual_1.set_current_time_step(time_step_length);
-  weakform_residual_1.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_iter_solution, previous_sln, initial_sln));
+  weakform_residual_1.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_sln, initial_sln));
   DiscreteProblem<double> dp(&weakform_residual_1, space_1);
   Algebra::UMFPackVector<double> vec;
 
   // 0 - solver
   FullImplicitWeakForm weakform_0(solvedExample, 1, true, "Inlet", "Outlet", diffusivity);
   weakform_0.set_current_time_step(time_step_length);
-  weakform_0.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_iter_solution, initial_sln));
-  LinearSolver<double> solver_0(&weakform_0, space_0);
-  solver_0.set_verbose_output(false);
+  weakform_0.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_sln, initial_sln));
+  DiscreteProblem<double> dp_0(&weakform_0, space_0);
 
   double* slnv_1 = new double[ndofs_1];
   double* slnv_0 = new double[ndofs_0];
@@ -119,11 +117,11 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
     for(int iteration_1 = 1; iteration_1 < 15; iteration_1++)
     {
       solver_1.solve();
-      OGProjection<double>::project_global(space_1, prev_iter_solution, slnv_1);
+      OGProjection<double>::project_global(space_1, previous_sln, slnv_1);
       for(int k = 0; k < ndofs_1; k++)
         slnv_1[k] += solver_1.get_sln_vector()[k];
-      Solution<double>::vector_to_solution(slnv_1, space_1, prev_iter_solution);
-      solution_view->show(prev_iter_solution);
+      Solution<double>::vector_to_solution(slnv_1, space_1, previous_sln);
+      solution_view->show(previous_sln);
       
       dp.assemble(&vec);
       double residual_norm = Hermes2D::get_l2_norm(&vec);
@@ -136,27 +134,27 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
 
     // 2 - Solve the problem on the coarse level exactly
     //// Take only the 0 - part of the previous solution
-    OGProjection<double>::project_global(space_0, prev_iter_solution, prev_iter_solution);
+    //OGProjection<double>::project_global(space_0, prev_iter_solution, prev_iter_solution);
+    //solution_view->show(prev_iter_solution);
+    //solution_view->wait_for_keypress();
     //// Solve
-    solver_0.solve();
-    Solution<double>::vector_to_solution(solver_0.get_sln_vector(), space_0, prev_iter_solution);
-    solution_view->show(prev_iter_solution);
-    solution_view->wait_for_keypress();
+    dp_0.assemble
+    Solution<double>::vector_to_solution(solver_0.get_sln_vector(), space_0, previous_sln);
     
     // 3 - Prolongation and replacement
     double* solution_vector = merge_slns(solver_0.get_sln_vector(), space_0, slnv_1, space_1, space_1);
-    Solution<double>::vector_to_solution(solution_vector, space_1, prev_iter_solution);
+    Solution<double>::vector_to_solution(solution_vector, space_1, previous_sln);
     delete [] solution_vector;
     
     // 4 - post-smoothing steps
     for(int iteration_1 = 1; iteration_1 < 15; iteration_1++)
     {
       solver_1.solve();
-      OGProjection<double>::project_global(space_1, prev_iter_solution, slnv_1);
+      OGProjection<double>::project_global(space_1, previous_sln, slnv_1);
       for(int k = 0; k < ndofs_1; k++)
         slnv_1[k] += solver_1.get_sln_vector()[k];
-      Solution<double>::vector_to_solution(slnv_1, space_1, prev_iter_solution);
-      solution_view->show(prev_iter_solution);
+      Solution<double>::vector_to_solution(slnv_1, space_1, previous_sln);
+      solution_view->show(previous_sln);
       
       dp.assemble(&vec);
       double residual_norm = Hermes2D::get_l2_norm(&vec);
@@ -166,12 +164,6 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
       else if(residual_norm / initial_residual_norm < 1e-1)
         break;
     }
-
-    // Copy to the previous sln.
-    previous_sln->copy(prev_iter_solution);
-    
-    // Display
-    solution_view->show(previous_sln);
 
     // Error & exact solution display.
     //((ExactSolutionMovingPeak*)(exact_solution.get()))->set_current_time(current_time + (M_PI / 2.));

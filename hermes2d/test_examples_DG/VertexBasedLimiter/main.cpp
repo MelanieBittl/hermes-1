@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     time_interval_length = (2. * M_PI) + (time_step_length / 10.);
     break;
   case Benchmark:
-    time_step_length = 5e-2;
+    time_step_length = 5e-1;
     time_interval_length = 1000. + time_step_length / 10.;
     break;
   }
