@@ -485,8 +485,8 @@ public:
 class CustomVectorFormSurfDiffusion : public VectorFormSurf<double>
 {
 public:
-  CustomVectorFormSurfDiffusion(int i, int ext_bnd, double diffusivity, double s, double sigma, std::string inlet, double multiplier = 1.) : 
-    VectorFormSurf<double>(i), ext_bnd(ext_bnd), diffusivity(diffusivity), s(s), sigma(sigma), multiplier(multiplier)
+  CustomVectorFormSurfDiffusion(int i, int ext_bnd, double diffusivity, double s, double sigma, std::string inlet, bool add_grad_u = true, double multiplier = -1.) : 
+    VectorFormSurf<double>(i), ext_bnd(ext_bnd), diffusivity(diffusivity), s(s), sigma(sigma), add_grad_u(add_grad_u), multiplier(multiplier)
   {
     this->set_area(inlet);
   };
@@ -501,7 +501,8 @@ public:
       double dy = ext[this->ext_bnd]->dy[i];
       double dx_test = v->dx[i];
       double dy_test = v->dy[i];
-      result -= wt[i] * (dx * e->nx[i] + dy * e->ny[i]) * v->val[i];
+      if(add_grad_u)
+        result -= wt[i] * (dx * e->nx[i] + dy * e->ny[i]) * v->val[i];
       result -= wt[i] * (dx_test * e->nx[i] + dy_test * e->ny[i]) * ext[this->ext_bnd]->val[i] * s;
       result += wt[i] * sigma * v->val[i] * ext[this->ext_bnd]->val[i];
     }
@@ -522,6 +523,7 @@ public:
   int ext_bnd;
   double diffusivity;
   double s, sigma, multiplier;
+  bool add_grad_u;
 };
 #pragma endregion
 #endif

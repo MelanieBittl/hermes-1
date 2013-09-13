@@ -3,8 +3,8 @@
 #include "algorithms.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 6;
-const Algorithm algorithm = pMultigridBessiRebay;
+const int initialRefinementsCount = 5;
+const Algorithm algorithm = pMultigrid;
 const SolvedExample solvedExample = Benchmark;
 const EulerLimiterType limiter_type = VertexBased;
 
@@ -16,6 +16,8 @@ double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
 double diffusivity = 1e-3;
+double s = 0;
+double sigma = std::pow(2., (double)(initialRefinementsCount)) * (s == -1 ? 1. : (s == 1 ? 10. : 0.));
 
 int main(int argc, char* argv[])
 {
@@ -23,8 +25,7 @@ int main(int argc, char* argv[])
     diffusivity = atof(argv[1]);
   // test();
   Hermes::Mixins::Loggable::set_static_logFile_name("logfile.h2d");
-  HermesCommonApi.set_integral_param_value(numThreads, 10);
-
+  HermesCommonApi.set_integral_param_value(numThreads, 8);
 
   switch(solvedExample)
   {
@@ -130,15 +131,15 @@ int main(int argc, char* argv[])
   ScalarView solution_view("Solution", new WinGeom(0, 0, 600, 350));
   ScalarView exact_view("Exact solution", new WinGeom(610, 0, 600, 350));
 
-  if(algorithm == MultiscaleDecomposition)
+  if(algorithm == Multiscale)
   {
     multiscale_decomposition(mesh, solvedExample, polynomialDegree, previous_mean_values, previous_derivatives, diffusivity, time_step_length,
     time_interval_length, solution, exact_solution, &solution_view, &exact_view);
   }
-  if(algorithm == pMultigridBessiRebay)
+  if(algorithm == pMultigrid)
   {
     p_multigrid(mesh, solvedExample, polynomialDegree, previous_solution, diffusivity, time_step_length, time_interval_length, 
-      solution, exact_solution, &solution_view, &exact_view);
+      solution, exact_solution, &solution_view, &exact_view, s, sigma);
   }
 
   solution_view.wait_for_close();
