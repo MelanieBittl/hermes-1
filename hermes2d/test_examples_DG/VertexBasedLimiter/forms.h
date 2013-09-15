@@ -65,6 +65,40 @@ public:
 
 #pragma endregion
 
+#pragma region Error form
+
+class ErrorFormSurf : public VectorFormSurf<double>
+{
+public:
+  ErrorFormSurf(std::string area_to_set) : VectorFormSurf<double>(0)
+  {
+    this->set_area(area_to_set);
+  };
+
+  double value(int n, double *wt, Func<double> **u_ext, Func<double> *v,
+    Geom<double> *e, Func<double> **ext) const
+  {
+    double result = 0.;
+    for (int i = 0; i < n; i++) 
+      result += wt[i] * (ext[0]->val[i] - ext[1]->val[i]) * (ext[0]->val[i] - ext[1]->val[i]);
+
+    return result;
+  }
+
+  Ord ord(int n, double *wt, Func<Ord> **u_ext, Func<Ord> *v,
+    Geom<Ord> *e, Func<Ord> **ext) const
+  {
+    return Ord(20);
+  }
+
+  VectorFormSurf<double>* clone() const
+  {
+    return new ErrorFormSurf(*this);
+  }
+};
+
+#pragma endregion
+
 #pragma region Convection forms
 
 class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
@@ -126,7 +160,7 @@ public:
 class CustomMatrixFormInterfaceConvection : public MatrixFormDG<double>
 {
 public:
-  CustomMatrixFormInterfaceConvection(int i, int j, bool on_K_in, bool on_K_out, bool local) : MatrixFormDG<double>(i, j), on_K_in(on_K_in), on_K_out(on_K_out), local(local)
+  CustomMatrixFormInterfaceConvection(int i, int j, bool local) : MatrixFormDG<double>(i, j), local(local)
   {
   };
 
@@ -166,8 +200,6 @@ public:
   {
     return new CustomMatrixFormInterfaceConvection(*this);
   }
-  bool on_K_in;
-  bool on_K_out;
   bool local;
 };
 
@@ -225,7 +257,7 @@ public:
     for (int i = 0; i < n; i++) 
     {
       double a_dot_n = advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
-      if(a_dot_n > 0)
+      if(a_dot_n >= 0)
         result += wt[i] * u->val[i] * v->val[i] * a_dot_n;
     }
     return result * wf->get_current_time_step();
@@ -372,6 +404,7 @@ public:
     double* dy = (u->fn_central == NULL) ? u->dy_neighbor : u->dy;
     double* dx_test = (v->fn_central == NULL) ? v->dx_neighbor : v->dx;
     double* dy_test = (v->fn_central == NULL) ? v->dy_neighbor : v->dy;
+
     for (int i = 0; i < n; i++) 
     {
       double jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
@@ -442,6 +475,48 @@ public:
   double multiplier;
 };
 
+class CustomVectorFormInterfaceDiffusionOffDiag : public VectorFormDG<double>
+{
+public:
+  CustomVectorFormInterfaceDiffusionOffDiag(int i, int ext_i, double diffusivity, double s, double sigma, double multiplier = -1.) : VectorFormDG<double>(i), ext_i(ext_i), diffusivity(diffusivity), s(s), sigma(sigma), multiplier(multiplier)
+  {
+  };
+
+  double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
+    Geom<double> *e, DiscontinuousFunc<double> **ext) const
+  {
+    double result = 0.;
+    for (int i = 0; i < n; i++) 
+    {
+      double dx = .5 * ext[this->ext_i]->dx_neighbor[i];
+      double dy = .5 * ext[this->ext_i]->dy_neighbor[i];
+      result -= wt[i] * (dx * e->nx[i] + dy * e->ny[i]) * v->val[i];
+      double dx_test = .5 * v->dx[i];
+      double dy_test = .5 * v->dy[i];
+      double jump = - ext[this->ext_i]->val_neighbor[i];
+      result -= wt[i] * (dx_test * e->nx[i] + dy_test * e->ny[i]) * jump * s;
+      result += wt[i] * sigma * jump * v->val[i];
+    }
+    return multiplier * result * wf->get_current_time_step() * diffusivity;
+  }
+
+  Ord ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, Func<Ord> *v,
+    Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const
+  {
+    return ext[this->ext_i]->val[0] * v->val[0];
+  }
+
+  VectorFormDG<double>* clone() const
+  {
+    return new CustomVectorFormInterfaceDiffusionOffDiag(*this);
+  }
+
+  int ext_i;
+  double s, sigma;
+  double diffusivity;
+  double multiplier;
+};
+
 class CustomMatrixFormSurfDiffusion : public MatrixFormSurf<double>
 {
 public:
@@ -471,7 +546,7 @@ public:
   Ord ord(int n, double *wt, Func<Ord> **u_ext, Func<Ord>* u, Func<Ord> *v,
     Geom<Ord> *e, Func<Ord> **ext) const
   {
-    return u->val[0] * v->val[0] * e->x[0];
+    return u->val[0] * v->val[0] * e->x[0] * e->nx[0];
   }
 
   MatrixFormSurf<double>* clone() const
@@ -512,7 +587,7 @@ public:
   Ord ord(int n, double *wt, Func<Ord> **u_ext, Func<Ord> *v,
     Geom<Ord> *e, Func<Ord> **ext) const
   {
-    return ext[this->ext_bnd]->val[0] * v->val[0];
+    return ext[this->ext_bnd]->val[0] * v->val[0] * e->nx[0];
   }
 
   VectorFormSurf<double>* clone() const

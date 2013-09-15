@@ -37,11 +37,9 @@ static double advection_term_benchmark(double x, double y, double vx, double vy)
 }
 scalar_product_with_advection_direction advection_term;
 
-ErrorWeakForm::ErrorWeakForm(SolvedExample solvedExample)
+ErrorWeakForm::ErrorWeakForm()
 {
-    DefaultNormFormSurf<double>* form = new DefaultNormFormSurf<double>(0, 0, HERMES_L2_NORM);
-    form->set_area("Outlet");
-    this->add_vector_form_surf(new WeakFormsH1::DefaultVectorFormSurf<double>(0
+  this->add_vector_form_surf(new ErrorFormSurf("Outlet"));
 }
 
 SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity, double s, double sigma) : WeakForm<double>(1) 
@@ -71,7 +69,7 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, in
   // A_tilde  
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, !local, true, local));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, local));
   add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, local, diffusivity, s, sigma));
   // A_tilde_surf
   this->add_matrix_form_surf(new CustomMatrixFormSurfConvection(0, 0));
@@ -144,7 +142,6 @@ SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet, true));
 }
 
-
 FullImplicitWeakForm::FullImplicitWeakForm(SolvedExample solvedExample, int explicitSchemeStep, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
 {
   switch(solvedExample)
@@ -170,12 +167,12 @@ FullImplicitWeakForm::FullImplicitWeakForm(SolvedExample solvedExample, int expl
   // M
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
   // A_tilde  
-  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, true, true, false));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false));
   // A_tilde_surf
   this->add_matrix_form_surf(new CustomMatrixFormSurfConvection(0, 0));
 }
 
-ExactWeakForm::ExactWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity, double s, double sigma) : WeakForm<double>(1) 
+ExactWeakForm::ExactWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity, double s, double sigma, bool matrix_only) : WeakForm<double>(1) 
 {
   switch(solvedExample)
   {
@@ -199,24 +196,24 @@ ExactWeakForm::ExactWeakForm(SolvedExample solvedExample, bool add_inlet, std::s
   // A_tilde  
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, true, true, false));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false));
   add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, false, diffusivity, s, sigma));
   // A_tilde_surf
   this->add_matrix_form_surf(new CustomMatrixFormSurfConvection(0, 0));
   if(add_inlet)
     this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet));
-    
+
   // b
   if(add_inlet)
   {
-    this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 1, true, false));
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 1, diffusivity, s, sigma, inlet, false, 1.));
+    this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 0, true, false));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet, false, 1.));
   }
 }
 
 
 
-ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1)
+ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity, double s, double sigma) : WeakForm<double>(1)
 {
   switch(solvedExample)
   {
@@ -241,13 +238,12 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
   // Mass matrix - rhs
   add_vector_form(new CustomVectorFormVol(0, 0, 1.));
-  add_vector_form(new CustomVectorFormVol(0, 1, 1.));
 
   // Convection.
   // Numerical flux - inner-edge element outlet - matrix
-  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false, true, false));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false));
   // Numerical flux - inner-edge inlet - mean values - rhs
-  // add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, false, false));
+  add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, false, false));
   // Numerical flux - inner-edge inlet+outlet - derivatives - rhs
   add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 1, true, true));
   // No convection - when test functions have zero gradient
@@ -265,7 +261,8 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   // Diffusion.
   // No Diffusion - when test functions have zero gradient
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
-  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, false, diffusivity, 0, 0 * 100.));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, false, diffusivity, s, sigma));
+  add_vector_form_DG(new CustomVectorFormInterfaceDiffusion(0, 1, diffusivity, s, sigma));
   if(add_inlet)
   {
     // Numerical flux - boundary outlet - matrix
@@ -275,7 +272,7 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   }
 }
 
-ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity) : WeakForm<double>(1) 
+ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, std::string outlet, double diffusivity, double s, double sigma) : WeakForm<double>(1) 
 {
   switch(solvedExample)
   {
@@ -304,8 +301,9 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   // Convective term - rhs
   add_vector_form(new CustomVectorFormVolConvection(0, 0));
+
   // Numerical flux - inner-edge element outlet - matrix
-  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false, true, true));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, true));
   // Numerical flux - inner-edge inlet+outlet - mean values - rhs
   add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, true));
   // Numerical flux - inner-edge inlet - derivatives - rhs
@@ -326,13 +324,15 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
   // Diffusive term - rhs - for mean values - zero
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
   // Numerical flux - inner-edge element outlet - matrix
-  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, true, diffusivity, 0, 0 * 100.));
+  add_matrix_form_DG(new CustomMatrixFormInterfaceDiffusion(0, 0, true, diffusivity, s, sigma));
+  add_vector_form_DG(new CustomVectorFormInterfaceDiffusionOffDiag(0, 0, diffusivity, s, sigma));
+  add_vector_form_DG(new CustomVectorFormInterfaceDiffusionOffDiag(0, 1, diffusivity, s, sigma));
   if(add_inlet)
   {
     // Numerical flux - boundary outlet - matrix
-    this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
+    this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet));
     // Numerical flux - boundary inlet - exact solution - rhs
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, s, sigma, inlet));
   }
 
   // Mass matrix - rhs

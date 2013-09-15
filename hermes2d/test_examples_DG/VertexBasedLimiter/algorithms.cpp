@@ -1,7 +1,38 @@
 #include "algorithms.h"
 
+static void calc_l2_error(MeshSharedPtr mesh, MeshFunctionSharedPtr<double> fn_1, MeshFunctionSharedPtr<double> fn_2)
+{
+  ErrorWeakForm wf;
+  SpaceSharedPtr<double> mspace(new L2Space<double>(mesh, 0, new L2ShapesetTaylor));
+  wf.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(fn_1, fn_2));
+  DiscreteProblem<double> dp(&wf, mspace);
+  UMFPackVector<double> vector;
+  dp.assemble(&vector);
+  double result = 0.;
+  for(int i = 0; i < vector.length(); i++)
+    result += vector.get(i);
+  std::cout << "L2 Error: " << std::sqrt(result) << std::endl;
+}
+
+static void solve_exact(SolvedExample solvedExample, SpaceSharedPtr<double> space, double diffusivity, double s, double sigma, MeshFunctionSharedPtr<double> exact_solution, MeshFunctionSharedPtr<double> initial_sln, double time_step)
+{
+  MeshFunctionSharedPtr<double> exact_solver_sln(new Solution<double>());
+  ScalarView* exact_solver_view = new ScalarView("Exact solver solution", new WinGeom(0, 720, 600, 350));
+
+  // Exact solver
+  ExactWeakForm weakform_exact(solvedExample, true, "Inlet", "Outlet", diffusivity, s, sigma);
+  weakform_exact.set_current_time_step(time_step);
+  weakform_exact.set_ext(initial_sln);
+  LinearSolver<double> solver_exact(&weakform_exact, space);
+  solver_exact.solve();
+  Solution<double>::vector_to_solution(solver_exact.get_sln_vector(), space, exact_solver_sln);
+  //OGProjection<double>::project_global(space, exact_solution, exact_solver_sln);
+  calc_l2_error(space->get_mesh(), exact_solver_sln, exact_solution);
+  exact_solver_view->show(exact_solver_sln);
+}
+
 void multiscale_decomposition(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomialDegree, MeshFunctionSharedPtr<double> previous_mean_values, 
-                              MeshFunctionSharedPtr<double> previous_derivatives, double diffusivity, double time_step_length, 
+                              MeshFunctionSharedPtr<double> previous_derivatives, double diffusivity, double s, double sigma, double time_step_length, 
                               double time_interval_length, MeshFunctionSharedPtr<double> solution, MeshFunctionSharedPtr<double> exact_solution, 
                               ScalarView* solution_view, ScalarView* exact_view)
 {
@@ -17,14 +48,17 @@ void multiscale_decomposition(MeshSharedPtr mesh, SolvedExample solvedExample, i
   
   MeshFunctionSharedPtr<double>initial_sln(new InitialConditionBenchmark(mesh, diffusivity));
 
-  ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Outlet", diffusivity);
+  ImplicitWeakForm weakform_implicit(solvedExample, true, "Inlet", "Outlet", diffusivity, s, sigma);
   weakform_implicit.set_current_time_step(time_step_length);
   weakform_implicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, initial_sln));
-  ExplicitWeakForm weakform_explicit(solvedExample, true, "Inlet", "Outlet", diffusivity);
+  ExplicitWeakForm weakform_explicit(solvedExample, true, "Inlet", "Outlet", diffusivity, s, sigma);
   weakform_explicit.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_mean_values, previous_derivatives, initial_sln));
   weakform_explicit.set_current_time_step(time_step_length);
   LinearSolver<double> solver_implicit(&weakform_implicit, const_space);
   LinearSolver<double> solver_explicit(&weakform_explicit, space);
+  
+  solve_exact(solvedExample, full_space, diffusivity, s, sigma, exact_solution, initial_sln, time_step_length);
+  exact_view->show(exact_solution);
 
   double current_time = 0.;
   int number_of_steps = (time_interval_length - current_time) / time_step_length;
@@ -49,10 +83,7 @@ void multiscale_decomposition(MeshSharedPtr mesh, SolvedExample solvedExample, i
 
     solution_view->show(solution);
     
-    exact_view->show(exact_solution);
-    MyErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 1);
-    errorCalculator.calculate_errors(solution, exact_solution, true);
-    std::cout << "Error: " << errorCalculator.get_error_squared(0) << std::endl;
+    calc_l2_error(mesh, solution, exact_solution);
 
     /*
     {
@@ -72,7 +103,6 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
                  double time_interval_length, MeshFunctionSharedPtr<double> solution, MeshFunctionSharedPtr<double> exact_solution, 
                  ScalarView* solution_view, ScalarView* exact_view, double s, double sigma)
 {
-
   // Spaces
   SpaceSharedPtr<double> space_1(new L2Space<double>(mesh, polynomialDegree, new L2ShapesetTaylor));
   int ndofs_1 = space_1->get_num_dofs();
@@ -81,9 +111,7 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
 
   // Previous iteration solution
   MeshFunctionSharedPtr<double>initial_sln(new InitialConditionBenchmark(mesh, diffusivity));
-  MeshFunctionSharedPtr<double>initial_solver_sln(new Solution<double>(mesh));
   ScalarView coarse_solution_view("Coarse solution", new WinGeom(0, 360, 600, 350));
-  ScalarView exact_solver_view("Exact solver solution", new WinGeom(0, 720, 600, 350));
 
   // 1 - solver
   SmoothingWeakForm weakform_1(solvedExample, true, 1, true, "Inlet", "Outlet", diffusivity, s, sigma);
@@ -106,19 +134,9 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
   DiscreteProblem<double> dp_0(&weakform_0, space_0);
   UMFPackMatrix<double> matrix;
   
-  // Exact solver
-  ExactWeakForm weakform_exact(solvedExample, true, "Inlet", "Outlet", diffusivity);
-  weakform_exact.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(previous_sln, initial_sln));
-  LinearSolver<double> solver_exact(&weakform_exact, space_1);
-  solver_exact.solve();
-  Solution<double>::vector_to_solution(solver_exact.get_sln_vector(), space_1, initial_solver_sln);
-  exact_solver_view.show(initial_solver_sln);
-  HermesCommonApi.set_integral_param_value(matrixSolverType, SOLVER_PARALUTION_ITERATIVE);
-  MyErrorCalculator errorCalculatorExact(RelativeErrorToGlobalNorm, 1);
-  errorCalculatorExact.calculate_errors(initial_solver_sln, exact_solution, true);
-  std::cout << "Exact sln error: " << std::sqrt(errorCalculatorExact.get_error_squared(0)) << std::endl;
+  // Exact solver.
+  solve_exact(solvedExample, space_1, diffusivity, s, sigma, exact_solution, initial_sln, time_step_length);
 
-  
   // Utils.
   double* slnv_1 = new double[ndofs_1];
   double* slnv_0 = new double[ndofs_0];
@@ -206,9 +224,7 @@ void p_multigrid(MeshSharedPtr mesh, SolvedExample solvedExample, int polynomial
     // Error & exact solution display.
     //((ExactSolutionMovingPeak*)(exact_solution.get()))->set_current_time(current_time + (M_PI / 2.));
     exact_view->show(exact_solution);
-    MyErrorCalculator errorCalculator(RelativeErrorToGlobalNorm, 1);
-    errorCalculator.calculate_errors(previous_sln, exact_solution, true);
-    std::cout << "Error: " << std::sqrt(errorCalculator.get_error_squared(0)) << std::endl;
+    calc_l2_error(mesh, previous_sln, exact_solution);
 
     /*
     {

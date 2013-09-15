@@ -3,8 +3,8 @@
 #include "algorithms.h"
 
 const int polynomialDegree = 1;
-const int initialRefinementsCount = 5;
-const Algorithm algorithm = pMultigrid;
+const int initialRefinementsCount = 4;
+const Algorithm algorithm = Multiscale;
 const SolvedExample solvedExample = Benchmark;
 const EulerLimiterType limiter_type = VertexBased;
 
@@ -15,7 +15,7 @@ double time_step_length;
 double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
-double diffusivity = 1e-3;
+double diffusivity = 1e-2;
 double s = 0;
 double sigma = std::pow(2., (double)(initialRefinementsCount)) * (s == -1 ? 1. : (s == 1 ? 10. : 0.));
 
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 
   if(algorithm == Multiscale)
   {
-    multiscale_decomposition(mesh, solvedExample, polynomialDegree, previous_mean_values, previous_derivatives, diffusivity, time_step_length,
+    multiscale_decomposition(mesh, solvedExample, polynomialDegree, previous_mean_values, previous_derivatives, diffusivity, s, sigma, time_step_length,
     time_interval_length, solution, exact_solution, &solution_view, &exact_view);
   }
   if(algorithm == pMultigrid)

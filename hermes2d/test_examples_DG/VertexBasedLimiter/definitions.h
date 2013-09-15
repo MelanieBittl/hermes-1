@@ -47,7 +47,7 @@ public:
 class ExactWeakForm : public WeakForm<double>
 {
 public:
-  ExactWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
+  ExactWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0., bool matrix_only = false);
 };
 
 class FullImplicitWeakForm : public WeakForm<double>
@@ -59,19 +59,19 @@ public:
 class ImplicitWeakForm : public WeakForm<double>
 {
 public:
-  ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0.);
+  ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
 };
 
 class ExplicitWeakForm  : public WeakForm<double>     
 {
 public:
-  ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0.);
+  ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
 };
 
 class ErrorWeakForm  : public WeakForm<double>     
 {
 public:
-  ErrorWeakForm(SolvedExample solvedExample);
+  ErrorWeakForm();
 };
 
 
