@@ -76,7 +76,6 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, in
   if(add_inlet)
     this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet));
 
-
   // RHS
   // M
   // Just for Runge-Kutta of more stages, where ext[0] and ext[1] are generally different
@@ -268,7 +267,8 @@ ImplicitWeakForm::ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
     // Numerical flux - boundary outlet - matrix
     this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, 0, 0 * 100., inlet));
     // Numerical flux - boundary inlet - exact solution - rhs
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 1, diffusivity, 0, 0 * 100., inlet, true));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, 0, 0 * 100., inlet, false, 1.));
   }
 }
 
@@ -332,7 +332,8 @@ ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet, 
     // Numerical flux - boundary outlet - matrix
     this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet));
     // Numerical flux - boundary inlet - exact solution - rhs
-    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, s, sigma, inlet));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet, true));
+    this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 2, diffusivity, s, sigma, inlet, false, 1.));
   }
 
   // Mass matrix - rhs
