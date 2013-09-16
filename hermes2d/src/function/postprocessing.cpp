@@ -9,6 +9,8 @@ namespace Hermes
   {
     namespace PostProcessing
     {
+      bool VertexBasedLimiter::wider_bounds_on_boundary = false;
+      
       template<typename Scalar>
       Limiter<Scalar>::Limiter(SpaceSharedPtr<Scalar> space, Scalar* solution_vector) : component_count(1)
       {
@@ -25,17 +27,20 @@ namespace Hermes
       template<typename Scalar>
       void Limiter<Scalar>::init(Scalar* solution_vector_)
       {
-        try
+        if(solution_vector_)
         {
-          int ndof = Space<Scalar>::get_num_dofs(this->spaces);
-          Scalar value = solution_vector_[ndof - 1];
+          try
+          {
+            int ndof = Space<Scalar>::get_num_dofs(this->spaces);
+            Scalar value = solution_vector_[ndof - 1];
 
-          this->solution_vector = new Scalar[Space<Scalar>::get_num_dofs(this->spaces)];
-          memcpy(this->solution_vector, solution_vector_, sizeof(Scalar) * Space<Scalar>::get_num_dofs(this->spaces));
-        }
-        catch (...)
-        {
-          throw Exceptions::Exception("Wrong combination of space(s) and solution_vector passed to Limiter().");
+            this->solution_vector = new Scalar[Space<Scalar>::get_num_dofs(this->spaces)];
+            memcpy(this->solution_vector, solution_vector_, sizeof(Scalar) * Space<Scalar>::get_num_dofs(this->spaces));
+          }
+          catch (...)
+          {
+            throw Exceptions::Exception("Wrong combination of space(s) and solution_vector passed to Limiter().");
+          }
         }
       }
 
@@ -89,10 +94,30 @@ namespace Hermes
       }
 
       template<typename Scalar>
-        Scalar* Limiter<Scalar>::get_solution_vector()
+      Scalar* Limiter<Scalar>::get_solution_vector()
+      {
+        return this->solution_vector;
+      }
+
+      template<typename Scalar>
+      void Limiter<Scalar>::set_solution_vector(Scalar* solution_vector_)
+      {
+        if(solution_vector_)
         {
-          return this->solution_vector;
+          try
+          {
+            int ndof = Space<Scalar>::get_num_dofs(this->spaces);
+            Scalar value = solution_vector_[ndof - 1];
+
+            this->solution_vector = new Scalar[Space<Scalar>::get_num_dofs(this->spaces)];
+            memcpy(this->solution_vector, solution_vector_, sizeof(Scalar) * Space<Scalar>::get_num_dofs(this->spaces));
+          }
+          catch (...)
+          {
+            throw Exceptions::Exception("Wrong combination of space(s) and solution_vector passed to Limiter().");
+          }
         }
+      }
 
       VertexBasedLimiter::VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order)
         : Limiter<double>(space, solution_vector)
@@ -106,8 +131,16 @@ namespace Hermes
         this->init(maximum_polynomial_order);
       }
 
+      void VertexBasedLimiter::set_p_coarsening_only()
+      {
+        this->p_coarsening_only = true;
+      }
+
       void VertexBasedLimiter::init(int maximum_polynomial_order)
       {
+        this->maximum_polynomial_order = maximum_polynomial_order;
+        this->p_coarsening_only = false;
+
         // Checking that this is the Taylor shapeset.
         for(int i = 0; i < this->component_count; i++)
         {
@@ -122,7 +155,6 @@ namespace Hermes
         this->mixed_derivatives_count = (maximum_polynomial_order)*(maximum_polynomial_order + 1) / 2;
 
         this->print_details = false;
-
       }
 
       VertexBasedLimiter::~VertexBasedLimiter()
@@ -177,7 +209,7 @@ namespace Hermes
               std::cout << "Element: " << e->id << std::endl;
 
             quadratic_correction_done.push_back(this->impose_quadratic_correction_factor(e, component));
-            
+
             if(this->get_verbose_output())
               std::cout << std::endl;
           }
@@ -185,8 +217,8 @@ namespace Hermes
 
         // Adjust the solutions according to the quadratic terms handling.
         Solution<double>::vector_to_solutions(this->solution_vector, this->spaces, this->limited_solutions);
-        
-        
+
+
         // 2. Linear
         // Prepare the vertex values for the linear part.
         prepare_min_max_vertex_values(false);
@@ -208,7 +240,7 @@ namespace Hermes
             bool second_order = H2D_GET_H_ORDER(this->spaces[component]->get_element_order(e->id)) >= 2 || H2D_GET_V_ORDER(this->spaces[component]->get_element_order(e->id)) >= 2;
             if(quadratic_correction_done[running_i++] || !second_order)
               this->impose_linear_correction_factor(e, component);
-            
+
             if(this->get_verbose_output())
               std::cout << std::endl;
           }
@@ -278,7 +310,12 @@ namespace Hermes
           {
             int order = this->spaces[component]->get_shapeset()->get_order(al.idx[i_basis_fn], e->get_mode());
             if(H2D_GET_H_ORDER(order) == 1 || H2D_GET_V_ORDER(order) == 1)
-              this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            {
+              if(this->p_coarsening_only)
+                this->solution_vector[al.dof[i_basis_fn]] = 0.;
+              else
+                this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            }
           }
 
           this->changed_element_ids.push_back(e->id);
@@ -294,7 +331,7 @@ namespace Hermes
         double correction_factor = std::numeric_limits<double>::infinity();
 
         Solution<double>* sln = dynamic_cast<Solution<double>*>(this->limited_solutions[component].get());
-        
+
         for(int i_derivative = 1; i_derivative <= 2; i_derivative++)
         {
           double centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
@@ -354,7 +391,12 @@ namespace Hermes
           {
             int order = this->spaces[component]->get_shapeset()->get_order(al.idx[i_basis_fn], e->get_mode());
             if(H2D_GET_H_ORDER(order) == 2 || H2D_GET_V_ORDER(order) == 2)
-              this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            {
+              if(this->p_coarsening_only)
+                this->solution_vector[al.dof[i_basis_fn]] = 0.;
+              else
+                this->solution_vector[al.dof[i_basis_fn]] *= correction_factor;
+            }
           }
 
           this->changed_element_ids.push_back(e->id);
@@ -390,6 +432,17 @@ namespace Hermes
                 double element_centroid_value_multiplied = this->get_centroid_value_multiplied(e, component, i_derivative);
                 this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
                 this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_centroid_value_multiplied);
+                if(e->en[i_vertex]->bnd && this->wider_bounds_on_boundary)
+                {
+                  double element_mid_edge_value_multiplied = this->get_edge_midpoint_value_multiplied(e, component, i_derivative, i_vertex);
+
+                  this->vertex_min_values[component][vertex->id][i_derivative] = std::min(this->vertex_min_values[component][vertex->id][i_derivative], element_mid_edge_value_multiplied);
+                  this->vertex_max_values[component][vertex->id][i_derivative] = std::max(this->vertex_max_values[component][vertex->id][i_derivative], element_mid_edge_value_multiplied);
+
+                  Node* next_vertex = e->vn[(i_vertex + 1) % e->get_nvert()];
+                  this->vertex_min_values[component][next_vertex->id][i_derivative] = std::min(this->vertex_min_values[component][next_vertex->id][i_derivative], element_mid_edge_value_multiplied);
+                  this->vertex_max_values[component][next_vertex->id][i_derivative] = std::max(this->vertex_max_values[component][next_vertex->id][i_derivative], element_mid_edge_value_multiplied);
+                }
               }
             }
           }
@@ -411,30 +464,67 @@ namespace Hermes
         else
           result = sln->get_ref_value_transformed(e, CENTROID_QUAD_X, CENTROID_QUAD_Y, 0, mixed_derivative_index);
 
-        // No multiplication.
-        /*
-        switch(mixed_derivative_index)
+        return result;
+      }
+
+      double VertexBasedLimiter::get_edge_midpoint_value_multiplied(Element* e, int component, int mixed_derivative_index, int edge)
+      {
+        if(mixed_derivative_index > 5)
         {
-        case 1:
-        result *= ELEMENT_DELTA_X;
-        break;
-        case 2:
-        result *= ELEMENT_DELTA_Y;
-        break;
-        case 3:
-        result *= ELEMENT_DELTA_X;
-        result *= ELEMENT_DELTA_X;
-        break;
-        case 4:
-        result *= ELEMENT_DELTA_Y;
-        result *= ELEMENT_DELTA_Y;
-        break;
-        case 5:
-        result *= ELEMENT_DELTA_Y;
-        result *= ELEMENT_DELTA_X;
-        break;
+          throw Exceptions::MethodNotImplementedException("VertexBasedLimiter::get_centroid_value_multiplied only works for first and second derivatives.");
+          return 0.;
         }
-        */
+
+        Solution<double>* sln = dynamic_cast<Solution<double>*>(this->limited_solutions[component].get());
+        double result;
+
+        double x;
+        double y;
+
+        if(e->get_mode() == HERMES_MODE_TRIANGLE)
+        {
+          if(edge == 0)
+          {
+            x = 0.;
+            y = -1;
+          }
+          else if (edge == 1)
+          {
+            x = 0;
+            y = 0;
+          }
+          else if(edge == 2)
+          {
+            x = -1.;
+            y = 0;
+          }
+          result = sln->get_ref_value_transformed(e, x, y, 0, mixed_derivative_index);
+        }
+        else
+        {
+          if(edge == 0)
+          {
+            x = 0.;
+            y = -1;
+          }
+          else if (edge == 1)
+          {
+            x = 1;
+            y = 0;
+          }
+          else if(edge == 2)
+          {
+            x = 0.;
+            y = 1.;
+          }
+          else if(edge == 3)
+          {
+            x = -1.;
+            y = 0.;
+          }
+          result = sln->get_ref_value_transformed(e, x, y, 0, mixed_derivative_index);
+        }
+
         return result;
       }
 

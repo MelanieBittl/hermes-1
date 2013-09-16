@@ -26,6 +26,8 @@ namespace Hermes
   namespace Hermes2D
   {
     static const std::string H2D_DG_INNER_EDGE = "-1234567";
+    template<typename Scalar>
+    unsigned int DiscreteProblemDGAssembler<Scalar>::dg_order = 20;
 
     template<typename Scalar>
     DiscreteProblemDGAssembler<Scalar>::DiscreteProblemDGAssembler(DiscreteProblemThreadAssembler<Scalar>* threadAssembler, const Hermes::vector<SpaceSharedPtr<Scalar> >& spaces, Hermes::vector<MeshSharedPtr>& meshes)
@@ -193,7 +195,7 @@ namespace Hermes
       for(unsigned int fns_i = 0; fns_i < current_state->num; fns_i++)
       {
         NeighborSearch<Scalar>* ns = current_neighbor_searches[fns_i];
-        if(ns->central_transformations[neighbor_i])
+        if(neighbor_i < ns->central_transformations_alloc_size && ns->central_transformations[neighbor_i])
           ns->central_transformations[neighbor_i]->apply_on(fns[fns_i]);
       }
 
@@ -204,7 +206,7 @@ namespace Hermes
         {
           NeighborSearch<Scalar>* ns = current_neighbor_searches[idx_i];
           npss[idx_i]->set_active_element((*ns->get_neighbors())[neighbor_i]);
-          if(ns->neighbor_transformations[neighbor_i])
+          if(neighbor_i < ns->neighbor_transformations_alloc_size && ns->neighbor_transformations[neighbor_i])
             ns->neighbor_transformations[neighbor_i]->apply_on(npss[idx_i]);
         }
       }
@@ -232,8 +234,8 @@ namespace Hermes
       DiscontinuousFunc<double>*** testFunctions = new DiscontinuousFunc<double>**[this->spaces_size];
 
       // Create the extended shapeset on the union of the central element and its current neighbor.
-      int order = 20;
-      int order_base = 20;
+        int order = DiscreteProblemDGAssembler<Scalar>::dg_order;
+      int order_base = DiscreteProblemDGAssembler<Scalar>::dg_order;
       for (unsigned int i = 0; i < this->spaces_size; i++)
       {
         current_neighbor_searches[i]->set_quad_order(order);

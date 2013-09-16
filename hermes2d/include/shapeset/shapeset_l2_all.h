@@ -43,7 +43,7 @@ namespace Hermes
     class HERMES_API L2ShapesetTaylor : public Shapeset
     {
     public:
-      L2ShapesetTaylor();
+      L2ShapesetTaylor(bool contains_means = true);
       virtual Shapeset* clone() { return new L2ShapesetTaylor(*this); };
       virtual SpaceType get_space_type() const { return HERMES_L2_SPACE; }
       virtual int get_max_index(ElementMode2D mode);

@@ -36,15 +36,23 @@ namespace Hermes
       public:
         Limiter(SpaceSharedPtr<Scalar> space, Scalar* solution_vector);
         Limiter(Hermes::vector<SpaceSharedPtr<Scalar> > spaces, Scalar* solution_vector);
-        ~Limiter();
+        virtual ~Limiter();
 
+        /// Get the zero-th solution.
         MeshFunctionSharedPtr<Scalar> get_solution();
+        /// Get all solutions.
         void get_solutions(Hermes::vector<MeshFunctionSharedPtr<Scalar> > solutions);
+        /// Get changed element ids.
         Hermes::vector<int> get_changed_element_ids() const;
 
+        /// Helpers for state querying.
         virtual bool isOkay() const;
         inline std::string getClassName() const { return "Limiter"; }
 
+        /// Set the solution vector.
+        void set_solution_vector(Scalar* sln);
+
+        /// Get the solution vector.
         Scalar* get_solution_vector();
 
       protected:
@@ -66,11 +74,15 @@ namespace Hermes
       public:
         VertexBasedLimiter(SpaceSharedPtr<double> space, double* solution_vector, int maximum_polynomial_order);
         VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> > spaces, double* solution_vector, int maximum_polynomial_order);
-        ~VertexBasedLimiter();
+        virtual ~VertexBasedLimiter();
         Hermes::vector<std::pair<int, double> > get_correction_factors() const;
         void print_detailed_info(bool print_details = true);
+        int maximum_polynomial_order;
+        void set_p_coarsening_only();
+        static bool wider_bounds_on_boundary;
 
       private:
+        bool p_coarsening_only;
 
         void init(int maximum_polynomial_order);
 
@@ -81,6 +93,8 @@ namespace Hermes
         /// Get mean value of the mixed derivative (mixed_derivative_index) on element e, of the "component" - component
         /// of the solution.
         double get_centroid_value_multiplied(Element* e, int component, int mixed_derivative_index);
+        
+        double get_edge_midpoint_value_multiplied(Element* e, int component, int mixed_derivative_index, int edge);
 
         void impose_linear_correction_factor(Element* e, int component);
 

@@ -322,6 +322,8 @@ namespace Hermes
       // Set verbose_level.
       if(this->get_verbose_output())
         this->paralutionSolver->Verbose(10);
+      else
+        this->paralutionSolver->Verbose(0);
 
       // Set tolerances.
       switch(this->toleranceType)
@@ -423,7 +425,7 @@ namespace Hermes
     {
       this->set_max_iters(1000);
       this->set_tolerance(1e-8, AMGSolver<Scalar>::AbsoluteTolerance);
-      this->smootherSolverType = IterativeParalutionLinearMatrixSolver<Scalar>::ParalutionSolverType::CG;
+      this->smootherSolverType = IterativeParalutionLinearMatrixSolver<Scalar>::CG;
       this->smootherPreconditionerType = ParalutionPrecond<Scalar>::MultiColoredSGS;
     }
 

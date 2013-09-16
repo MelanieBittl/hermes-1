@@ -32,13 +32,13 @@ namespace Hermes
   enum MatrixSolverType
   {
     SOLVER_UMFPACK = 0,
-    SOLVER_PARALUTION_ITERATIVE,
-    SOLVER_PARALUTION_AMG,
-    SOLVER_PETSC,
-    SOLVER_MUMPS,
-    SOLVER_SUPERLU,
-    SOLVER_AMESOS,
-    SOLVER_AZTECOO
+    SOLVER_PARALUTION_ITERATIVE = 1,
+    SOLVER_PARALUTION_AMG = 2,
+    SOLVER_PETSC = 3,
+    SOLVER_MUMPS = 4,
+    SOLVER_SUPERLU = 5,
+    SOLVER_AMESOS = 6,
+    SOLVER_AZTECOO = 7
   };
 
   enum DirectMatrixSolverType
@@ -58,7 +58,7 @@ namespace Hermes
 
   enum AMGMatrixSolverType
   {
-    AMG_SOLVER_PARALUTION
+    AMG_SOLVER_PARALUTION = 0
   };
 
   namespace Solvers

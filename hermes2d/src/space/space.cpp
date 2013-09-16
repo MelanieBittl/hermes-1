@@ -753,7 +753,7 @@ namespace Hermes
       /// Call to the OVERRIDABLE handling method.
       this->handle_orders(ref_space);
 
-      /// Finish - MUST BE CALLED BEFOR E RETURN.
+      /// Finish - MUST BE CALLED BEFORE RETURN.
       this->finish_construction(ref_space);
 
       // Assign dofs?
@@ -966,21 +966,6 @@ namespace Hermes
         throw Hermes::Exceptions::ValueException("stride", stride, 1);
 
       resize_tables();
-
-      Element* e;
-
-      //check validity of orders
-      for_all_active_elements(e, mesh)
-      {
-        if(e->id >= esize || edata[e->id].order < 0)
-        {
-          printf("e->id = %d\n", e->id);
-          printf("esize = %d\n", esize);
-          printf("edata[%d].order = %d\n", e->id, edata[e->id].order);
-          throw
-            Hermes::Exceptions::Exception("Uninitialized element order in Space::assign_dofs().");
-        }
-      }
 
       this->first_dof = next_dof = first_dof;
       this->stride = stride;

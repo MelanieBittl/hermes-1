@@ -65,7 +65,6 @@
 
 #include "weakform/weakform.h"
 #include "discrete_problem.h"
-#include "discrete_problem.h"
 #include "forms.h"
 
 #include "function/exact_solution.h"

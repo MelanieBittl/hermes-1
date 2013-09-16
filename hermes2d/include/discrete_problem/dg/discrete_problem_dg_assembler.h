@@ -54,6 +54,8 @@ namespace Hermes
       /// Deinitialize assembling for a state.
       void deinit_assembling_one_state();
 
+      static unsigned int dg_order;
+
     private:
       /// There is a matrix form set on DG_INNER_EDGE area or not.
       bool DG_matrix_forms_present;
