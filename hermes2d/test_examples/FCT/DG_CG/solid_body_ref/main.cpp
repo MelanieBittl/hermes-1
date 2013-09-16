@@ -28,7 +28,7 @@ using namespace Hermes::Hermes2D::Views;
 
 
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 										//Maximal polynomial degree.
                       
@@ -48,7 +48,7 @@ const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time ste
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
-const double THRESHOLD = 0.7;                      // This is a quantitative parameter of the adapt(...) function and
+const double THRESHOLD = 0.3;                      // This is a quantitative parameter of the adapt(...) function and
                                                   // it has different meanings for various adaptive strategies (see below).
 const CandList CAND_LIST = H2D_HP_ANISO;          // Predefined list of element refinement candidates. Possible values are
                                                   // H2D_P_ISO, H2D_P_ANISO, H2D_H_ISO, H2D_H_ANISO, H2D_HP_ISO,
@@ -64,7 +64,7 @@ const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
 
 
 //Visualization
-const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION =true;              // Set to "true" to enable VTK output.
 const int VTK_FREQ = 7000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
@@ -89,12 +89,11 @@ int main(int argc, char* argv[])
  	 mesh->copy(basemesh);
   
   // Create an H1 space with default shapeset.
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT,true));	
 
  // Initialize solution of lower & higher order
    // MeshFunctionSharedPtr<double>u_prev_time(new PrevSolution);
-MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
-  
+MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);  
   MeshFunctionSharedPtr<double> low_sln(new Solution<double>),ref_sln(new Solution<double>),high_sln(new Solution<double>),sln(new Solution<double>);
 
   // Previous time level solution (initialized by the initial condition).
@@ -226,6 +225,7 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
       ref_mesh->copy(space->get_mesh());
       Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
       SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
+
 
       HPAdapt* adapting = new HPAdapt(ref_space);	
 							// increase p in smooth regions, h refine in non-smooth regions 
@@ -379,7 +379,7 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 /*  if(VTK_VISUALIZATION) 
   {
 		lin.save_solution_vtk(u_prev_time, "end_solution.vtk", "solution", mode_3D);
-		ord.save_mesh_vtk(space, "end_mesh->vtk");
+		ord.save_mesh_vtk(space, "end_mesh.vtk");
 		ord.save_orders_vtk(space, "end_order.vtk");
 		}*/
 

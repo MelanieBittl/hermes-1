@@ -23,6 +23,7 @@
 #include "shapeset_hd_all.h"
 #include "shapeset_h1_all.h"
 #include "shapeset_l2_semi.h"
+#include "shapeset_bb.h"
 using namespace Hermes::Algebra::DenseMatrixOperations;
 namespace Hermes
 {

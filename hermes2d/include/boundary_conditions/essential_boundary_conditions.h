@@ -85,6 +85,7 @@ namespace Hermes
       template<typename T> friend class HcurlSpace;
       template<typename T> friend class HdivSpace;
  	  template<typename T> friend class L2_SEMI_CG_Space;
+ 	  template<typename T> friend class SpaceBB;
     };
 
     /// Class representing constant essential boundary condition.
@@ -220,6 +221,7 @@ namespace Hermes
       template<typename T> friend class HcurlSpace;
       template<typename T> friend class HdivSpace;
 	  template<typename T> friend class L2_SEMI_CG_Space;
+	  template<typename T> friend class SpaceBB;
     };
   }
 }

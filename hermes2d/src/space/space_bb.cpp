@@ -133,7 +133,7 @@ namespace Hermes
       }
 
     }
- /*   template<typename Scalar>
+   template<typename Scalar>
     void SpaceBB<Scalar>::assign_bubble_dofs()
     {
       // Bubble dofs.
@@ -151,7 +151,7 @@ namespace Hermes
           this->bubble_functions_count += ed->n;
         }
       }
-    }*/
+    }
 
     template<typename Scalar>
     void SpaceBB<Scalar>::get_vertex_assembly_list(Element* e, int iv, AsmList<Scalar>* al) const

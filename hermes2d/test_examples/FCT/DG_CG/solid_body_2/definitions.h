@@ -171,7 +171,38 @@ public:
 
   virtual double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const;
 };
+///////
+class CustomNormFormSurf_1 : public NormFormSurf<double>
+{
+public:
+  CustomNormFormSurf_1(int i, int j);
 
+  virtual double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const;
+};
+
+class CustomNormFormDG_1 : public NormFormDG<double>
+{
+public:
+  CustomNormFormDG_1(int i, int j);
+
+  virtual double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const;
+};
+
+class CustomNormFormSurf_2 : public NormFormSurf<double>
+{
+public:
+  CustomNormFormSurf_2(int i, int j);
+
+  virtual double value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const;
+};
+
+class CustomNormFormDG_2 : public NormFormDG<double>
+{
+public:
+  CustomNormFormDG_2(int i, int j);
+
+  virtual double value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const;
+};
 //----------------Filter-------------
     class AbsDifffilter : public DiffFilter<double>
     {

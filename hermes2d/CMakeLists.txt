@@ -153,6 +153,7 @@ project(hermes2d)
     src/mesh/mesh_data.cpp
 
     src/shapeset/shapeset.cpp
+ 		src/shapeset/shapeset_bb.cpp
     src/shapeset/shapeset_h1_ortho.cpp
     src/shapeset/shapeset_h1_jacobi.cpp
     src/shapeset/shapeset_h1_quad.cpp
@@ -165,6 +166,7 @@ project(hermes2d)
 
 
     src/space/space.cpp
+    src/space/space_bb.cpp
     src/space/space_h1.cpp
     src/space/space_hcurl.cpp
     src/space/space_l2.cpp
@@ -304,6 +306,7 @@ project(hermes2d)
   SOURCE_GROUP(
     "Source Files\\Space" FILES 
     src/shapeset/shapeset.cpp
+		src/shapeset/shapeset_bb.cpp
     src/shapeset/shapeset_h1_ortho.cpp
     src/shapeset/shapeset_h1_jacobi.cpp
     src/shapeset/shapeset_h1_quad.cpp
@@ -315,6 +318,7 @@ project(hermes2d)
     src/shapeset/precalc.cpp
 
     src/space/space.cpp
+    src/space/space_bb.cpp
     src/space/space_h1.cpp
     src/space/space_hcurl.cpp
     src/space/space_l2.cpp
@@ -417,6 +421,7 @@ project(hermes2d)
     include/mesh/mesh_data.h
 
     include/shapeset/shapeset.h
+    include/shapeset/shapeset_bb.h
     include/shapeset/shapeset_h1_all.h
     include/shapeset/shapeset_h1_quad.h
     include/shapeset/shapeset_hc_all.h
@@ -427,6 +432,7 @@ project(hermes2d)
 
 
     include/space/space.h
+    include/space/space_bb.h
     include/space/space_h1.h
     include/space/space_hcurl.h
     include/space/space_l2.h
@@ -569,6 +575,7 @@ project(hermes2d)
   SOURCE_GROUP(
     "Header Files\\Space" FILES 
     include/shapeset/shapeset.h
+    include/shapeset/shapeset_bb.h
     include/shapeset/shapeset_h1_all.h
     include/shapeset/shapeset_h1_quad.h
     include/shapeset/shapeset_hc_all.h
@@ -579,6 +586,7 @@ project(hermes2d)
 
 
     include/space/space.h
+    include/space/space_bb.h
     include/space/space_h1.h
     include/space/space_hcurl.h
     include/space/space_l2.h

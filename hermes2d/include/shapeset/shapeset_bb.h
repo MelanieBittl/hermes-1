@@ -2,6 +2,22 @@
 #define __H2D_SHAPESET_BB
 
 
+// Common definitions used by the shapesets...
+#define bc1(x,y) (-((x) + (y)) / 2)
+#define bc2(x,y) (((x) + 1) / 2)
+#define bc3(x,y) (((y) + 1) / 2)
+
+/// x derivatives of affine coordinates
+#define bc1x(x,y) (-1.0 / 2.0)
+#define bc2x(x,y) (1.0 / 2.0)
+#define bc3x(x,y) (0.0)
+
+/// y derivatives of affine coordinates
+#define bc1y(x,y) (-1.0 / 2.0)
+#define bc2y(x,y) (0.0)
+#define bc3y(x,y) (1.0 / 2.0)
+
+
 #include "shapeset.h"
 namespace Hermes
 {
@@ -15,6 +31,7 @@ namespace Hermes
     {
     public:
       ShapesetBB(int order);
+			~ShapesetBB();
     typedef double (*shape_fn_bb)(double, double, int);
    virtual double get_value(int n, int index, double x, double y, int component, ElementMode2D mode);
 
@@ -25,13 +42,14 @@ namespace Hermes
 
 		protected:
 			int space_order;
+			int no_shape_fn;
 
 			shape_fn_bb*** shape_table_bb[6];
       /// Constructs the linear combination of edge functions, forming a constrained edge function.
       ///
       virtual double get_constrained_value(int n, int index, double x, double y, int component, ElementMode2D mode);
       
-      static const int max_index[H2D_NUM_MODES];
+    //  static const int max_index[H2D_NUM_MODES];
     };
 
   }

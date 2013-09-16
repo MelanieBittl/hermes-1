@@ -1,7 +1,6 @@
 #define HERMES_REPORT_ALL
 #include "definitions.h"
 
-
 using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -60,10 +59,14 @@ mloader.load("unit.mesh", basemesh);
   //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
+
+//SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));	
+
   int ndof = space->get_num_dofs();
-  
-  /* BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
-  bview.show(&space);
+ 
+
+/*  BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
+  bview.show(space);
 View::wait(HERMES_WAIT_KEYPRESS);*/
 
   // Previous time level solution (initialized by the initial condition).
@@ -101,6 +104,7 @@ CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, DG, fa
 	DiscreteProblem<double> * dp = new DiscreteProblem<double> (&wf,space);	
 	dp->set_linear(true,false);
 	dp->assemble(matrix);
+	Hermes::Mixins::Loggable::Static::info("matix assembled"); 
 	DiscreteProblem<double> * dp_rhs = new DiscreteProblem<double> (&wf_rhs,space);	
 	dp_rhs->set_linear(true,false);
 

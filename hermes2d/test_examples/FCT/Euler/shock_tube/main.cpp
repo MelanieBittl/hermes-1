@@ -98,9 +98,11 @@ Space<double>::assign_dofs(spaces);
     MeshFunctionSharedPtr<double> low_rho_v_y(new Solution<double>);
     MeshFunctionSharedPtr<double>	low_e(new Solution<double>);
 
+  Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+Hermes::vector<MeshFunctionSharedPtr<double> > low_slns(low_rho,low_rho_v_x,low_rho_v_y,low_e);
+Hermes::vector<MeshFunctionSharedPtr<double> > init_slns(init_rho, init_rho_v_x, init_rho_v_y, init_e);
 
-
-
+Hermes::vector<NormType> norms_l2(HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM);
 
  //--------- Visualization of pressure & velocity
   ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
@@ -113,9 +115,15 @@ Space<double>::assign_dofs(spaces);
       s3.set_min_max_range(0., 1.);
 			pressure_view.set_min_max_range(0.,1.);
 
-//------------
+
+//------------Filter---------------------------
+  MeshFunctionSharedPtr<double>  pressure(new PressureFilter(prev_slns, KAPPA));
+  MeshFunctionSharedPtr<double>  vel_x(new VelocityFilter(prev_slns, 1));
+  MeshFunctionSharedPtr<double>  vel_y(new VelocityFilter(prev_slns, 2));
 
 
+
+//--------------Weakforms------------
   EulerEquationsWeakForm_K  wf_K_init(KAPPA, time_step, init_rho, init_rho_v_x, init_rho_v_y, init_e);
   EulerBoundary wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
 
@@ -125,7 +133,7 @@ Space<double>::assign_dofs(spaces);
   EulerBoundary wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerBoundary wf_boundary_low(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, low_rho, low_rho_v_x, low_rho_v_y, low_e);
 
-  // Initialize the FE problem.
+  //------------------- Initialize the FE problem.
   DiscreteProblem<double> dp_boundary_init(&wf_boundary_init,spaces);
   DiscreteProblem<double> dp_K_init(&wf_K_init, spaces);
     
@@ -162,14 +170,11 @@ Space<double>::assign_dofs(spaces);
 	//----------------------MassLumping M_L--------------------------------------------------------------------
 		UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
 
-//Projection of the initial condition
-	lumpedProjection.project_lumped(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec, matrix_solver);
-
-   ogProjection.project_global(spaces,Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e), coeff_vec_2,  Hermes::vector<NormType> (HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM));
-
+//---------------------Projection of the initial condition
+	lumpedProjection.project_lumped(spaces, init_slns, coeff_vec, matrix_solver);
+   ogProjection.project_global(spaces,init_slns, coeff_vec_2, norms_l2 );
 		lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
-
-				Solution<double>::vector_to_solutions(coeff_vec, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e));	
+				Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
 
 
@@ -186,15 +191,16 @@ Space<double>::assign_dofs(spaces);
 //Timestep loop
 do
 {	 
-
   	Hermes::Mixins::Loggable::Static::info("Time step %d, time %3.5f", ts, current_time);
-Space<double>::assign_dofs(spaces);
+//Space<double>::assign_dofs(spaces);
  	  
  	  if(ts!=1)
  	  {
+//wf_boundary.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e));
 	 	  //Hermes::Mixins::Loggable::Static::info("assemble dS");
 			dp_boundary.assemble(matrix_dS);
-	 		//Hermes::Mixins::Loggable::Static::info("assemble K");
+//wf_K.set_ext(prev_slns);
+	 		Hermes::Mixins::Loggable::Static::info("assemble K");
 		  dp_K.assemble(lowmat_rhs);
 		}else{
 			//Hermes::Mixins::Loggable::Static::info("assemble dS");
@@ -239,9 +245,11 @@ Space<double>::assign_dofs(spaces);
     e.print_msg();
   }	
 				u_L = lowOrd->get_sln_vector();  
-        Solution<double>::vector_to_solutions(u_L, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(low_rho,low_rho_v_x,low_rho_v_y,low_e));
+        Solution<double>::vector_to_solutions(u_L, spaces,low_slns);
 
-	
+//wf_boundary_low.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(low_rho, low_rho_v_x, low_rho_v_y, low_e, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e));
+//wf_K_low.set_ext(low_slns);	
+
 			dp_boundary_low.assemble(matrix_dS_low);	
     	dp_K_low.assemble(matrix_L_low);
 			UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
@@ -255,22 +263,26 @@ Space<double>::assign_dofs(spaces);
 		for(int i=0; i<ndof;i++)
 						 coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);					
 
-				Solution<double>::vector_to_solutions(coeff_vec, spaces, Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e));	
-
-
-
-// PressureFilter pressure(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), KAPPA);
-//VelocityFilter vel_x(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 1);
- // VelocityFilter vel_y(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 2);
+				Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
+	
 
 			 // Visualize the solution.
-			 sprintf(title, " ts=%i",ts);
-			// pressure_view.set_title(title);
+				pressure->reinit();
+				vel_x->reinit();
+				vel_y->reinit();
+			 sprintf(title, "pressure: ts=%i",ts);
+			 pressure_view.set_title(title);
+  		pressure_view.show(pressure);
+			 sprintf(title, "density: ts=%i",ts);
 			 s1.set_title(title);
-			s1.show(prev_rho);
-			//s2.show(&vel_x);
-			//s3.show(&vel_y);
-  		//pressure_view.show(&pressure);
+			s1.show(prev_slns[0]);
+			 sprintf(title, "velocity (x): ts=%i",ts);
+			 s2.set_title(title);
+			s2.show(vel_x);
+			 sprintf(title, "velocity (y): ts=%i",ts);
+			 s3.set_title(title);
+			s3.show(vel_y);
+
   		
 
 //	View::wait(HERMES_WAIT_KEYPRESS);

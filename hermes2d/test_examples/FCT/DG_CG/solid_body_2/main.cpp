@@ -11,13 +11,11 @@ using namespace Hermes::Hermes2D::Views;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 4;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
 const double time_step =1e-3;                           // Time step.
 const double T_FINAL = 2.5*PI;                         // Time interval length. 
-
- //const double T_FINAL = 2.;   
 
 
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
@@ -54,9 +52,9 @@ mloader.load("unit.mesh", basemesh);
  // EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
- SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+ //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
   //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
-  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
+  SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();
@@ -72,19 +70,19 @@ mloader.load("unit.mesh", basemesh);
   MeshFunctionSharedPtr<double> u_exact(new CustomInitialCondition(mesh, current_time));
 
 // Output solution in VTK format.
-	Linearizer lin;
+	/*Linearizer lin;
 	bool mode_3D = true;
-lin.save_solution_vtk(u_exact, "init.vtk", "solution", mode_3D);
+lin.save_solution_vtk(u_exact, "init.vtk", "solution", mode_3D);*/
  
   // Initialize views.
 	ScalarView sview("Loesung", new WinGeom(500, 500, 500, 400));
-	ScalarView lview("init Loesung", new WinGeom(500, 0, 500, 400));
+	//ScalarView lview("init Loesung", new WinGeom(500, 0, 500, 400));
 	//lview.show(u_exact);
 //sview.set_min_max_range(0,1);
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 
-  OGProjection<double> ogProjection;
+ // OGProjection<double> ogProjection;
  
 	char title[100];
     int ts = 1;
@@ -127,7 +125,7 @@ dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
      double*	vec_new = solver->get_sln_vector();
       Solution<double>::vector_to_solution(vec_new, space, u_new);
 
-			//sview.show(u_new);
+			sview.show(u_new);
 		//	lview.show(u_exact);
  		if(ts==1) wf_rhs.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(u_exact, u_new) );
 		 	current_time += time_step;

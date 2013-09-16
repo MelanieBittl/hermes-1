@@ -138,16 +138,6 @@ for(int i =0;i<4;i++) A_n[i]=0.;
     
     this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));
 
-   /* for(unsigned int vector_form_i = 0;vector_form_i < this->vfsurf.size();vector_form_i++) 
-    {
-     vfsurf.at(vector_form_i)->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));
-    }
-    for(unsigned int matrix_form_i = 0;matrix_form_i < this->mfsurf.size();matrix_form_i++) 
-    {
-         mfsurf.at(matrix_form_i)->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));
-
-    }*/
-
 	};
 
 

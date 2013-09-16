@@ -1,10 +1,10 @@
 #include "definitions.h"
 
 const double EPS = 1e-3;
-const double penalty_parameter = 10.;
+const double penalty_parameter = 1.;
 
 enum DG_TYPE {Baumann_Oden,	IP,	NIPG, NONE};
-DG_TYPE type =Baumann_Oden;
+DG_TYPE type =NIPG;
 
 
 double calc_abs_v(Element* e)
@@ -440,6 +440,25 @@ CustomNormFormDG::CustomNormFormDG(int i, int j) : NormFormDG<double>(i, j)
 {
 }
 
+CustomNormFormSurf_1::CustomNormFormSurf_1(int i, int j) : NormFormSurf<double>(i, j)
+{
+  this->set_area(HERMES_ANY);
+}
+
+CustomNormFormDG_1::CustomNormFormDG_1(int i, int j) : NormFormDG<double>(i, j)
+{
+}
+
+CustomNormFormSurf_2::CustomNormFormSurf_2(int i, int j) : NormFormSurf<double>(i, j)
+{
+  this->set_area(HERMES_ANY);
+}
+
+CustomNormFormDG_2::CustomNormFormDG_2(int i, int j) : NormFormDG<double>(i, j)
+{
+}
+
+
 double CustomNormFormVol::value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
 {
    double result = double(0);
@@ -496,8 +515,53 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
   return result;
 }
 
+/////////////
+double CustomNormFormSurf_1::value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
+{
+				
+   double result = double(0);
+  for (int i = 0; i < n; i++)
+	{
+    result += wt[i] * u->val[i] * v->val[i] * penalty_parameter;
+	}
+  return result;
+}
 
+double CustomNormFormDG_1::value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const
+{
+ 
+  double result = double(0);
+  for (int i = 0; i < n; i++)
+	{
 
+    result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i]) * penalty_parameter;
+		}
+  return result;
+}
+double CustomNormFormSurf_2::value(int n, double *wt, Func<double> *u, Func<double> *v, Geom<double> *e) const
+{
+   double result = double(0);
+  for (int i = 0; i < n; i++)
+	{
+	double mid_v_dx = (v->dx[i]* e->nx[i]+v->dy[i]* e->ny[i]); 
+	double mid_u_dx = (u->dx[i]* e->nx[i]+u->dy[i]* e->ny[i]); 
+    result += wt[i] * mid_v_dx* mid_u_dx * 1./penalty_parameter;
+	}
+  return result;
+}
+
+double CustomNormFormDG_2::value(int n, double *wt, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e) const
+{
+ 
+  double result = double(0);
+  for (int i = 0; i < n; i++)
+	{
+	double mid_v_dx = (v->dx[i]* e->nx[i]+v->dy[i]* e->ny[i])+(v->dx_neighbor[i]*e->nx[i]+v->dy_neighbor[i]* e->ny[i]); 
+	double mid_u_dx = (u->dx[i]* e->nx[i]+u->dy[i]* e->ny[i])+(u->dx_neighbor[i]*e->nx[i]+u->dy_neighbor[i]* e->ny[i]); 
+    result += wt[i] * mid_v_dx/2.*mid_u_dx/2. * 1./penalty_parameter;
+		}
+  return result;
+}
 
 //------------------- Initial condition ----------------
 
