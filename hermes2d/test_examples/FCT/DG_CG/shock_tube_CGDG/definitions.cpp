@@ -94,8 +94,30 @@
 	};*/
 	    WeakForm<double>* EulerEquationsWeakForm_K::clone() const
     {
-      const_cast<EulerEquationsWeakForm_K*>(this)->warned_nonOverride = false;
-      return new EulerEquationsWeakForm_K(*this);
+     // const_cast<EulerEquationsWeakForm_K*>(this)->warned_nonOverride = false;
+    //  return new EulerEquationsWeakForm_K(*this);
+
+
+   EulerEquationsWeakForm_K* wf;
+    wf = new EulerEquationsWeakForm_K(*this);
+
+    wf->ext.clear();
+
+    for(unsigned int i = 0; i < this->ext.size(); i++)
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        wf->ext.push_back(new Solution<double>());
+        wf->ext.back()->copy(this->ext[i]);
+      }
+      else
+        wf->ext.push_back(this->ext[i]->clone());
+    }
+    return wf;
+
+
+
     }
 
     template<typename Real, typename Scalar>

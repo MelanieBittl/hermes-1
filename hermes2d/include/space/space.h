@@ -266,6 +266,7 @@ namespace Hermes
       private:
         /// Construction initialization.
         SpaceSharedPtr<Scalar> init_construction_l2();
+        SpaceSharedPtr<Scalar> init_construction_bb();
         SpaceSharedPtr<Scalar> init_construction_h1();
         SpaceSharedPtr<Scalar> init_construction_hcurl();
         SpaceSharedPtr<Scalar> init_construction_hdiv();

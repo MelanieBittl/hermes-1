@@ -23,7 +23,7 @@ namespace Hermes
 			/// Copy from Space instance 'space'
 			virtual void copy(SpaceSharedPtr<Scalar> space, MeshSharedPtr new_mesh);
 
-      virtual Scalar* get_bc_projection(SurfPos* surf_pos, int order, EssentialBoundaryCondition<Scalar> *bc) ;
+      virtual Scalar* get_bc_projection(SurfPos* surf_pos, int order, EssentialBoundaryCondition<Scalar> *bc) {};
 
 		protected:
 
@@ -38,6 +38,26 @@ namespace Hermes
 
 			virtual void get_vertex_assembly_list(Element* e, int iv, AsmList<Scalar>* al) const;
 			virtual void get_boundary_assembly_list_internal(Element* e, int ie, AsmList<Scalar>* al) const;
+
+			struct EdgeInfo
+			{
+				Node* node;
+				int part;
+				int ori;
+				double lo, hi;
+			};
+
+
+			inline void output_component(typename Space<Scalar>::BaseComponent*& current, typename Space<Scalar>::BaseComponent*& last, typename Space<Scalar>::BaseComponent* min,
+				Node*& edge, typename Space<Scalar>::BaseComponent*& edge_dofs);
+
+			typename Space<Scalar>::BaseComponent* merge_baselists(typename Space<Scalar>::BaseComponent* l1, int n1, typename Space<Scalar>::BaseComponent* l2, int n2,
+				Node* edge, typename Space<Scalar>::BaseComponent*& edge_dofs, int& ncomponents);
+
+			void update_constrained_nodes(Element* e, EdgeInfo* ei0, EdgeInfo* ei1, EdgeInfo* ei2, EdgeInfo* ei3);
+
+			virtual void update_constraints();
+
 
 			friend class Space<Scalar>;
 		};

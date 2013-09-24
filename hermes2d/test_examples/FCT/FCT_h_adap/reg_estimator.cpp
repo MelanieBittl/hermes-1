@@ -102,13 +102,14 @@ Solution<double>* R_h_2 = new Solution<double>; R_h_2= static_cast<Solution<doub
 			d_u_c_dx[e->id]= sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
 			d_u_c_dy[e->id]= sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2);
 			space->get_element_assembly_list(e, al);
-			for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 
+			//for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 
 							for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
-    							if((al->get_idx()[j]==index[iv])&&(al->get_dof()[j]!=-1.0)){
+    						//if((al->get_idx()[j]==index[iv])&&(al->get_dof()[j]!=-1.0)){
+								if((al->get_dof()[j]!=-1.0)){
 											dof_elem_list[al->get_dof()[j]].push_back(e->id); 	
 									}
 							}
-			}	
+			//}	
 
 	}
 

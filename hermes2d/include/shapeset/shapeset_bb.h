@@ -3,9 +3,9 @@
 
 
 // Common definitions used by the shapesets...
-#define bc1(x,y) (-((x) + (y)) / 2)
-#define bc2(x,y) (((x) + 1) / 2)
-#define bc3(x,y) (((y) + 1) / 2)
+#define bc1(x,y) (-((x) + (y)) / 2.)
+#define bc2(x,y) (((x) + 1.) / 2.)
+#define bc3(x,y) (((y) + 1.) / 2.)
 
 /// x derivatives of affine coordinates
 #define bc1x(x,y) (-1.0 / 2.0)
@@ -16,6 +16,21 @@
 #define bc1y(x,y) (-1.0 / 2.0)
 #define bc2y(x,y) (0.0)
 #define bc3y(x,y) (1.0 / 2.0)
+
+
+
+// Common definitions used by the shapesets...
+#define lam1(x) ((1.-x)/2.)
+#define lam2(x) (((x) + 1.) / 2.)
+
+
+/// x derivatives of affine coordinates
+#define lam1d(x) (-1.0 / 2.0)
+#define lam2d(x) (1.0 / 2.0)
+
+
+
+
 
 
 #include "shapeset.h"
@@ -42,14 +57,14 @@ namespace Hermes
 
 		protected:
 			int space_order;
-			int no_shape_fn;
+			//int no_shape_fn;
+			//int no_shape_fn_quad;
 
 			shape_fn_bb*** shape_table_bb[6];
       /// Constructs the linear combination of edge functions, forming a constrained edge function.
       ///
       virtual double get_constrained_value(int n, int index, double x, double y, int component, ElementMode2D mode);
       
-    //  static const int max_index[H2D_NUM_MODES];
     };
 
   }

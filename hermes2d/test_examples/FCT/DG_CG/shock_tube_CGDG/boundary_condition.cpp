@@ -165,8 +165,26 @@ for(int i =0;i<4;i++) A_n[i]=0.;
 	
 	    WeakForm<double>* EulerBoundary::clone() const
     {
-      const_cast<EulerBoundary*>(this)->warned_nonOverride = false;
-      return new EulerBoundary(*this);
+    EulerBoundary* wf;
+    wf = new EulerBoundary(*this);
+
+    wf->ext.clear();
+
+    for(unsigned int i = 0; i < this->ext.size(); i++)
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        wf->ext.push_back(new Solution<double>());
+        wf->ext.back()->copy(this->ext[i]);
+      }
+      else
+        wf->ext.push_back(this->ext[i]->clone());
+    }
+
+    wf->set_current_time_step(this->get_current_time_step());
+
+    return wf;
     }
 	
 

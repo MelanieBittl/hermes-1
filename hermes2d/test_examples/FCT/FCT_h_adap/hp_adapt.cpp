@@ -16,21 +16,7 @@ bool refine_elem(SpaceSharedPtr<double> space, Element* e, int ref, double h_min
 			}		
 		return refined;
 }
-bool refine_elem_order(SpaceSharedPtr<double> space, Element* e, int ref, int order, double h_min){
-			bool refined = true;
-			if(e->get_diameter()>h_min){			
-				if (e->active)
-		  			space->get_mesh()->refine_element_id(e->id);				
-				for (int j = 0; j < 4; j++){
-				  space->set_element_order_internal(e->sons[j]->id, order);
-				}	
-				if(ref>1) {
-					for (int j = 0; j < 4; j++)
-						refined = refine_elem(space, e->sons[j], ref-1, h_min);
-				}
-			}
-		return refined;
-}
+
 
 
 bool coarse_elem(SpaceSharedPtr<double> space, Element* e, int ref, int order, double h_max, int* elements_to_refine){
@@ -77,41 +63,7 @@ bool HPAdapt::adapt(int* elements_to_refine,int* no_of_refinement_steps, int max
   //apply refinements
 	Element* e;	
 	for_all_active_elements(e, space->get_mesh()){
-		if(elements_to_refine[e->id] == 2) {				//p increase
-				if(e->is_triangle()==true){
-					order = space->get_element_order(e->id); 
-					order += no_of_refinement_steps[e->id];
-					if(order>max_p) order = max_p;
-					if((order >=1)&&(order<=max_p)){
-						space->set_element_order_internal(e->id, order);
-						changed = true;
-					}
-				}else if(e->is_quad()==true){
-					v_ord = H2D_GET_V_ORDER(space->get_element_order(e->id));
-					h_ord = H2D_GET_H_ORDER(space->get_element_order(e->id));
-					h_ord += no_of_refinement_steps[e->id]; if(h_ord>max_p) h_ord =max_p;
-					v_ord += no_of_refinement_steps[e->id]; if(v_ord>max_p) v_ord =max_p;
-					order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);
-					space->set_element_order_internal(e->id, order);
-					changed = true;
-					}								
-		}else if(elements_to_refine[e->id] == 3) {				//p decrease 	
-					if(e->is_triangle()==true){
-						order = space->get_element_order(e->id); 
-						order -= no_of_refinement_steps[e->id];
-						if(order<1) order =1.;											
-						space->set_element_order_internal(e->id, order);
-						changed = true;						
-					}else if(e->is_quad()==true){
-						v_ord = H2D_GET_V_ORDER(space->get_element_order(e->id));
-						h_ord = H2D_GET_H_ORDER(space->get_element_order(e->id));
-						h_ord -= no_of_refinement_steps[e->id]; if(h_ord<1) h_ord =1;
-						v_ord -= no_of_refinement_steps[e->id]; if(v_ord<1) v_ord =1;
-						order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);
-						space->set_element_order_internal(e->id, order);
-						changed = true;											
-					}								
-		}else if((elements_to_refine[e->id] == 1)&&(n_dof<max_dof)){				//h refine 
+		if((elements_to_refine[e->id] == 1)&&(n_dof<max_dof)){				//h refine 
 				ref = no_of_refinement_steps[e->id];
 				changed = refine_elem(space, e, ref,h_min);
 		}else if(elements_to_refine[e->id] == 4){				//h coarse 	
@@ -119,53 +71,7 @@ bool HPAdapt::adapt(int* elements_to_refine,int* no_of_refinement_steps, int max
 				order = space->get_element_order(e->id);		
 				changed= coarse_elem(space, e, ref,order, h_max, elements_to_refine);			
 		
-		}else if(elements_to_refine[e->id] == 5) {			//h-refinement + p decrease 	
-				//	changed = true;
-					ref = no_of_refinement_steps[e->id];
-					if(e->is_triangle()==true){
-						order = space->get_element_order(e->id); 
-						order -= no_of_refinement_steps[e->id];
-						if(order<1) order =1;										
-					}else if(e->is_quad()==true){
-						v_ord = H2D_GET_V_ORDER(space->get_element_order(e->id));
-						h_ord = H2D_GET_H_ORDER(space->get_element_order(e->id));
-						h_ord -= no_of_refinement_steps[e->id]; if(h_ord<1) h_ord =1;
-						v_ord -= no_of_refinement_steps[e->id]; if(v_ord<1) v_ord =1;
-						order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);									
-					}								
-				changed =	refine_elem_order(space, e,ref, order,h_min);
-			
-		}else if(elements_to_refine[e->id] == 6) {	//h-coarse+ p decrease
-				ref = no_of_refinement_steps[e->id];
-					if(e->is_triangle()==true){
-						order = space->get_element_order(e->id); 
-						order -= no_of_refinement_steps[e->id];
-						if(order<1) order =1;										
-					}else if(e->is_quad()==true){
-						v_ord = H2D_GET_V_ORDER(space->get_element_order(e->id));
-						h_ord = H2D_GET_H_ORDER(space->get_element_order(e->id));
-						h_ord -= no_of_refinement_steps[e->id]; if(h_ord<1) h_ord =1;
-						v_ord -= no_of_refinement_steps[e->id]; if(v_ord<1) v_ord =1;
-						order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);									
-					}
-					space->set_element_order_internal(e->id, order);
-					changed= coarse_elem(space, e, ref,order, h_max,elements_to_refine);	
-		}else if(elements_to_refine[e->id] == 7) {	//h-coarse+ p increase
-				ref = no_of_refinement_steps[e->id];
-					if(e->is_triangle()==true){
-						order = space->get_element_order(e->id); 
-						order += no_of_refinement_steps[e->id];
-						if(order>max_p) order = max_p;										
-					}else if(e->is_quad()==true){
-						v_ord = H2D_GET_V_ORDER(space->get_element_order(e->id));
-						h_ord = H2D_GET_H_ORDER(space->get_element_order(e->id));
-						h_ord += no_of_refinement_steps[e->id]; if(h_ord>max_p) h_ord =max_p;
-						v_ord += no_of_refinement_steps[e->id]; if(v_ord>max_p) v_ord =max_p;
-						order = H2D_MAKE_QUAD_ORDER(h_ord, v_ord);									
-					}
-					changed= coarse_elem(space, e, ref,order, h_max,elements_to_refine);	
-		}
-		
+		}		
 	}
 	  
 	if(changed==false){ info("nothing to refine/coarse");return false;}

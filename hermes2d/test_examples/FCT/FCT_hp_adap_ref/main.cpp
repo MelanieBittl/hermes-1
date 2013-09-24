@@ -106,9 +106,9 @@ int main(int argc, char* argv[])
   EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an H1 space with default shapeset.
-SpaceSharedPtr<double> space(new H1Space<double>(mesh,&bcs, P_INIT));	
+//SpaceSharedPtr<double> space(new H1Space<double>(mesh,&bcs, P_INIT));	
 
-
+SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 
  // Initialize solution of lower & higher order
   MeshFunctionSharedPtr<double>  sln(new Solution<double>);

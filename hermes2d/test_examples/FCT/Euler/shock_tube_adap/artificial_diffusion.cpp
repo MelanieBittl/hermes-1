@@ -292,6 +292,14 @@ for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
 	  }
 	}
 
+delete c_matrix_1; 
+delete c_matrix_2;
+
+
+	delete [] coeff_rho;
+	delete [] coeff_vel_x;
+	delete [] coeff_vel_y;
+	delete [] coeff_energy; 
 
 	return diffusion;
 

@@ -23,6 +23,7 @@
 #include "space_hcurl.h"
 #include "space_hdiv.h"
 #include "space_l2_semi_cg.h"
+#include "space_bb.h"
 #include "space_h2d_xml.h"
 #include "api2d.h"
 
@@ -746,6 +747,8 @@ namespace Hermes
         ref_space = this->init_construction_hdiv();
       if(dynamic_cast<L2_SEMI_CG_Space<Scalar>*>(this->coarse_space.get()) != NULL)
         ref_space = this->init_construction_l2_semi_cg();
+      if(dynamic_cast<SpaceBB<Scalar>*>(this->coarse_space.get()) != NULL)
+        ref_space = this->init_construction_bb();
 
       if(ref_space == NULL)
         throw Exceptions::Exception("Something went wrong in ReferenceSpaceCreator::create_ref_space().");
@@ -771,6 +774,14 @@ namespace Hermes
         return SpaceSharedPtr<Scalar>(new L2Space<Scalar>(this->ref_mesh, 0));
       else
         return SpaceSharedPtr<Scalar>(new L2Space<Scalar>(this->ref_mesh, 0, this->coarse_space->get_shapeset()));
+    }
+    template<typename Scalar>
+    SpaceSharedPtr<Scalar> Space<Scalar>::ReferenceSpaceCreator::init_construction_bb()
+    {
+      if(this->coarse_space->own_shapeset)
+        return SpaceSharedPtr<Scalar>(new SpaceBB<Scalar>(this->ref_mesh, 1));
+      else
+        return SpaceSharedPtr<Scalar>(new SpaceBB<Scalar>(this->ref_mesh,  1, this->coarse_space->get_shapeset()));
     }
 
     template<typename Scalar>

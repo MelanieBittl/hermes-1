@@ -117,6 +117,12 @@ Space<double>::assign_dofs(spaces);
   MeshFunctionSharedPtr<double>  R_h_1(new Solution<double>);
   MeshFunctionSharedPtr<double>  R_h_2(new Solution<double>);
 
+  Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+Hermes::vector<MeshFunctionSharedPtr<double> > low_slns(low_rho,low_rho_v_x,low_rho_v_y,low_rho_e);
+Hermes::vector<MeshFunctionSharedPtr<double> > init_slns(init_rho, init_rho_v_x, init_rho_v_y, init_e);
+
+Hermes::vector<NormType> norms_l2(HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM);
+
 
  //--------- Visualization of pressure & velocity
   ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
@@ -132,14 +138,15 @@ Space<double>::assign_dofs(spaces);
 //------------
 
 
-  EulerEquationsWeakForm_K  wf_K_init(KAPPA, time_step, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-  EulerBoundary wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+  EulerEquationsWeakForm_K  wf_K_init(KAPPA, init_slns);
+  EulerBoundary wf_boundary_init(KAPPA, Hermes::vector<MeshFunctionSharedPtr<double> >(init_rho, init_rho_v_x, init_rho_v_y, init_e,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e) );
 
-  EulerEquationsWeakForm_Mass wf_mass(time_step);
-  EulerEquationsWeakForm_K  wf_K(KAPPA, time_step, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-  EulerEquationsWeakForm_K  wf_K_low(KAPPA, time_step, low_rho, low_rho_v_x, low_rho_v_y, low_rho_e);
-  EulerBoundary wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-  EulerBoundary wf_boundary_low(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, low_rho, low_rho_v_x, low_rho_v_y, low_rho_e);
+  EulerEquationsWeakForm_Mass wf_mass;
+  EulerEquationsWeakForm_K  wf_K(KAPPA, prev_slns);
+  EulerEquationsWeakForm_K  wf_K_low(KAPPA, low_slns);
+  EulerBoundary wf_boundary(KAPPA,
+Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e));
+ EulerBoundary wf_boundary_low(KAPPA, Hermes::vector<MeshFunctionSharedPtr<double> > (low_rho, low_rho_v_x, low_rho_v_y, low_rho_e, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e ));
 
 
 

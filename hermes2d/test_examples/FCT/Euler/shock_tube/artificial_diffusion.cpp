@@ -8,8 +8,6 @@ public:
     add_matrix_form(new Convection_1(1));
     add_matrix_form(new Convection_1(2));
     add_matrix_form(new Convection_1(3));
-
-
 	};
 
 	
@@ -211,24 +209,24 @@ UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,Hermes::ve
 		double* coeff_energy = new double[dof_rho];
 
 
-for(int i =0;i<dof_rho; i++){
-		coeff_rho[i]=coeff[i];
-}
-	int k = 0;
-for(int i = dof_rho; i<(dof_rho+dof_vel_x);i++){
-		coeff_vel_x[k] =coeff[i];
-		k++;
-}
-k = 0;
-for(int i = (dof_rho+dof_vel_x); i<(dof_rho+dof_vel_x+dof_vel_y);i++){
-		coeff_vel_y[k] =coeff[i];
-		k++;
-}
-k = 0;
-for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
-		coeff_energy[k] =coeff[i];
-		k++;
-}
+		for(int i =0;i<dof_rho; i++){
+				coeff_rho[i]=coeff[i];
+		}
+			int k = 0;
+		for(int i = dof_rho; i<(dof_rho+dof_vel_x);i++){
+				coeff_vel_x[k] =coeff[i];
+				k++;
+		}
+		k = 0;
+		for(int i = (dof_rho+dof_vel_x); i<(dof_rho+dof_vel_x+dof_vel_y);i++){
+				coeff_vel_y[k] =coeff[i];
+				k++;
+		}
+		k = 0;
+		for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
+				coeff_energy[k] =coeff[i];
+				k++;
+		}
 
 
 	 int size = c_matrix_1->get_size();
@@ -292,6 +290,14 @@ for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
 	  }
 	}
 
+delete c_matrix_1; 
+delete c_matrix_2;
+
+
+	delete [] coeff_rho;
+	delete [] coeff_vel_x;
+	delete [] coeff_vel_y;
+	delete [] coeff_energy; 
 
 	return diffusion;
 
