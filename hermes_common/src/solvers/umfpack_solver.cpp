@@ -22,6 +22,7 @@
 #include "config.h"
 #ifdef WITH_UMFPACK
 #include "umfpack_solver.h"
+#include "common.h"
 
 #define umfpack_real_symbolic umfpack_di_symbolic
 #define umfpack_real_numeric umfpack_di_numeric
@@ -33,223 +34,6 @@
 
 namespace Hermes
 {
-  namespace Algebra
-  {
-    template<typename Scalar>
-    UMFPackVector<Scalar>::UMFPackVector() : Vector<Scalar>()
-    {
-      v = NULL;
-      this->size = 0;
-    }
-
-    template<typename Scalar>
-    UMFPackVector<Scalar>::UMFPackVector(unsigned int size) : Vector<Scalar>(size), v(NULL)
-    {
-      this->alloc(size);
-    }
-
-    template<typename Scalar>
-    UMFPackVector<Scalar>::~UMFPackVector()
-    {
-      free();
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::alloc(unsigned int n)
-    {
-      free();
-      this->size = n;
-      v = new Scalar[n];
-      this->zero();
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::zero()
-    {
-      memset(v, 0, this->size * sizeof(Scalar));
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::change_sign()
-    {
-      for (unsigned int i = 0; i < this->size; i++) v[i] *= -1.;
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::free()
-    {
-      delete [] v;
-      v = NULL;
-      this->size = 0;
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::set(unsigned int idx, Scalar y)
-    {
-      v[idx] = y;
-    }
-
-    template<>
-    void UMFPackVector<double>::add(unsigned int idx, double y)
-    {
-#pragma omp atomic
-      v[idx] += y;
-    }
-
-    template<>
-    void UMFPackVector<std::complex<double> >::add(unsigned int idx, std::complex<double> y)
-    {
-#pragma omp critical(UMFPackVector_add)
-      v[idx] += y;
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::add(unsigned int n, unsigned int *idx, Scalar *y)
-    {
-      for (unsigned int i = 0; i < n; i++)
-        v[idx[i]] += y[i];
-    }
-
-    template<typename Scalar>
-    Scalar UMFPackVector<Scalar>::get(unsigned int idx) const
-    {
-      return v[idx];
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::extract(Scalar *v) const
-    {
-      memcpy(v, this->v, this->size * sizeof(Scalar));
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::set_vector(Vector<Scalar>* vec)
-    {
-      assert(this->size == vec->length());
-      for (unsigned int i = 0; i < this->size; i++) this->v[i] = vec->get(i);
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::set_vector(Scalar* vec)
-    {
-      memcpy(this->v, vec, this->size * sizeof(Scalar));
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::add_vector(Vector<Scalar>* vec)
-    {
-      assert(this->length() == vec->length());
-      for (unsigned int i = 0; i < this->length(); i++) this->v[i] += vec->get(i);
-    }
-
-    template<typename Scalar>
-    void UMFPackVector<Scalar>::add_vector(Scalar* vec)
-    {
-      for (unsigned int i = 0; i < this->length(); i++) this->v[i] += vec[i];
-    }
-
-    template<typename Scalar>
-    Scalar *UMFPackVector<Scalar>::get_c_array()
-    {
-      return this->v;
-    }
-
-    template<>
-    bool UMFPackVector<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
-    {
-      switch (fmt)
-      {
-      case DF_MATLAB_SPARSE:
-        fprintf(file, "%% Size: %dx1\n%s =[\n", this->size, var_name);
-        for (unsigned int i = 0; i < this->size; i++)
-        {
-          Hermes::Helpers::fprint_num(file, v[i], number_format);
-          fprintf(file, "\n");
-        }
-        fprintf(file, " ];\n");
-        return true;
-
-      case DF_HERMES_BIN:
-        {
-          hermes_fwrite("HERMESR\001", 1, 8, file);
-          int ssize = sizeof(double);
-          hermes_fwrite(&ssize, sizeof(int), 1, file);
-          hermes_fwrite(&this->size, sizeof(int), 1, file);
-          hermes_fwrite(v, sizeof(double), this->size, file);
-          return true;
-        }
-
-      case DF_HERMES_MATLAB_BIN:
-        {
-          hermes_fwrite(&this->size, sizeof(int), 1, file);
-          hermes_fwrite(v, sizeof(double), this->size, file);
-          return true;
-        }
-
-      case DF_PLAIN_ASCII:
-        {
-          fprintf(file, "\n");
-          for (unsigned int i = 0; i < size; i++)
-          {
-            Hermes::Helpers::fprint_num(file, v[i], number_format);
-            fprintf(file, "\n");
-          }
-
-          return true;
-        }
-
-      default:
-        return false;
-      }
-    }
-
-    template<>
-    bool UMFPackVector<std::complex<double> >::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
-    {
-      switch (fmt)
-      {
-      case DF_MATLAB_SPARSE:
-        fprintf(file, "%% Size: %dx1\n%s =[\n", this->size, var_name);
-        for (unsigned int i = 0; i < this->size; i++)
-        {
-          Hermes::Helpers::fprint_num(file, v[i], number_format);
-          fprintf(file, "\n");
-        }
-        fprintf(file, " ];\n");
-        return true;
-
-      case DF_HERMES_BIN:
-        {
-          hermes_fwrite("HERMESR\001", 1, 8, file);
-          int ssize = sizeof(std::complex<double>);
-          hermes_fwrite(&ssize, sizeof(int), 1, file);
-          hermes_fwrite(&this->size, sizeof(int), 1, file);
-          hermes_fwrite(v, sizeof(std::complex<double>), this->size, file);
-          return true;
-        }
-
-      case DF_PLAIN_ASCII:
-        {
-          fprintf(file, "\n");
-          for (unsigned int i = 0; i < size; i++)
-          {
-            fprintf(file, "%E %E\n", v[i].real(), v[i].imag());
-          }
-
-          return true;
-        }
-
-      default:
-        return false;
-      }
-    }
-
-    template class HERMES_API UMFPackMatrix<double>;
-    template class HERMES_API UMFPackMatrix<std::complex<double> >;
-    template class HERMES_API UMFPackVector<double>;
-    template class HERMES_API UMFPackVector<std::complex<double> >;
-  }
-
   namespace Solvers
   {
     template<typename Scalar>
@@ -259,7 +43,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    UMFPackLinearMatrixSolver<Scalar>::UMFPackLinearMatrixSolver(UMFPackMatrix<Scalar> *m, UMFPackVector<Scalar> *rhs)
+    UMFPackLinearMatrixSolver<Scalar>::UMFPackLinearMatrixSolver(CSCMatrix<Scalar> *m, SimpleVector<Scalar> *rhs)
       : DirectSolver<Scalar>(HERMES_CREATE_STRUCTURE_FROM_SCRATCH), m(m), rhs(rhs), symbolic(NULL), numeric(NULL)
     {
       umfpack_di_defaults(Control);
@@ -389,11 +173,11 @@ namespace Hermes
     }
 
     template<>
-    bool UMFPackLinearMatrixSolver<double>::solve()
+    void UMFPackLinearMatrixSolver<double>::solve()
     {
       assert(m != NULL);
       assert(rhs != NULL);
-      assert(m->get_size() == rhs->length());
+      assert(m->get_size() == rhs->get_size());
 
       this->tick();
 
@@ -405,7 +189,7 @@ namespace Hermes
 
       sln = new double[m->get_size()];
       memset(sln, 0, m->get_size() * sizeof(double));
-      int status = umfpack_real_solve(UMFPACK_A, m->get_Ap(), m->get_Ai(), m->get_Ax(), sln, rhs->get_c_array(), numeric, NULL, NULL);
+      int status = umfpack_real_solve(UMFPACK_A, m->get_Ap(), m->get_Ai(), m->get_Ax(), sln, rhs->v, numeric, NULL, NULL);
       if(status != UMFPACK_OK)
       {
         this->free_factorization_data();
@@ -413,29 +197,25 @@ namespace Hermes
       }
 
       this->tick();
-
-      return true;
     }
 
     template<>
-    bool UMFPackLinearMatrixSolver<std::complex<double> >::solve()
+    void UMFPackLinearMatrixSolver<std::complex<double> >::solve()
     {
       assert(m != NULL);
       assert(rhs != NULL);
-      assert(m->get_size() == rhs->length());
+      assert(m->get_size() == rhs->get_size());
 
       this->tick();
       if( !setup_factorization() )
-      {
         this->warn("LU factorization could not be completed.");
-        return false;
-      }
 
       if(sln)
         delete [] sln;
       sln = new std::complex<double>[m->get_size()];
+
       memset(sln, 0, m->get_size() * sizeof(std::complex<double>));
-      int status = umfpack_complex_solve(UMFPACK_A, m->get_Ap(), m->get_Ai(), (double *)m->get_Ax(), NULL, (double*) sln, NULL, (double *)rhs->get_c_array(), NULL, numeric, NULL, NULL);
+      int status = umfpack_complex_solve(UMFPACK_A, m->get_Ap(), m->get_Ai(), (double *)m->get_Ax(), NULL, (double*) sln, NULL, (double *)rhs->v, NULL, numeric, NULL, NULL);
       if(status != UMFPACK_OK)
       {
         this->free_factorization_data();
@@ -444,8 +224,6 @@ namespace Hermes
 
       this->tick();
       time = this->accumulated();
-
-      return true;
     }
 
     template<typename Scalar>

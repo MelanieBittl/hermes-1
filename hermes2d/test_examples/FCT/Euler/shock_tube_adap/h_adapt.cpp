@@ -23,9 +23,9 @@ void calc_elem_error(SpaceSharedPtr<Scalar> space, MeshFunctionSharedPtr<Scalar>
 
 	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, space);
 	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, space);
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ; 
-	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ndof);
-	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
+	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ; 
+	SimpleVector<double> * rhs_1 = new SimpleVector<double>(ndof);
+	SimpleVector<double> * rhs_2 = new SimpleVector<double>(ndof);
 	dp_1->assemble(mass_matrix,rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);

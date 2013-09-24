@@ -38,32 +38,36 @@ namespace Hermes
     SOLVER_MUMPS = 4,
     SOLVER_SUPERLU = 5,
     SOLVER_AMESOS = 6,
-    SOLVER_AZTECOO = 7
+    SOLVER_AZTECOO = 7,
+    SOLVER_EXTERNAL = 8,
+    SOLVER_EMPTY = 100
   };
 
   enum DirectMatrixSolverType
   {
     DIRECT_SOLVER_UMFPACK = 0,
-    DIRECT_SOLVER_MUMPS = 1,
-    DIRECT_SOLVER_SUPERLU = 2,
-    DIRECT_SOLVER_AMESOS = 3
+    DIRECT_SOLVER_MUMPS = 4,
+    DIRECT_SOLVER_SUPERLU = 5,
+    DIRECT_SOLVER_AMESOS = 6,
+    // Solver external is here, because direct solvers are used in projections.
+    DIRECT_SOLVER_EXTERNAL = 8
   };
 
   enum IterativeMatrixSolverType
   {
-    ITERATIVE_SOLVER_PARALUTION = 0,
-    ITERATIVE_SOLVER_PETSC = 1,
-    ITERATIVE_SOLVER_AZTECOO = 2
+    ITERATIVE_SOLVER_PARALUTION = 1,
+    ITERATIVE_SOLVER_PETSC = 3,
+    ITERATIVE_SOLVER_AZTECOO = 7
   };
 
   enum AMGMatrixSolverType
   {
-    AMG_SOLVER_PARALUTION = 0
+    AMG_SOLVER_PARALUTION = 2
   };
 
-  namespace Solvers
+  namespace Mixins
   {
-    template <typename Scalar> class HERMES_API CSCIterator;
+    template <typename Scalar> class HERMES_API MatrixRhsImportExport;
   }
 
   /// \brief Namespace containing classes for vector / matrix operations.
@@ -289,38 +293,28 @@ namespace Hermes
     }
 
     /// Format of file matrix and vector output
-    enum EMatrixDumpFormat
+    enum MatrixExportFormat
     {
       /// \brief Plain ascii file
-      /// first line is matrix size
-      /// second line in number of nonzero values
-      /// next lines contains row column and value
-      DF_MATLAB_SPARSE = 0,
-      DF_PLAIN_ASCII = 1,
-      /// \brief Hermes binary format
-      DF_HERMES_BIN = 2,
-      /// \brief Matrix Market which can be read by pysparse library
-      DF_MATRIX_MARKET = 3,
+      /// lines contains row column and value
+      EXPORT_FORMAT_PLAIN_ASCII = 1,
       /// Binary MATio format
-      DF_HERMES_MATLAB_BIN = 4
+      EXPORT_FORMAT_MATLAB_MATIO = 4,
+      /// \brief Matrix Market which can be read by pysparse library
+      EXPORT_FORMAT_MATRIX_MARKET = 3
     };
 
     /// \brief General (abstract) matrix representation in Hermes.
     template<typename Scalar>
-    class HERMES_API Matrix : public Hermes::Mixins::Loggable
+    class HERMES_API Matrix : 
+      public Hermes::Mixins::Loggable,
+      public Hermes::Mixins::MatrixRhsImportExport<Scalar>
     {
     public:
-      /// get size of matrix
-      /// @return size of matrix
-      unsigned int get_size() const { return this->size;};
-
       /// constructor of matrix
       /// @param[in] size size of matrix
-      Matrix(unsigned int size) { this->size = size;};
-
+      Matrix(unsigned int size = 0);
       virtual ~Matrix() {};
-
-      Matrix() { this->size = 0;};
 
       /// allocate the memory for stiffness matrix and right-hand side
       virtual void alloc() = 0;
@@ -336,9 +330,6 @@ namespace Hermes
 
       /// Zero the matrix.
       virtual void zero() = 0;
-
-      /// Add a number to each diagonal entry.
-      virtual void add_to_diagonal(Scalar v) = 0;
 
       /// set the stiffness matrix
       ///
@@ -361,21 +352,22 @@ namespace Hermes
       /// @param[in] mat    - block of values
       /// @param[in] rows      - array with row indexes
       /// @param[in] cols      - array with column indexes
-      virtual void add(unsigned int m, unsigned int n, Scalar **mat, int *rows, int *cols) = 0;
+      virtual void add(unsigned int m, unsigned int n, Scalar **mat, int *rows, int *cols);
 
-      /// dumping matrix and right-hand side
-      /// @param[in] file file handle
-      /// @param[in] var_name name of variable (will be written to output file)
-      /// @param[in] fmt output file format
-      /// @return true on succes
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf") = 0;
+      /// Add a number to each diagonal entry.
+      virtual void add_to_diagonal(Scalar v);
+
+      /// Multiply with a vector.
+      virtual void multiply_with_vector(Scalar* vector_in, Scalar*& vector_out, bool vector_out_initialized = false) const;
+
+      /// Multiply with a Scalar.
+      virtual void multiply_with_Scalar(Scalar value);
 
       /// Get size of matrix
       /// @return size of matrix
-      virtual unsigned int get_matrix_size() const = 0;
+      virtual unsigned int get_size() const;
 
     protected:
-
       unsigned int size;  ///< matrix size
     };
 
@@ -402,29 +394,29 @@ namespace Hermes
       virtual void pre_add_ij(unsigned int row, unsigned int col);
 
       /// Finish manipulation with matrix (called before solving)
-      virtual void finish() { }
+      virtual void finish();
 
       /// Add matrix
       /// @param mat matrix to add
-      virtual void add_sparse_matrix(SparseMatrix* mat)
-      {
-        throw Hermes::Exceptions::Exception("add_sparse_matrix() undefined.");
-      };
-
+      virtual void add_sparse_matrix(SparseMatrix<Scalar>* mat);
+      
       /// Add matrix to diagonal
       /// Matrices must be the same type of solver
       /// @param[in] num_stages matrix is added to num_stages positions. num_stages * size(added matrix) = size(target matrix)
       /// @param[in] mat added matrix
-      virtual void add_sparse_to_diagonal_blocks(int num_stages, SparseMatrix<Scalar>* mat)
-      {
-        throw Hermes::Exceptions::Exception("add_sparse_to_diagonal_blocks() undefined.");
-      };
+      virtual void add_sparse_to_diagonal_blocks(int num_stages, SparseMatrix<Scalar>* mat);
 
+      /// Add matrix to specific position.
+      /// @param[in] i row in target matrix coresponding with top row of added matrix
+      /// @param[in] j column in target matrix coresponding with lef column of added matrix
+      /// @param[in] mat added matrix
+      virtual void add_as_block(unsigned int i, unsigned int j, SparseMatrix<Scalar>* mat);
+      
       /// Return the number of entries in a specified row
       ///
       /// @param[in] row - index of the row
       /// @return - the number of entries in the row 'row'
-      virtual int get_num_row_entries(unsigned int row) { return -1; }
+      virtual int get_num_row_entries(unsigned int row) const;
 
       /// Extract the copy of a row
       ///
@@ -434,14 +426,13 @@ namespace Hermes
       /// @param[out] vals - extracted values for this row.
       /// @param[out] idxs - extracted global column indices for the corresponding values.
       virtual void extract_row_copy(unsigned int row, unsigned int len,
-        unsigned int &n_entries, double *vals,
-        unsigned int *idxs) { }
+        unsigned int &n_entries, double *vals, unsigned int *idxs) const;
 
       /// Return the number of entries in a specified column
       ///
       /// @param[in] col - index of the column
       /// @return - the number of entries in the column 'col'
-      virtual int get_num_col_entries(unsigned int col) { return -1; }
+      virtual int get_num_col_entries(unsigned int col) const;
 
       /// Extract the copy of a column
       ///
@@ -451,21 +442,10 @@ namespace Hermes
       /// @param[out] vals - extracted values for this column.
       /// @param[out] idxs - extracted global row indices for the corresponding values.
       virtual void extract_col_copy(unsigned int col, unsigned int len,
-        unsigned int &n_entries, double *vals,
-        unsigned int *idxs) { }
-
-      /// Multiply with a vector.
-      virtual void multiply_with_vector(Scalar* vector_in, Scalar* vector_out) const {
-        throw Hermes::Exceptions::Exception("multiply_with_vector() undefined.");
-      };
-
-      /// Multiply with a Scalar.
-      virtual void multiply_with_Scalar(Scalar value) {
-        throw Hermes::Exceptions::Exception("multiply_with_Scalar() undefined.");
-      };
+        unsigned int &n_entries, double *vals, unsigned int *idxs) const;
 
       /// Duplicate sparse matrix (including allocation).
-      virtual SparseMatrix* duplicate() { throw Exceptions::MethodNotOverridenException("SparseMatrix* duplicate()"); return NULL; };
+      virtual SparseMatrix<Scalar>* duplicate() const;
 
       /// Get fill-in.
       virtual double get_fill_in() const = 0;
@@ -475,10 +455,7 @@ namespace Hermes
 
       /// get number of nonzero numbers in matrix
       /// @return number of nonzero numbers in matrix
-      virtual unsigned int get_nnz() const {
-        throw Hermes::Exceptions::Exception("get_nnz() undefined.");
-        return 0;
-      }
+      virtual unsigned int get_nnz() const;
 
     protected:
       /// Size of page (max number of indices stored in one page).
@@ -514,7 +491,7 @@ namespace Hermes
 
     /// \brief General (abstract) vector representation in Hermes.
     template<typename Scalar>
-    class HERMES_API Vector : public Hermes::Mixins::Loggable
+    class HERMES_API Vector : public Hermes::Mixins::Loggable, public Hermes::Mixins::MatrixRhsImportExport<Scalar>
     {
     public:
       /// Default constructor.
@@ -546,7 +523,7 @@ namespace Hermes
       virtual void zero() = 0;
 
       /// Multiply by minus one.
-      virtual void change_sign() = 0;
+      virtual Vector<Scalar>* change_sign() = 0;
 
       /// set the entry on a specified position
       ///
@@ -561,14 +538,14 @@ namespace Hermes
       virtual void add(unsigned int idx, Scalar y) = 0;
 
       /// Set values from a user-provided vector.
-      virtual void set_vector(Vector<Scalar>* vec);
+      virtual Vector<Scalar>* set_vector(Vector<Scalar>* vec);
       /// Set values from a user-provided array.
-      virtual void set_vector(Scalar* vec);
-      
+      virtual Vector<Scalar>* set_vector(Scalar* vec);
+
       /// Add a vector.
-      virtual void add_vector(Vector<Scalar>* vec);
+      virtual Vector<Scalar>* add_vector(Vector<Scalar>* vec);
       /// Add a vector.
-      virtual void add_vector(Scalar* vec);
+      virtual Vector<Scalar>* add_vector(Scalar* vec);
 
       /// update subset of the elements
       ///
@@ -578,19 +555,42 @@ namespace Hermes
       virtual void add(unsigned int n, unsigned int *idx, Scalar *y) = 0;
 
       /// Get vector length.
-      unsigned int length() const {return this->size;}
-
-      /// Write to file.
-      /// @param[in] file file handle
-      /// @param[in] var_name name of variable (will be written to output file)
-      /// @param[in] fmt output file format
-      /// @return true on succes
-      virtual bool dump(FILE *file, const char *var_name,
-        EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf") = 0;
-
+      unsigned int get_size() const {return this->size;}
     protected:
       /// size of vector
       unsigned int size;
+    };
+
+    /** \brief Vector used with MUMPS solver */
+    template <typename Scalar>
+    class HERMES_API SimpleVector : public Vector<Scalar>
+    {
+    public:
+      SimpleVector();
+      SimpleVector(unsigned int size);
+      virtual ~SimpleVector();
+
+      virtual void alloc(unsigned int ndofs);
+      virtual void free();
+      virtual Scalar get(unsigned int idx) const;
+      virtual void extract(Scalar *v) const;
+      virtual void zero();
+      virtual Vector<Scalar>* change_sign();
+      virtual void set(unsigned int idx, Scalar y);
+      virtual void add(unsigned int idx, Scalar y);
+      virtual void add(unsigned int n, unsigned int *idx, Scalar *y);
+      virtual Vector<Scalar>* add_vector(Vector<Scalar>* vec);
+      virtual Vector<Scalar>* add_vector(Scalar* vec);
+      virtual Vector<Scalar>* set_vector(Vector<Scalar>* vec);
+      virtual Vector<Scalar>* set_vector(Scalar* vec);
+      
+      using Vector<Scalar>::export_to_file;
+      using Vector<Scalar>::import_from_file;
+      virtual void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf");
+      virtual void import_from_file(const char *filename, const char *var_name, MatrixExportFormat fmt);
+
+      /// Raw data.
+      Scalar *v;
     };
 
     /// \brief Function returning a vector according to the users's choice.
@@ -602,6 +602,108 @@ namespace Hermes
     /// @return created matrix
     template<typename Scalar> HERMES_API
       SparseMatrix<Scalar>*  create_matrix(bool use_direct_solver = false);
+  }
+
+  namespace Mixins
+  {
+    /// \ingroup g_mixins2d
+    /// Mixin that interfaces linear algebra structures output on higher levels (for solvers).
+    template<typename Scalar>
+    class HERMES_API MatrixRhsOutput
+    {
+    public:
+      /// Constructor.
+      /// Sets defaults (see individual set methods for values of those).
+      MatrixRhsOutput();
+
+      /// Processes the matrix.
+      void process_matrix_output(Hermes::Algebra::SparseMatrix<Scalar>* matrix, int iteration);
+      void process_matrix_output(Hermes::Algebra::SparseMatrix<Scalar>* matrix);
+
+      /// Processes the matrix.
+      void process_vector_output(Hermes::Algebra::Vector<Scalar>* rhs, int iteration);
+      void process_vector_output(Hermes::Algebra::Vector<Scalar>* rhs);
+
+      /// Sets this instance to output the matrix in several first iterations.
+      /// \param[in] only_last_iteration If true, only the last iteration is outputted, and the next parameter is ignored.
+      /// \param[in] firstIterations Only during so many first iterations. Default: -1 meaning, that during all iterations, the matrix will be saved.
+      void output_matrix(bool only_last_iteration = true, int firstIterations = -1);
+      /// Sets this instance to output matrix entries even though they are zero or not.
+      void set_print_zero_matrix_entries(bool to_set);
+      /// Sets filename for the matrix
+      /// Default: Matrix_'iteration number' with the ".m" extension in the case of matlab format.
+      /// \param[in] name sets the main part of the name, i.e. replacement for "Matrix_" in the default name.
+      void set_matrix_filename(std::string name);
+      /// Sets varname for the matrix
+      /// Default: "A".
+      void set_matrix_varname(std::string name);
+      /// Sets varname for the matrix
+      /// Default: "DF_MATLAB_SPARSE - matlab file".
+      void set_matrix_export_format(Hermes::Algebra::MatrixExportFormat format);
+      /// Sets number format for the matrix output.
+      /// Default: "%lf".
+      void set_matrix_number_format(char* number_format);
+
+      /// Sets this instance to output the rhs in several first iterations.
+      /// \param[in] only_last_iteration If true, only the last iteration is outputted, and the next parameter is ignored.
+      /// \param[in] firstIterations Only during so many first iterations. Default: -1 meaning, that during all iterations, the rhs will be saved.
+      void output_rhs(bool only_last_iteration = true, int firstIterations = -1);
+      /// Sets filename for the rhs
+      /// Default: Rhs_'iteration number' with the ".m" extension in the case of matlab format.
+      /// \param[in] name sets the main part of the name, i.e. replacement for "Rhs_" in the default name.
+      void set_rhs_filename(std::string name);
+      /// Sets varname for the rhs
+      /// Default: "b".
+      void set_rhs_varname(std::string name);
+      /// Sets varname for the rhs
+      /// Default: "DF_MATLAB_SPARSE - matlab file".
+      void set_rhs_export_format(Hermes::Algebra::MatrixExportFormat format);
+      /// Sets number format for the vector output.
+      /// Default: "%lf".
+      void set_rhs_number_format(char* number_format);
+
+    protected:
+      bool print_matrix_zero_values;
+      bool output_matrixOn;
+      bool only_lastMatrixIteration;
+      int output_matrixIterations;
+      std::string matrixFilename;
+      std::string matrixVarname;
+      Hermes::Algebra::MatrixExportFormat matrixFormat;
+      char* matrix_number_format;
+
+      bool output_rhsOn;
+      bool only_lastRhsIteration;
+      int output_rhsIterations;
+      std::string RhsFilename;
+      std::string RhsVarname;
+      Hermes::Algebra::MatrixExportFormat RhsFormat;
+      char* rhs_number_format;
+    };
+
+    /// \ingroup g_mixins2d
+    /// Mixin that interfaces basic linear algebra structures output.
+    template<typename Scalar>
+    class HERMES_API MatrixRhsImportExport
+    {
+    public:
+      /// writing matrix.
+      /// @param[in] filename obvious
+      /// @param[in] var_name name of variable (will be written to output file)
+      /// @param[in] fmt output file format
+      /// @param[in] number_format specifies the number format where possible
+      virtual void export_to_file(const char* filename, const char* var_name, Algebra::MatrixExportFormat fmt, char* number_format = "%lf") = 0;
+      void export_to_file(std::string filename, const char* var_name, Algebra::MatrixExportFormat fmt, char* number_format = "%lf");
+      void export_to_file(std::string filename, std::string var_name, Algebra::MatrixExportFormat fmt, char* number_format = "%lf");
+      
+      /// reading matrix
+      /// @param[in] filename obvious
+      /// @param[in] var_name name of variable (will be searched for to output file)
+      /// @param[in] fmt input file format
+      virtual void import_from_file(const char* filename, const char* var_name, Algebra::MatrixExportFormat fmt) { throw Exceptions::MethodNotOverridenException("MatrixRhsImportExport<Scalar>::import_from_file"); };
+      void import_from_file(std::string filename, const char* var_name, Algebra::MatrixExportFormat fmt);
+      void import_from_file(std::string filename, std::string var_name, Algebra::MatrixExportFormat fmt);
+    };
   }
 }
 #endif

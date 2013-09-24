@@ -10,6 +10,7 @@ using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
+using namespace Hermes::Solvers;
 
 // 1. Step: (M_L/tau -theta(K+D)) u^L =   (M_L/tau + (1-theta)(K+D)) u^n
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
@@ -113,14 +114,14 @@ Orderizer ord;
 
 
 		  // Initialize
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
-	UMFPackMatrix<double> * conv_matrix = new UMFPackMatrix<double> ;   //K
-	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double> ;  
-	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double> ; 
+	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ;   //M_c/tau
+	CSCMatrix<double> * conv_matrix = new CSCMatrix<double> ;   //K
+	CSCMatrix<double> * low_matrix = new CSCMatrix<double> ;  
+	CSCMatrix<double> * lowmat_rhs = new CSCMatrix<double> ; 
 
 
-		UMFPackMatrix<double> * high_matrix = new UMFPackMatrix<double> ;  
-	UMFPackMatrix<double> * high_rhs = new UMFPackMatrix<double> ; 
+		CSCMatrix<double> * high_matrix = new CSCMatrix<double> ;  
+	CSCMatrix<double> * high_rhs = new CSCMatrix<double> ; 
 
 	double* u_L = NULL; 
 	double* u_new_double = NULL; 
@@ -188,7 +189,7 @@ do
 
 		int* smooth_elem = new int[ref_space->get_mesh()->get_max_element_id()];
 		int* smooth_dof = new int[ref_ndof];
-		UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ref_ndof);
+		SimpleVector<double> * vec_rhs = new SimpleVector<double> (ref_ndof);
 			double* lumped_double = new double[ref_ndof];
 
 
@@ -197,15 +198,15 @@ do
 
 		//----------------------MassLumping M_L/tau--------------------------------------------------------------------
 			dp_mass->assemble(mass_matrix,vec_rhs); 	
-			UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
+			CSCMatrix<double> * lumped_matrix = massLumping(mass_matrix);
 
 			//------------------------artificial DIFFUSION D---------------------------------------
 			dp_convection->assemble(conv_matrix);
-			UMFPackMatrix<double> * diffusion = artificialDiffusion(conv_matrix);
+			CSCMatrix<double> * diffusion = artificialDiffusion(conv_matrix);
 			//--------------------------------------------------------------------------------------------
 
 			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
-			lowmat_rhs->add_matrix(diffusion); 
+			lowmat_rhs->add_sparse_matrix(diffusion); 
 			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
 			//(-theta)(K+D)
 			if(theta==0) low_matrix->zero();
@@ -215,9 +216,9 @@ do
 			else lowmat_rhs->multiply_with_Scalar((1.0-theta));
 
 			//M_L/tau - theta(D+K)
-			low_matrix->add_matrix(lumped_matrix);  
+			low_matrix->add_sparse_matrix(lumped_matrix);  
 			//M_L/tau+(1-theta)(K+D)
-			lowmat_rhs->add_matrix(lumped_matrix);	
+			lowmat_rhs->add_sparse_matrix(lumped_matrix);	
 
 
 
@@ -282,15 +283,15 @@ View::wait(HERMES_WAIT_KEYPRESS);
 
 				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
 			dp_mass->assemble(mass_matrix,vec_rhs); 	
-				UMFPackMatrix<double>* lumped_matrix = massLumping(fct,mass_matrix);
+				CSCMatrix<double>* lumped_matrix = massLumping(fct,mass_matrix);
 
 			//------------------------artificial DIFFUSION D---------------------------------------
 			dp_convection->assemble(conv_matrix);
-				UMFPackMatrix<double>* diffusion = artificialDiffusion(fct,conv_matrix);
+				CSCMatrix<double>* diffusion = artificialDiffusion(fct,conv_matrix);
 
 			//--------------------------------------------------------------------------------------------
 			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
-			lowmat_rhs->add_matrix(diffusion); 
+			lowmat_rhs->add_sparse_matrix(diffusion); 
 			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
 			//(-theta)(K+D)
 			if(theta==0) low_matrix->zero();
@@ -300,17 +301,17 @@ View::wait(HERMES_WAIT_KEYPRESS);
 			else lowmat_rhs->multiply_with_Scalar((1.0-theta));
 
 			//M_L/tau - theta(D+K)
-			low_matrix->add_matrix(lumped_matrix);  
+			low_matrix->add_sparse_matrix(lumped_matrix);  
 			//M_L/tau+(1-theta)(K+D)
-			lowmat_rhs->add_matrix(lumped_matrix);	
+			lowmat_rhs->add_sparse_matrix(lumped_matrix);	
 
 
 			high_matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 			high_matrix->multiply_with_Scalar(-theta);
-			high_matrix->add_matrix(mass_matrix);  
+			high_matrix->add_sparse_matrix(mass_matrix);  
 			high_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 			high_rhs->multiply_with_Scalar((1.0-theta));
-			high_rhs->add_matrix(mass_matrix); 
+			high_rhs->add_sparse_matrix(mass_matrix); 
 
 
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L

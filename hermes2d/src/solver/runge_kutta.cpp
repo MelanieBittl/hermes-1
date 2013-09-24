@@ -17,6 +17,10 @@
 #include "discrete_problem.h"
 #include "projections/ogprojection.h"
 #include "norm_form.h"
+
+using namespace Hermes::Algebra;
+using namespace Hermes::Solvers;
+
 namespace Hermes
 {
   namespace Hermes2D
@@ -270,7 +274,9 @@ namespace Hermes
       int size = matrix->get_size();
       for (int i = 0; i < num_blocks; i++)
       {
-        matrix->multiply_with_vector(source_vec + i*size, target_vec + i*size);
+        Scalar* temp = target_vec + i * size;
+        Scalar** temp_for_pass = &temp;
+        matrix->multiply_with_vector(source_vec + i*size, *temp_for_pass, true);
       }
     }
 
@@ -375,13 +381,8 @@ namespace Hermes
         if(this->output_rhsOn && (this->output_rhsIterations == -1 || this->output_rhsIterations >= it))
         {
           char* fileName = new char[this->RhsFilename.length() + 5];
-          if(this->RhsFormat == Hermes::Algebra::DF_MATLAB_SPARSE)
-            sprintf(fileName, "%s%i.m", this->RhsFilename.c_str(), it);
-          else
-            sprintf(fileName, "%s%i", this->RhsFilename.c_str(), it);
-          FILE* rhs_file = fopen(fileName, "w+");
-          vector_right->dump(rhs_file, this->RhsVarname.c_str(), this->RhsFormat, this->rhs_number_format);
-          fclose(rhs_file);
+          sprintf(fileName, "%s%i", this->RhsFilename.c_str(), it);
+          vector_right->export_to_file(fileName, this->RhsVarname.c_str(), this->RhsFormat, this->rhs_number_format);
         }
 
         // Measure the residual norm.
@@ -437,14 +438,8 @@ namespace Hermes
           if(this->output_matrixOn && (this->output_matrixIterations == -1 || this->output_matrixIterations >= it))
           {
             char* fileName = new char[this->matrixFilename.length() + 5];
-            if(this->matrixFormat == Hermes::Algebra::DF_MATLAB_SPARSE)
-              sprintf(fileName, "%s%i.m", this->matrixFilename.c_str(), it);
-            else
-              sprintf(fileName, "%s%i", this->matrixFilename.c_str(), it);
-            FILE* matrix_file = fopen(fileName, "w+");
-
-            matrix_right->dump(matrix_file, this->matrixVarname.c_str(), this->matrixFormat, this->matrix_number_format);
-            fclose(matrix_file);
+            sprintf(fileName, "%s%i", this->matrixFilename.c_str(), it);
+            matrix_right->export_to_file(fileName, this->matrixVarname.c_str(), this->matrixFormat, this->matrix_number_format);
           }
 
           matrix_right->finish();

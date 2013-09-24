@@ -41,7 +41,7 @@ return u_h_hat;
 
 }
 
-void smoothness_indicator(SpaceSharedPtr<double> space,MeshFunctionSharedPtr<double> sln_fct,MeshFunctionSharedPtr<double> R_h_1_fct,MeshFunctionSharedPtr<double> R_h_2_fct, int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al, UMFPackMatrix<double> * mass_matrix ){
+void smoothness_indicator(SpaceSharedPtr<double> space,MeshFunctionSharedPtr<double> sln_fct,MeshFunctionSharedPtr<double> R_h_1_fct,MeshFunctionSharedPtr<double> R_h_2_fct, int* smooth_elem_patch, int* smooth_dof, AsmList<double>* al, CSCMatrix<double> * mass_matrix ){
 
 	if(sln_fct==NULL) throw Hermes::Exceptions::Exception("smoothness_indicator: sln=NULL");
 	if(space==NULL) throw Hermes::Exceptions::Exception("smoothness_indicator: space=NULL");
@@ -54,8 +54,8 @@ void smoothness_indicator(SpaceSharedPtr<double> space,MeshFunctionSharedPtr<dou
 
 	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, space);
 	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, space);
-	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ndof);
-	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
+	SimpleVector<double> * rhs_1 = new SimpleVector<double>(ndof);
+	SimpleVector<double> * rhs_2 = new SimpleVector<double>(ndof);
 	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);

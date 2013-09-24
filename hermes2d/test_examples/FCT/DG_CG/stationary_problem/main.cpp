@@ -5,6 +5,7 @@ using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
+using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
@@ -112,8 +113,8 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 //																			all, 		DG, 		SD ---------------------------------------------------------------------
 
 	CustomWeakForm wf_surf(u_prev_time,mesh,all, DG,SD);
-	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; 
-	UMFPackVector<double> * surf_rhs = new UMFPackVector<double> (ndof); 
+	CSCMatrix<double>* dg_surface_matrix = new CSCMatrix<double> ; 
+	SimpleVector<double> * surf_rhs = new SimpleVector<double> (ndof); 
 	DiscreteProblem<double> * dp_surf = new DiscreteProblem<double> (&wf_surf,space);	
 	dp_surf->set_linear(true,false);
 	dp_surf->assemble(dg_surface_matrix,surf_rhs);

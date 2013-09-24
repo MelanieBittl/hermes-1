@@ -1,10 +1,10 @@
 
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(UMFPackMatrix<double>* mass_matrix,UMFPackMatrix<double>* lumped_matrix,UMFPackMatrix<double>* diffusion,UMFPackMatrix<double>* matrix_L,	double* u_L, double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus, double* R_plus, double* R_minus, int dof_rho, int dof_v_x, int dof_v_y, int dof_e )
+void antidiffusiveFlux(CSCMatrix<double>* mass_matrix,CSCMatrix<double>* lumped_matrix,CSCMatrix<double>* diffusion,CSCMatrix<double>* matrix_L,	double* u_L, double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus, double* R_plus, double* R_minus, int dof_rho, int dof_v_x, int dof_v_y, int dof_e )
 { 
 
 	int ndof = diffusion->get_size();
-	double dt_u_L[ndof];
+	double* dt_u_L = new double[ndof];
 	double alpha,f, plus, minus,mass, diff,lumped;
 int dof_rhoE_start = dof_rho + dof_v_x + dof_v_y;
 int dof_v_y_start = dof_rho + dof_v_x ;
@@ -163,14 +163,14 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 				}			
 		}
 
-
+delete [] dt_u_L ;
 }
 
 //FCT for lumped projection
 template<typename Scalar>
-void lumped_flux_limiter(UMFPackMatrix<Scalar>* mass_matrix,UMFPackMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* R_plus, Scalar* R_minus, int dof_rho, int dof_v_x, int dof_v_y, int dof_e )
+void lumped_flux_limiter(CSCMatrix<Scalar>* mass_matrix,CSCMatrix<Scalar>* lumped_matrix, Scalar* u_L, Scalar* u_H, Scalar* P_plus, Scalar* P_minus, Scalar* Q_plus, Scalar* Q_minus,Scalar* R_plus, Scalar* R_minus, int dof_rho, int dof_v_x, int dof_v_y, int dof_e )
 {	int ndof = mass_matrix->get_size();
-	UMFPackVector<Scalar>* vec_rhs = new UMFPackVector<Scalar>(ndof);	
+	SimpleVector<Scalar>* vec_rhs = new SimpleVector<Scalar>(ndof);	
 	vec_rhs->zero(); 
 	Scalar* rhs = new Scalar[ndof];
 	lumped_matrix->multiply_with_vector(u_L, rhs); 

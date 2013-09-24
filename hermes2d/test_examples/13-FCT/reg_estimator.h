@@ -7,6 +7,8 @@
 
 
 using namespace Hermes;
+using namespace Hermes::Solvers;
+using namespace Hermes::Algebra;
 using namespace Hermes::Hermes2D;
 
 
@@ -114,8 +116,8 @@ public:
   ~Regularity_Estimator();
   void free();
 
-  int* get_smooth_elems(SpaceSharedPtr<double> new_space,double* coeff_vec,UMFPackMatrix<double> * mass_matrix=NULL);
-  int* get_smooth_dofs(SpaceSharedPtr<double> new_space,double* coeff_vec,UMFPackMatrix<double> * mass_matrix=NULL);
+  int* get_smooth_elems(SpaceSharedPtr<double> new_space,double* coeff_vec,CSCMatrix<double> * mass_matrix=NULL);
+  int* get_smooth_dofs(SpaceSharedPtr<double> new_space,double* coeff_vec,CSCMatrix<double> * mass_matrix=NULL);
 
 
 protected:
@@ -123,7 +125,7 @@ protected:
   double linear_approx_dx(Element* e, double x_i, double y_i,double x_c, double y_c, MeshFunctionSharedPtr<double> sln);
   double linear_approx_dy(Element* e, double x_i, double y_i,double x_c, double y_c, MeshFunctionSharedPtr<double> sln);
 
-  void smoothness_indicator(UMFPackMatrix<double> * mass_matrix = NULL);
+  void smoothness_indicator(CSCMatrix<double> * mass_matrix = NULL);
 
   void set_space(SpaceSharedPtr<double> new_space);
 
@@ -134,8 +136,8 @@ protected:
   GradientReconstruction_1* grad_1;
   GradientReconstruction_2* grad_2;
   SpaceSharedPtr<double> space;
-  UMFPackVector<double> * rhs_1;
-  UMFPackVector<double> * rhs_2;
+  SimpleVector<double> * rhs_1;
+  SimpleVector<double> * rhs_2;
 
   int* smooth_elem_patch;
   int* smooth_dof;

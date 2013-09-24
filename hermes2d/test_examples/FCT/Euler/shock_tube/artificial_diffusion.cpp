@@ -8,6 +8,8 @@ public:
     add_matrix_form(new Convection_1(1));
     add_matrix_form(new Convection_1(2));
     add_matrix_form(new Convection_1(3));
+
+
 	};
 
 	
@@ -187,13 +189,13 @@ for(int k=0;k<4;k++)
 
 
 //artificial Diffusion
-UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,Hermes::vector<SpaceSharedPtr<double> >  spaces,int dof_rho, int dof_vel_x, int dof_vel_y, int dof_energy,UMFPackMatrix<double>* matrix_K){
+CSCMatrix<double>* artificialDiffusion(double kappa,double* coeff,Hermes::vector<SpaceSharedPtr<double> >  spaces,int dof_rho, int dof_vel_x, int dof_vel_y, int dof_energy,CSCMatrix<double>* matrix_K){
 
  	ConvectionOperator_x conv_1;
 	ConvectionOperator_y conv_2;
 
-	UMFPackMatrix<double>* c_matrix_1 = new UMFPackMatrix<double> ; 
-	UMFPackMatrix<double>* c_matrix_2 = new UMFPackMatrix<double> ; 
+	CSCMatrix<double>* c_matrix_1 = new CSCMatrix<double> ; 
+	CSCMatrix<double>* c_matrix_2 = new CSCMatrix<double> ; 
 
   DiscreteProblem<double> dp_1(&conv_1, spaces);
   DiscreteProblem<double> dp_2(&conv_2, spaces);
@@ -209,29 +211,29 @@ UMFPackMatrix<double>* artificialDiffusion(double kappa,double* coeff,Hermes::ve
 		double* coeff_energy = new double[dof_rho];
 
 
-		for(int i =0;i<dof_rho; i++){
-				coeff_rho[i]=coeff[i];
-		}
-			int k = 0;
-		for(int i = dof_rho; i<(dof_rho+dof_vel_x);i++){
-				coeff_vel_x[k] =coeff[i];
-				k++;
-		}
-		k = 0;
-		for(int i = (dof_rho+dof_vel_x); i<(dof_rho+dof_vel_x+dof_vel_y);i++){
-				coeff_vel_y[k] =coeff[i];
-				k++;
-		}
-		k = 0;
-		for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
-				coeff_energy[k] =coeff[i];
-				k++;
-		}
+for(int i =0;i<dof_rho; i++){
+		coeff_rho[i]=coeff[i];
+}
+	int k = 0;
+for(int i = dof_rho; i<(dof_rho+dof_vel_x);i++){
+		coeff_vel_x[k] =coeff[i];
+		k++;
+}
+k = 0;
+for(int i = (dof_rho+dof_vel_x); i<(dof_rho+dof_vel_x+dof_vel_y);i++){
+		coeff_vel_y[k] =coeff[i];
+		k++;
+}
+k = 0;
+for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof;i++){
+		coeff_energy[k] =coeff[i];
+		k++;
+}
 
 
 	 int size = c_matrix_1->get_size();
 	 int nnz = c_matrix_1->get_nnz();
-	 UMFPackMatrix<double>* diffusion = new UMFPackMatrix<double>;  
+	 CSCMatrix<double>* diffusion = new CSCMatrix<double>;  
 	diffusion->create(size, nnz, c_matrix_1->get_Ap(), c_matrix_1->get_Ai(),c_matrix_1->get_Ax());
 	diffusion->zero();  //matrix = 0
 

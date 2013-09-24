@@ -11,8 +11,9 @@ project(hermes)
   # if you want to override them, set them in CMake.vars
 
   # Global
-    # Optional stacktrace
-    set(WITH_STACKTRACE NO)
+  # Generate static libs (instead of dynamic)
+  set(HERMES_STATIC_LIBS NO)
+  
     # For Win64
     if(${CMAKE_CL_64})
       set(WIN64 YES)
@@ -51,6 +52,10 @@ project(hermes)
   # BSON 
   set(WITH_BSON NO)
 
+  # MATIO
+  set(WITH_MATIO NO)
+  set(MATIO_WITH_HDF5 NO)
+
   #### Solvers ###
   # Standard UMFPACK
     # UMFPACK is chosen by default.
@@ -58,6 +63,10 @@ project(hermes)
     # PARALUTION is chosen by default.
     set(WITH_PARALUTION NO)
 		set(PARALUTION_ROOT /home/staff/bittl/solvers/paralution-0.3.0/build)
+    
+  # Optional stacktrace - in development
+    set(WITH_STACKTRACE NO)
+    
     
   ################################## CURRENTLY NOT SUPPORTED ###################################
   #  \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/   \/
@@ -128,7 +137,11 @@ project(hermes)
   ### END DEFAULT CONFIGURATION ###
     
   set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-  set(HERMES_COMMON_LIB  hermes_common)
+  if(WIN64)
+    set(HERMES_COMMON_LIB  hermes_common_64)
+  else()
+    set(HERMES_COMMON_LIB  hermes_common)
+  endif()
   
   if(${H2D_MAX_HANGING_NODES_LEVEL} MATCHES "[1-20]")
   else(${H2D_MAX_HANGING_NODES_LEVEL} MATCHES "[1-20]")
@@ -239,12 +252,8 @@ project(hermes)
     set(CMAKE_CXX_FLAGS "-w ${CMAKE_CXX_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "-Wuninitialized -Wvla -Wsign-compare ${CMAKE_CXX_FLAGS}")
 
-    set(RELEASE_FLAGS "-DNDEBUG -O3")
-    set(FLAGS ${RELEASE_FLAGS})
-    set(DEBUG_FLAGS   "-g")
-    if(H2D_DEBUG)
-      set(FLAGS ${DEBUG_FLAGS})
-    endif(H2D_DEBUG)
+    set(HERMES_RELEASE_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -O3")
+    set(HERMES_DEBUG_FLAGS   "${CMAKE_CXX_FLAGS} -g")
   endif()
 
   # Enabling multiprocessor build on MSVC
@@ -262,18 +271,16 @@ project(hermes)
     else(WIN64)
       set(MSVC_DEFINES "/DWIN32 /D_WINDOWS /Dpopen=_popen /Dpclose=_pclose /D__value=_value /Dfinite=_finite /Dhypot=_hypot /Disatty=_isatty /Dfileno=_fileno /D_CRT_SECURE_NO_WARNINGS /DYY_NO_UNISTD_H /D_USE_MATH_DEFINES /DIMPLEMENT_C99 /wd4275 /wd4251")
     endif(WIN64)
-    set(CMAKE_CXX_FLAGS_DEBUG_INIT          "/D_DEBUG /Od /Ob2 /MDd /Zi /RTC1 ${MSVC_DEFINES}")
-    set(DEBUG_FLAGS ${DEBUG_FLAGS} "${CMAKE_CXX_FLAGS_DEBUG_INIT}")
+    set(CMAKE_CXX_FLAGS_DEBUG          "/D_DEBUG /Od /Ob2 /MDd /Zi ${MSVC_DEFINES}")
+    set(HERMES_DEBUG_FLAGS "${CMAKE_CXX_FLAGS_DEBUG}")
     set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT     "/O2 /Ob2 /MD ${MSVC_DEFINES}")
-    set(CMAKE_CXX_FLAGS_RELEASE_INIT        "/DNDEBUG /O2 /Ob2 /MDd ${MSVC_DEFINES}")
-    set(RELEASE_FLAGS ${RELEASE_FLAGS} "${CMAKE_CXX_FLAGS_RELEASE_INIT}")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "/DNDEBUG /O2 /Ob2 /MDd /Zi ${MSVC_DEFINES}")
+    set(CMAKE_CXX_FLAGS_RELEASE        "/DNDEBUG /O2 /Ob2 /MD ${MSVC_DEFINES}")
+    set(HERMES_RELEASE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "/DNDEBUG /O2 /Ob2 /MD /Zi ${MSVC_DEFINES}")
     
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH:NO")
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH:NO")
     set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /SAFESEH:NO")
-  else(MSVC)
-    set(CMAKE_CXX_FLAGS_DEBUG_INIT          "${CMAKE_CXX_FLAGS_DEBUG_INIT} -D_DEBUG")
   endif(MSVC)
 
   if(H2D_WITH_TESTS OR HERMES_COMMON_WITH_TESTS)
@@ -307,6 +314,19 @@ project(hermes)
       endif(WITH_BSON)
     ENDIF()
 
+    IF(DEFINED MATIO_LIBRARY)
+      IF(DEFINED MATIO_INCLUDE_DIR)
+        include_directories(${MATIO_INCLUDE_DIR})
+      ELSE()
+        MESSAGE(FATAL_ERROR When MATIO_LIBRARY is defined, so must be MATIO_INCLUDE_DIR.)
+      ENDIF()
+    ELSE()
+      if(WITH_MATIO)
+        find_package(MATIO REQUIRED)
+        include_directories(${MATIO_INCLUDE_DIR})
+      endif(WITH_MATIO)
+    ENDIF()
+
     find_package(XSD REQUIRED)
     find_package(XERCES REQUIRED)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -320,7 +340,14 @@ project(hermes)
       find_package(UMFPACK REQUIRED)
       include_directories(${UMFPACK_INCLUDE_DIRS})
     endif(WITH_UMFPACK)
-
+    
+    if(WITH_MATIO AND MATIO_WITH_HDF5)
+      find_package(HDF5 REQUIRED)
+      include_directories(${HDF5_INCLUDE_DIR})
+    else()
+      set(MATIO_WITH_HDF5 NO)
+    endif()
+    
     IF(DEFINED PARALUTION_LIBRARY)
       IF(DEFINED PARALUTION_INCLUDE_DIR)
         include_directories(${PARALUTION_INCLUDE_DIR})
@@ -454,34 +481,45 @@ project(hermes)
   #------------------------------------------------------------------------------
   # Report.
   #~~~~~~~~
-  message("\nConfiguration results")
+  message("\nHermes Configuration results")
   message("---------------------")
+  message("Build static libs: ${HERMES_STATIC_LIBS}")
+  if(WIN32)
+    message("Build for Win64: ${WIN64}")
+  endif(WIN32)
+  
+  message("\n-------Features-------")
+  message("Build with OpenMP: ${WITH_OPENMP}")
+  message("Build with TCMalloc: ${WITH_TC_MALLOC}")
+  message("Build with BSON: ${WITH_BSON}")
+  message("Build with MATIO: ${WITH_MATIO}")
+  if(${WITH_MATIO})
+    message(" MATIO with HDF5: ${MATIO_WITH_HDF5}")
+  endif()
+  if(${WITH_MPI})
+    message("Build with MPI: ${WITH_MPI}")
+  endif()
+  message("Build with EXODUSII: ${WITH_EXODUSII}")
+  
+  message("\n-------Solvers-------")
   message("Build with UMFPACK: ${WITH_UMFPACK}")
   message("Build with PARALUTION: ${WITH_PARALUTION}")
-  if(WIN32)
-    message("Build with WIN64: ${WIN64}")
-  endif(WIN32)
-  message("Build with OPENMP: ${WITH_OPENMP}")
   message("Build with PETSC: ${WITH_PETSC}")
   message("Build with MUMPS: ${WITH_MUMPS}")
   message("Build with SUPERLU${MT}: ${WITH_SUPERLU}")
   message("Build with TRILINOS: ${WITH_TRILINOS}")
-  message("Build with MPI: ${WITH_MPI}")
-  message("Build with EXODUSII: ${WITH_EXODUSII}")
-  message("Build with BSON: ${WITH_BSON}")
   
-  message("---------------------")
-  message("Hermes common library:")
-  message("\tBuild Debug version: ${HERMES_COMMON_DEBUG}")
-  message("\tBuild Release version: ${HERMES_COMMON_RELEASE}")
+  message("\n-----Hermes common-----")
+  message(" Debug version: ${HERMES_COMMON_DEBUG}")
+  message(" Release version: ${HERMES_COMMON_RELEASE}")
 
-  message("Build Hermes2D: ${WITH_H2D}")
+  message("\n-----Hermes2D-----")
+  message(" Build Hermes2D: ${WITH_H2D}")
   if(WITH_H2D)
-    message("\tBuild Hermes2D Debug version: ${H2D_DEBUG}")
-    message("\tBuild Hermes2D Release version: ${H2D_RELEASE}")
-    message("---------------------")
-    message("\tBuild Hermes2D with test examples: ${H2D_WITH_TEST_EXAMPLES}")
-    message("---------------------")
-    message("\tBuild Hermes2D with GLUT: ${H2D_WITH_GLUT}")
+    message(" Debug version: ${H2D_DEBUG}")
+    message(" Release version: ${H2D_RELEASE}")
+    message(" Test examples: ${H2D_WITH_TEST_EXAMPLES}")
+    message(" Hermes2D with OpenGL: ${H2D_WITH_GLUT}")
   endif(WITH_H2D)
+  message("---------------------")
   message("\n")

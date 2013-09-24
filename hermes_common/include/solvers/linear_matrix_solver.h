@@ -24,10 +24,10 @@
 
 #include "precond.h"
 #include "exceptions.h"
+#include "cs_matrix.h"
 #include "mixins.h"
 
 using namespace Hermes::Algebra;
-using namespace Hermes::Solvers;
 
 /// \brief General namespace for the Hermes library.
 namespace Hermes
@@ -89,7 +89,7 @@ namespace Hermes
     ///
     /// Typical usage is through the function create_linear_solver(Matrix<Scalar>* matrix, Vector<Scalar>* rhs, bool use_direct_solver).
     template <typename Scalar>
-    class LinearMatrixSolver : public Hermes::Mixins::Loggable, public Hermes::Mixins::TimeMeasurable
+    class HERMES_API LinearMatrixSolver : public Hermes::Mixins::Loggable, public Hermes::Mixins::TimeMeasurable
     {
     public:
       LinearMatrixSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
@@ -98,7 +98,12 @@ namespace Hermes
 
       /// Solve.
       /// @return true on succes
-      virtual bool solve() = 0;
+      virtual void solve() = 0;
+
+      /// Solve.
+      /// @return true on succes
+      /// \param[in] initial guess.
+      virtual void solve(Scalar* initial_guess) = 0;
 
       /// Get solution vector.
       /// @return solution vector ( #sln )
@@ -120,6 +125,10 @@ namespace Hermes
 
       /// Set factorization scheme to default.
       virtual void set_reuse_scheme();
+      
+      /// Set matrix ordering in the case of a system of PDEs.
+      virtual void use_node_wise_ordering(unsigned int num_pdes);
+      virtual void use_equations_wise_ordering();
 
     protected:
       /// Factorization scheme
@@ -130,38 +139,82 @@ namespace Hermes
 
       ///< Time spent on solving (in secs).
       double time;
+      
+      /// Number of equations in a system of PDEs.
+      unsigned int n_eq;
+      
+      bool node_wise_ordering;
+    };
+
+    /// \brief Special-purpose abstract class for using external solvers.
+    /// For examples implementation, see the class SimpleExternalSolver.
+    template <typename Scalar>
+    class HERMES_API ExternalSolver : public LinearMatrixSolver<Scalar>, public Mixins::MatrixRhsOutput<Scalar>
+    {
+    public:
+      typedef ExternalSolver<Scalar>* (*creation)(CSCMatrix<Scalar> *m, SimpleVector<Scalar> *rhs);
+      static creation create_external_solver;
+
+      ExternalSolver(CSCMatrix<Scalar> *m, SimpleVector<Scalar> *rhs);
+      virtual void solve() { throw Exceptions::MethodNotOverridenException("ExternalSolver::solve()."); };
+      virtual void solve(Scalar* initial_guess) { throw Exceptions::MethodNotOverridenException("ExternalSolver::solve()."); };
+      virtual int get_matrix_size() { return this->m->get_size(); };
+      /// Matrix to solve.
+      ///template <typename Scalar>
+      CSCMatrix<Scalar> *get_matrix() { return this->m; }
+      /// Right hand side vector.
+      ///template <typename Scalar>
+      SimpleVector<Scalar> *get_rhs() { return this->rhs; }
+
+    protected:
+      /// Matrix to solve.
+      CSCMatrix<Scalar> *m;
+      /// Right hand side vector.
+      SimpleVector<Scalar> *rhs;
+    };
+
+    /// \brief An example class for using external solvers that run a command and store the result in a file.
+    template <typename Scalar>
+    class HERMES_API SimpleExternalSolver : public ExternalSolver<Scalar>
+    {
+    public:
+      SimpleExternalSolver(CSCMatrix<Scalar> *m, SimpleVector<Scalar> *rhs);
+      void solve();
+      void solve(Scalar* initial_guess);
+
+    protected:
+      /// External command call.
+      /// \return Filepath to the result vector in the raw text format (just numbers, one per line).
+      /// Can destroy the matrix and rhs files, those are not needed anymore.
+      virtual std::string command() = 0;
     };
 
     /// \brief Base class for defining interface for direct linear solvers.
     /// Internal, though utilizable for defining interfaces to other algebraic packages.
     template <typename Scalar>
-    class DirectSolver : public LinearMatrixSolver<Scalar>
+    class HERMES_API DirectSolver : public LinearMatrixSolver<Scalar>
     {
     public:
       DirectSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+      virtual void solve() = 0;
+      virtual void solve(Scalar* initial_guess);
     };
 
-    /// \brief Abstract class for defining interface for iterative solvers.
-    /// Internal, though utilizable for defining interfaces to other algebraic packages.
+    /// \brief Abstract middle-class for solvers that work in a loop of a kind (iterative, multigrid, ...)
     template <typename Scalar>
-    class IterSolver : public LinearMatrixSolver<Scalar>
+    class HERMES_API LoopSolver : public LinearMatrixSolver<Scalar>
     {
     public:
-      IterSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+      LoopSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
 
       /// Various tolerances.
       /// Not necessarily supported by all iterative solvers used.
       enum ToleranceType
       {
-        AbsoluteTolerance,
-        RelativeTolerance,
-        DivergenceTolerance
+        AbsoluteTolerance = 0,
+        RelativeTolerance = 1,
+        DivergenceTolerance = 2
       };
-
-      /// Solve.
-      /// @return true on succes
-      /// \param[in] initial guess.
-      virtual bool solve(Scalar* initial_guess) = 0;
 
       /// Get the number of iterations performed.
       virtual int get_num_iters() = 0;
@@ -182,8 +235,6 @@ namespace Hermes
       /// @param[in] iters - number of iterations
       virtual void set_max_iters(int iters);
 
-      virtual void set_precond(Precond<Scalar> *pc) = 0;
-
     protected:
       /// Maximum number of iterations.
       int max_iters;
@@ -192,6 +243,21 @@ namespace Hermes
       /// Convergence tolerance type.
       /// See the enum.
       ToleranceType toleranceType;
+    };
+    
+
+    /// \brief Abstract class for defining interface for iterative solvers.
+    /// Internal, though utilizable for defining interfaces to other algebraic packages.
+    template <typename Scalar>
+    class HERMES_API IterSolver : public LoopSolver<Scalar>
+    {
+    public:
+      IterSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+
+      /// Set preconditioner.
+      virtual void set_precond(Precond<Scalar> *pc) = 0;
+
+    protected:
       /// Whether the solver is preconditioned.
       bool precond_yes;
     };
@@ -199,54 +265,10 @@ namespace Hermes
     /// \brief Abstract class for defining interface for Algebraic Multigrid solvers.
     /// Internal, though utilizable for defining interfaces to other algebraic packages.
     template <typename Scalar>
-    class AMGSolver : public LinearMatrixSolver<Scalar>
+    class HERMES_API AMGSolver : public LoopSolver<Scalar>
     {
     public:
       AMGSolver(MatrixStructureReuseScheme reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
-
-      /// Various tolerances.
-      /// Not necessarily supported by all iterative solvers used.
-      enum ToleranceType
-      {
-        AbsoluteTolerance,
-        RelativeTolerance,
-        DivergenceTolerance
-      };
-
-      /// Solve.
-      /// @return true on succes
-      /// \param[in] initial guess.
-      virtual bool solve(Scalar* initial_guess) = 0;
-
-      /// Get the number of iterations performed.
-      virtual int get_num_iters() = 0;
-      
-      /// Get the final residual.
-      virtual double get_residual() = 0;
-
-      /// Set the convergence tolerance.
-      /// @param[in] tol - the tolerance to set
-      virtual void set_tolerance(double tol);
-
-      /// Set the convergence tolerance.
-      /// @param[in] tolerance - the tolerance to set
-      /// @param[in] toleranceType - the tolerance to set
-      virtual void set_tolerance(double tolerance, ToleranceType toleranceType);
-
-      /// Set maximum number of iterations to perform.
-      /// @param[in] iters - number of iterations
-      virtual void set_max_iters(int iters);
-
-    protected:
-      /// Maximum number of iterations.
-      int max_iters;
-      /// Convergence tolerance.
-      double tolerance;
-      /// Convergence tolerance type.
-      /// See the enum.
-      ToleranceType toleranceType;
-      /// Whether the solver is smoothed.
-      bool precond_yes;
     };
 
     /// \brief Function returning a solver according to the users's choice.
@@ -256,15 +278,9 @@ namespace Hermes
     template<typename Scalar>
     HERMES_API LinearMatrixSolver<Scalar>*
       create_linear_solver(Matrix<Scalar>* matrix, Vector<Scalar>* rhs, bool use_direct_solver = false);
-
-    /// \brief Function returning solver if it is an iterative one.
-    template<typename Scalar>
-    HERMES_API IterSolver<Scalar>* is_iterative_solver(LinearMatrixSolver<Scalar>* matrix_solver);
-
-    /// \brief Function returning a solver if it is an AMG one.
-    template<typename Scalar>
-    HERMES_API AMGSolver<Scalar>* is_AMG_solver(LinearMatrixSolver<Scalar>* matrix_solver);
   }
 }
 /*@}*/ // End of documentation group Solvers.
 #endif
+
+

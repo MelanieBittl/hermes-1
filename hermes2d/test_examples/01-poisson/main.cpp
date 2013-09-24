@@ -1,4 +1,3 @@
-#define HERMES_REPORT_ALL
 #include "definitions.h"
 
 using namespace Hermes;
@@ -29,7 +28,7 @@ using namespace Hermes::Hermes2D;
 // The following parameters can be changed:
 
 const bool HERMES_VISUALIZATION = true;   // Set to "false" to suppress Hermes OpenGL visualization.
-const bool VTK_VISUALIZATION = false;     // Set to "true" to enable VTK output.
+const bool VTK_VISUALIZATION = true;     // Set to "true" to enable VTK output.
 const int P_INIT = 3;                     // Uniform polynomial degree of mesh elements.
 const int INIT_REF_NUM = 3;               // Number of initial uniform mesh refinements.
 
@@ -41,9 +40,6 @@ const double FIXED_BDY_TEMP = 20.0;        // Fixed temperature on the boundary.
 
 int main(int argc, char* argv[])
 {
-#ifdef WITH_PARALUTION
-  HermesCommonApi.set_integral_param_value(Hermes::matrixSolverType, SOLVER_PARALUTION_AMG);
-#endif
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
   Hermes::Hermes2D::MeshReaderH2DXML mloader;
@@ -72,14 +68,11 @@ int main(int argc, char* argv[])
 
   // Initialize linear solver.
   Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
-#ifdef WITH_PARALUTION
-  dynamic_cast<Solvers::AMGParalutionLinearMatrixSolver<double>*>(linear_solver.get_linear_solver())->set_smoother(Solvers::IterativeParalutionLinearMatrixSolver<double>::CG, Preconditioners::ParalutionPrecond<double>::MultiColoredSGS);
-#endif
+  
   // Solve the linear problem.
   try
   {
     linear_solver.solve();
-    linear_solver.solve(linear_solver.get_sln_vector());
 
     // Get the solution vector.
     double* sln_vector = linear_solver.get_sln_vector();
@@ -99,14 +92,17 @@ int main(int argc, char* argv[])
       Hermes::Hermes2D::Views::Orderizer ord;
       ord.save_mesh_vtk(space, "mesh.vtk");
       ord.save_orders_vtk(space, "ord.vtk");
+      ord.save_markers_vtk(space, "markers.vtk");
     }
 
     if(HERMES_VISUALIZATION)
     {
       // Visualize the solution.
-      Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(50, 50, 1000, 800));
+      Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 500, 400));
+      Hermes::Hermes2D::Views::OrderView viewSp("Space", new Hermes::Hermes2D::Views::WinGeom(0, 400, 500, 400));
 
       viewS.show(sln, Hermes::Hermes2D::Views::HERMES_EPS_LOW);
+      viewSp.show(space);
 
       viewS.wait_for_close();
     }

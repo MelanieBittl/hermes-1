@@ -6,18 +6,19 @@
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
+using namespace Hermes::Solvers;
 
 
 class Lumped_Projection
 {
 public:
-  static void project_lumped(SpaceSharedPtr<double> space, MeshFunctionSharedPtr<double> source_meshfn,
-                             double* target_vec,UMFPackMatrix<double>*  mat  = NULL);
+  static void project_lumped( SpaceSharedPtr<double> space, MeshFunctionSharedPtr<double> source_meshfn,
+                             double* target_vec,CSCMatrix<double>*  mat  = NULL);
 
 
 
 protected:
-  static void project_internal(SpaceSharedPtr<double> space, WeakForm<double>* wf, double* target_vec, UMFPackMatrix<double>*  mat = NULL);
+  static void project_internal( SpaceSharedPtr<double> space, WeakForm<double>* wf, double* target_vec, CSCMatrix<double>*  mat = NULL);
 
 
 
@@ -71,11 +72,11 @@ protected:
   class ProjectionLumpedVectorFormVol : public VectorFormVol<double>
   {
   public:
-   // ProjectionLumpedVectorFormVol(int i, MeshFunction<double>* ext) : VectorFormVol<double>(i)
+   // ProjectionLumpedVectorFormVol(int i, MeshFunctionSharedPtr<double> ext) : VectorFormVol<double>(i)
         ProjectionLumpedVectorFormVol(int i) : VectorFormVol<double>(i)
     {
       //this->adapt_eval = false;     
-     // this->ext = Hermes::vector<MeshFunction<double>*>();
+     // this->ext = Hermes::vector<MeshFunctionSharedPtr<double>>();
      // this->ext.push_back(ext);
     }
 

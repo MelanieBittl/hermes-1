@@ -56,7 +56,6 @@ namespace Hermes
     void ParalutionMatrix<Scalar>::zero()
     {
       CSRMatrix<Scalar>::zero();
-      this->paralutionMatrix.Zeros();
     }
 
     template<typename Scalar>
@@ -74,43 +73,47 @@ namespace Hermes
 
 
     template<typename Scalar>
-    ParalutionVector<Scalar>::ParalutionVector() : Vector<Scalar>(), v(NULL)
+    ParalutionVector<Scalar>::ParalutionVector() : SimpleVector<Scalar>(), paralutionVector(new paralution::LocalVector<Scalar>)
     {
     }
 
     template<typename Scalar>
-    ParalutionVector<Scalar>::ParalutionVector(unsigned int size) : Vector<Scalar>(size), v(NULL)
+    ParalutionVector<Scalar>::ParalutionVector(unsigned int size) : SimpleVector<Scalar>(size), paralutionVector(new paralution::LocalVector<Scalar>)
     {
       this->alloc(size);
-      this->paralutionVector.SetDataPtr(&this->v, "paralutionVector", this->size);
+      this->paralutionVector->SetDataPtr(&this->v, "paralutionVector", this->size);
     }
 
     template<typename Scalar>
     void ParalutionVector<Scalar>::alloc(unsigned int n)
     {
-      free();
-      this->size = n;
-      v = new Scalar[n];
-      this->zero();
-      this->paralutionVector.SetDataPtr(&this->v, "vector", this->size);
+      SimpleVector<Scalar>::alloc(n);
+      this->paralutionVector->Clear();
+      this->paralutionVector->SetDataPtr(&this->v, "vector", this->size);
     }
 
     template<typename Scalar>
     ParalutionVector<Scalar>::~ParalutionVector()
     {
-      this->paralutionVector.Clear();
+      free();
+      /*
+         Temporarily suspended - introduced a memory leak
+         Reason: heap corruption upon/after execution in Agros.
+         Temporarily suspended - so far attempts to replicate in Hermes failed.
+      */
+      // delete this->paralutionVector;
     }
 
     template<typename Scalar>
     void ParalutionVector<Scalar>::free()
     {
-      this->paralutionVector.Clear();
-      v = NULL;
-      this->size = 0;
+      this->paralutionVector->Clear();
+      this->v = NULL;
+      SimpleVector<Scalar>::free();
     }
 
     template<typename Scalar>
-    paralution::LocalVector<Scalar>& ParalutionVector<Scalar>::get_paralutionVector()
+    paralution::LocalVector<Scalar>* ParalutionVector<Scalar>::get_paralutionVector()
     {
       return this->paralutionVector;
     }
@@ -118,103 +121,7 @@ namespace Hermes
     template<typename Scalar>
     void ParalutionVector<Scalar>::zero()
     {
-      memset(v, 0, this->size * sizeof(Scalar));
-      this->paralutionVector.Zeros();
-    }
-
-    template<typename Scalar>
-    void ParalutionVector<Scalar>::change_sign()
-    {
-      for (unsigned int i = 0; i < this->size; i++) v[i] *= -1.;
-    }
-
-    template<typename Scalar>
-    void ParalutionVector<Scalar>::set(unsigned int idx, Scalar y)
-    {
-      v[idx] = y;
-    }
-
-    template<>
-    void ParalutionVector<double>::add(unsigned int idx, double y)
-    {
-#pragma omp atomic
-      v[idx] += y;
-    }
-
-
-    template<typename Scalar>
-    void ParalutionVector<Scalar>::add(unsigned int n, unsigned int *idx, Scalar *y)
-    {
-      for (unsigned int i = 0; i < n; i++)
-        v[idx[i]] += y[i];
-    }
-
-    template<typename Scalar>
-    Scalar ParalutionVector<Scalar>::get(unsigned int idx) const
-    {
-      return v[idx];
-    }
-
-    template<typename Scalar>
-    void ParalutionVector<Scalar>::extract(Scalar *v) const
-    {
-      memcpy(v, this->v, this->size * sizeof(Scalar));
-    }
-
-    template<typename Scalar>
-    void ParalutionVector<Scalar>::add_vector(Vector<Scalar>* vec)
-    {
-      assert(this->length() == vec->length());
-      for (unsigned int i = 0; i < this->length(); i++) this->v[i] += vec->get(i);
-    }
-
-    template<typename Scalar>
-    void ParalutionVector<Scalar>::add_vector(Scalar* vec)
-    {
-      for (unsigned int i = 0; i < this->length(); i++)
-        this->v[i] += vec[i];
-    }
-
-    template<>
-    bool ParalutionVector<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
-    {
-      switch (fmt)
-      {
-      case DF_MATLAB_SPARSE:
-        fprintf(file, "%% Size: %dx1\n%s =[\n", this->size, var_name);
-        for (unsigned int i = 0; i < this->size; i++)
-        {
-          Hermes::Helpers::fprint_num(file, v[i], number_format);
-          fprintf(file, "\n");
-        }
-        fprintf(file, " ];\n");
-        return true;
-
-      case DF_HERMES_BIN:
-        {
-          hermes_fwrite("HERMESR\001", 1, 8, file);
-          int ssize = sizeof(double);
-          hermes_fwrite(&ssize, sizeof(int), 1, file);
-          hermes_fwrite(&this->size, sizeof(int), 1, file);
-          hermes_fwrite(v, sizeof(double), this->size, file);
-          return true;
-        }
-
-      case DF_PLAIN_ASCII:
-        {
-          fprintf(file, "\n");
-          for (unsigned int i = 0; i < size; i++)
-          {
-            Hermes::Helpers::fprint_num(file, v[i], number_format);
-            fprintf(file, "\n");
-          }
-
-          return true;
-        }
-
-      default:
-        return false;
-      }
+      memset(this->v, 0, this->size * sizeof(Scalar));
     }
 
     template class HERMES_API ParalutionMatrix<double>;
@@ -249,11 +156,15 @@ namespace Hermes
     template<typename Scalar>
     IterativeParalutionLinearMatrixSolver<Scalar>::~IterativeParalutionLinearMatrixSolver()
     {
-      if(this->paralutionSolver)
-        delete this->paralutionSolver;
+      /*
+         Temporarily suspended - introduced a memory leak
+         Reason: heap corruption upon/after execution in Agros.
+         Temporarily suspended - so far attempts to replicate in Hermes failed.
+      */
+      // if(this->paralutionSolver)
+      //   delete this->paralutionSolver;
       if(preconditioner)
         delete preconditioner;
-      this->sln = NULL;
     }
 
     template<typename Scalar>
@@ -265,7 +176,7 @@ namespace Hermes
 
     template<typename Scalar>
     paralution::IterativeLinearSolver<paralution::LocalMatrix<Scalar>, paralution::LocalVector<Scalar>, Scalar>*
-    IterativeParalutionLinearMatrixSolver<Scalar>::return_paralutionSolver(typename IterativeParalutionLinearMatrixSolver<Scalar>::ParalutionSolverType type)
+      IterativeParalutionLinearMatrixSolver<Scalar>::return_paralutionSolver(typename IterativeParalutionLinearMatrixSolver<Scalar>::ParalutionSolverType type)
     {
       switch(type)
       {
@@ -293,11 +204,7 @@ namespace Hermes
     template<typename Scalar>
     bool IterativeParalutionLinearMatrixSolver<Scalar>::solve()
     {
-      if(this->sln)
-        delete [] this->sln;
-      this->sln = new Scalar[this->get_matrix_size()];
-      memset(this->sln, Scalar(0), this->get_matrix_size() * sizeof(Scalar));
-      this->solve(this->sln);
+      this->solve(NULL);
     }
 
     template<typename Scalar>
@@ -311,14 +218,14 @@ namespace Hermes
       if(!this->paralutionSolver)
       {
         this->paralutionSolver = this->return_paralutionSolver(this->paralutionSolverType);
-        
+
         // Set operator, preconditioner, build.
         if(this->preconditioner)
           paralutionSolver->SetPreconditioner(this->preconditioner->get_paralutionPreconditioner());
         paralutionSolver->SetOperator(this->matrix->get_paralutionMatrix());
         paralutionSolver->Build();
       }
-      
+
       // Set verbose_level.
       if(this->get_verbose_output())
         this->paralutionSolver->Verbose(10);
@@ -347,8 +254,8 @@ namespace Hermes
     bool IterativeParalutionLinearMatrixSolver<Scalar>::solve(Scalar* initial_guess)
     {
       // Handle sln.
-      if(this->sln)
-          delete [] this->sln;
+      if(this->sln && this->sln != initial_guess)
+        delete [] this->sln;
       this->sln = new Scalar[this->get_matrix_size()];
 
       // Create initial guess.
@@ -356,22 +263,21 @@ namespace Hermes
         memcpy(this->sln, initial_guess, this->get_matrix_size() * sizeof(Scalar));
       else
         memset(this->sln, Scalar(0), this->get_matrix_size() * sizeof(Scalar));
-      
+
       paralution::LocalVector<Scalar> x;
       x.SetDataPtr(&this->sln, "Initial guess", matrix->get_size());
 
       // Handle the situation when rhs == 0(vector).
-      if(std::abs(rhs->get_paralutionVector().Norm()) < Hermes::epsilon)
+      if(std::abs(rhs->get_paralutionVector()->Norm()) < Hermes::epsilon)
       {
         x.LeaveDataPtr(&this->sln);
-        x.Clear();
       }
 
       // Init.
       this->init_internal_solver();
 
       // Solve.
-      paralutionSolver->Solve(rhs->get_paralutionVector(), &x);
+      paralutionSolver->Solve(*rhs->get_paralutionVector(), &x);
 
       // Store num_iters.
       num_iters = paralutionSolver->GetIterationCount();
@@ -468,7 +374,7 @@ namespace Hermes
         this->paralutionSolver->SetManualSmoothers(true);
         this->paralutionSolver->SetOperator(this->matrix->get_paralutionMatrix());
         this->paralutionSolver->BuildHierarchy();
-        
+
         // Set operator, smoother, build.
         int levels = this->paralutionSolver->GetNumLevels();
         paralution::IterativeLinearSolver<paralution::LocalMatrix<Scalar>, paralution::LocalVector<Scalar>, Scalar >** smoothers = new paralution::IterativeLinearSolver<paralution::LocalMatrix<Scalar>, paralution::LocalVector<Scalar>, Scalar >*[levels-1];
@@ -478,7 +384,7 @@ namespace Hermes
         {
           smoothers[i] = IterativeParalutionLinearMatrixSolver<Scalar>::return_paralutionSolver(this->smootherSolverType);
           preconditioners[i] = ParalutionPrecond<Scalar>::return_paralutionPreconditioner(this->smootherPreconditionerType);
-          
+
           smoothers[i]->SetPreconditioner(*preconditioners[i]);
           smoothers[i]->Verbose(0);
         }
@@ -489,10 +395,12 @@ namespace Hermes
 
         paralutionSolver->Build();
       }
-      
+
       // Set verbose_level.
       if(this->get_verbose_output())
         this->paralutionSolver->Verbose(10);
+      else
+        this->paralutionSolver->Verbose(0);
 
       // Set tolerances.
       switch(this->toleranceType)
@@ -515,7 +423,7 @@ namespace Hermes
       {
         this->paralutionSolver->MoveToAccelerator();
         this->matrix->get_paralutionMatrix().MoveToAccelerator();
-        this->rhs->get_paralutionVector().MoveToAccelerator();
+        this->rhs->get_paralutionVector()->MoveToAccelerator();
       }
     }
 
@@ -524,7 +432,7 @@ namespace Hermes
     {
       // Handle sln.
       if(this->sln)
-          delete [] this->sln;
+        delete [] this->sln;
       this->sln = new Scalar[this->get_matrix_size()];
 
       // Create initial guess.
@@ -532,12 +440,12 @@ namespace Hermes
         memcpy(this->sln, initial_guess, this->get_matrix_size() * sizeof(Scalar));
       else
         memset(this->sln, Scalar(0), this->get_matrix_size() * sizeof(Scalar));
-      
+
       paralution::LocalVector<Scalar> x;
       x.SetDataPtr(&this->sln, "Initial guess", matrix->get_size());
 
       // Handle the situation when rhs == 0(vector).
-      if(std::abs(rhs->get_paralutionVector().Norm()) < Hermes::epsilon)
+      if(std::abs(rhs->get_paralutionVector()->Norm()) < Hermes::epsilon)
       {
         x.LeaveDataPtr(&this->sln);
         x.Clear();
@@ -548,7 +456,7 @@ namespace Hermes
       this->init_internal_solver();
 
       // Solve.
-      paralutionSolver->Solve(rhs->get_paralutionVector(), &x);
+      paralutionSolver->Solve(*rhs->get_paralutionVector(), &x);
 
       // Store num_iters.
       num_iters = paralutionSolver->GetIterationCount();
@@ -599,7 +507,7 @@ namespace Hermes
   namespace Preconditioners
   {
     template<typename Scalar>
-  ParalutionPrecond<Scalar>::ParalutionPrecond(typename ParalutionPrecond<Scalar>::ParalutionPreconditionerType paralutionPrecondType) : Precond<Scalar>()
+    ParalutionPrecond<Scalar>::ParalutionPrecond(typename ParalutionPrecond<Scalar>::ParalutionPreconditionerType paralutionPrecondType) : Precond<Scalar>()
     {
       switch(paralutionPrecondType)
       {

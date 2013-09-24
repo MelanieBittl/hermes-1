@@ -35,43 +35,51 @@ extern Ord upwind_flux(Ord u_cent, Ord u_neib, double a_dot_n);
 class SmoothingWeakForm  : public WeakForm<double>     
 {
 public:
-  SmoothingWeakForm(SolvedExample solvedExample, bool local, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
+  SmoothingWeakForm(SolvedExample solvedExample, bool local, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", double diffusivity = 0., double s = 0., double sigma = 0., bool add_rhs = true);
 };
 
 class SmoothingWeakFormResidual  : public WeakForm<double>     
 {
 public:
-  SmoothingWeakFormResidual(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
+  SmoothingWeakFormResidual(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", double diffusivity = 0., double s = 0., double sigma = 0., bool add_rhs = true);
 };
 
 class ExactWeakForm : public WeakForm<double>
 {
 public:
-  ExactWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0., bool matrix_only = false);
+  ExactWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", double diffusivity = 0., double s = 0., double sigma = 0., MeshFunctionSharedPtr<double> exact_solution = NULL);
+
 };
 
 class FullImplicitWeakForm : public WeakForm<double>
 {
 public:
-  FullImplicitWeakForm(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0.);
+  FullImplicitWeakForm(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", double diffusivity = 0.);
 };
 
-class ImplicitWeakForm : public WeakForm<double>
+class MultiscaleWeakForm : public WeakForm<double>
 {
 public:
-  ImplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
+  MultiscaleWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", double diffusivity = 0., double s = 0., double sigma = 0., MeshFunctionSharedPtr<double> exact_solution = NULL, bool local = true);
 };
 
 class ExplicitWeakForm  : public WeakForm<double>     
 {
 public:
-  ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", std::string outlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
+  ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", double diffusivity = 0., double s = 0., double sigma = 0.);
+
 };
 
 class ErrorWeakForm  : public WeakForm<double>     
 {
 public:
-  ErrorWeakForm();
+  ErrorWeakForm(SolvedExample solvedExample);
+};
+
+class MassWeakForm  : public WeakForm<double>     
+{
+public:
+  MassWeakForm();
 };
 
 
@@ -156,6 +164,22 @@ public:
   double diffusivity;
 };
 
+class InitialConditionBenchmark2 : public ExactSolutionScalar<double>
+{
+public:
+  InitialConditionBenchmark2(MeshSharedPtr mesh, double diffusivity) : ExactSolutionScalar<double>(mesh), diffusivity(diffusivity){};
+  
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+  virtual Ord ord(double x, double y) const ;
+
+  MeshFunction<double>* clone() const;
+  double diffusivity;
+};
+
+
 class ExactSolutionBenchmark : public ExactSolutionScalar<double>
 {
 public:
@@ -171,10 +195,34 @@ public:
   double diffusivity;
 };
 
+class ExactSolutionBenchmark2 : public ExactSolutionScalar<double>
+{
+public:
+  ExactSolutionBenchmark2(MeshSharedPtr mesh, double diffusivity) : ExactSolutionScalar<double>(mesh), diffusivity(diffusivity), l(7. * std::sqrt(2.) / 300.) {};
+  
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+  virtual Ord ord(double x, double y) const ;
+
+  MeshFunction<double>* clone() const;
+  double l;
+  double sigma(double y) const;
+  double diffusivity;
+};
+
 #pragma endregion
 
-double* merge_slns(double* solution_vector_coarse, SpaceSharedPtr<double> space_coarse, double* solution_vector_fine, SpaceSharedPtr<double> space_fine, SpaceSharedPtr<double> space_full);
-Hermes::Algebra::Vector<double>* cut_off_linear_part(Hermes::Algebra::Vector<double>* src_vector, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine);
+double* merge_slns(double* solution_vector_coarse, SpaceSharedPtr<double> space_coarse, double* solution_vector_fine, SpaceSharedPtr<double> space_fine, SpaceSharedPtr<double> space_full, bool add = false);
+Hermes::Algebra::SimpleVector<double>* cut_off_linear_part(double* src_vector, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine);
+Hermes::Algebra::SimpleVector<double>* cut_off_quadratic_part(double* src_vector, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine);
+
+Hermes::Algebra::SimpleVector<double>* cut_off_means(double* src_vector, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine);
+Hermes::Algebra::SimpleVector<double>* cut_off_ders(double* src_vector, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine);
+
+void add_means(Hermes::Algebra::SimpleVector<double>* src, Hermes::Algebra::SimpleVector<double>* target, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine);
+void add_ders(Hermes::Algebra::SimpleVector<double>* src, Hermes::Algebra::SimpleVector<double>* target, SpaceSharedPtr<double> space_coarse, SpaceSharedPtr<double> space_fine);
 
 class MyErrorCalculator : public ErrorCalculator<double>
 {

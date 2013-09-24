@@ -55,9 +55,9 @@ namespace Hermes
     template <>
     struct mumps_type<std::complex<double> >
     {
-    /** Type for storing mumps struct in Mumps complex structures */
+      /** Type for storing mumps struct in Mumps complex structures */
       typedef ZMUMPS_STRUC_C mumps_struct;
-    /** Type for storing scalar number in Mumps complex structures */
+      /** Type for storing scalar number in Mumps complex structures */
       typedef ZMUMPS_COMPLEX mumps_Scalar;
     };
 
@@ -65,9 +65,9 @@ namespace Hermes
     template <>
     struct mumps_type<double>
     {
-    /** Type for storing mumps struct in Mumps real structures */
+      /** Type for storing mumps struct in Mumps real structures */
       typedef DMUMPS_STRUC_C mumps_struct;
-    /** Type for storing scalar number in Mumps real structures */
+      /** Type for storing scalar number in Mumps real structures */
       typedef double mumps_Scalar;
     };
 
@@ -84,34 +84,28 @@ namespace Hermes
       virtual Scalar get(unsigned int m, unsigned int n) const;
       virtual void zero();
       virtual void add(unsigned int m, unsigned int n, Scalar v);
-      virtual void add_to_diagonal(Scalar v);
       virtual void add(unsigned int m, unsigned int n, Scalar **mat, int *rows, int *cols);
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf");
-      virtual unsigned int get_matrix_size() const;
+      using Matrix<Scalar>::export_to_file;
+      virtual void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf");
       virtual unsigned int get_nnz() const;
       virtual double get_fill_in() const;
-      /// Add matrix.
-      /// @param[in] mat matrix to be added
-      virtual void add_matrix(MumpsMatrix* mat);
-      /// Add matrix to diagonal.
-      /// @param[in] num_stages matrix is added to num_stages positions. num_stages * size(added matrix) = size(target matrix)
-      /// @param[in] mat added matrix
-      virtual void add_to_diagonal_blocks(int num_stages, MumpsMatrix* mat);
-      virtual void add_sparse_to_diagonal_blocks(int num_stages, SparseMatrix<Scalar>* mat);
+      
       /// Add matrix to specific position.
       /// @param[in] i row in target matrix coresponding with top row of added matrix
       /// @param[in] j column in target matrix coresponding with lef column of added matrix
       /// @param[in] mat added matrix
       virtual void add_as_block(unsigned int i, unsigned int j, MumpsMatrix* mat);
 
-      /// Applies the matrix to vector_in and saves result to vector_out.
-      void multiply_with_vector(Scalar* vector_in, Scalar* vector_out) const;
       /// Multiplies matrix with a Scalar.
       void multiply_with_Scalar(Scalar value);
+      /// Applies the matrix to vector_in and saves result to vector_out.
+      void multiply_with_vector(Scalar* vector_in, Scalar*& vector_out, bool vector_out_initialized = false) const;
+
       /// Creates matrix using size, nnz, and the three arrays.
       void create(unsigned int size, unsigned int nnz, int* ap, int* ai, Scalar* ax);
+      
       /// Duplicates a matrix (including allocation).
-      MumpsMatrix* duplicate();
+      SparseMatrix<Scalar>* duplicate() const;
 
     protected:
       /// MUMPS specific data structures for storing the system matrix (CSC format).
@@ -120,41 +114,13 @@ namespace Hermes
       int *jcn;         ///< Column indices.
       typename mumps_type<Scalar>::mumps_Scalar *Ax; ///< Matrix entries (column-wise).
       int *Ai;          ///< Row indices of values in Ax.
-      unsigned int *Ap;          ///< Index to Ax/Ai, where each column starts.
+      int *Ap;          ///< Index to Ax/Ai, where each column starts.
 
       friend class Solvers::MumpsSolver<Scalar>;
       template<typename T> friend SparseMatrix<T>*  create_matrix();
     };
-
-    /** \brief Vector used with MUMPS solver */
-    template <typename Scalar>
-    class MumpsVector : public Vector<Scalar>
-    {
-    public:
-      MumpsVector();
-      virtual ~MumpsVector();
-
-      virtual void alloc(unsigned int ndofs);
-      virtual void free();
-      virtual Scalar get(unsigned int idx) const;
-      virtual void extract(Scalar *v) const;
-      virtual void zero();
-      virtual void change_sign();
-      virtual void set(unsigned int idx, Scalar y);
-      virtual void add(unsigned int idx, Scalar y);
-      virtual void add(unsigned int n, unsigned int *idx, Scalar *y);
-      virtual void add_vector(Vector<Scalar>* vec);
-      virtual void add_vector(Scalar* vec);
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf");
-
-    protected:
-      // MUMPS specific data structures for storing the rhs.
-      ///Vector data.
-      Scalar *v;
-
-      friend class Solvers::MumpsSolver<Scalar>;
-    };
   }
+
   namespace Solvers
   {
     /// Encapsulation of MUMPS linear solver.
@@ -167,7 +133,7 @@ namespace Hermes
       /// Constructor of MumpsSolver.
       /// @param[in] m matrix pointer
       /// @param[in] rhs right hand side pointer
-      MumpsSolver(MumpsMatrix<Scalar> *m, MumpsVector<Scalar> *rhs);
+      MumpsSolver(MumpsMatrix<Scalar> *m, SimpleVector<Scalar> *rhs);
       virtual ~MumpsSolver();
 
       virtual void solve();
@@ -176,7 +142,7 @@ namespace Hermes
       /// Matrix to solve.
       MumpsMatrix<Scalar> *m;
       /// Right hand side.
-      MumpsVector<Scalar> *rhs;
+      SimpleVector<Scalar> *rhs;
 
       /// \todo document
       bool setup_factorization();

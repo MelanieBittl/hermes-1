@@ -273,7 +273,9 @@ namespace Hermes
 
       double sufficient_improvement_factor_jacobian;
       unsigned int max_steps_with_reused_jacobian;
-
+      
+      /// Backup vector for unsuccessful reuse of Jacobian.
+      Vector<Scalar>* residual_back;
 #pragma endregion
 
 #pragma region OutputAttachable
@@ -309,3 +311,5 @@ Scalar* coeff_vec_back;
   }
 }
 #endif
+
+

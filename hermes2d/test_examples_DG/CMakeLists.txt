@@ -1,7 +1,8 @@
 add_subdirectory("VertexBasedLimiter")
 add_subdirectory("VertexBasedLimiterImplicit")
-#add_subdirectory("ShockTubeProblem")
+add_subdirectory("ShockTubeProblem")
 add_subdirectory("DoubleMachReflection")
-#add_subdirectory("DoubleMachReflectionAdapt")
+add_subdirectory("DoubleMachReflectionAdapt")
 add_subdirectory("GAMM-Channel")
 add_subdirectory("GAMM-Channel-Adapt")
+

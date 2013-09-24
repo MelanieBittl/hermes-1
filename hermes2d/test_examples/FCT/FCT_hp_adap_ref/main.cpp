@@ -14,6 +14,7 @@ using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
+using namespace Hermes::Solvers;
 
 //This example solves adaptively a linear convection equation.
 //It describes a counterclockwise rotation about the center of the domain.
@@ -141,8 +142,8 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
        selector.set_error_weights(1.0,1.0,1.0); 
 
 	//Initialize
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;   //M_c/tau
-	UMFPackMatrix<double> * conv_matrix = new UMFPackMatrix<double> ;   //K
+	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ;   //M_c/tau
+	CSCMatrix<double> * conv_matrix = new CSCMatrix<double> ;   //K
 	double* u_L = NULL; 
 	double* u_H =NULL;
 	double* ref_sln_double =NULL;
@@ -248,8 +249,8 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 			dp_convection.assemble(conv_matrix);		//K
 
 		//----------------------MassLumping  & Artificial Diffusion --------------------------------------------------------------------	
-			UMFPackMatrix<double>* lumped_matrix = fluxCorrection.massLumping(mass_matrix); // M_L/tau
-			UMFPackMatrix<double>* diffusion = fluxCorrection.artificialDiffusion(conv_matrix);	
+			CSCMatrix<double>* lumped_matrix = fluxCorrection.massLumping(mass_matrix); // M_L/tau
+			CSCMatrix<double>* diffusion = fluxCorrection.artificialDiffusion(conv_matrix);	
 						
 			//-----------------Assembling of matrices ---------------------------------------------------------------------	
 			lowOrder.assemble_Low_Order(conv_matrix,diffusion,lumped_matrix);	

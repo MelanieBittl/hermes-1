@@ -320,10 +320,10 @@ namespace Hermes
                   int dot_position = strchr(x.c_str(), '.') == NULL ? -1 : strchr(x.c_str(), '.') - x.c_str();
                   for(int i = 0; i < dot_position; i++)
                     if(strncmp(x.c_str() + i, "0", 1) != 0)
-                      throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the x coordinate of vertex no. %i.", vertex_number + 1);
+                      this->warn("Probably wrong syntax in the x coordinate of vertex no. %i.", vertex_number + 1);
                   for(int i = dot_position + 1; i < x.length(); i++)
                     if(strncmp(x.c_str() + i, "0", 1) != 0)
-                      throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the x coordinate of vertex no. %i.", vertex_number + 1);
+                      this->warn("Probably wrong syntax in the x coordinate of vertex no. %i.", vertex_number + 1);
                   x_value = std::strtod(x.c_str(), NULL);
                 }
 
@@ -336,10 +336,10 @@ namespace Hermes
                     int dot_position = strchr(y.c_str(), '.') == NULL ? -1 : strchr(y.c_str(), '.') - y.c_str();
                     for(int i = 0; i < dot_position; i++)
                       if(strncmp(y.c_str() + i, "0", 1) != 0)
-                        throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the y coordinate of vertex no. %i.", vertex_number + 1);
+                        this->warn("Probably wrong syntax in the y coordinate of vertex no. %i.", vertex_number + 1);
                     for(int i = dot_position + 1; i < y.length(); i++)
                       if(strncmp(y.c_str() + i, "0", 1) != 0)
-                        throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the y coordinate of vertex no. %i.", vertex_number + 1);
+                        this->warn("Probably wrong syntax in the y coordinate of vertex no. %i.", vertex_number + 1);
                     y_value = std::strtod(y.c_str(), NULL);
                   }
 
@@ -557,7 +557,7 @@ namespace Hermes
             }
 
             // update refmap coeffs of curvilinear elements
-            for_all_elements(e, meshes[subdomains_i])
+            for_all_used_elements(e, meshes[subdomains_i])
               if(e->cm != NULL)
                 e->cm->update_refmap_coeffs(e);
 
@@ -849,10 +849,10 @@ namespace Hermes
               int dot_position = strchr(x.c_str(), '.') == NULL ? -1 : strchr(x.c_str(), '.') - x.c_str();
               for(int i = 0; i < dot_position; i++)
                 if(strncmp(x.c_str() + i, "0", 1) != 0)
-                  throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
+                  this->warn("Probably wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
               for(int i = dot_position + 1; i < x.length(); i++)
                 if(strncmp(x.c_str() + i, "0", 1) != 0)
-                  throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
+                  this->warn("Probably wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
               x_value = std::strtod(x.c_str(), NULL);
             }
 
@@ -865,10 +865,10 @@ namespace Hermes
                 int dot_position = strchr(y.c_str(), '.') == NULL ? -1 : strchr(y.c_str(), '.') - y.c_str();
                 for(int i = 0; i < dot_position; i++)
                   if(strncmp(y.c_str() + i, "0", 1) != 0)
-                    throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
+                    this->warn("Probably wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
                 for(int i = dot_position + 1; i < y.length(); i++)
                   if(strncmp(y.c_str() + i, "0", 1) != 0)
-                    throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
+                    this->warn("Probably wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
                 y_value = std::strtod(y.c_str(), NULL);
               }
 
@@ -1018,7 +1018,7 @@ namespace Hermes
         }
 
         // update refmap coeffs of curvilinear elements
-        for_all_elements(e, mesh)
+        for_all_used_elements(e, mesh)
           if(e->cm != NULL)
             e->cm->update_refmap_coeffs(e);
       }
@@ -1102,10 +1102,10 @@ namespace Hermes
               int dot_position = strchr(x.c_str(), '.') == NULL ? -1 : strchr(x.c_str(), '.') - x.c_str();
               for(int i = 0; i < dot_position; i++)
                 if(strncmp(x.c_str() + i, "0", 1) != 0)
-                  throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
+                  this->warn("Probably wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
               for(int i = dot_position + 1; i < x.length(); i++)
                 if(strncmp(x.c_str() + i, "0", 1) != 0)
-                  throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
+                  this->warn("Probably wrong syntax in the x coordinate of vertex no. %i.", vertex_i + 1);
               x_value = std::strtod(x.c_str(), NULL);
             }
 
@@ -1118,10 +1118,10 @@ namespace Hermes
                 int dot_position = strchr(y.c_str(), '.') == NULL ? -1 : strchr(y.c_str(), '.') - y.c_str();
                 for(int i = 0; i < dot_position; i++)
                   if(strncmp(y.c_str() + i, "0", 1) != 0)
-                    throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
+                    this->warn("Probably wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
                 for(int i = dot_position + 1; i < y.length(); i++)
                   if(strncmp(y.c_str() + i, "0", 1) != 0)
-                    throw Hermes::Exceptions::MeshLoadFailureException("Wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
+                    this->warn("Probably wrong syntax in the y coordinate of vertex no. %i.", vertex_i + 1);
                 y_value = std::strtod(y.c_str(), NULL);
               }
 
@@ -1284,7 +1284,7 @@ namespace Hermes
         }
 
         // update refmap coeffs of curvilinear elements
-        for_all_elements(e, mesh)
+        for_all_used_elements(e, mesh)
           if(e->cm != NULL)
             e->cm->update_refmap_coeffs(e);
       }

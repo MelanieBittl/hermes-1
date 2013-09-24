@@ -2,7 +2,7 @@
 #define __HIGHORDER_H
 
 #include "hermes2d.h"
-
+using namespace Hermes::Solvers;
 class High_Order{
 public:
 	//Constructor
@@ -11,14 +11,14 @@ public:
 	//Destructor
 	~High_Order();
 
-	void assemble_High_Order(UMFPackMatrix<double> * conv_matrix, UMFPackMatrix<double> * mass_matrix,UMFPackMatrix<double> * dg_surface_matrix);
+	void assemble_High_Order(CSCMatrix<double> * conv_matrix, CSCMatrix<double> * mass_matrix,CSCMatrix<double> * dg_surface_matrix);
 	double* solve_High_Order(double* u_n);
 
 
 protected:
 
-	UMFPackMatrix<double> * high_matrix;  
-	UMFPackMatrix<double> * highmat_rhs;
+	CSCMatrix<double> * high_matrix;  
+	CSCMatrix<double> * highmat_rhs;
 	double* u_H;
 	double theta;
 

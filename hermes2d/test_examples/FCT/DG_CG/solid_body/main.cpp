@@ -5,6 +5,7 @@ using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
+using namespace Hermes::Solvers;
 
 // 1. Step: (M_L/tau -theta(K+D)) u^L =   (M_L/tau + (1-theta)(K+D)) u^n
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
@@ -99,8 +100,8 @@ CustomWeakForm wf(u_prev_time, mesh,time_step, theta,theta_DG, all, DG, SD, fals
 CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, DG, false, true);
 
 
-	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double> ; 
-	UMFPackVector<double> * rhs = new UMFPackVector<double> (ref_ndof); 
+	CSCMatrix<double>* matrix = new CSCMatrix<double> ; 
+	SimpleVector<double> * rhs = new SimpleVector<double> (ref_ndof); 
 	DiscreteProblem<double> * dp = new DiscreteProblem<double> (&wf,space);	
 	dp->set_linear(true,false);
 	dp->assemble(matrix);

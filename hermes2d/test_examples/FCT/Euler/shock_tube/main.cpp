@@ -10,6 +10,7 @@ using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
+using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
@@ -126,13 +127,13 @@ Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho
 
   // Set up the matrix according to the solver selection.
  
-	UMFPackMatrix<double> * matrix_L_low = new UMFPackMatrix<double>; 
-	UMFPackMatrix<double> * low_matrix = new UMFPackMatrix<double>;  
-	UMFPackMatrix<double> * lowmat_rhs = new UMFPackMatrix<double>; 
-	UMFPackMatrix<double> * matrix_dS = new UMFPackMatrix<double>; 
-	UMFPackMatrix<double> * matrix_dS_low = new UMFPackMatrix<double>; 
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double>;  
-	UMFPackVector<double> * vec_rhs = new UMFPackVector<double>(ndof);
+	CSCMatrix<double> * matrix_L_low = new CSCMatrix<double>; 
+	CSCMatrix<double> * low_matrix = new CSCMatrix<double>;  
+	CSCMatrix<double> * lowmat_rhs = new CSCMatrix<double>; 
+	CSCMatrix<double> * matrix_dS = new CSCMatrix<double>; 
+	CSCMatrix<double> * matrix_dS_low = new CSCMatrix<double>; 
+	CSCMatrix<double> * mass_matrix = new CSCMatrix<double>;  
+	SimpleVector<double> * vec_rhs = new SimpleVector<double>(ndof);
 	double* u_L = NULL; 
 
 			double* coeff_vec = new double[ndof];
@@ -146,7 +147,7 @@ Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho
 ///-----------Assembling mass matrix
     dp_mass.assemble(mass_matrix);
 	//----------------------MassLumping M_L--------------------------------------------------------------------
-		UMFPackMatrix<double> * lumped_matrix = massLumping(mass_matrix);
+		CSCMatrix<double> * lumped_matrix = massLumping(mass_matrix);
 //---------------------Projection of the initial condition
     OGProjection<double> ogProjection;
 		Lumped_Projection lumpedProjection;
@@ -186,17 +187,17 @@ do
 		  dp_K_init.assemble(lowmat_rhs);				
 		}
 	//------------------------artificial DIFFUSION D---------------------------------------	
-			UMFPackMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
+			CSCMatrix<double> * diffusion = artificialDiffusion(KAPPA,coeff_vec,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, lowmat_rhs);
 
-			lowmat_rhs->add_matrix(diffusion); //L(U)=K+D
-			lowmat_rhs->add_matrix(matrix_dS); //L(U)+dS(U) 
+			lowmat_rhs->add_sparse_matrix(diffusion); //L(U)=K+D
+			lowmat_rhs->add_sparse_matrix(matrix_dS); //L(U)+dS(U) 
 
 			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
 			low_matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
-			low_matrix->add_matrix(lumped_matrix); 				//M_L/t - theta L(U)
+			low_matrix->add_sparse_matrix(lumped_matrix); 				//M_L/t - theta L(U)
 
 			lowmat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
-			lowmat_rhs->add_matrix(lumped_matrix);  //M_L/t+(1-theta)L(U)
+			lowmat_rhs->add_sparse_matrix(lumped_matrix);  //M_L/t+(1-theta)L(U)
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(L) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
@@ -214,9 +215,9 @@ do
 
 			dp_boundary_low->assemble(matrix_dS_low);	
     	dp_K_low->assemble(matrix_L_low);
-			UMFPackMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
-			matrix_L_low->add_matrix(diffusion_low); //L(U)
-			matrix_L_low->add_matrix(matrix_dS_low); //L(U)+dS(U) 
+			CSCMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
+			matrix_L_low->add_sparse_matrix(diffusion_low); //L(U)
+			matrix_L_low->add_sparse_matrix(matrix_dS_low); //L(U)+dS(U) 
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------	
 		//Hermes::Mixins::Loggable::Static::info("antidiffusive fluxes ");

@@ -43,7 +43,7 @@ public:
 
   void operator=(const MeshFunctionSharedPtr<Scalar>& other);
 
- Hermes::Hermes2D::Solution<Scalar>* get_solution();
+  Hermes::Hermes2D::Solution<Scalar>* get_solution();
       
   ~MeshFunctionSharedPtr();
 };

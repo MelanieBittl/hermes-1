@@ -42,11 +42,16 @@ namespace Hermes
 
       inline std::string getClassName() const { return "ExactSolution"; }
 
+      /// Saves the exact solution to an XML file.
+      virtual void save(const char* filename) const;
+#ifdef WITH_BSON
+      virtual void save_bson(const char* filename) const;
+#endif
       /// Function returning the integration order that
       /// should be used when integrating the function.
       virtual Hermes::Ord ord(double x, double y) const = 0;
 
-    protected:
+      protected:
       /// For scaling of the solution.
       Scalar exact_multiplicator;
       template<typename T> friend class Solution;
@@ -156,6 +161,9 @@ namespace Hermes
 
       /// Saves the exact solution to an XML file.
       void save(const char* filename) const;
+#ifdef WITH_BSON
+      void save_bson(const char* filename) const;
+#endif
 
     protected:
       Scalar constant;
@@ -175,9 +183,6 @@ namespace Hermes
 
       virtual Ord ord(double x, double y) const;
       virtual MeshFunction<Scalar>* clone() const;
-
-      /// Saves the exact solution to an XML file.
-      void save(const char* filename) const;
     };
 
     /// @ingroup meshFunctions
@@ -197,6 +202,9 @@ namespace Hermes
 
       /// Saves the exact solution to an XML file.
       void save(const char* filename) const;
+#ifdef WITH_BSON
+      void save_bson(const char* filename) const;
+#endif
     protected:
       Scalar constantX;
       Scalar constantY;
@@ -216,9 +224,29 @@ namespace Hermes
 
       virtual Ord ord(double x, double y) const;
       virtual MeshFunction<Scalar>* clone() const;
+    };
 
-      /// Saves the exact solution to an XML file.
-      void save(const char* filename) const;
+    /// @ingroup meshFunctions
+    /// Eggshell function.
+    class HERMES_API ExactSolutionEggShell : public ExactSolutionScalar<double>
+    {
+    public:
+      /// \param[in] polynomialOrder The polynomial order used for the space where the solution of the
+      /// internal Laplace equation is sought.
+      ExactSolutionEggShell(MeshSharedPtr mesh, int polynomialOrder);
+      virtual ~ExactSolutionEggShell() {};
+
+      /// Function returning the value.
+      virtual double value (double x, double y) const;
+
+      /// Function returning the derivatives.
+      virtual void derivatives (double x, double y, double& dx, double& dy) const;
+
+      /// Function returning the integration order that
+      /// should be used when integrating the function.
+      virtual Hermes::Ord ord(double x, double y) const;
+
+      MeshFunction<double>* clone() const;
     };
   }
 }

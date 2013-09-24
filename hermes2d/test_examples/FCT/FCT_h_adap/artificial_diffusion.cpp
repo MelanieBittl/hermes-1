@@ -1,9 +1,9 @@
 //artificial Diffusion
-UMFPackMatrix<double>* artificialDiffusion(UMFPackMatrix<double>* conv_matrix){
+CSCMatrix<double>* artificialDiffusion(CSCMatrix<double>* conv_matrix){
 	 int size = conv_matrix->get_size();
 	 int nnz = conv_matrix->get_nnz();
 	double a,b;
-	 UMFPackMatrix<double>* diffusion = new UMFPackMatrix<double>;  
+	 CSCMatrix<double>* diffusion = new CSCMatrix<double>;  
 	diffusion->create(size, nnz, conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 	diffusion->zero();  //matrix = 0
 
@@ -39,12 +39,12 @@ UMFPackMatrix<double>* artificialDiffusion(UMFPackMatrix<double>* conv_matrix){
 
 //artificial Diffusion
 template<typename Scalar>
-UMFPackMatrix<Scalar>* artificialDiffusion(AsmList<Scalar>* al,UMFPackMatrix<Scalar>* conv_matrix)
+CSCMatrix<Scalar>* artificialDiffusion(AsmList<Scalar>* al,CSCMatrix<Scalar>* conv_matrix)
 { //al=NULL => diffusion=0
 	 int size = conv_matrix->get_size();
 	 int nnz = conv_matrix->get_nnz();
 	Scalar a,b;
-	 UMFPackMatrix<Scalar>* diffusion = new UMFPackMatrix<Scalar>;  
+	 CSCMatrix<Scalar>* diffusion = new CSCMatrix<Scalar>;  
 	diffusion->create(size, nnz, conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 	diffusion->zero();  //matrix = 0
 	if(al!=NULL){ //nur wenn Liste fuer Vertex-DOFS vorhanden

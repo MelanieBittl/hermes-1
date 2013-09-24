@@ -320,7 +320,7 @@ namespace Hermes
       if(vec == NULL) throw Exceptions::NullException(2);
 
       space_type = space->get_type();
-      Scalar* coeffs = new Scalar[vec->length()];
+      Scalar* coeffs = new Scalar[vec->get_size()];
       vec->extract(coeffs);
       this->set_coeff_vector(space, coeffs, add_dir_lift, start_index);
       delete [] coeffs;
@@ -842,9 +842,13 @@ namespace Hermes
       }
       else if(sln_type == HERMES_EXACT)
       {
+        this->order = Hermes2D::g_max_quad;
+        /// \todo
+        /*
         double x, y;
         e->get_center(x, y);
         this->order = (dynamic_cast<ExactSolution<double>*>(this))->ord(x, y).get_order();
+        */
       }
       else
         throw Hermes::Exceptions::Exception("Uninitialized solution.");
@@ -1179,14 +1183,8 @@ namespace Hermes
           for(unsigned int elems_i = 0; elems_i < this->num_elems; elems_i++)
             xmlsolution.component().back().elem_coeffs().push_back(XMLSolution::elem_coeffs(elems_i, elem_coeffs[component_i][elems_i]));
         }
-
-        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
-        solution_schema_location.append("/solution_h2d_xml.xsd");
-        ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
-
+        // Write to disk.
         ::xml_schema::namespace_infomap namespace_info_map;
-        namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
-
         std::ofstream out(filename);
 
         ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
@@ -1245,13 +1243,8 @@ namespace Hermes
             xmlsolution.component().back().elem_coeffs().push_back(XMLSolution::elem_coeffs(elems_i, elem_coeffs[component_i][elems_i]));
         }
 
-        std::string solution_schema_location(Hermes2DApi.get_text_param_value(xmlSchemasDirPath));
-        solution_schema_location.append("/solution_h2d_xml.xsd");
-        ::xml_schema::namespace_info namespace_info_solution("XMLSolution", solution_schema_location);
-
+        // Write to disk.
         ::xml_schema::namespace_infomap namespace_info_map;
-        namespace_info_map.insert(std::pair<std::basic_string<char>, xml_schema::namespace_info>("solution", namespace_info_solution));
-
         std::ofstream out(filename);
 
         ::xml_schema::flags parsing_flags = ::xml_schema::flags::dont_pretty_print;
@@ -1532,7 +1525,7 @@ namespace Hermes
           if(b == 4)
             return sqr(mat[1][0])*vxx + 2*mat[1][1]*mat[1][0]*vxy + sqr(mat[1][1])*vyy + mat2[2][0]*vx + mat2[2][1]*vy; // dyy
           if(b == 5)
-            return mat[0][0]*mat[1][0]*vxx + (mat[0][0]*mat[1][1] + mat[1][0]*mat[0][1])*vxy + mat[0][1]*mat[1][1]*vyy + mat2[1][0]*vx + mat2[1][1]*vy; //dxy
+            return mat[0][0]*mat[1][0]*vxx + (mat[0][0]*mat[1][1] + mat[1][0]*mat[0][1])*vxy + mat[0][1]*mat[1][1]*vyy + mat2[1][0]*vx + mat2[1][1]*vy;   //dxy
         }
       }
       else // vector solution

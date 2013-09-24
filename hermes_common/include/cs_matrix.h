@@ -26,13 +26,6 @@
 
 namespace Hermes
 {
-  namespace Solvers
-  {
-    template <typename Scalar> class HERMES_API CSIterator;
-    template <typename Scalar> class HERMES_API CSCIterator;
-    template <typename Scalar> class HERMES_API CSRIterator;
-  }
-
   /// \brief Namespace containing classes for vector / matrix operations.
   namespace Algebra
   {
@@ -58,28 +51,16 @@ namespace Hermes
       CSMatrix(unsigned int size);
       virtual ~CSMatrix();
 
+      /// Switches CSR / CSC arrays.
+      void switch_orientation();
+
       /// Main addition method.
       /// Virtual - the method body is 1:1 for CSCMatrix, inverted for CSR.
       virtual void add(unsigned int Ai_data_index, unsigned int Ai_index, Scalar v);
+      
       /// Main get method.
       /// Virtual - the method body is 1:1 for CSCMatrix, inverted for CSR.
       virtual Scalar get(unsigned int Ai_data_index, unsigned int Ai_index) const;
-      
-      virtual void add_to_diagonal(Scalar v);
-      /// Add matrix.
-      /// @param[in] mat matrix to be added
-      virtual void add_matrix(CSMatrix<Scalar>* mat);
-      /// Add matrix to specific position.
-      /// @param[in] i row in target matrix coresponding with top row of added matrix
-      /// @param[in] j column in target matrix coresponding with lef column of added matrix
-      /// @param[in] mat added matrix
-      virtual void add_as_block(unsigned int i, unsigned int j, CSMatrix<Scalar>* mat);
-      /// Add matrix to diagonal.
-      /// @param[in] num_stages matrix is added to num_stages positions. num_stages * size(added matrix) = size(target matrix)
-      /// @param[in] mat added matrix
-      virtual void add_to_diagonal_blocks(int num_stages, CSMatrix<Scalar>* mat);
-      virtual void add_sparse_to_diagonal_blocks(int num_stages, SparseMatrix<Scalar>* mat);
-      virtual void add(unsigned int m, unsigned int n, Scalar **mat, int *rows, int *cols);
 
       /// Utility method.
       virtual void alloc();
@@ -90,34 +71,36 @@ namespace Hermes
       /// Utility method.
       virtual void set_row_zero(unsigned int n);
 
-      /// Utility method.
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf") = 0;
-      /// Utility method.
-      virtual unsigned int get_matrix_size() const;
+      /// Matrix export method.
+      /// Utility version
+      /// \See Matrix<Scalar>::export_to_file.
+      void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf", bool invert_storage = false);
+      
+      /// Reading matrix
+      /// Utility version
+      /// \See Matrix<Scalar>::import_from_file.
+      void import_from_file(const char *filename, const char *var_name, MatrixExportFormat fmt, bool invert_storage = false);
+      
       /// Utility method.
       virtual unsigned int get_nnz() const;
       /// Utility method.
       virtual double get_fill_in() const;
 
-      // Applies the matrix to vector_in and saves result to vector_out.
-      void multiply_with_vector(Scalar* vector_in, Scalar* vector_out) const;
-      // Multiplies matrix with a Scalar.
+      /// Multiplies matrix with a Scalar.
       void multiply_with_Scalar(Scalar value);
 
-      // Duplicates a matrix (including allocation).
-      virtual CSMatrix* duplicate();
-      // Exposes pointers to the CS arrays.
+      /// Exposes pointers to the CS arrays.
       /// @return pointer to #Ap
-      int *get_Ap();
-      // Exposes pointers to the CS arrays.
+      int *get_Ap() const;
+      /// Exposes pointers to the CS arrays.
       /// @return pointer to #Ai
-      int *get_Ai();
-      // Exposes pointers to the CS arrays.
+      int *get_Ai() const;
+      /// Exposes pointers to the CS arrays.
       /// @return pointer to #Ax
-      Scalar *get_Ax();
+      Scalar *get_Ax() const;
 
     protected:
-      // UMFPack specific data structures for storing the system matrix (CSC format).
+      /// UMFPack specific data structures for storing the system matrix (CSC format).
       /// Matrix entries (column-wise).
       Scalar *Ax;
       /// Row / Column indices of values in Ax.
@@ -131,7 +114,7 @@ namespace Hermes
 
     /// \brief General CSC Matrix class.
     /// (can be used in umfpack, in that case use the
-    /// UMFPackMatrix subclass, or with EigenSolver, or anything else).
+    /// CSCMatrix subclass, or with EigenSolver, or anything else).
     template <typename Scalar>
     class HERMES_API CSCMatrix : public CSMatrix<Scalar>
     {
@@ -150,28 +133,16 @@ namespace Hermes
 
       virtual void add(unsigned int m, unsigned int n, Scalar v);
 
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf");
+      void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf");
+      void import_from_file(const char *filename, const char *var_name, MatrixExportFormat fmt);
 
-      friend class Hermes::Solvers::CSCIterator<Scalar>;
-
-      /// Add matrix.
-      /// @param[in] mat matrix to be added
-      virtual void add_matrix(CSMatrix<Scalar>* mat);
-      virtual void add_sparse_matrix(SparseMatrix<Scalar>* mat);
-
-      /// Add matrix to specific position.
-      /// @param[in] i row in target matrix coresponding with top row of added matrix
-      /// @param[in] j column in target matrix coresponding with lef column of added matrix
-      /// @param[in] mat added matrix
-      virtual void add_as_block(unsigned int i, unsigned int j, CSMatrix<Scalar>* mat);
-
-      // Duplicates a matrix (including allocation).
-      virtual CSMatrix<Scalar>* duplicate();
+      /// Duplicates a matrix (including allocation).
+      virtual CSMatrix<Scalar>* duplicate() const;
     };
 
     /// \brief General CSR Matrix class.
     /// (can be used in umfpack, in that case use the
-    /// UMFPackMatrix subclass, or with EigenSolver, or anything else).
+    /// CSCMatrix subclass, or with EigenSolver, or anything else).
     template <typename Scalar>
     class HERMES_API CSRMatrix : public CSMatrix<Scalar>
     {
@@ -190,22 +161,11 @@ namespace Hermes
 
       virtual void add(unsigned int m, unsigned int n, Scalar v);
 
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf");
+      void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf");
+      void import_from_file(const char *filename, const char *var_name, MatrixExportFormat fmt);
 
-      friend class Hermes::Solvers::CSCIterator<Scalar>;
-
-      /// Add matrix.
-      /// @param[in] mat matrix to be added
-      virtual void add_matrix(CSMatrix<Scalar>* mat);
-
-      /// Add matrix to specific position.
-      /// @param[in] i row in target matrix coresponding with top row of added matrix
-      /// @param[in] j column in target matrix coresponding with lef column of added matrix
-      /// @param[in] mat added matrix
-      virtual void add_as_block(unsigned int i, unsigned int j, CSMatrix<Scalar>* mat);
-
-      // Duplicates a matrix (including allocation).
-      virtual CSMatrix<Scalar>* duplicate();
+      /// Duplicates a matrix (including allocation).
+      virtual SparseMatrix<Scalar>* duplicate() const;
 
       /// Important - normal SparseMatrix has the pages structure suitable for CSC matrix, so we need
       /// to override the structure creation here.
@@ -214,56 +174,6 @@ namespace Hermes
       /// @param[in] row  - row index
       /// @param[in] col  - column index
       virtual void pre_add_ij(unsigned int row, unsigned int col);
-    };
-  }
-  
-  namespace Solvers
-  {
-    /// \brief CS matrix iterator. \todo document members
-    template <typename Scalar>
-    class CSIterator
-    {
-    protected:
-      CSIterator(Hermes::Algebra::CSMatrix<Scalar>* mat);
-      bool init();
-      virtual void get_current_position(int& i, int& j, Scalar& val) = 0;
-      virtual bool move_to_position(int i, int j) = 0;
-      bool move_ptr();
-      void add_to_current_position(Scalar val);
-
-      int size;
-      int nnz;
-      int* Ai;
-      int* Ap;
-      Scalar* Ax;
-      int Ai_pos;
-      int Ap_pos;
-
-      friend class Hermes::Algebra::CSMatrix<Scalar>;
-    };
-
-    /// \brief CSC matrix iterator. \todo document members
-    template <typename Scalar>
-    class CSCIterator : public CSIterator<Scalar>
-    {
-    protected:
-      CSCIterator(Hermes::Algebra::CSCMatrix<Scalar>* mat);
-      void get_current_position(int& i, int& j, Scalar& val);
-      bool move_to_position(int i, int j);
-
-      friend class Hermes::Algebra::CSCMatrix<Scalar>;
-    };
-
-    /// \brief CSC matrix iterator. \todo document members
-    template <typename Scalar>
-    class CSRIterator : public CSIterator<Scalar>
-    {
-    protected:
-      CSRIterator(Hermes::Algebra::CSRMatrix<Scalar>* mat);
-      void get_current_position(int& i, int& j, Scalar& val);
-      bool move_to_position(int i, int j);
-
-      friend class Hermes::Algebra::CSCMatrix<Scalar>;
     };
   }
 }

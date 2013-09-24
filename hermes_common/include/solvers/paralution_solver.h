@@ -25,7 +25,7 @@
 #ifdef WITH_PARALUTION
 #include "linear_matrix_solver.h"
 #include "cs_matrix.h"
-            
+
 #include "paralution.hpp"
 #include "precond.h"
 
@@ -71,12 +71,11 @@ namespace Hermes
 
       // Friends.
       template<typename T> friend SparseMatrix<T>*  create_matrix();
-      template<typename T> friend SparseMatrix<T>*  create_matrix();
     };
 
     /// \brief Class representing the vector for UMFPACK.
     template <typename Scalar>
-    class HERMES_API ParalutionVector : public Vector<Scalar>
+    class HERMES_API ParalutionVector : public SimpleVector<Scalar>
     {
     public:
       /// Default constructor.
@@ -87,22 +86,12 @@ namespace Hermes
       virtual ~ParalutionVector();
       virtual void alloc(unsigned int ndofs);
       virtual void free();
-      virtual Scalar get(unsigned int idx) const;
-      virtual void extract(Scalar *v) const;
       virtual void zero();
-      virtual void change_sign();
-      virtual void set(unsigned int idx, Scalar y);
-      virtual void add(unsigned int idx, Scalar y);
-      virtual void add(unsigned int n, unsigned int *idx, Scalar *y);
-      virtual void add_vector(Vector<Scalar>* vec);
-      virtual void add_vector(Scalar* vec);
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf");
 
-      paralution::LocalVector<Scalar>& get_paralutionVector();
+      paralution::LocalVector<Scalar>* get_paralutionVector();
 
     private:
-      Scalar *v;
-      paralution::LocalVector<Scalar> paralutionVector;
+      paralution::LocalVector<Scalar>* paralutionVector;
     };
   }
 
@@ -129,7 +118,7 @@ namespace Hermes
       /// Constructor.
       /// \param[in] paralutionPrecondType The preconditioner type to create.
       ParalutionPrecond(ParalutionPreconditionerType paralutionPrecondType);
-      
+
       paralution::Preconditioner<paralution::LocalMatrix<Scalar>, paralution::LocalVector<Scalar>, Scalar>& get_paralutionPreconditioner();
       static paralution::Preconditioner<paralution::LocalMatrix<Scalar>, paralution::LocalVector<Scalar>, Scalar>* return_paralutionPreconditioner(ParalutionPreconditionerType type);
     private:
@@ -172,7 +161,7 @@ namespace Hermes
       IterativeParalutionLinearMatrixSolver(ParalutionMatrix<Scalar> *m, ParalutionVector<Scalar> *rhs);
       virtual ~IterativeParalutionLinearMatrixSolver();
 
-			/// The solver type.
+      /// The solver type.
       /// Default: CG
       enum ParalutionSolverType
       {
@@ -204,7 +193,7 @@ namespace Hermes
 
       // Linear Solver creation.
       static paralution::IterativeLinearSolver<paralution::LocalMatrix<Scalar>, paralution::LocalVector<Scalar>, Scalar>* return_paralutionSolver(ParalutionSolverType type);
-      
+
     private:
       /// Preconditioner.
       Preconditioners::ParalutionPrecond<Scalar> *preconditioner;
@@ -216,7 +205,7 @@ namespace Hermes
 
       /// Set internal solver for the current solution.
       void init_internal_solver();
-      
+
       /// Matrix to solve.
       ParalutionMatrix<Scalar> *matrix;
       /// Right hand side vector.
@@ -285,7 +274,7 @@ namespace Hermes
 
       // Linear Solver creation.
       void init_paralutionSolver();
-      
+
       // Store num_iters.
       int num_iters;
 

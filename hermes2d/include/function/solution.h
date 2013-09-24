@@ -231,7 +231,7 @@ namespace Hermes
       Element* elems[H2D_MAX_QUADRATURES][H2D_SOLUTION_ELEMENT_CACHE_SIZE];
       int cur_elem, oldest[H2D_SOLUTION_ELEMENT_CACHE_SIZE];
 
-      int* elem_coeffs[H2D_MAX_SOLUTION_COMPONENTS]; ///< array of pointers into mono_coeffs
+      int* elem_coeffs[H2D_MAX_SOLUTION_COMPONENTS];  ///< array of pointers into mono_coeffs
       int num_coeffs, num_elems;
       int num_dofs;
 

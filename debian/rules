@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+configure: configure-stamp
+
+configure-stamp:
+	-$(MAKE) distclean
+	cmake -DCMAKE_INSTALL_PREFIX=$(CURDIR)/debian/hermes2d/usr .
+	touch configure-stamp
+
+build: configure-stamp build-stamp
+
+build-stamp: configure-stamp
+	$(MAKE)
+	touch build-stamp
+
+clean:
+	rm -f build-stamp configure-stamp
+	dh_clean
+
+install: build
+	$(MAKE) install
+	$(MAKE) --directory doc html

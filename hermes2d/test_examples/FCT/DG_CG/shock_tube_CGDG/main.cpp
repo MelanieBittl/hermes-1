@@ -12,6 +12,7 @@ using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
+using namespace Hermes::Solvers;
 
 
 
@@ -142,17 +143,17 @@ EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
 
   // Set up the solver, matrix, and rhs according to the solver selection.
-	UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ;
-	UMFPackMatrix<double> * matrix = new UMFPackMatrix<double> ;  
-	UMFPackMatrix<double> * mat_rhs = new UMFPackMatrix<double> ; 
-	UMFPackMatrix<double> * matrix_dS = new UMFPackMatrix<double> ; 
-	UMFPackMatrix<double> * matrix_DG = new UMFPackMatrix<double> ; 
+	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ;
+	CSCMatrix<double> * matrix = new CSCMatrix<double> ;  
+	CSCMatrix<double> * mat_rhs = new CSCMatrix<double> ; 
+	CSCMatrix<double> * matrix_dS = new CSCMatrix<double> ; 
+	CSCMatrix<double> * matrix_DG = new CSCMatrix<double> ; 
 
 
 
 			double* coeff_vec = new double[ndof];
 			double* coeff_vec_2 = new double[ndof];
-			UMFPackVector<double> * vec_rhs = new UMFPackVector<double> (ndof);
+			SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
 				double* u_L = NULL; 
 			double* P_plus = new double[ndof]; double* P_minus = new double[ndof];
 			double* Q_plus = new double[ndof]; double* Q_minus = new double[ndof];	
@@ -225,15 +226,15 @@ Space<double>::assign_dofs(spaces);
 
 					//------------------------artificial DIFFUSION D---------------------------------------		
 
-			mat_rhs->add_matrix(matrix_dS); //L(U)+dS(U) 
-			mat_rhs->add_matrix(matrix_DG);
+			mat_rhs->add_sparse_matrix(matrix_dS); //L(U)+dS(U) 
+			mat_rhs->add_sparse_matrix(matrix_DG);
 
 			matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());
 			matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
-			matrix->add_matrix(mass_matrix); 				//M/t - theta L(U)
+			matrix->add_sparse_matrix(mass_matrix); 				//M/t - theta L(U)
 
 			mat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
-			mat_rhs->add_matrix(mass_matrix);  //M_L/t+(1-theta)L(U)
+			mat_rhs->add_sparse_matrix(mass_matrix);  //M_L/t+(1-theta)L(U)
 
 
 

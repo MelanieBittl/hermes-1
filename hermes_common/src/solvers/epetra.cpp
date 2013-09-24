@@ -228,65 +228,14 @@ namespace Hermes
       }
     }
 
-    /// Add a number to each diagonal entry.
-    template<typename Scalar>
-    void EpetraMatrix<Scalar>::add_to_diagonal(Scalar v)
-    {
-      for (unsigned int i = 0; i < this->size; i++)
-      {
-        add(i, i, v);
-      }
-    };
-
-    template<typename Scalar>
-    void EpetraMatrix<Scalar>::add_to_diagonal_blocks(int num_stages, EpetraMatrix<Scalar>* mat_block)
-    {
-      int ndof = mat_block->get_size();
-      if(this->get_size() != (unsigned int) num_stages * ndof)
-        throw Hermes::Exceptions::Exception("Incompatible matrix sizes in CSCMatrix<Scalar>::add_to_diagonal_blocks()");
-
-      for (int i = 0; i < num_stages; i++)
-      {
-        this->add_as_block(ndof*i, ndof*i, mat_block);
-      }
-    }
-
-    template<typename Scalar>
-    void EpetraMatrix<Scalar>::add_sparse_to_diagonal_blocks(int num_stages, SparseMatrix<Scalar>* mat)
-    {
-      add_to_diagonal_blocks(num_stages, dynamic_cast<EpetraMatrix<Scalar>*>(mat));
-    }
-
-    template<typename Scalar>
-    void EpetraMatrix<Scalar>::add_as_block(unsigned int i, unsigned int j, EpetraMatrix<Scalar>* mat)
-    {
-      if((this->get_size() < i + mat->get_size() )||(this->get_size() < j + mat->get_size() ))
-        throw Hermes::Exceptions::Exception("Incompatible matrix sizes in Epetra<Scalar>::add_as_block()");
-      unsigned int block_size = mat->get_size();
-      for (unsigned int r = 0; r<block_size; r++)
-      {
-        for (unsigned int c = 0; c<block_size; c++)
-        {
-          this->add(i + r, j + c, mat->get(r, c));
-        }
-      }
-    }
-
     template<>
-    void EpetraMatrix<std::complex<double> >::multiply_with_vector(std::complex<double>* vector_in, std::complex<double>* vector_out) const
+    void EpetraMatrix<std::complex<double> >::multiply_with_vector(std::complex<double>* vector_in, std::complex<double>* vector_out, bool vector_out_initialized) const
     {
-      for (unsigned int i = 0; i<this->size; i++) //probably can be optimized by use native vectors
-      {
-        vector_out[i] = 0;
-        for (unsigned int j = 0; j<this->size; j++)
-        {
-          vector_out[i] +=vector_in[j]*get(i, j);
-        }
-      }
+      SparseMatrix<std::complex<double> >::multiply_with_vector(vector_in, vector_out, vector_out_initialized);
     }
    
    template<>
-   void EpetraMatrix<double>::multiply_with_vector(double* vector_in, double* vector_out) const
+   void EpetraMatrix<double>::multiply_with_vector(double* vector_in, double* vector_out, bool vector_out_initialized) const
    {
       Epetra_Vector x(View, mat->OperatorDomainMap(), vector_in);
       Epetra_Vector y(mat->OperatorRangeMap());
@@ -327,23 +276,23 @@ namespace Hermes
     }
    
     template<>
-    bool EpetraMatrix<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
+    void EpetraMatrix<double>::export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format)
     {
+      throw Exceptions::MethodNotImplementedException("EpetraMatrix<double>::export_to_file");
+      /*
       switch (fmt)
       {
       case DF_MATLAB_SPARSE:
-      case DF_PLAIN_ASCII:
+      case EXPORT_FORMAT_PLAIN_ASCII:
         EpetraExt::RowMatrixToHandle(file, *this->mat);
-        return true;
       }
-      
-      return false;
+      */
     }
     
     template<>
-    bool EpetraMatrix<std::complex<double> >::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
+    void EpetraMatrix<std::complex<double> >::export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format)
     {
-      return false;
+      throw Exceptions::MethodNotImplementedException("EpetraMatrix<double>::export_to_file");
     }
 
     template<typename Scalar>
@@ -410,10 +359,13 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void EpetraVector<Scalar>::change_sign()
+    Vector<Scalar>* EpetraVector<Scalar>::change_sign()
     {
-      for (unsigned int i = 0; i < this->size; i++) (*vec)[i] *= -1.;
-      for (unsigned int i = 0; i < this->size; i++) (*vec_im)[i] *= -1.;
+      for (unsigned int i = 0; i < this->size; i++)
+        (*vec)[i] *= -1.;
+      for (unsigned int i = 0; i < this->size; i++)
+        (*vec_im)[i] *= -1.;
+      return this;
     }
 
     template<typename Scalar>
@@ -474,12 +426,12 @@ namespace Hermes
     }
     
     template<>
-    bool EpetraVector<double>::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
+    bool EpetraVector<double>::export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format)
     {
       switch (fmt)
       {
       case DF_MATLAB_SPARSE:
-      case DF_PLAIN_ASCII:
+      case EXPORT_FORMAT_PLAIN_ASCII:
         EpetraExt::VectorToHandle(file, *this->vec);
         return true;
       }
@@ -488,7 +440,7 @@ namespace Hermes
     }
     
     template<>
-    bool EpetraVector<std::complex<double> >::dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt, char* number_format)
+    bool EpetraVector<std::complex<double> >::export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format)
     {
       return false;
     }

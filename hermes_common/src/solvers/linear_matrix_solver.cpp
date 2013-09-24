@@ -40,6 +40,8 @@ namespace Hermes
     {
       sln = NULL;
       time = -1.0;
+      n_eq = 1;
+      node_wise_ordering = false;
     }
 
     template<typename Scalar>
@@ -78,6 +80,33 @@ namespace Hermes
     {
       this->reuse_scheme = reuse_scheme;
     }
+    
+    template<typename Scalar>
+    void LinearMatrixSolver<Scalar>::use_node_wise_ordering(unsigned int num_pdes)
+    {
+      this->reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH;
+      this->n_eq = num_pdes;
+      this->node_wise_ordering = true;
+    }
+    
+    template<typename Scalar>
+    void LinearMatrixSolver<Scalar>::use_equations_wise_ordering()
+    {
+      this->reuse_scheme = HERMES_CREATE_STRUCTURE_FROM_SCRATCH;
+      this->node_wise_ordering = false;
+    }
+
+    template<typename Scalar>
+    ExternalSolver<Scalar>* static_create_external_solver(CSCMatrix<Scalar> *m, SimpleVector<Scalar> *rhs)
+    {
+      throw Exceptions::MethodNotOverridenException("ExternalSolver<Scalar>::create_external_solver");
+      return NULL;
+    }
+
+    template<>
+    ExternalSolver<double>::creation ExternalSolver<double>::create_external_solver = static_create_external_solver<double>;
+    template<>
+    ExternalSolver<std::complex<double> >::creation ExternalSolver<std::complex<double> >::create_external_solver = static_create_external_solver<std::complex<double> >;
 
     template<>
     HERMES_API LinearMatrixSolver<double>* create_linear_solver(Matrix<double>* matrix, Vector<double>* rhs, bool use_direct_solver)
@@ -85,6 +114,13 @@ namespace Hermes
       Vector<double>* rhs_dummy = NULL;
       switch (use_direct_solver ? Hermes::HermesCommonApi.get_integral_param_value(Hermes::directMatrixSolverType) : Hermes::HermesCommonApi.get_integral_param_value(Hermes::matrixSolverType))
       {
+      case Hermes::SOLVER_EXTERNAL:
+        {
+          if(rhs != NULL)
+            return ExternalSolver<double>::create_external_solver(static_cast<CSCMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs));
+          else
+            return ExternalSolver<double>::create_external_solver(static_cast<CSCMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs_dummy));
+        }
       case Hermes::SOLVER_AZTECOO:
         {
           if(use_direct_solver)
@@ -110,8 +146,8 @@ namespace Hermes
       case Hermes::SOLVER_MUMPS:
         {
 #ifdef WITH_MUMPS
-          if(rhs != NULL) return new MumpsSolver<double>(static_cast<MumpsMatrix<double>*>(matrix), static_cast<MumpsVector<double>*>(rhs));
-          else return new MumpsSolver<double>(static_cast<MumpsMatrix<double>*>(matrix), static_cast<MumpsVector<double>*>(rhs_dummy));
+          if(rhs != NULL) return new MumpsSolver<double>(static_cast<MumpsMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs));
+          else return new MumpsSolver<double>(static_cast<MumpsMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs_dummy));
 #else
           throw Hermes::Exceptions::Exception("MUMPS was not installed.");
 #endif
@@ -132,8 +168,8 @@ namespace Hermes
       case Hermes::SOLVER_UMFPACK:
         {
 #ifdef WITH_UMFPACK
-          if(rhs != NULL) return new UMFPackLinearMatrixSolver<double>(static_cast<UMFPackMatrix<double>*>(matrix), static_cast<UMFPackVector<double>*>(rhs));
-          else return new UMFPackLinearMatrixSolver<double>(static_cast<UMFPackMatrix<double>*>(matrix), static_cast<UMFPackVector<double>*>(rhs_dummy));
+          if(rhs != NULL) return new UMFPackLinearMatrixSolver<double>(static_cast<CSCMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs));
+          else return new UMFPackLinearMatrixSolver<double>(static_cast<CSCMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs_dummy));
 #else
           throw Hermes::Exceptions::Exception("UMFPACK was not installed.");
 #endif
@@ -164,8 +200,8 @@ return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<
       case Hermes::SOLVER_SUPERLU:
         {
 #ifdef WITH_SUPERLU
-          if(rhs != NULL) return new SuperLUSolver<double>(static_cast<SuperLUMatrix<double>*>(matrix), static_cast<SuperLUVector<double>*>(rhs));
-          else return new SuperLUSolver<double>(static_cast<SuperLUMatrix<double>*>(matrix), static_cast<SuperLUVector<double>*>(rhs_dummy));
+          if(rhs != NULL) return new SuperLUSolver<double>(static_cast<CSCMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs));
+          else return new SuperLUSolver<double>(static_cast<CSCMatrix<double>*>(matrix), static_cast<SimpleVector<double>*>(rhs_dummy));
 #else
           throw Hermes::Exceptions::Exception("SuperLU was not installed.");
 #endif
@@ -183,6 +219,13 @@ return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<
       Vector<std::complex<double> >* rhs_dummy = NULL;
       switch (use_direct_solver ? Hermes::HermesCommonApi.get_integral_param_value(Hermes::directMatrixSolverType) : Hermes::HermesCommonApi.get_integral_param_value(Hermes::matrixSolverType))
       {
+      case Hermes::SOLVER_EXTERNAL:
+      {
+        if(rhs != NULL)
+            return ExternalSolver<std::complex<double> >::create_external_solver(static_cast<CSCMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs));
+          else
+            return ExternalSolver<std::complex<double> >::create_external_solver(static_cast<CSCMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs_dummy));
+      }
       case Hermes::SOLVER_AZTECOO:
         {
           if(use_direct_solver)
@@ -208,8 +251,8 @@ return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<
       case Hermes::SOLVER_MUMPS:
         {
 #ifdef WITH_MUMPS
-          if(rhs != NULL) return new MumpsSolver<std::complex<double> >(static_cast<MumpsMatrix<std::complex<double> >*>(matrix), static_cast<MumpsVector<std::complex<double> >*>(rhs));
-          else return new MumpsSolver<std::complex<double> >(static_cast<MumpsMatrix<std::complex<double> >*>(matrix), static_cast<MumpsVector<std::complex<double> >*>(rhs_dummy));
+          if(rhs != NULL) return new MumpsSolver<std::complex<double> >(static_cast<MumpsMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs));
+          else return new MumpsSolver<std::complex<double> >(static_cast<MumpsMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs_dummy));
 #else
           throw Hermes::Exceptions::Exception("MUMPS was not installed.");
 #endif
@@ -230,8 +273,8 @@ return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<
       case Hermes::SOLVER_UMFPACK:
         {
 #ifdef WITH_UMFPACK
-          if(rhs != NULL) return new UMFPackLinearMatrixSolver<std::complex<double> >(static_cast<UMFPackMatrix<std::complex<double> >*>(matrix), static_cast<UMFPackVector<std::complex<double> >*>(rhs));
-          else return new UMFPackLinearMatrixSolver<std::complex<double> >(static_cast<UMFPackMatrix<std::complex<double> >*>(matrix), static_cast<UMFPackVector<std::complex<double> >*>(rhs_dummy));
+          if(rhs != NULL) return new UMFPackLinearMatrixSolver<std::complex<double> >(static_cast<CSCMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs));
+          else return new UMFPackLinearMatrixSolver<std::complex<double> >(static_cast<CSCMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs_dummy));
 #else
           throw Hermes::Exceptions::Exception("UMFPACK was not installed.");
 #endif
@@ -252,8 +295,8 @@ return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<
       case Hermes::SOLVER_SUPERLU:
         {
 #ifdef WITH_SUPERLU
-          if(rhs != NULL) return new SuperLUSolver<std::complex<double> >(static_cast<SuperLUMatrix<std::complex<double> >*>(matrix), static_cast<SuperLUVector<std::complex<double> >*>(rhs));
-          else return new SuperLUSolver<std::complex<double> >(static_cast<SuperLUMatrix<std::complex<double> >*>(matrix), static_cast<SuperLUVector<std::complex<double> >*>(rhs_dummy));
+          if(rhs != NULL) return new SuperLUSolver<std::complex<double> >(static_cast<CSCMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs));
+          else return new SuperLUSolver<std::complex<double> >(static_cast<CSCMatrix<std::complex<double> >*>(matrix), static_cast<SimpleVector<std::complex<double> >*>(rhs_dummy));
 #else
           throw Hermes::Exceptions::Exception("SuperLU was not installed.");
 #endif
@@ -266,15 +309,37 @@ return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<
     }
 
     template <typename Scalar>
-    HERMES_API HERMES_API IterSolver<Scalar>* is_iterative_solver(LinearMatrixSolver<Scalar>* matrix_solver)
+    ExternalSolver<Scalar>::ExternalSolver(CSCMatrix<Scalar> *m, SimpleVector<Scalar> *rhs) : LinearMatrixSolver<Scalar>(HERMES_CREATE_STRUCTURE_FROM_SCRATCH), m(m), rhs(rhs)
     {
-      return dynamic_cast<Hermes::Solvers::IterSolver<Scalar>*>(matrix_solver);
     }
 
     template <typename Scalar>
-    HERMES_API HERMES_API AMGSolver<Scalar>* is_AMG_solver(LinearMatrixSolver<Scalar>* matrix_solver)
+    SimpleExternalSolver<Scalar>::SimpleExternalSolver(CSCMatrix<Scalar> *m, SimpleVector<Scalar> *rhs) : ExternalSolver<Scalar>(m, rhs)
     {
-      return dynamic_cast<Hermes::Solvers::AMGSolver<Scalar>*>(matrix_solver);
+    }
+
+    template <typename Scalar>
+    void SimpleExternalSolver<Scalar>::solve()
+    {
+      solve(NULL);
+    }
+
+    template <typename Scalar>
+    void SimpleExternalSolver<Scalar>::solve(Scalar* initial_guess)
+    {
+      // Output.
+      this->process_matrix_output(this->m);
+      this->process_vector_output(this->rhs);
+
+      // External process.
+      std::string resultFileName = this->command();
+
+      // Handling of the result file.
+      this->sln = new Scalar[this->m->get_size()];
+      SimpleVector<Scalar> temp;
+      temp.alloc(this->m->get_size());
+      temp.import_from_file((char*)resultFileName.c_str(), "x", EXPORT_FORMAT_PLAIN_ASCII );
+      memcpy(this->sln, temp.v, this->m->get_size() * sizeof(Scalar));
     }
 
     template <typename Scalar>
@@ -283,67 +348,57 @@ return new AMGParalutionLinearMatrixSolver<double>(static_cast<ParalutionMatrix<
     }
 
     template <typename Scalar>
-    IterSolver<Scalar>::IterSolver(MatrixStructureReuseScheme reuse_scheme) : LinearMatrixSolver<Scalar>(reuse_scheme), max_iters(10000), tolerance(1e-8), precond_yes(false)
+    void DirectSolver<Scalar>::solve(Scalar* initial_guess)
+    {
+      this->solve();
+    }
+
+    template <typename Scalar>
+    LoopSolver<Scalar>::LoopSolver(MatrixStructureReuseScheme reuse_scheme) : LinearMatrixSolver<Scalar>(reuse_scheme), max_iters(10000), tolerance(1e-8)
     {
     }
 
     template<typename Scalar>
-    void IterSolver<Scalar>::set_tolerance(double tol)
+    void LoopSolver<Scalar>::set_tolerance(double tol)
     {
       this->tolerance = tol;
       this->toleranceType = AbsoluteTolerance;
     }
 
     template<typename Scalar>
-    void IterSolver<Scalar>::set_tolerance(double tol, typename IterSolver<Scalar>::ToleranceType toleranceType)
+    void LoopSolver<Scalar>::set_tolerance(double tol, typename LoopSolver<Scalar>::ToleranceType toleranceType)
     {
       this->tolerance = tol;
       this->toleranceType = toleranceType;
     }
 
     template<typename Scalar>
-    void IterSolver<Scalar>::set_max_iters(int iters)
+    void LoopSolver<Scalar>::set_max_iters(int iters)
     {
       this->max_iters = iters;
     }
 
     template <typename Scalar>
-    AMGSolver<Scalar>::AMGSolver(MatrixStructureReuseScheme reuse_scheme) : LinearMatrixSolver<Scalar>(reuse_scheme), max_iters(10000), tolerance(1e-8), precond_yes(false)
+    IterSolver<Scalar>::IterSolver(MatrixStructureReuseScheme reuse_scheme) : LoopSolver<Scalar>(reuse_scheme), precond_yes(false)
     {
     }
 
-    template<typename Scalar>
-    void AMGSolver<Scalar>::set_tolerance(double tol)
+    template <typename Scalar>
+    AMGSolver<Scalar>::AMGSolver(MatrixStructureReuseScheme reuse_scheme) : LoopSolver<Scalar>(reuse_scheme)
     {
-      this->tolerance = tol;
-      this->toleranceType = AbsoluteTolerance;
-    }
-
-    template<typename Scalar>
-    void AMGSolver<Scalar>::set_tolerance(double tol, typename AMGSolver<Scalar>::ToleranceType toleranceType)
-    {
-      this->tolerance = tol;
-      this->toleranceType = toleranceType;
-    }
-
-    template<typename Scalar>
-    void AMGSolver<Scalar>::set_max_iters(int iters)
-    {
-      this->max_iters = iters;
     }
 
     template class HERMES_API LinearMatrixSolver<double>;
     template class HERMES_API LinearMatrixSolver<std::complex<double> >;
+    template class HERMES_API SimpleExternalSolver<double>;
+    template class HERMES_API SimpleExternalSolver<std::complex<double> >;
+    template class HERMES_API ExternalSolver<double>;
+    template class HERMES_API ExternalSolver<std::complex<double> >;
     template class HERMES_API DirectSolver<double>;
     template class HERMES_API DirectSolver<std::complex<double> >;
     template class HERMES_API IterSolver<double>;
     template class HERMES_API IterSolver<std::complex<double> >;
     template class HERMES_API AMGSolver<double>;
     template class HERMES_API AMGSolver<std::complex<double> >;
-
-    template HERMES_API IterSolver<double>* is_iterative_solver(LinearMatrixSolver<double>* matrix_solver);
-    template HERMES_API IterSolver<std::complex<double> >* is_iterative_solver(LinearMatrixSolver<std::complex<double> >* matrix_solver);
-    template HERMES_API AMGSolver<double>* is_AMG_solver(LinearMatrixSolver<double>* matrix_solver);
-    template HERMES_API AMGSolver<std::complex<double> >* is_AMG_solver(LinearMatrixSolver<std::complex<double> >* matrix_solver);
   }
 }

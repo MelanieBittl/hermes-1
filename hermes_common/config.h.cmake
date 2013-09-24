@@ -1,6 +1,8 @@
 #ifndef __HERMES_CONFIG_H_
 #define __HERMES_CONFIG_H_
 
+#cmakedefine HERMES_STATIC_LIBS
+
 // OpenMP
 #cmakedefine NUM_THREADS ${NUM_THREADS}
 #cmakedefine WITH_OPENMP
@@ -14,12 +16,14 @@
 #cmakedefine WITH_MUMPS
 #cmakedefine WITH_SUPERLU
 #cmakedefine WITH_PETSC
-#cmakedefine WITH_HDF5
+#cmakedefine WITH_MATIO
 #cmakedefine WITH_EXODUSII
 #cmakedefine WITH_MPI
 
 #cmakedefine WITH_TC_MALLOC
 #cmakedefine WITH_BSON
+#cmakedefine WITH_MATIO
+#cmakedefine MONGO_STATIC_BUILD
 #cmakedefine UMFPACK_LONG_INT
 
 // stacktrace
@@ -36,9 +40,6 @@
 #cmakedefine HAVE_ML
 #cmakedefine HAVE_NOX
 #cmakedefine HAVE_KOMPLEX
-
-// no logo
-#cmakedefine HERMES_NO_LOGO
 
 // GLUT
 #cmakedefine NOGLUT

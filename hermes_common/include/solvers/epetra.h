@@ -73,19 +73,16 @@ namespace Hermes
       virtual void extract_row_copy(unsigned int row, unsigned int len, unsigned int &n_entries, double *vals, unsigned int *idxs);
       virtual void zero();
       virtual void add(unsigned int m, unsigned int n, Scalar v);
-      virtual void add_to_diagonal(Scalar v);
-      virtual void add_to_diagonal_blocks(int num_stages, EpetraMatrix<Scalar>* mat);
-      virtual void add_sparse_to_diagonal_blocks(int num_stages, SparseMatrix<Scalar>* mat);
-      virtual void multiply_with_vector(Scalar* vector_in, Scalar* vector_out) const;
+      virtual void multiply_with_vector(Scalar* vector_in, Scalar*& vector_out, bool vector_out_initialized = false) const;
       virtual void multiply_with_Scalar(Scalar value);
       
       virtual void add_sparse_matrix(SparseMatrix<Scalar>* mat);
 
       EpetraMatrix* duplicate() { return new EpetraMatrix<Scalar>(*this); }
       
-      virtual void add_as_block(unsigned int i, unsigned int j, EpetraMatrix<Scalar>* mat);
       virtual void add(unsigned int m, unsigned int n, Scalar **mat, int *rows, int *cols);
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf");
+      using Matrix<Scalar>::export_to_file;
+      virtual void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf");
       virtual unsigned int get_matrix_size() const;
       virtual unsigned int get_nnz() const;
       virtual double get_fill_in() const;
@@ -119,11 +116,12 @@ namespace Hermes
       virtual Scalar get(unsigned int idx) const;
       virtual void extract(Scalar *v) const;
       virtual void zero();
-      virtual void change_sign();
+      virtual Vector<Scalar>* change_sign();
       virtual void set(unsigned int idx, Scalar y);
       virtual void add(unsigned int idx, Scalar y);
       virtual void add(unsigned int n, unsigned int *idx, Scalar *y);
-      virtual bool dump(FILE *file, const char *var_name, EMatrixDumpFormat fmt = DF_MATLAB_SPARSE, char* number_format = "%lf");
+      using Vector<Scalar>::export_to_file;
+      virtual void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf");
 
     protected:
       Epetra_BlockMap *std_map;

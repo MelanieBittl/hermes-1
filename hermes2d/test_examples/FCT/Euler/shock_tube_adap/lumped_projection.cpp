@@ -6,7 +6,7 @@
 
 ////template<typename double>
 void Lumped_Projection::project_internal( SpaceSharedPtr<double> space, WeakForm<double>* wf, double* target_vec,
-                               MatrixSolverType matrix_solver, UMFPackMatrix<double>*  mat)
+                               MatrixSolverType matrix_solver, CSCMatrix<double>*  mat)
 {
             // Sanity check.
       if(wf == NULL)
@@ -26,13 +26,13 @@ if(mat!=NULL) if(mat->get_size()!=ndof) printf("lumped_projection: matrixsize =%
       dp->set_linear();
       dp->set_do_not_use_cache();
 
-    	UMFPackMatrix<double>* matrix = new UMFPackMatrix<double>;	
-  	UMFPackVector<double>* rhs = new UMFPackVector<double>(ndof);
+    	CSCMatrix<double>* matrix = new CSCMatrix<double>;	
+  	SimpleVector<double>* rhs = new SimpleVector<double>(ndof);
 	double* coeff_vec =NULL; 
 
 	if(mat==NULL) 
 	{ 
-		UMFPackMatrix<double>* lumped_matrix = new UMFPackMatrix<double>;   //M_L 
+		CSCMatrix<double>* lumped_matrix = new CSCMatrix<double>;   //M_L 
 		dp->assemble(matrix, rhs);  
 			//Masslumping		 
 		 int size = matrix->get_size();
@@ -81,7 +81,6 @@ if(mat!=NULL) if(mat->get_size()!=ndof) printf("lumped_projection: matrixsize =%
     e.print_msg();
   }	
 			coeff_vec = solver->get_sln_vector();			
-
 		 if (target_vec != NULL)
     		for (int i=0; i < ndof; i++) target_vec[i] = coeff_vec[i];
 		delete solver;
@@ -98,7 +97,7 @@ if(mat!=NULL) if(mat->get_size()!=ndof) printf("lumped_projection: matrixsize =%
 
   void Lumped_Projection::project_lumped(Hermes::vector<SpaceSharedPtr<double> >  spaces, 
         Hermes::vector<MeshFunctionSharedPtr<double> > source_meshfns,
-        double* target_vec, Hermes::MatrixSolverType matrix_solver, UMFPackMatrix<double>*  mat)
+        double* target_vec, Hermes::MatrixSolverType matrix_solver, CSCMatrix<double>*  mat)
     {
      
       int n = spaces.size();
@@ -119,7 +118,7 @@ if(mat!=NULL) if(mat->get_size()!=ndof) printf("lumped_projection: matrixsize =%
 
 
 void Lumped_Projection::project_lumped( SpaceSharedPtr<double> space, MeshFunctionSharedPtr<double>  source_meshfn,
-                             double* target_vec, MatrixSolverType matrix_solver ,UMFPackMatrix<double>*  mat )
+                             double* target_vec, MatrixSolverType matrix_solver ,CSCMatrix<double>*  mat )
 {
 			
 

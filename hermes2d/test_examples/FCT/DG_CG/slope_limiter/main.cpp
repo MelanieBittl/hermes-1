@@ -9,6 +9,7 @@ using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
+using namespace Hermes::Solvers;
 
 // 1. Step: (M_L/tau -theta(K+D)) u^L =   (M_L/tau + (1-theta)(K+D)) u^n
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
@@ -86,8 +87,8 @@ Orderizer ord;
  memset(coeff_vec_4, 0, ndof*sizeof(double));
 
 	CustomWeakForm wf_surf(u_prev_time,mesh,all, DG, SD);
-	UMFPackMatrix<double>* dg_surface_matrix = new UMFPackMatrix<double> ; 
-	UMFPackVector<double> * surf_rhs = new UMFPackVector<double> (ndof); 
+	CSCMatrix<double>* dg_surface_matrix = new CSCMatrix<double> ; 
+	SimpleVector<double> * surf_rhs = new SimpleVector<double> (ndof); 
 	DiscreteProblem<double> * dp_surf = new DiscreteProblem<double> (&wf_surf,space);	
 	dp_surf->set_linear(true,true);
 	dp_surf->assemble(dg_surface_matrix,surf_rhs);

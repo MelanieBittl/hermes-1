@@ -20,6 +20,9 @@
 #include "projections/ogprojection.h"
 #include "exact_solution.h"
 
+using namespace Hermes::Algebra;
+using namespace Hermes::Solvers;
+
 namespace Hermes
 {
   namespace Hermes2D
@@ -343,8 +346,8 @@ namespace Hermes
         this->on_step_end();
 
         // Solve the linear system.
-        if(!this->matrix_solver->solve())
-          throw Exceptions::LinearMatrixSolverException();
+        this->matrix_solver->solve(coeff_vec);
+        this->handle_UMFPACK_reports();
 
         memcpy(this->sln_vector, this->matrix_solver->get_sln_vector(), sizeof(Scalar)*ndof);
 

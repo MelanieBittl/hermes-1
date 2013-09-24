@@ -1,6 +1,6 @@
 //Mass lumping
-UMFPackMatrix<double>* massLumping(UMFPackMatrix<double>* mass_matrix){
-	 UMFPackMatrix<double>* lumped_matrix = new UMFPackMatrix<double>;   //M_L
+CSCMatrix<double>* massLumping(CSCMatrix<double>* mass_matrix){
+	 CSCMatrix<double>* lumped_matrix = new CSCMatrix<double>;   //M_L
 	 int size = mass_matrix->get_size();
 	 double diag[size];
 	 int nnz = mass_matrix->get_nnz();
@@ -23,9 +23,9 @@ int i;
 
 //Mass lumping an den Stellen von fct, sonst standard Massmatrix
 template<typename Scalar>
-UMFPackMatrix<Scalar>* massLumping(bool* fct, UMFPackMatrix<Scalar>* mass_matrix)
+CSCMatrix<Scalar>* massLumping(bool* fct, CSCMatrix<Scalar>* mass_matrix)
 {  //al=NULL=>lumped=mass
-	 UMFPackMatrix<Scalar>* lumped_matrix = new UMFPackMatrix<Scalar>;   //M_L
+	 CSCMatrix<Scalar>* lumped_matrix = new CSCMatrix<Scalar>;   //M_L
 	int size = mass_matrix->get_size();
 	int nnz = mass_matrix->get_nnz();
 	lumped_matrix->create(size, nnz, mass_matrix->get_Ap(), mass_matrix->get_Ai(),mass_matrix->get_Ax());

@@ -72,9 +72,9 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    NeighborSearch<Scalar>* DiscreteProblemDGAssembler<Scalar>::get_neighbor_search_ext(NeighborSearch<Scalar>** neighbor_searches, int index)
+    NeighborSearch<Scalar>* DiscreteProblemDGAssembler<Scalar>::get_neighbor_search_ext(WeakForm<Scalar>* wf, NeighborSearch<Scalar>** neighbor_searches, int index)
     {
-      return neighbor_searches[index + this->wf->get_neq()];
+      return neighbor_searches[index + wf->get_neq()];
     }
 
     template<typename Scalar>
@@ -234,7 +234,7 @@ namespace Hermes
       DiscontinuousFunc<double>*** testFunctions = new DiscontinuousFunc<double>**[this->spaces_size];
 
       // Create the extended shapeset on the union of the central element and its current neighbor.
-        int order = DiscreteProblemDGAssembler<Scalar>::dg_order;
+      int order = DiscreteProblemDGAssembler<Scalar>::dg_order;
       int order_base = DiscreteProblemDGAssembler<Scalar>::dg_order;
       for (unsigned int i = 0; i < this->spaces_size; i++)
       {
@@ -452,7 +452,7 @@ namespace Hermes
       DiscontinuousFunc<Scalar>** ext_fns = new DiscontinuousFunc<Scalar>*[ext.size()];
       for(unsigned int j = 0; j < ext.size(); j++)
       {
-        NeighborSearch<Scalar>* ns = this->get_neighbor_search_ext(current_neighbor_searches, j);
+        NeighborSearch<Scalar>* ns = get_neighbor_search_ext(this->wf, current_neighbor_searches, j);
         ns->set_quad_order(order);
         ext_fns[j] = ns->init_ext_fn(ext[j].get());
       }
@@ -505,8 +505,6 @@ namespace Hermes
             delete current_neighbor_searches[i];
       }
     }
-
-
 #ifdef DEBUG_DG_ASSEMBLING
     template<typename Scalar>
     void DiscreteProblemDGAssembler<Scalar>::debug()
@@ -557,7 +555,6 @@ namespace Hermes
       }
     }
 #endif
-
 
     template class HERMES_API DiscreteProblemDGAssembler<double>;
     template class HERMES_API DiscreteProblemDGAssembler<std::complex<double> >;

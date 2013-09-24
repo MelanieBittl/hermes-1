@@ -9,7 +9,7 @@ int max(int a, int b){
 
 
 	template<typename Scalar>
-bool h_p_adap(SpaceSharedPtr<Scalar> space,	UMFPackMatrix<double> * mass_matrix,MeshFunctionSharedPtr<Scalar> sln,MeshFunctionSharedPtr<Scalar> R_h_1,MeshFunctionSharedPtr<Scalar> R_h_2,  HPAdapt* adapt,double h_min, double h_max,	int* elements_to_refine,	int* no_of_refinement_steps,		double* elem_error)
+bool h_p_adap(SpaceSharedPtr<Scalar> space,	CSCMatrix<double> * mass_matrix,MeshFunctionSharedPtr<Scalar> sln,MeshFunctionSharedPtr<Scalar> R_h_1,MeshFunctionSharedPtr<Scalar> R_h_2,  HPAdapt* adapt,double h_min, double h_max,	int* elements_to_refine,	int* no_of_refinement_steps,		double* elem_error)
 {		
 
 	int ndof = space->get_num_dofs();
@@ -23,9 +23,9 @@ bool h_p_adap(SpaceSharedPtr<Scalar> space,	UMFPackMatrix<double> * mass_matrix,
 
 	DiscreteProblem<double> * dp_1 = new DiscreteProblem<double> (grad_1, space);
 	DiscreteProblem<double> * dp_2 = new DiscreteProblem<double> (grad_2, space);
-	//UMFPackMatrix<double> * mass_matrix = new UMFPackMatrix<double> ; 
-	UMFPackVector<double> * rhs_1 = new UMFPackVector<double>(ndof);
-	UMFPackVector<double> * rhs_2 = new UMFPackVector<double>(ndof);
+	//CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ; 
+	SimpleVector<double> * rhs_1 = new SimpleVector<double>(ndof);
+	SimpleVector<double> * rhs_2 = new SimpleVector<double>(ndof);
 	dp_1->assemble(rhs_1); 
 	dp_2->assemble(rhs_2);
 	UMFPackLinearMatrixSolver<double> * solver_1 = new UMFPackLinearMatrixSolver<double> (mass_matrix,rhs_1);

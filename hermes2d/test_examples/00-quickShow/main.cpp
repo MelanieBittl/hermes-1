@@ -1,13 +1,13 @@
 #include "definitions.h"
 
-//  PDE: time-dependent heat transfer equation with nonlinear thermal
-//  conductivity: du/dt = div[lambda(u) grad u] + f.
+// PDE: time-dependent heat transfer equation with nonlinear thermal
+// conductivity: du/dt = div[lambda(u) grad u] + f.
 //
-//  Nonlinearity: lambda(u) = 1 + pow(u, alpha).
+// Nonlinearity: lambda(u) = 1 + pow(u, alpha).
 //
-//  BC: (Non)constant Dirichlet.
+// BC: (Non)constant Dirichlet.
 //
-//  IC: Custom initial condition matching the BC.
+// IC: Custom initial condition matching the BC.
 //
     
 // Number of initial uniform mesh refinements.
@@ -16,8 +16,8 @@ const int INIT_REF_NUM = 2;
 const int P_INIT = 1;
 
 #pragma region Time-dependency setup.
-  // Time step. 
-  double time_step_length = 0.05;                           
+  // Time step.
+  double time_step_length = 0.05;
   // Time interval length.
   double current_time = 0.;
   int time_step_number = 1;
@@ -25,7 +25,7 @@ const int P_INIT = 1;
 #pragma endregion
 
 #pragma region Adaptivity setup.
-  const CandList CAND_LIST = H2D_HP_ANISO;          
+  const CandList CAND_LIST = H2D_HP_ANISO;
   const double ERR_STOP = .5;
   double error_estimate;
 #pragma endregion
@@ -104,81 +104,79 @@ int main(int argc, char* argv[])
 
   #pragma region Time stepping loop.
   /*
-    solver.set_time_step(time_step_length);
-    do
-    {
-      std::cout << "Time step: " << time_step_number << std::endl;
+solver.set_time_step(time_step_length);
+do
+{
+std::cout << "Time step: " << time_step_number << std::endl;
 
-      #pragma region Spatial adaptivity loop.
-        adaptivity.set_space(space);
-        int adaptivity_step = 1;
-        do
-        {
-          std::cout << "Adaptivity step: " << adaptivity_step << std::endl;
-          #pragma region Construct globally refined reference mesh and setup reference space.
-            MeshSharedPtr ref_mesh = ref_mesh_creator.create_ref_mesh();
-            SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space(space, ref_mesh);
-            solver.set_space(ref_space);
-          #pragma endregion
-          try
-          {
-            // Solving.
-            solver.solve(get_initial_Newton_guess(adaptivity_step, &weak_formulation, space, ref_space, sln_time_prev));
-            Solution<double>::vector_to_solution(solver.get_sln_vector(), ref_space, sln_time_new);
-          }
-          catch(Exceptions::Exception& e)
-          {
-            std::cout << e.what();
-          }
+#pragma region Spatial adaptivity loop.
+adaptivity.set_space(space);
+int adaptivity_step = 1;
+do
+{
+std::cout << "Adaptivity step: " << adaptivity_step << std::endl;
+#pragma region Construct globally refined reference mesh and setup reference space.
+MeshSharedPtr ref_mesh = ref_mesh_creator.create_ref_mesh();
+SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space(space, ref_mesh);
+solver.set_space(ref_space);
+#pragma endregion
+try
+{
+// Solving.
+solver.solve(get_initial_Newton_guess(adaptivity_step, &weak_formulation, space, ref_space, sln_time_prev));
+Solution<double>::vector_to_solution(solver.get_sln_vector(), ref_space, sln_time_new);
+}
+catch(Exceptions::Exception& e)
+{
+std::cout << e.what();
+}
 
-          // Project the fine mesh solution onto the coarse mesh.
-          OGProjection<double>::project_global(space, sln_time_new, sln_time_new_coarse); 
+// Project the fine mesh solution onto the coarse mesh.
+OGProjection<double>::project_global(space, sln_time_new, sln_time_new_coarse);
 
-          // Calculate element errors and error estimate.
-          errorCalculator.calculate_errors(sln_time_new_coarse, sln_time_new);
-          double error_estimate = errorCalculator.get_total_error_squared() * 100;
-          std::cout << "Error estimate: " << error_estimate << "%" << std::endl;
+// Calculate element errors and error estimate.
+errorCalculator.calculate_errors(sln_time_new_coarse, sln_time_new);
+double error_estimate = errorCalculator.get_total_error_squared() * 100;
+std::cout << "Error estimate: " << error_estimate << "%" << std::endl;
 
-          // Visualize the solution and mesh.
-          display(sln_time_new, ref_space);
+// Visualize the solution and mesh.
+display(sln_time_new, ref_space);
 
-          // If err_est too large, adapt the mesh.
-          if (error_estimate < ERR_STOP)
-            break;
-          else 
-            adaptivity.adapt(&refinement_selector);
-      
-          adaptivity_step++;
-        }
-        while(true);
-      #pragma endregion
+// If err_est too large, adapt the mesh.
+if (error_estimate < ERR_STOP)
+break;
+else
+adaptivity.adapt(&refinement_selector);
+adaptivity_step++;
+}
+while(true);
+#pragma endregion
 
-      #pragma region No adaptivity in space.
-        try
-        {
-          // Solving.
-          solver.solve(sln_time_prev);
+#pragma region No adaptivity in space.
+try
+{
+// Solving.
+solver.solve(sln_time_prev);
 
-          // Get the solution for visualization etc. from the coefficient vector.
-          Solution<double>::vector_to_solution(solver.get_sln_vector(), space, sln_time_new);
-      
-          // Visualize the solution and mesh.
-          display(sln_time_new, space);
-        }
-        catch(Exceptions::Exception& e)
-        {
-          std::cout << e.what();
-        }
-      #pragma endregion
+// Get the solution for visualization etc. from the coefficient vector.
+Solution<double>::vector_to_solution(solver.get_sln_vector(), space, sln_time_new);
+// Visualize the solution and mesh.
+display(sln_time_new, space);
+}
+catch(Exceptions::Exception& e)
+{
+std::cout << e.what();
+}
+#pragma endregion
 
-      sln_time_prev->copy(sln_time_new);
+sln_time_prev->copy(sln_time_new);
 
-      // Increase current time and counter of time steps.
-      current_time += time_step_length;
-      time_step_number++;
-    }
-    while (current_time < T_FINAL);
-  */
+// Increase current time and counter of time steps.
+current_time += time_step_length;
+time_step_number++;
+}
+while (current_time < T_FINAL);
+*/
   #pragma endregion
 
   #pragma region No time stepping (= stationary problem).
