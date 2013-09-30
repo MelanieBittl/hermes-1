@@ -7,11 +7,11 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
+// along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
 #include "discrete_problem/discrete_problem_thread_assembler.h"
 #include "discrete_problem/discrete_problem_selective_assembler.h"
@@ -32,8 +32,8 @@ namespace Hermes
 #endif
 
     template<typename Scalar>
-    DiscreteProblemThreadAssembler<Scalar>::DiscreteProblemThreadAssembler(DiscreteProblemSelectiveAssembler<Scalar>* selectiveAssembler) : 
-    pss(NULL), refmaps(NULL), u_ext(NULL), als(NULL), alsSurface(NULL), 
+    DiscreteProblemThreadAssembler<Scalar>::DiscreteProblemThreadAssembler(DiscreteProblemSelectiveAssembler<Scalar>* selectiveAssembler) :
+    pss(NULL), refmaps(NULL), u_ext(NULL), als(NULL), alsSurface(NULL),
       selectiveAssembler(selectiveAssembler), integrationOrderCalculator(selectiveAssembler)
     {
     }
@@ -367,7 +367,7 @@ namespace Hermes
 
           this->assemble_matrix_form(mfv,
             this->current_cache_record->order,
-            current_cache_record->fns[form_j], current_cache_record->fns[form_i], 
+            current_cache_record->fns[form_j], current_cache_record->fns[form_i],
             ext_func, u_ext_func,
             als[form_i], als[form_j],
             current_cache_record->n_quadrature_points, current_cache_record->geometry, current_cache_record->jacobian_x_weights);
@@ -384,10 +384,10 @@ namespace Hermes
 
           int form_i = vfv->i;
 
-          this->assemble_vector_form(vfv, 
-            this->current_cache_record->order, 
-            current_cache_record->fns[form_i], 
-            ext_func, u_ext_func, 
+          this->assemble_vector_form(vfv,
+            this->current_cache_record->order,
+            current_cache_record->fns[form_i],
+            ext_func, u_ext_func,
             als[form_i],
             current_cache_record->n_quadrature_points, current_cache_record->geometry, current_cache_record->jacobian_x_weights);
         }
@@ -432,12 +432,12 @@ namespace Hermes
               int form_i = this->wf->mfsurf[current_mfsurf_i]->i;
               int form_j = this->wf->mfsurf[current_mfsurf_i]->j;
 
-              this->assemble_matrix_form(this->wf->mfsurf[current_mfsurf_i], 
-                current_cache_record->orderSurface[isurf], 
-                current_cache_record->fnsSurface[isurf][form_j], 
-                current_cache_record->fnsSurface[isurf][form_i], 
+              this->assemble_matrix_form(this->wf->mfsurf[current_mfsurf_i],
+                current_cache_record->orderSurface[isurf],
+                current_cache_record->fnsSurface[isurf][form_j],
+                current_cache_record->fnsSurface[isurf][form_i],
                 ext_funcSurf, u_ext_funcSurf,
-                alsSurface[form_i][isurf], alsSurface[form_j][isurf], 
+                alsSurface[form_i][isurf], alsSurface[form_j][isurf],
                 current_cache_record->n_quadrature_pointsSurface[isurf], current_cache_record->geometrySurface[isurf], current_cache_record->jacobian_x_weightsSurface[isurf]);
             }
           }
@@ -451,11 +451,11 @@ namespace Hermes
 
               int form_i = this->wf->vfsurf[current_vfsurf_i]->i;
 
-              this->assemble_vector_form(this->wf->vfsurf[current_vfsurf_i], 
-                current_cache_record->orderSurface[isurf], 
-                current_cache_record->fnsSurface[isurf][form_i], 
-                ext_funcSurf, u_ext_funcSurf, 
-                alsSurface[form_i][isurf], 
+              this->assemble_vector_form(this->wf->vfsurf[current_vfsurf_i],
+                current_cache_record->orderSurface[isurf],
+                current_cache_record->fnsSurface[isurf][form_i],
+                ext_funcSurf, u_ext_funcSurf,
+                alsSurface[form_i][isurf],
                 current_cache_record->n_quadrature_pointsSurface[isurf], current_cache_record->geometrySurface[isurf], current_cache_record->jacobian_x_weightsSurface[isurf]);
             }
           }
@@ -587,7 +587,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void DiscreteProblemThreadAssembler<Scalar>::assemble_vector_form(VectorForm<Scalar>* form, int order, Func<double>** test_fns, Func<Scalar>** ext, Func<Scalar>** u_ext, 
+    void DiscreteProblemThreadAssembler<Scalar>::assemble_vector_form(VectorForm<Scalar>* form, int order, Func<double>** test_fns, Func<Scalar>** ext, Func<Scalar>** u_ext,
       AsmList<Scalar>* current_als_i, int n_quadrature_points, Geom<double>* geometry, double* jacobian_x_weights)
     {
       bool surface_form = (dynamic_cast<VectorFormVol<Scalar>*>(form) == NULL);

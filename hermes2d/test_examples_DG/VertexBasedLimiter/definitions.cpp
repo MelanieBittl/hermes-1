@@ -36,7 +36,6 @@ static double advection_term_benchmark(double x, double y, double vx, double vy)
   return vx + vy;
 }
 scalar_product_with_advection_direction advection_term;
-
 bool only_x_der;
 
 ErrorWeakForm::ErrorWeakForm(SolvedExample solvedExample)
@@ -71,20 +70,20 @@ static void initialization(SolvedExample solvedExample)
   }
 }
 
-MassWeakForm::MassWeakForm() : WeakForm<double>(1) 
+MassWeakForm::MassWeakForm() : WeakForm<double>(1)
 {
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
 }
 
-SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, int explicitSchemeStep, bool add_inlet, std::string inlet , double diffusivity, double s, double sigma, bool add_rhs) : WeakForm<double>(1) 
+SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, int explicitSchemeStep, bool add_inlet, std::string inlet , double diffusivity, double s, double sigma, bool add_rhs) : WeakForm<double>(1)
 {
   initialization(solvedExample);
-
 
   // Matrix
   // M
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
-  // A_tilde  
+
+  // A_tilde
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
   add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, local));
@@ -93,11 +92,12 @@ SmoothingWeakForm::SmoothingWeakForm(SolvedExample solvedExample, bool local, in
   this->add_matrix_form_surf(new CustomMatrixFormSurfConvection(0, 0));
   if(add_inlet)
     this->add_matrix_form_surf(new CustomMatrixFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet));
+  
   // RHS
   // M
   // Just for Runge-Kutta of more stages, where ext[0] and ext[1] are generally different
-  //  add_vector_form(new CustomVectorFormVol(0, 1, 1.));
-  //  add_vector_form(new CustomVectorFormVol(0, 0, -1.));
+  // add_vector_form(new CustomVectorFormVol(0, 1, 1.));
+  // add_vector_form(new CustomVectorFormVol(0, 0, -1.));
   // A
   add_vector_form(new CustomVectorFormVolConvection(0, 0));
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
@@ -114,13 +114,13 @@ SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample
 {
   initialization(solvedExample);
 
-
   // b
   if(add_inlet)
   {
     this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 1, true, false));
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 1, diffusivity, s, sigma, inlet, false, 1.));
   }
+
   add_vector_form(new CustomVectorFormVolConvection(0, 0));
   add_vector_form(new CustomVectorFormVolDiffusion(0, 0, diffusivity));
   add_vector_form_DG(new CustomVectorFormInterfaceConvection(0, 0, true, true));
@@ -132,25 +132,24 @@ SmoothingWeakFormResidual::SmoothingWeakFormResidual(SolvedExample solvedExample
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet, true));
 }
 
-
-FullImplicitWeakForm::FullImplicitWeakForm(SolvedExample solvedExample, int explicitSchemeStep, bool add_inlet, std::string inlet , double diffusivity) : WeakForm<double>(1) 
+FullImplicitWeakForm::FullImplicitWeakForm(SolvedExample solvedExample, int explicitSchemeStep, bool add_inlet, std::string inlet , double diffusivity) : WeakForm<double>(1)
 {
   initialization(solvedExample);
   
   // Matrix
   // M
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
-  // A_tilde  
+  // A_tilde
   add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false));
   // A_tilde_surf
   this->add_matrix_form_surf(new CustomMatrixFormSurfConvection(0, 0));
 }
 
-ExactWeakForm::ExactWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, double diffusivity, double s, double sigma, MeshFunctionSharedPtr<double> exact_solution) : WeakForm<double>(1) 
+ExactWeakForm::ExactWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet, double diffusivity, double s, double sigma, MeshFunctionSharedPtr<double> exact_solution) : WeakForm<double>(1)
 {
   initialization(solvedExample);
 
-  // A_tilde  
+  // A_tilde
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
   add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, false));
@@ -164,7 +163,6 @@ ExactWeakForm::ExactWeakForm(SolvedExample solvedExample, bool add_inlet, std::s
   if(add_inlet)
   {
     this->add_vector_form_surf(new CustomVectorFormSurfConvection(0, 0, true, false));
-
     this->vfsurf.back()->set_ext(exact_solution);
     this->add_vector_form_surf(new CustomVectorFormSurfDiffusion(0, 0, diffusivity, s, sigma, inlet, false, 1.));
     this->vfsurf.back()->set_ext(exact_solution);
@@ -177,7 +175,7 @@ MultiscaleWeakForm::MultiscaleWeakForm(SolvedExample solvedExample, bool add_inl
 
   add_matrix_form(new DefaultMatrixFormVol<double>(0, 0));
 
-  // A_tilde  
+  // A_tilde
   add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   add_matrix_form(new CustomMatrixFormVolDiffusion(0, 0, diffusivity));
   add_matrix_form_DG(new CustomMatrixFormInterfaceConvection(0, 0, local));
@@ -197,7 +195,7 @@ MultiscaleWeakForm::MultiscaleWeakForm(SolvedExample solvedExample, bool add_inl
   }
 }
 
-ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet , double diffusivity, double s, double sigma) : WeakForm<double>(1) 
+ExplicitWeakForm::ExplicitWeakForm(SolvedExample solvedExample, bool add_inlet, std::string inlet , double diffusivity, double s, double sigma) : WeakForm<double>(1)
 {
   initialization(solvedExample);
   
@@ -209,7 +207,7 @@ InitialConditionAdvectedCube::InitialConditionAdvectedCube(MeshSharedPtr mesh) :
 {
 }
 
-void InitialConditionAdvectedCube::derivatives(double x, double y, double& dx, double& dy) const 
+void InitialConditionAdvectedCube::derivatives(double x, double y, double& dx, double& dy) const
 {
   dx = 0.;
   dy = 0.;
@@ -223,7 +221,7 @@ double InitialConditionAdvectedCube::value(double x, double y) const
     return 0.0;
 }
 
-Ord InitialConditionAdvectedCube::ord(double x, double y) const 
+Ord InitialConditionAdvectedCube::ord(double x, double y) const
 {
   return Ord(1);
 }
@@ -234,7 +232,7 @@ MeshFunction<double>* InitialConditionAdvectedCube::clone() const
 
 }
 
-void InitialConditionSolidBodyRotation::derivatives(double x, double y, double& dx, double& dy) const 
+void InitialConditionSolidBodyRotation::derivatives(double x, double y, double& dx, double& dy) const
 {
 
   double radius = 0.;
@@ -242,19 +240,19 @@ void InitialConditionSolidBodyRotation::derivatives(double x, double y, double& 
   double x_0 =0.25;
   double y_0= 0.5;	
   radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
-  if( radius<= 1.0) 
-  {		
+  if( radius<= 1.0)
+  {	
     dx = -std::sin(radius*M_PI)/4.0*(M_PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
     dy = -std::sin(radius*M_PI)/4.0*(M_PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
   }
   else
-  {			
+  {	
     //cone
     x_0 = 0.5;
     y_0 = 0.25;
     radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
-    if((radius< 1.0)&&(x!=x_0)) 
-    { 	
+    if((radius< 1.0)&&(x!=x_0))
+    {
       dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*x;
       dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2*y;	
     }
@@ -265,7 +263,7 @@ void InitialConditionSolidBodyRotation::derivatives(double x, double y, double& 
   }
 };
 
-double InitialConditionSolidBodyRotation::value(double x, double y) const 
+double InitialConditionSolidBodyRotation::value(double x, double y) const
 {
 
   double result = 0.0;
@@ -274,8 +272,8 @@ double InitialConditionSolidBodyRotation::value(double x, double y) const
   double x_0 =0.25;
   double y_0= 0.5;	
   radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
-  if( radius<= 1.0) 
-  { 
+  if( radius<= 1.0)
+  {
     result = (1.0+ std::cos(M_PI*radius))/4.0;
     return result;	
   }
@@ -283,8 +281,8 @@ double InitialConditionSolidBodyRotation::value(double x, double y) const
   x_0 = 0.5;
   y_0 = 0.75;
   radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
-  if(radius <= 1) 
-  { 	
+  if(radius <= 1)
+  {
     if(fabs((x-x_0))>= 0.025) return 1.0;
     if(y>=0.85) return 1.0;
   }	
@@ -292,14 +290,14 @@ double InitialConditionSolidBodyRotation::value(double x, double y) const
   x_0 = 0.5;
   y_0 = 0.25;
   radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
-  if(radius<= 1.0) 
-  { 	
+  if(radius<= 1.0)
+  {
     result = 1.0-radius;
   }	
   return result;
 };
 
-Ord InitialConditionSolidBodyRotation::ord(double x, double y) const 
+Ord InitialConditionSolidBodyRotation::ord(double x, double y) const
 {
   return Ord(10);
 };
@@ -309,7 +307,7 @@ MeshFunction<double>* InitialConditionSolidBodyRotation::clone() const
 }
 
 
-void ExactSolutionCircularConvection::derivatives(double x, double y, double& dx, double& dy) const 
+void ExactSolutionCircularConvection::derivatives(double x, double y, double& dx, double& dy) const
 {
   double radius = std::sqrt(std::pow(x - 1, 2.) + std::pow(y, 2.));
   double radius_dx = (2 * x - 2.) / radius;
@@ -325,7 +323,7 @@ void ExactSolutionCircularConvection::derivatives(double x, double y, double& dx
     dx = dy = 0.;
 };
 
-double ExactSolutionCircularConvection::value(double x, double y) const 
+double ExactSolutionCircularConvection::value(double x, double y) const
 {
   double radius = std::sqrt(std::pow(x - 1, 2.) + std::pow(y, 2.));
   if(radius >= 0.2 && radius <= 0.4)
@@ -336,7 +334,7 @@ double ExactSolutionCircularConvection::value(double x, double y) const
     return 0.;
 };
 
-Ord ExactSolutionCircularConvection::ord(double x, double y) const 
+Ord ExactSolutionCircularConvection::ord(double x, double y) const
 {
   return Ord(20);
 };
@@ -354,7 +352,7 @@ void ExactSolutionMovingPeak::set_current_time(double time)
   this->y_hat = -x_0 * std::sin(this->current_time) + y_0 * std::cos(this->current_time);
 }
 
-void ExactSolutionMovingPeak::derivatives(double x, double y, double& dx, double& dy) const 
+void ExactSolutionMovingPeak::derivatives(double x, double y, double& dx, double& dy) const
 {
   double fraction_times_pi = 1. / (4. * this->diffusivity * this->current_time);
   double fn_value = this->value(x, y);
@@ -362,14 +360,14 @@ void ExactSolutionMovingPeak::derivatives(double x, double y, double& dx, double
   dy = -fn_value * 2. * (y - this->y_hat) * fraction_times_pi;
 };
 
-double ExactSolutionMovingPeak::value(double x, double y) const 
+double ExactSolutionMovingPeak::value(double x, double y) const
 {
   double fraction_times_pi = 1. / (4. * this->diffusivity * this->current_time);
   double r_squared = ( (x - this->x_hat) * (x - this->x_hat) ) + ( (y - this->y_hat) * (y - this->y_hat) );
   return fraction_times_pi * std::pow(2.718281828, -r_squared * fraction_times_pi) / M_PI;
 };
 
-Ord ExactSolutionMovingPeak::ord(double x, double y) const 
+Ord ExactSolutionMovingPeak::ord(double x, double y) const
 {
   return Ord(20);
 };
@@ -395,9 +393,8 @@ double ExactSolutionMovingPeak::get_current_time() const
 
 
 
-void InitialConditionBenchmark::derivatives(double x, double y, double& dx, double& dy) const 
+void InitialConditionBenchmark::derivatives(double x, double y, double& dx, double& dy) const
 {
-
   y = 0.;
   double fn_value = this->value(x, y);
   double denominator = 4. * (this->diffusivity * y + 0.001);
@@ -412,7 +409,7 @@ void InitialConditionBenchmark::derivatives(double x, double y, double& dx, doub
   dy = fraction * exponenta * multiplier;
 };
 
-double InitialConditionBenchmark::value(double x, double y) const 
+double InitialConditionBenchmark::value(double x, double y) const
 {
   y = 0.;
   double fraction = 0.1 / (std::sqrt(4. * M_PI * (this->diffusivity * y + 0.001)));
@@ -421,7 +418,7 @@ double InitialConditionBenchmark::value(double x, double y) const
   return fraction * std::exp(enumerator/denominator);
 };
 
-Ord InitialConditionBenchmark::ord(double x, double y) const 
+Ord InitialConditionBenchmark::ord(double x, double y) const
 {
   return Ord(20);
 };
@@ -440,9 +437,8 @@ MeshFunction<double>* InitialConditionBenchmark::clone() const
   return newSln;
 }
 
-void ExactSolutionBenchmark::derivatives(double x, double y, double& dx, double& dy) const 
+void ExactSolutionBenchmark::derivatives(double x, double y, double& dx, double& dy) const
 {
-
   dx = 0.;
   double a = this->diffusivity;
 
@@ -453,7 +449,7 @@ void ExactSolutionBenchmark::derivatives(double x, double y, double& dx, double&
   dy = fraction * exponenta * multiplier;
 };
 
-double ExactSolutionBenchmark::value(double x, double y) const 
+double ExactSolutionBenchmark::value(double x, double y) const
 {
   double fraction = 0.1 / (std::sqrt(4. * M_PI * (this->diffusivity * y + 0.001)));
   double denominator = 4. * (this->diffusivity * y + 0.001);
@@ -462,7 +458,7 @@ double ExactSolutionBenchmark::value(double x, double y) const
 };
 
 
-Ord ExactSolutionBenchmark::ord(double x, double y) const 
+Ord ExactSolutionBenchmark::ord(double x, double y) const
 {
   return Ord(20);
 };
@@ -472,8 +468,7 @@ MeshFunction<double>* ExactSolutionBenchmark::clone() const
 }
 
 
-
-void ExactSolutionBenchmark2::derivatives(double x, double y, double& dx, double& dy) const 
+void ExactSolutionBenchmark2::derivatives(double x, double y, double& dx, double& dy) const
 {
   dx = 0.;
 
@@ -487,7 +482,7 @@ void ExactSolutionBenchmark2::derivatives(double x, double y, double& dx, double
   dy = exponential * ((a_1 / a_2) + (b_1 / b_2));
 };
 
-double ExactSolutionBenchmark2::value(double x, double y) const 
+double ExactSolutionBenchmark2::value(double x, double y) const
 {
   double fraction = 5. / ( 7. * this->sigma(y));
   double denominator = this->l * this->sigma(y);
@@ -500,7 +495,7 @@ double ExactSolutionBenchmark2::value(double x, double y) const
     return std::sqrt(1. + ((4. * this->diffusivity * y) / (this->l * this->l)));
   }
 
-Ord ExactSolutionBenchmark2::ord(double x, double y) const 
+Ord ExactSolutionBenchmark2::ord(double x, double y) const
 {
   return Ord(20);
 };
@@ -546,7 +541,7 @@ Hermes::Algebra::SimpleVector<double>* cut_off_linear_part(double* src_vector, S
     space_coarse->get_element_assembly_list(e, &al_coarse);
     space_fine->get_element_assembly_list(e, &al_fine);
 
-    vector->set(al_coarse.dof[0],  src_vector[al_fine.dof[0]]);
+    vector->set(al_coarse.dof[0], src_vector[al_fine.dof[0]]);
   }
   return vector;
 }
@@ -580,7 +575,7 @@ Hermes::Algebra::SimpleVector<double>* cut_off_means(double* src_vector, SpaceSh
     space_fine->get_element_assembly_list(e, &al_fine);
 
     for(int i = 0; i < al_coarse.cnt; i++)
-      vector->set(al_coarse.dof[i],  src_vector[al_fine.dof[i+1]]);
+      vector->set(al_coarse.dof[i], src_vector[al_fine.dof[i+1]]);
   }
   return vector;
 }
@@ -596,7 +591,7 @@ Hermes::Algebra::SimpleVector<double>* cut_off_means(double* src_vector, SpaceSh
     space_fine->get_element_assembly_list(e, &al_fine);
 
     for(int i = 0; i < al_coarse.cnt; i++)
-      target->set(al_fine.dof[i+1],  src->get(al_coarse.dof[i]));
+      target->set(al_fine.dof[i+1], src->get(al_coarse.dof[i]));
   }
 }
 
@@ -611,7 +606,7 @@ Hermes::Algebra::SimpleVector<double>* cut_off_ders(double* src_vector, SpaceSha
     space_coarse->get_element_assembly_list(e, &al_coarse);
     space_fine->get_element_assembly_list(e, &al_fine);
 
-    vector->set(al_coarse.dof[0],  src_vector[al_fine.dof[0]]);
+    vector->set(al_coarse.dof[0], src_vector[al_fine.dof[0]]);
   }
   return vector;
 }
@@ -626,7 +621,6 @@ Hermes::Algebra::SimpleVector<double>* cut_off_ders(double* src_vector, SpaceSha
     space_coarse->get_element_assembly_list(e, &al_coarse);
     space_fine->get_element_assembly_list(e, &al_fine);
 
-    target->set(al_fine.dof[0],  src->get(al_coarse.dof[0]));
+    target->set(al_fine.dof[0], src->get(al_coarse.dof[0]));
   }
 }
-

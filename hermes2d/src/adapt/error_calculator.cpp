@@ -7,11 +7,11 @@
 //
 // Hermes2D is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
+// along with Hermes2D. If not, see <http://www.gnu.org/licenses/>.
 
 #include "adapt/error_calculator.h"
 #include "function/exact_solution.h"
@@ -154,7 +154,7 @@ namespace Hermes
 
       return okay;
     }
-
+    
     template<typename Scalar>
     void ErrorCalculator<Scalar>::calculate_errors(Hermes::vector<MeshFunctionSharedPtr<Scalar> >& coarse_solutions_, Hermes::vector<MeshFunctionSharedPtr<Scalar> >& fine_solutions_, bool sort_and_store)
     {
@@ -233,12 +233,12 @@ namespace Hermes
           component_norms[i] += *(this->element_references[running_indexer + j].norm);
           
           if(this->errorType == RelativeErrorToElementNorm)
-					   *(this->element_references[running_indexer + j].error) /= *(this->element_references[running_indexer + j].norm);
+*(this->element_references[running_indexer + j].error) /= *(this->element_references[running_indexer + j].norm);
         }
 
         if(this->errorType == RelativeErrorToGlobalNorm)
           for(int j = 0; j < this->element_count[i]; j++)
-					   *(this->element_references[running_indexer + j].error) /= component_norms[i];
+*(this->element_references[running_indexer + j].error) /= component_norms[i];
 
         norms_squared_sum += component_norms[i];
         errors_squared_sum += component_errors[i];

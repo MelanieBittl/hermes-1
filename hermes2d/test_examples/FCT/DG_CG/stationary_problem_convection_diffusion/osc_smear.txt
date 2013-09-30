@@ -1,0 +1,1 @@
+osc_int = 4.161e-01, osc_exp = 2.818e-01, smear_int = 1.250e-01, smear_exp = 1.270e+01, diam=0.044194

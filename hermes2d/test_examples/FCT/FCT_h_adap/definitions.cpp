@@ -1,26 +1,16 @@
 #include "definitions.h"
 //---------------Massematrix-----------
- CustomWeakFormMassmatrix::CustomWeakFormMassmatrix(double time_step,MeshFunctionSharedPtr<double> sln_prev_time) : WeakForm<double>(1) {
- this->set_ext(sln_prev_time);
-		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0, time_step);	
+ CustomWeakFormMassmatrix::CustomWeakFormMassmatrix() : WeakForm<double>(1) {
+		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0);	
 		add_matrix_form(mass_form);
-		VectorFormVolMass* vector_form = new VectorFormVolMass(0, time_step);		
-		add_vector_form(vector_form);
   }
-/* CustomWeakFormMassmatrix::~CustomWeakFormMassmatrix(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-
-	};*/
-
 
     template<typename Real, typename Scalar>
     Scalar CustomMatrixFormVolMassmatrix::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
                        Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 		     Scalar result = Scalar(0); 
 	  for (int i = 0; i < n; i++)
-		result += wt[i] * (u->val[i] * v->val[i])/time_step;
+				result += wt[i] * (u->val[i] * v->val[i]);
 	  return result;
 
     };
@@ -40,40 +30,14 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
   return new CustomMatrixFormVolMassmatrix(*this);
 }
 
-    template<typename Real, typename Scalar>
-    Scalar VectorFormVolMass::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
-	  Scalar result = Scalar(0);
-	  Func<Scalar>* u_prev_time = ext[0];
-	  for (int i = 0; i < n; i++)
-		result += wt[i] *  u_prev_time->val[i] * v->val[i]/time_step;
-	  return result;
-
-    };
-
-   double VectorFormVolMass::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const {
-      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    };
-
-    Ord VectorFormVolMass::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
-      return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
-    };
-   VectorFormVol<double>* VectorFormVolMass::clone() const{
- 			 return new VectorFormVolMass(*this);
-
-		}
+  
 //---------------Konvektion-----------
 
-  CustomWeakFormConvection::CustomWeakFormConvection(MeshFunctionSharedPtr<double> sln_prev_time) : WeakForm<double>(1) {
-   this->set_ext(sln_prev_time);
+  CustomWeakFormConvection::CustomWeakFormConvection() : WeakForm<double>(1) {
     add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
-   VectorFormVolConvection* vector_form = new VectorFormVolConvection(0);
-    add_vector_form(vector_form);
+
   };
-/*	CustomWeakFormConvection::~CustomWeakFormConvection(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-	};*/
+
 
 
 
@@ -104,29 +68,6 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
   return new CustomMatrixFormVolConvection(*this);
 }
 
-
-
-
-    template<typename Real, typename Scalar>
-    Scalar VectorFormVolConvection::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
-  Scalar result = Scalar(0); 
-  Func<Scalar>* u_prev_time = ext[0];
-  for (int i = 0; i < n; i++)
-    result += -wt[i] * ( v->val[i] * (u_prev_time->dx[i] * (0.5- e->y[i]) + u_prev_time->dy[i] *  (e->x[i]-0.5)));
-  return result;
-    };
-     double VectorFormVolConvection::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const {
-      return vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    };
-
-     Ord VectorFormVolConvection::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const {
-      return vector_form<Ord, Ord>(n, wt, u_ext, v, e, ext);
-    };
-
-   VectorFormVol<double>* VectorFormVolConvection::clone() const{
- 			 return new VectorFormVolConvection(*this);
-
-		}
 
 
 //---------Gradient Reconstruction---------------

@@ -12,13 +12,11 @@ using namespace Hermes::Hermes2D;
 						own_mesh = false;     
        };
     
-    ~PrevSolution()
-    {
-    }
+    ~PrevSolution(){    }
     
     virtual MeshFunction<double>* clone();      
 		void set_own_mesh(const MeshSharedPtr mesh);					
-
+  virtual void copy(const MeshFunction<double>* sln);
     
     
   protected:  

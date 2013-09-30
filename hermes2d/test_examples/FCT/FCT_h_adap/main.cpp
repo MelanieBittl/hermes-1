@@ -17,12 +17,13 @@ using namespace Hermes::Solvers;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =2;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 3; 
 const double h_max = 0.1;                       
 const double time_step = 1e-3;                           // Time step.
 
+//const double T_FINAL = 2e-3;
 const double T_FINAL = 2*PI;                       // Time interval length.
  
 const double EPS = 1e-10;
@@ -83,8 +84,8 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double> u_prev_time(new CustomInitialCondition(mesh));	
 	
   // Initialize the weak formulation.
-	CustomWeakFormMassmatrix  massmatrix(time_step, u_prev_time);
-	CustomWeakFormConvection  convection(u_prev_time);
+	CustomWeakFormMassmatrix  massmatrix;
+	CustomWeakFormConvection  convection;
 
   // Initialize views.
 	//ScalarView Lowview("niedriger Ordnung", new WinGeom(500, 500, 500, 400));
@@ -131,11 +132,10 @@ bool mode_3D = true;
 			lowmat_rhs_uni->create(conv_matrix_uni->get_size(),conv_matrix_uni->get_nnz(), conv_matrix_uni->get_Ap(), conv_matrix_uni->get_Ai(),conv_matrix_uni->get_Ax());
 			lowmat_rhs_uni->add_sparse_matrix(diffusion_uni); 
 			if(theta ==1) lowmat_rhs_uni->zero();
-			else lowmat_rhs_uni->multiply_with_Scalar((1.0-theta)); 
+			else lowmat_rhs_uni->multiply_with_Scalar((1.0-theta)*time_step); 
 			//M_L/tau+(1-theta)(K+D)
 			lowmat_rhs_uni->add_sparse_matrix(lumped_matrix_uni);			
-			lumped_matrix_uni->multiply_with_Scalar(time_step);  // M_L
-			mass_matrix_uni->multiply_with_Scalar(time_step);  // massmatrix = M_C
+
 
 
 // Time stepping loop:
@@ -157,13 +157,26 @@ bool mode_3D = true;
 
 	AsmList<double> al;
 
-			DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, space);
-			DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, space);
+		//	DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, space);
+		//	DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, space);
 
-		int ndof;
+		int ndof= space->get_num_dofs();;
     OGProjection<double> ogProjection;
   DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
   AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
+HPAdapt * adapting = new HPAdapt(space,&error_calculator);
+
+
+			double* coeff_vec_uni = new double[ndof];
+			double* coeff_vec_2_uni = new double[ndof];
+			double* P_plus_uni = new double[ndof]; double* P_minus_uni = new double[ndof];
+			double* Q_plus_uni = new double[ndof]; double* Q_minus_uni = new double[ndof];
+			double* R_plus_uni = new double[ndof]; double* R_minus_uni = new double[ndof];	
+			double* lumped_double_uni = new double[ndof];	
+
+		//int* smooth_elem_uni = new int[space->get_mesh()->get_max_element_id()];
+		//int* smooth_dof_uni = new int[ndof];
+
 
 //Timestep loop
 do
@@ -172,42 +185,31 @@ do
  	 mesh->copy(basemesh);
 	space->set_mesh(mesh);	space->set_uniform_order(P_INIT); space->assign_dofs(); 
 	ps=1; 
-dp_mass->set_space(space); 
-dp_convection->set_space(space); 
+//dp_mass->set_space(space); 
+//dp_convection->set_space(space); 
 //Adaptivity loop
 	do
 	{		
-			ndof = space->get_num_dofs();
+
   	Hermes::Mixins::Loggable::Static::info(" adap- step %i, ndof = %i  ", ps, ndof); 	 
 
-			double* coeff_vec = new double[ndof];
-			double* coeff_vec_2 = new double[ndof];
-
-			double* lumped_double = new double[ndof];
-			double* P_plus = new double[ndof]; double* P_minus = new double[ndof];
-			double* Q_plus = new double[ndof]; double* Q_minus = new double[ndof];	
-			double* Q_plus_old = new double[ndof]; double* Q_minus_old = new double[ndof];	
-			double* R_plus = new double[ndof]; double* R_minus = new double[ndof];	
-		int* smooth_elem = new int[space->get_mesh()->get_max_element_id()];
-		int* smooth_dof = new int[ndof];
- 
-			for(int i=0; i<ndof;i++){Q_plus_old[i]=0.;Q_minus_old[i]=0.;P_plus[i]=0.;}
-
 if(ps==1){
-			HPAdapt * adapting = new HPAdapt(space,&error_calculator);
+
 	//--------Project the initial condition on the FE space->coeff_vec	---------------
+  //	Hermes::Mixins::Loggable::Static::info(" projection  "); 	
 			if(ts==1) {
-				Lumped_Projection::project_lumped(space, u_prev_time, coeff_vec,   lumped_matrix_uni);
-    ogProjection.project_global(space,u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
+				Lumped_Projection::project_lumped(space, u_prev_time, coeff_vec_uni,   lumped_matrix_uni);
+    ogProjection.project_global(space,u_prev_time, coeff_vec_2_uni,  HERMES_L2_NORM);
 			}else{
-				 Lumped_Projection::project_lumped(space, u_prev, coeff_vec,  lumped_matrix_uni);
-    ogProjection.project_global(space,u_prev, coeff_vec_2,  HERMES_L2_NORM);
+					adapting->set_space(space);
+				 Lumped_Projection::project_lumped(space, u_prev, coeff_vec_uni,  lumped_matrix_uni);
+    ogProjection.project_global(space,u_prev, coeff_vec_2_uni,  HERMES_L2_NORM);
 
 			}
-			Solution<double>::vector_to_solution(coeff_vec, space, low_sln);
-//		smoothness_indicator(space,low_sln,R_h_1,R_h_2,smooth_elem,smooth_dof,&al,mass_matrix);
+			Solution<double>::vector_to_solution(coeff_vec_uni, space, low_sln);
+//		smoothness_indicator(space,low_sln,R_h_1,R_h_2,smooth_elem_uni,smooth_dof_uni,&al,mass_matrix);
 
-			lumped_flux_limiter(mass_matrix_uni, lumped_matrix_uni, coeff_vec, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus);
+			lumped_flux_limiter(mass_matrix_uni, lumped_matrix_uni, coeff_vec_uni, coeff_vec_2_uni, P_plus_uni, P_minus_uni, Q_plus_uni, Q_minus_uni, R_plus_uni, R_minus_uni);
 
 			//Solution<double>::vector_to_solution(coeff_vec, space, u_new);
 
@@ -215,60 +217,77 @@ if(ps==1){
 			pview.set_title(title);
 			pview.show(u_new);*/
 
-	//-------------rhs lower Order M_L/tau+ (1-theta)(K+D) u^n------------	
+	//-------------rhs lower Order M_L + (1-theta)(K+D) u^n------------	
+  //	Hermes::Mixins::Loggable::Static::info("low_order "); 	
 //coeff_vec = u_old = u_n	
-			lowmat_rhs_uni->multiply_with_vector(coeff_vec, lumped_double); 
+			lowmat_rhs_uni->multiply_with_vector(coeff_vec_uni, lumped_double_uni); 
 
 	//-------------------------solution of lower order------------	
 			  // Solve the linear system and if successful, obtain the solution. M_L/tau u^L=  M_L/tau+ (1-theta)(K+D) u^n
-				for(int i=0; i<ndof;i++) coeff_vec_2[i]=lumped_double[i]*time_step/lumped_matrix_uni->get_Ax()[i];	
+				for(int i=0; i<ndof;i++) coeff_vec_2_uni[i] = lumped_double_uni[i]/lumped_matrix_uni->get_Ax()[i];	
 				//coeff_vec_2 = u_L
-					Solution<double> ::vector_to_solution(coeff_vec_2, space, low_sln);
+					Solution<double> ::vector_to_solution(coeff_vec_2_uni, space, low_sln);
 			changed = h_p_adap(space,mass_matrix_uni,low_sln,R_h_1,R_h_2,adapting,h_min,h_max,elements_to_refine, no_of_refinement_steps,elem_error);	
 
 			//sprintf(title, "nach changed Mesh, ps=%i, ts=%i", ps,ts);
 			//mview.set_title(title);
 			//mview.show(space);		
 			//View::wait(HERMES_WAIT_KEYPRESS);
-		delete adapting;
+
 
 }else{
+//Hermes::Mixins::Loggable::Static::info("init"); 	
+			DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, space);
+			DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, space);
+			ndof = space->get_num_dofs();
+			double* coeff_vec = new double[ndof];
+			double* coeff_vec_2 = new double[ndof];
+
+			double* lumped_double = new double[ndof];
+			double* P_plus = new double[ndof]; double* P_minus = new double[ndof];
+			double* Q_plus = new double[ndof]; double* Q_minus = new double[ndof];	
+			double* R_plus = new double[ndof]; double* R_minus = new double[ndof];	
+		int* smooth_elem = new int[space->get_mesh()->get_max_element_id()];
+		int* smooth_dof = new int[ndof];
 			double* coeff_vec_3 = new double[ndof]; 
+			SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
 
 				//----------------------MassLumping M_L/tau--------------------------------------------------------------------
+//Hermes::Mixins::Loggable::Static::info("mass"); 	
 			dp_mass->assemble(mass_matrix); 	
+//Hermes::Mixins::Loggable::Static::info("mass-lumping");
 			CSCMatrix<double> * lumped_matrix = massLumping(mass_matrix);
 
 			//------------------------artificial DIFFUSION D---------------------------------------
+//Hermes::Mixins::Loggable::Static::info("art. Diffusion"); 	
 			dp_convection->assemble(conv_matrix);
 			CSCMatrix<double> * diffusion = artificialDiffusion(conv_matrix);
 			//--------------------------------------------------------------------------------------------
-
+//Hermes::Mixins::Loggable::Static::info("sum up"); 	
 			lowmat_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
 			lowmat_rhs->add_sparse_matrix(diffusion); 
 			low_matrix->create(lowmat_rhs->get_size(),lowmat_rhs->get_nnz(), lowmat_rhs->get_Ap(), lowmat_rhs->get_Ai(),lowmat_rhs->get_Ax());
 			//(-theta)(K+D)
 			if(theta==0) low_matrix->zero();
-			else	low_matrix->multiply_with_Scalar(-theta);
+			else	low_matrix->multiply_with_Scalar(-theta*time_step);
 			//(1-theta)(K+D)
 			if(theta ==1) lowmat_rhs->zero();
-			else lowmat_rhs->multiply_with_Scalar((1.0-theta));
+			else lowmat_rhs->multiply_with_Scalar((1.0-theta)*time_step);
 			//M_L/tau - theta(D+K)
 			low_matrix->add_sparse_matrix(lumped_matrix);  
 			//M_L/tau+(1-theta)(K+D)
 			lowmat_rhs->add_sparse_matrix(lumped_matrix);	
-			SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
-		high_matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
-			high_matrix->multiply_with_Scalar(-theta);
+
+			high_matrix->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
+			high_matrix->multiply_with_Scalar(-theta*time_step);
 			high_matrix->add_sparse_matrix(mass_matrix);  
 			high_rhs->create(conv_matrix->get_size(),conv_matrix->get_nnz(), conv_matrix->get_Ap(), conv_matrix->get_Ai(),conv_matrix->get_Ax());
-			high_rhs->multiply_with_Scalar((1.0-theta));
+			high_rhs->multiply_with_Scalar((1.0-theta)*time_step);
 			high_rhs->add_sparse_matrix(mass_matrix); 	
 
-			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
-			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 
 	//--------Project the initial condition on the FE space->coeff_vec	---------------
+  	//Hermes::Mixins::Loggable::Static::info(" projection  "); 	
 			if(ts==1) {
 				Lumped_Projection::project_lumped(space, u_prev_time, coeff_vec,lumped_matrix);
     		ogProjection.project_global(space,u_prev_time, coeff_vec_2,  HERMES_L2_NORM);
@@ -278,9 +297,9 @@ if(ps==1){
 			}
 		/*	Solution<double>::vector_to_solution(coeff_vec, space, low_sln);
 		smoothness_indicator(space,low_sln,R_h_1,R_h_2,smooth_elem,smooth_dof,&al,mass_matrix);
-			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus,smooth_dof);*/
+			lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus,smooth_dof);*/
 
-lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus);
+lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus);
 
 			/*Solution<double>::vector_to_solution(coeff_vec, space, u_new);
 			sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
@@ -296,29 +315,31 @@ lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, 
 
 	//-------------------------solution of lower order------------	
 			  // Solve the linear system and if successful, obtain the solution. M_L/tau u^L=  M_L/tau+ (1-theta)(K+D) u^n
-				for(int i=0; i<ndof;i++) coeff_vec_2[i]=lumped_double[i]*time_step/lumped_matrix->get_Ax()[i];	
+				for(int i=0; i<ndof;i++) coeff_vec_2[i]=lumped_double[i]/lumped_matrix->get_Ax()[i];	
 				//coeff_vec_2 = u_L
 
 		//-------------solution of higher order
 			high_rhs->multiply_with_vector(coeff_vec, coeff_vec_3); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_3);
+  //	Hermes::Mixins::Loggable::Static::info("Solving high order"); 		
 			UMFPackLinearMatrixSolver<double> * highOrd = new UMFPackLinearMatrixSolver<double> (high_matrix,vec_rhs);	
-			  try
-  {
-   highOrd->solve();
-  }
-  catch(Hermes::Exceptions::Exception e)
-  {
-    e.print_msg();
-  }	
+			try
+			{
+			 highOrd->solve();
+			}
+			catch(Hermes::Exceptions::Exception e)
+			{
+				e.print_msg();
+			}	
 				u_H = highOrd->get_sln_vector();  
 				//Solution<double> ::vector_to_solution(u_H, space, high_sln);	
 
 
-		//---------------------------------------antidiffusive fluxes-----------------------------------	
+		//---------------------------------------antidiffusive fluxes-----------------------------------
+  	//Hermes::Mixins::Loggable::Static::info("Limiting antidiffusive fluxes"); 		
 	//	smoothness_indicator(space,low_sln,R_h_1,R_h_2,smooth_elem,smooth_dof,&al,mass_matrix);
 //antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec_2,coeff_vec, coeff_vec_3, P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus,smooth_dof);
-antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec_2,coeff_vec, coeff_vec_3, P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus);
+			antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec_2,coeff_vec,coeff_vec_3, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus);
 
 			vec_rhs->zero(); vec_rhs->add_vector(lumped_double);
 			vec_rhs->add_vector(coeff_vec_3);
@@ -338,12 +359,10 @@ antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec
 			 // Visualize the solution.		 
 				sprintf(title, "korrigierte Loesung: Time %3.2f,timestep %i,ps=%i,", current_time,ts,ps);
 				 sview.set_title(title);
-mview.show(space);
+					//mview.show(space);
 					sview.show(u_new);
 
 		u_prev->copy(u_new);
-		u_prev->set_own_mesh(space->get_mesh());
-
 
 		delete newSol;
 		delete highOrd;
@@ -351,34 +370,31 @@ mview.show(space);
 			high_matrix->free();
 			high_rhs->free();
 		  low_matrix->free();
-		delete[] coeff_vec_3; 
+		delete [] coeff_vec_3; 
 			delete lumped_matrix; 
 			delete diffusion;
 
-}//End ps=2			
-
-
-			ps++;	
-	  // Clean up.
 			delete[] lumped_double;
  			delete [] P_plus;
 			delete [] P_minus;
 			delete [] Q_plus;
 			delete [] Q_minus;
-			delete [] Q_plus_old;
-			delete [] Q_minus_old;
 			delete [] R_plus;
 			delete [] R_minus;
 
 			delete[] coeff_vec_2;
 			 delete [] coeff_vec; 
-	 		lowmat_rhs->free();
 		delete [] smooth_elem;
 		delete [] smooth_dof;
+	 		lowmat_rhs->free();
+
+		delete dp_convection;
+		delete dp_mass; 
+
+}//End ps=2			
 
 
-
-
+			ps++;	
 
 	}while(ps<3);		
 
@@ -387,6 +403,8 @@ mview.show(space);
 
   // Increase time step counter
  	ts++;
+
+
 
 }
 while (current_time < T_FINAL);
@@ -402,8 +420,23 @@ while (current_time < T_FINAL);
 calc_error_total(u_prev, u_prev_time,space);
 
 
-		delete dp_convection;
-		delete dp_mass; 
+	//	delete dp_convection;
+	//	delete dp_mass; 
+		delete adapting;
+
+			delete[] lumped_double_uni;
+ 			delete [] P_plus_uni;
+			delete [] P_minus_uni;
+			delete [] Q_plus_uni;
+			delete [] Q_minus_uni;
+			delete [] R_plus_uni;
+			delete [] R_minus_uni;
+
+			delete[] coeff_vec_2_uni;
+			 delete [] coeff_vec_uni; 
+	//	delete [] smooth_elem_uni;
+		//delete [] smooth_dof_uni;
+
 
 	delete mass_matrix;  
 	delete conv_matrix;

@@ -2,12 +2,10 @@
 #include "../euler_util.h"
 #include "algorithms.h"
 
-
 const int polynomialDegree = 2;
 int initialRefinementsCount = 3;
-
 const Algorithm algorithm = Multiscale;
-const SolvedExample solvedExample = Benchmark;
+const SolvedExample solvedExample = CircularConvection;
 const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
@@ -18,20 +16,22 @@ double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
 double diffusivity = 1e-2;
-
 double s = -1;
 double sigma = std::pow(2., (double)(initialRefinementsCount)) * (s == -1 ? 10.0 : (s == 1 ? 10. : 0.));
 
 int main(int argc, char* argv[])
 {
+  if(argc > 1)
+    initialRefinementsCount = atoi(argv[1]);
+  if(argc > 2)
+    diffusivity = atof(argv[2]);
   // test();
   Hermes::Mixins::Loggable logger(true);
   std::stringstream ss;
   ss << "logfile_" << initialRefinementsCount << "_eps=" << diffusivity << "_s=" << s << ".h2d";
   logger.set_logFile_name(ss.str());
   
-  HermesCommonApi.set_integral_param_value(numThreads, 4);
-
+  HermesCommonApi.set_integral_param_value(numThreads, 1);
 
   switch(solvedExample)
   {
@@ -95,7 +95,6 @@ int main(int argc, char* argv[])
   ExactSolutionScalar<double>* previous_initial_condition = NULL;
   ExactSolutionScalar<double>* initial_condition = NULL;
   ExactSolutionScalar<double>* initial_condition_der = NULL;
-
   ExactSolutionScalar<double>* initial_solution = NULL;
   ExactSolutionScalar<double>* exact_sln = NULL;
   switch(solvedExample)
@@ -156,23 +155,37 @@ int main(int argc, char* argv[])
   //if(algorithm == Multiscale)
   {
     logger.info("Multiscale solver");
+    logger.set_verbose_output(true);
     multiscale_decomposition(mesh, solvedExample, polynomialDegree, previous_mean_values, previous_derivatives, diffusivity, s, sigma, time_step_length,
     time_interval_length, solution, exact_solution, &solution_view, &exact_view, logger);
+    logger.set_verbose_output(true);
   }
   cpu_time.tick();
   logger.info("Multiscale total: %s", cpu_time.last_str().c_str());
   logger.info("\n");
   
-  cpu_time.tick();
-  if(algorithm == pMultigrid)
+  //if(algorithm == pMultigrid)
   {
-    logger.info("p-Multigrid solver");
-    p_multigrid(mesh, solvedExample, polynomialDegree, previous_solution, diffusivity, time_step_length, time_interval_length, 
-      solution, exact_solution, &solution_view, &exact_view, s, sigma, logger);
-  }
-  cpu_time.tick();
-  logger.info("p-Multigrid total: %s", cpu_time.last_str().c_str());
+    int steps[4] = { 2, 3, 5, 10 };
+    for(int si = 0; si < 4; si++)
+    {
+      cpu_time.tick();
+      if(si == 0 && initialRefinementsCount >= 4)
+        continue;
+      logger.info("p-Multigrid solver - %i steps", steps[si]);
 
+      MeshFunctionSharedPtr<double> previous_solution_local(new ZeroSolution<double>(mesh));
+  
+      logger.set_verbose_output(true);
+      p_multigrid(mesh, solvedExample, polynomialDegree, previous_solution_local, diffusivity, time_step_length, time_interval_length,
+        solution, exact_solution, &solution_view, &exact_view, s, sigma, logger, steps[si]);
+      logger.set_verbose_output(true);
+        
+      cpu_time.tick();
+      logger.info("p-Multigrid solver - %i steps total: %s", steps[si], cpu_time.last_str().c_str());
+    }
+  }
+  
   View::wait();
   return 0;
 }

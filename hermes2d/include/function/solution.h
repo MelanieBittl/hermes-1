@@ -178,6 +178,11 @@ namespace Hermes
 
       void set_type(SolutionType type) { sln_type = type; };
 
+      int get_num_coeffs()const {return num_coeffs;};
+			int get_num_elems() const {return num_elems;};
+      int get_num_dofs() const {return num_dofs;};
+			int* get_elem_coeffs(int l) const {return elem_coeffs[l];};
+
       /// Monomial coefficient array
       Scalar* mono_coeffs;
       /// Stored element orders in the mathematical sense.

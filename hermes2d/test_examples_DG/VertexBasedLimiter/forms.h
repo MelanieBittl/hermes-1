@@ -3,13 +3,11 @@
 
 typedef double (*scalar_product_with_advection_direction)(double x, double y, double vx, double vy);
 extern scalar_product_with_advection_direction advection_term;
-
 extern bool only_x_der;
-
 
 #pragma region Time derivative forms
 
-class CustomMatrixFormVol : public MatrixFormVol<double>   
+class CustomMatrixFormVol : public MatrixFormVol<double>
 {
 public:
 
@@ -17,7 +15,7 @@ public:
   {
   }
 
-  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double>  **ext) const
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
     for (int i = 0; i < n; i++)
@@ -37,7 +35,7 @@ public:
   double factor;
 };
 
-class CustomVectorFormVol : public VectorFormVol<double>   
+class CustomVectorFormVol : public VectorFormVol<double>
 {
 public:
 
@@ -45,7 +43,7 @@ public:
   {
   }
 
-  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>  **ext) const
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
     for (int i = 0; i < n; i++)
@@ -82,7 +80,7 @@ public:
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
       result += wt[i] * (ext[0]->val[i] - ext[1]->val[i]) * (ext[0]->val[i] - ext[1]->val[i]);
 
     return result;
@@ -100,7 +98,6 @@ public:
   }
 };
 
-
 class ErrorFormVol : public VectorFormVol<double>
 {
 public:
@@ -112,7 +109,7 @@ public:
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
       result += wt[i] * (ext[0]->val[i] - ext[1]->val[i]) * (ext[0]->val[i] - ext[1]->val[i]);
 
     return result;
@@ -130,19 +127,18 @@ public:
   }
 };
 
-
 #pragma endregion
 
 #pragma region Convection forms
 
-class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
+class CustomMatrixFormVolConvection : public MatrixFormVol<double>
 {
 public:
   CustomMatrixFormVolConvection(int i, int j) : MatrixFormVol<double>(i, j) {}
 
 
-  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-    Func<double> *v, Geom<double> *e, Func<double>  **ext) const                  
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u,
+    Func<double> *v, Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
     for (int i = 0; i < n; i++)
@@ -150,8 +146,8 @@ public:
     return -result * wf->get_current_time_step();
   }
 
-  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-    Geom<Ord> *e, Func<Ord> **ext) const 
+  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+    Geom<Ord> *e, Func<Ord> **ext) const
   {
     return u->val[0] * v->dx[0];
   }
@@ -162,7 +158,7 @@ public:
   }
 };
 
-class CustomVectorFormVolConvection : public VectorFormVol<double>   
+class CustomVectorFormVolConvection : public VectorFormVol<double>
 {
 public:
 
@@ -170,7 +166,7 @@ public:
   {
   }
 
-  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>  **ext) const                  
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
     for (int i = 0; i < n; i++)
@@ -178,7 +174,7 @@ public:
     return multiplier * result * wf->get_current_time_step();
   }
 
-  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const 
+  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
   {
     return ext[ext_i]->val[0] * v->dx[0] * e->x[0];
   }
@@ -217,10 +213,9 @@ public:
         if(u->fn_central != NULL && v->fn_central == NULL)
           return 0.;
       }
-
     }
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double a_dot_n = advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
 
@@ -245,9 +240,7 @@ public:
   {
     return new CustomMatrixFormInterfaceConvection(*this);
   }
-
   bool local, inverse;
-
 };
 
 class CustomVectorFormInterfaceConvection : public VectorFormDG<double>
@@ -261,7 +254,7 @@ public:
     Geom<double> *e, DiscontinuousFunc<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double a_dot_n = advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
       if(a_dot_n > 0 && on_K_out)
@@ -301,7 +294,7 @@ public:
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double a_dot_n = advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
       if(a_dot_n >= 0)
@@ -326,7 +319,7 @@ public:
 class CustomVectorFormSurfConvection : public VectorFormSurf<double>
 {
 public:
-  CustomVectorFormSurfConvection(int i, int ext_bnd, bool on_K_in, bool on_K_out, double multiplier = -1.) : 
+  CustomVectorFormSurfConvection(int i, int ext_bnd, bool on_K_in, bool on_K_out, double multiplier = -1.) :
     VectorFormSurf<double>(i), ext_bnd(ext_bnd), on_K_in(on_K_in), on_K_out(on_K_out), multiplier(multiplier)
   {
   };
@@ -335,7 +328,7 @@ public:
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double a_dot_n = advection_term(e->x[i], e->y[i], e->nx[i], e->ny[i]);
 
@@ -369,13 +362,13 @@ public:
 
 #pragma region Diffusion forms
 
-class CustomMatrixFormVolDiffusion : public MatrixFormVol<double>   
+class CustomMatrixFormVolDiffusion : public MatrixFormVol<double>
 {
 public:
   CustomMatrixFormVolDiffusion(int i, int j, double diffusivity) : MatrixFormVol<double>(i, j), diffusivity(diffusivity) {}
 
-  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
-    Func<double> *v, Geom<double> *e, Func<double>  **ext) const                  
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u,
+    Func<double> *v, Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
     for (int i = 0; i < n; i++)
@@ -387,8 +380,8 @@ public:
     return result * wf->get_current_time_step() * diffusivity;
   }
 
-  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
-    Geom<Ord> *e, Func<Ord> **ext) const 
+  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+    Geom<Ord> *e, Func<Ord> **ext) const
   {
     return u->dx[0] * v->dx[0] + u->dy[0] * v->dy[0];
   }
@@ -401,7 +394,7 @@ public:
   double diffusivity;
 };
 
-class CustomVectorFormVolDiffusion : public VectorFormVol<double>   
+class CustomVectorFormVolDiffusion : public VectorFormVol<double>
 {
 public:
 
@@ -409,7 +402,7 @@ public:
   {
   }
 
-  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double>  **ext) const                  
+  double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
     for (int i = 0; i < n; i++)
@@ -420,7 +413,7 @@ public:
     return multiplier * result * wf->get_current_time_step() * diffusivity;
   }
 
-  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const 
+  Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
   {
     return ext[ext_i]->val[0] * v->dx[0] * e->x[0];
   }
@@ -471,7 +464,7 @@ public:
       {
       case true:
         // 0, 0
-        for (int i = 0; i < n; i++) 
+        for (int i = 0; i < n; i++)
         {
           double jump_u = u->val[i];
           double jump_v = v->val[i];
@@ -489,7 +482,7 @@ public:
         break;
       case false:
         // 1, 0
-        for (int i = 0; i < n; i++) 
+        for (int i = 0; i < n; i++)
         {
           double jump_u = u->val[i];
           double jump_v = -v->val_neighbor[i];
@@ -511,7 +504,7 @@ public:
       {
       case true:
         // 0, 1
-        for (int i = 0; i < n; i++) 
+        for (int i = 0; i < n; i++)
         {
           double jump_u = -u->val_neighbor[i];
           double jump_v = v->val[i];
@@ -529,7 +522,7 @@ public:
         break;
       case false:
         // 1, 1
-        for (int i = 0; i < n; i++) 
+        for (int i = 0; i < n; i++)
         {
           double jump_u = -u->val_neighbor[i];
           double jump_v = -v->val_neighbor[i];
@@ -546,7 +539,6 @@ public:
         }
       }
     }
-
 
     return result * wf->get_current_time_step() * diffusivity;
   }
@@ -578,7 +570,7 @@ public:
     Geom<double> *e, DiscontinuousFunc<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double dx = .5 * (ext[this->ext_i]->dx[i] + ext[this->ext_i]->dx_neighbor[i]);
       double dy = only_x_der ? 0. : .5 * (ext[this->ext_i]->dy[i] + ext[this->ext_i]->dy_neighbor[i]);
@@ -620,7 +612,7 @@ public:
     Geom<double> *e, DiscontinuousFunc<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double dx = .5 * ext[this->ext_i]->dx_neighbor[i];
       double dy = only_x_der ? 0. : .5 * ext[this->ext_i]->dy_neighbor[i];
@@ -664,7 +656,7 @@ public:
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double dx = u->dx[i];
       double dy = only_x_der ? 0. : u->dy[i];
@@ -694,7 +686,7 @@ public:
 class CustomVectorFormSurfDiffusion : public VectorFormSurf<double>
 {
 public:
-  CustomVectorFormSurfDiffusion(int i, int ext_bnd, double diffusivity, double s, double sigma, std::string inlet, bool add_grad_u = true, double multiplier = -1.) : 
+  CustomVectorFormSurfDiffusion(int i, int ext_bnd, double diffusivity, double s, double sigma, std::string inlet, bool add_grad_u = true, double multiplier = -1.) :
     VectorFormSurf<double>(i), ext_bnd(ext_bnd), diffusivity(diffusivity), s(s), sigma(sigma), add_grad_u(add_grad_u), multiplier(multiplier)
   {
     this->set_area(inlet);
@@ -704,7 +696,7 @@ public:
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
     {
       double dx = ext[this->ext_bnd]->dx[i];
       double dy = only_x_der ? 0. : ext[this->ext_bnd]->dy[i];
@@ -735,11 +727,10 @@ public:
   bool add_grad_u;
 };
 
-
 class CustomVectorFormSurfDiffusionNeumann : public VectorFormSurf<double>
 {
 public:
-  CustomVectorFormSurfDiffusionNeumann(int i, int ext_bnd, std::string outlet, double diffusivity, MeshFunctionSharedPtr<double> exact_solution) : 
+  CustomVectorFormSurfDiffusionNeumann(int i, int ext_bnd, std::string outlet, double diffusivity, MeshFunctionSharedPtr<double> exact_solution) :
     VectorFormSurf<double>(i), ext_bnd(ext_bnd), diffusivity(diffusivity)
   {
     this->set_area(outlet);
@@ -750,7 +741,7 @@ public:
     Geom<double> *e, Func<double> **ext) const
   {
     double result = 0.;
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
       result += wt[i] * v->val[i] * (e->nx[i] * ext[this->ext_bnd]->dx[i] + e->ny[i] * ext[this->ext_bnd]->dy[i]);
     return diffusivity * result * wf->get_current_time_step();
   }
