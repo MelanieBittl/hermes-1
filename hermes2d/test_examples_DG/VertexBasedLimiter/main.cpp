@@ -3,9 +3,9 @@
 #include "algorithms.h"
 
 const int polynomialDegree = 2;
-int initialRefinementsCount = 3;
+int initialRefinementsCount = 4;
 const Algorithm algorithm = Multiscale;
-const SolvedExample solvedExample = CircularConvection;
+const SolvedExample solvedExample = Benchmark;
 const EulerLimiterType limiter_type = VertexBased;
 
 bool HermesView = true;
@@ -15,18 +15,21 @@ double time_step_length;
 double time_interval_length;
 Hermes::Mixins::Loggable logger(true);
 
-double diffusivity = 1e-2;
+double diffusivity = 1e-1;
 double s = -1;
-double sigma = std::pow(2., (double)(initialRefinementsCount)) * (s == -1 ? 10.0 : (s == 1 ? 10. : 0.));
 
 int main(int argc, char* argv[])
 {
   if(argc > 1)
     initialRefinementsCount = atoi(argv[1]);
   if(argc > 2)
-    diffusivity = atof(argv[2]);
+    diffusivity = (double)atof(argv[2]);
+    
+  double sigma = std::pow(2., (double)(initialRefinementsCount)) * (s == -1 ? 10.0 : (s == 1 ? 10. : 0.));
+
   // test();
   Hermes::Mixins::Loggable logger(true);
+  Hermes::Mixins::Loggable logger_details(true);
   std::stringstream ss;
   ss << "logfile_" << initialRefinementsCount << "_eps=" << diffusivity << "_s=" << s << ".h2d";
   logger.set_logFile_name(ss.str());
@@ -142,50 +145,60 @@ int main(int argc, char* argv[])
   // Visualization.
   ScalarView solution_view("Solution", new WinGeom(0, 0, 600, 350));
   ScalarView exact_view("Exact solution", new WinGeom(610, 0, 600, 350));
-  exact_view.show(exact_solution);
+  //exact_view.show(exact_solution);
   
   // Exact solver solution
   SpaceSharedPtr<double> space(new L2Space<double>(mesh, polynomialDegree, new L2ShapesetTaylor));
-  logger.info("Exact solver");
-  solve_exact(solvedExample, space, diffusivity, s, sigma, exact_solution, initial_sln, time_step_length, logger);
-  logger.info("\n");
+  logger_details.info("Exact solver");
+  solve_exact(solvedExample, space, diffusivity, s, sigma, exact_solution, initial_sln, time_step_length, logger, logger_details);
+  logger_details.info("\n");
   
   Hermes::Mixins::TimeMeasurable cpu_time;
   cpu_time.tick();
   //if(algorithm == Multiscale)
   {
     logger.info("Multiscale solver");
-    logger.set_verbose_output(true);
+    
     multiscale_decomposition(mesh, solvedExample, polynomialDegree, previous_mean_values, previous_derivatives, diffusivity, s, sigma, time_step_length,
-    time_interval_length, solution, exact_solution, &solution_view, &exact_view, logger);
-    logger.set_verbose_output(true);
+    time_interval_length, solution, exact_solution, &solution_view, &exact_view, logger, logger_details);
+    
+    cpu_time.tick();
+    logger.info("Multiscale total: %f", cpu_time.last());
+    logger.info("\n");
   }
-  cpu_time.tick();
-  logger.info("Multiscale total: %s", cpu_time.last_str().c_str());
-  logger.info("\n");
   
   //if(algorithm == pMultigrid)
   {
-    int steps[4] = { 2, 3, 5, 10 };
+    int steps[4] = { 2, 3, 5, 10};
     for(int si = 0; si < 4; si++)
     {
       cpu_time.tick();
-      if(si == 0 && initialRefinementsCount >= 4)
-        continue;
       logger.info("p-Multigrid solver - %i steps", steps[si]);
 
       MeshFunctionSharedPtr<double> previous_solution_local(new ZeroSolution<double>(mesh));
   
-      logger.set_verbose_output(true);
       p_multigrid(mesh, solvedExample, polynomialDegree, previous_solution_local, diffusivity, time_step_length, time_interval_length,
-        solution, exact_solution, &solution_view, &exact_view, s, sigma, logger, steps[si]);
-      logger.set_verbose_output(true);
+        solution, exact_solution, &solution_view, &exact_view, s, sigma, logger, logger_details, steps[si]);
         
       cpu_time.tick();
-      logger.info("p-Multigrid solver - %i steps total: %s", steps[si], cpu_time.last_str().c_str());
+      logger.info("p-Multigrid solver - %i steps total: %f", steps[si], cpu_time.last());
     }
   }
   
-  View::wait();
+  if(false)
+  {
+    cpu_time.tick();
+    logger.info("only Smoothing solver");
+
+    smoothing(mesh, solvedExample, polynomialDegree, previous_solution, diffusivity, time_step_length, time_interval_length,
+      solution, exact_solution, &solution_view, &exact_view, s, sigma, logger, logger_details, 1);
+      
+    cpu_time.tick();
+    logger.info("only Smoothing total: %s", cpu_time.last_str().c_str());
+  }
+  
+  //View::wait();
   return 0;
 }
+
+
