@@ -14,11 +14,10 @@ namespace Hermes
       if(shapeset == NULL)
       {
         this->shapeset = new ShapesetBB(p_init);
-				//this->shapeset = new H1Shapeset;
         this->own_shapeset = true;
       }
 
-     // this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
+      this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
 
       // set uniform poly order in elements
       if(p_init < 1) 
@@ -39,6 +38,13 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    SpaceBB<Scalar>::SpaceBB(MeshSharedPtr mesh, EssentialBCs<Scalar>* essential_bcs, int p_init, Shapeset* shapeset)
+      : Space<Scalar>(mesh, shapeset, essential_bcs)
+    {
+      init(shapeset, p_init);
+    }
+
+    template<typename Scalar>
     SpaceBB<Scalar>::~SpaceBB()
     {
       if(this->own_shapeset)
@@ -50,7 +56,7 @@ namespace Hermes
     {
       Space<Scalar>::copy(space, new_mesh);
 
-     // this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
+      this->precalculate_projection_matrix(2, this->proj_mat, this->chol_p);
 
       this->assign_dofs();
     }
@@ -210,6 +216,73 @@ namespace Hermes
         for (int j = 0, dof = nd->dof; j < nd->n; j++, dof += this->stride)
           al->add_triplet(this->shapeset->get_constrained_edge_index(surf_num, j + 2, ori, part, e->get_mode()), dof, 1.0);
       }
+    }
+ template<typename Scalar>
+    Scalar* SpaceBB<Scalar>::get_bc_projection(SurfPos* surf_pos, int order, EssentialBoundaryCondition<Scalar> *bc)
+    {
+      assert(order >= 1);
+      Scalar* proj = new Scalar[order + 1];
+
+      if(bc->get_value_type() == EssentialBoundaryCondition<Scalar>::BC_CONST)
+      {
+        proj[0] = proj[1] = bc->value_const;
+      } // If the BC is not constant.
+      else if(bc->get_value_type() == EssentialBoundaryCondition<Scalar>::BC_FUNCTION)
+      {
+        surf_pos->t = surf_pos->lo;
+        // Find out the (x, y) coordinates for the first endpoint.
+        double x, y, n_x, n_y, t_x, t_y;
+        Nurbs* nurbs = surf_pos->base->is_curved() ? surf_pos->base->cm->nurbs[surf_pos->surf_num] : NULL;
+        CurvMap::nurbs_edge(surf_pos->base, nurbs, surf_pos->surf_num, 2.0*surf_pos->t - 1.0, x, y, n_x, n_y, t_x, t_y);
+        // Calculate.
+        proj[0] = bc->value(x, y, n_x, n_y, t_x, t_y);
+        surf_pos->t = surf_pos->hi;
+        // Find out the (x, y) coordinates for the second endpoint.
+        CurvMap::nurbs_edge(surf_pos->base, nurbs, surf_pos->surf_num, 2.0*surf_pos->t - 1.0, x, y, n_x, n_y, t_x, t_y);
+        // Calculate.
+        proj[1] = bc->value(x, y, n_x, n_y, t_x, t_y);
+      }
+
+      if(order-- > 1)
+      {
+        Quad1DStd quad1d;
+        Scalar* rhs = proj + 2;
+        int mo = quad1d.get_max_order();
+        double2* pt = quad1d.get_points(mo);
+
+        // get boundary values at integration points, construct rhs
+        for (int i = 0; i < order; i++)
+        {
+          rhs[i] = 0.0;
+          int ii = this->shapeset->get_edge_index(0, 0, i + 2, surf_pos->base->get_mode());
+          for (int j = 0; j < quad1d.get_num_points(mo); j++)
+          {
+            double t = (pt[j][0] + 1) * 0.5, s = 1.0 - t;
+            Scalar l = proj[0] * s + proj[1] * t;
+            surf_pos->t = surf_pos->lo * s + surf_pos->hi * t;
+
+            if(bc->get_value_type() == EssentialBoundaryCondition<Scalar>::BC_CONST)
+              rhs[i] += pt[j][1] * this->shapeset->get_fn_value(ii, pt[j][0], -1.0, 0, surf_pos->base->get_mode())
+              * (bc->value_const - l);
+            // If the BC is not constant.
+            else if(bc->get_value_type() == EssentialBoundaryCondition<Scalar>::BC_FUNCTION)
+            {
+              // Find out the (x, y) coordinate.
+              double x, y, n_x, n_y, t_x, t_y;
+              Nurbs* nurbs = surf_pos->base->is_curved() ? surf_pos->base->cm->nurbs[surf_pos->surf_num] : NULL;
+              CurvMap::nurbs_edge(surf_pos->base, nurbs, surf_pos->surf_num, 2.0*surf_pos->t - 1.0, x, y, n_x, n_y, t_x, t_y);
+              // Calculate.
+              rhs[i] += pt[j][1] * this->shapeset->get_fn_value(ii, pt[j][0], -1.0, 0, surf_pos->base->get_mode())
+                * (bc->value(x, y, n_x, n_y, t_x, t_y) - l);
+            }
+          }
+        }
+
+        // solve the system using a precalculated Cholesky decomposed projection matrix
+        cholsl(this->proj_mat, order, this->chol_p, rhs, rhs);
+      }
+
+      return proj;
     }
 
 
@@ -444,6 +517,7 @@ namespace Hermes
       }
     }
 
+
     template<typename Scalar>
     void SpaceBB<Scalar>::update_constraints()
     {
@@ -451,7 +525,37 @@ namespace Hermes
       for_all_base_elements(e, this->mesh)
         update_constrained_nodes(e, NULL, NULL, NULL, NULL);
     }
- 
+
+    template<typename Scalar>
+    void SpaceBB<Scalar>::precalculate_projection_matrix(int nv, double**& mat, double*& p)
+    {
+      int n = this->shapeset->get_max_order() + 1 - nv;
+      mat = new_matrix<double>(n, n);
+      int component = (get_type() == HERMES_HDIV_SPACE) ? 1 : 0;
+
+      Quad1DStd quad1d;
+      for (int i = 0; i < n; i++)
+      {
+        for (int j = i; j < n; j++)
+        {
+          int o = i + j + 4;
+          double2* pt = quad1d.get_points(o);
+          int ii = this->shapeset->get_edge_index(0, 0, i + nv, HERMES_MODE_QUAD);
+          int ij = this->shapeset->get_edge_index(0, 0, j + nv, HERMES_MODE_QUAD);
+          double val = 0.0;
+          for (int k = 0; k < quad1d.get_num_points(o); k++)
+          {
+            val += pt[k][1] * this->shapeset->get_fn_value_order(this->shapeset->get_max_order() ,ii, pt[k][0], -1.0, component, HERMES_MODE_QUAD)
+              * this->shapeset->get_fn_value_order(this->shapeset->get_max_order() ,ij, pt[k][0], -1.0, component, HERMES_MODE_QUAD);
+          }
+          mat[i][j] = val;
+        }
+      }
+
+      p = new double[n];
+      choldc(mat, n, p);
+    }
+
     template HERMES_API class SpaceBB<double>;
     template HERMES_API class SpaceBB<std::complex<double> >;
   }

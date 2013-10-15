@@ -99,7 +99,9 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
   };
 
 
-
+CustomWeakFormInterface::CustomWeakFormInterface(): WeakForm<double>(1) {
+	 add_matrix_form_DG(new CustomMatrixFormInterface(0, 0)); 
+  };
 
 
 CustomWeakFormSurface::CustomWeakFormSurface(): WeakForm<double>(1) {
@@ -139,7 +141,7 @@ MatrixFormSurf<double>* CustomMatrixFormSurface::clone() const
 }
 
 
-//convection------------
+//---------------convection------------
     template<typename Real, typename Scalar>
     Scalar CustomMatrixFormVolConvection::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
                        Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
@@ -148,9 +150,7 @@ MatrixFormSurf<double>* CustomMatrixFormSurface::clone() const
   for (int i = 0; i < n; i++)
 {		Real v_x = (0.5- e->y[i]); 
  		Real v_y = (e->x[i]-0.5) ; 
-    //result += -wt[i] * (v->val[i] *(u->dx[i] * (v_x) + u->dy[i] * (v_y) ));
-
-result += wt[i]*u->val[i]*(v->dx[i]*v_x+ v->dy[i]*v_y); //mit surface
+		result += wt[i]*u->val[i]*(v->dx[i]*v_x+ v->dy[i]*v_y);
 
 }
   return result;
@@ -170,6 +170,51 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
    MatrixFormVol<double>* CustomMatrixFormVolConvection::clone() const
 {
   return new CustomMatrixFormVolConvection(*this);
+}
+
+//-----------interface-------------------------
+template<typename Real, typename Scalar>
+Scalar CustomMatrixFormInterface::matrix_form(int n, double *wt, DiscontinuousFunc<Scalar>** u_ext, DiscontinuousFunc<Real> *u, DiscontinuousFunc<Real> *v, Geom<Real> *e, DiscontinuousFunc<Scalar> **ext) const
+{
+  Scalar result = Scalar(0);
+  for (int i = 0; i < n; i++) 
+  {
+		Real v_x = (0.5- e->y[i]); 
+ 		Real v_y = (e->x[i]-0.5) ; 
+    Real a_dot_n = (v_x*e->nx[i]+ v_y*e->ny[i]);
+    Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
+    if(u->fn_central == NULL)
+      result += wt[i] * upwind_flux(Real(0), u->val_neighbor[i], a_dot_n) * jump_v;
+    else
+      result += wt[i] * upwind_flux(u->val[i], Real(0), a_dot_n) * jump_v;
+      
+  }
+  return (-result);
+}
+
+double CustomMatrixFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e, DiscontinuousFunc<double> **ext) const
+{
+  return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+}
+
+Ord CustomMatrixFormInterface::ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, DiscontinuousFunc<Ord> *u, DiscontinuousFunc<Ord> *v, Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const
+{
+  return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+}
+
+MatrixFormDG<double>* CustomMatrixFormInterface::clone() const
+{
+  return new CustomMatrixFormInterface(*this);
+}
+
+double CustomMatrixFormInterface::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
+{
+  return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
+}
+
+Ord CustomMatrixFormInterface::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
+{
+  return a_dot_n * (u_cent + u_neib);
 }
 
 //---------Streamline Diffusion---------------
@@ -381,15 +426,15 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
       
    	double radius = 0.;
         //hump
-	//double x_0 =0.25;
-double x_0 =0.5;
+	double x_0 =0.25;
+//double x_0 =0.5;
 	double y_0= 0.5;	
 	radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if( radius<= 1.0) {		
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
 	}
-	/*else{			
+	else{			
 		//cone
 		x_0 = 0.5;
 		y_0 = 0.25;
@@ -397,11 +442,11 @@ double x_0 =0.5;
 		if((radius< 1.0)&&(x!=x_0)) { 	
 				dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 			dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);	
-		}*/
+		}
 		else{dx=0.; dy=0.;
 		}	
   
-	//}
+	}
 		
 
 };
@@ -411,15 +456,15 @@ double x_0 =0.5;
      double result = 0.0;
 	double radius;
         //hump
-	//double x_0 =0.25;
-double x_0 =0.5;
+	double x_0 =0.25;
+//double x_0 =0.5;
 	double y_0= 0.5;	
 	radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if( radius<= 1.0) { 
 		 result = (1.0+ std::cos(PI*radius))/4.0;
 		return result;	
 	}
-/*	//slotted cylinder
+	//slotted cylinder
 x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
@@ -433,7 +478,7 @@ x_0 = 0.5;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius<= 1.0) { 	
 		result = 1.0-radius;
-	}	*/
+	}	
        return result;
 };
 

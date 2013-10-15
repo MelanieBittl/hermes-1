@@ -457,7 +457,7 @@ namespace Hermes
       /// Used for bc projection.
       Hermes::vector<void*> bc_data;
 
-      void precalculate_projection_matrix(int nv, double**& mat, double*& p);
+      virtual void precalculate_projection_matrix(int nv, double**& mat, double*& p);
       void update_edge_bc(Element* e, SurfPos* surf_pos);
 
       /// Called by Space to update constraining relationships between shape functions due

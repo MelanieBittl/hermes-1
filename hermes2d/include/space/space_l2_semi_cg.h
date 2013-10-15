@@ -3,6 +3,7 @@
 
 #include "space.h"
 #include "../shapeset/shapeset_l2_semi.h"
+#include "../shapeset/shapeset_bb.h"
 namespace Hermes
 {
 namespace Hermes2D

@@ -50,6 +50,8 @@ namespace Hermes
     typedef double (*shape_fn_bb)(double, double, int);
    virtual double get_value(int n, int index, double x, double y, int component, ElementMode2D mode);
 
+virtual double get_fn_value_order(int order, int index, double x, double y, int component, ElementMode2D mode);
+
       virtual Shapeset* clone() { return new ShapesetBB(space_order); };
       virtual SpaceType get_space_type() const { return HERMES_H1_SPACE; }
       virtual int get_max_index(ElementMode2D mode);

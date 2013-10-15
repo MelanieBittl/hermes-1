@@ -78,9 +78,9 @@ namespace Hermes
     template<typename Scalar>
     void L2_SEMI_CG_Space<Scalar>::set_shapeset(Shapeset *shapeset)
     {
-        if((this->shapeset!=NULL)&& (this->own_shapeset))
-     delete this->shapeset;
-			if(shapeset->get_id()==3)
+     if((this->shapeset!=NULL)&& (this->own_shapeset))
+     			delete this->shapeset;
+			if(shapeset->get_id()<10)
       {
         this->shapeset = shapeset;
         this->own_shapeset = false;

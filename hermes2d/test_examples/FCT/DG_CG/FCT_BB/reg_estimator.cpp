@@ -7,6 +7,9 @@ int max(int a, int b){
 		else a;	
 }
 
+ElementMode2D mode = HERMES_MODE_TRIANGLE;
+
+
 //Fuer approx. Loesungen: Solution<double>* sln
 
 double linear_approx(Element* e, double x_i, double y_i,double x_c, double y_c,Solution<double>* sln, Solution<double>* R_h_1,Solution<double>* R_h_2){
@@ -14,6 +17,7 @@ double linear_approx(Element* e, double x_i, double y_i,double x_c, double y_c,S
 			//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 			double x_c_ref = 0.;
 			double y_c_ref = 0.; 
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
 
 			double u_h_x_c = sln->get_ref_value(e, x_c_ref, y_c_ref, 0, 0);
 			double u_h_hat = u_h_x_c + R_h_1->get_ref_value(e, x_c_ref, y_c_ref, 0, 0)*(x_i-x_c)+R_h_2->get_ref_value(e, x_c_ref, y_c_ref, 0, 0)*(y_i-y_c);
@@ -26,6 +30,7 @@ double linear_approx_dx(Element* e, double x_i, double y_i,double x_c, double y_
 	//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 		double x_c_ref = 0.;
 		double y_c_ref = 0.; 
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
 
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
 
@@ -41,6 +46,7 @@ double linear_approx_dy(Element* e, double x_i, double y_i,double x_c, double y_
 	//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 		double x_c_ref = 0.;
 		double y_c_ref = 0.; 
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
 
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2);
 
@@ -58,7 +64,7 @@ double linear_approx(Element* e, double x_i, double y_i,double x_c, double y_c,S
 			//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 			double x_c_ref = 0.;
 			double y_c_ref = 0.; 
-
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
 			double u_h_x_c = sln->get_ref_value(e, x_c_ref, y_c_ref, 0, 0);
 
 double u_h_hat = u_h_x_c + sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(x_i-x_c)+sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2)*(y_i-y_c);
@@ -71,7 +77,7 @@ double linear_approx_dx(Element* e, double x_i, double y_i,double x_c, double y_
 	//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 		double x_c_ref = 0.;
 		double y_c_ref = 0.; 
-
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
 
 		double u_h_hat = d_u_h_x_c + sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 3)*(x_i-x_c)															 + sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 5)*(y_i-y_c);
@@ -84,7 +90,7 @@ double linear_approx_dy(Element* e, double x_i, double y_i,double x_c, double y_
 	//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 		double x_c_ref = 0.;
 		double y_c_ref = 0.; 
-
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
 		double d_u_h_x_c = sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2);
 
 double u_h_hat = d_u_h_x_c + sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 5)*(x_i-x_c)		        															+sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 4)*(y_i-y_c);
@@ -101,8 +107,8 @@ void smoothness_indicator(SpaceSharedPtr<double> space,MeshFunctionSharedPtr<dou
 
 	int ndof = space->get_num_dofs();
 
-
-Solution<double>* sln = new Solution<double>; sln = static_cast<Solution<double>* > (sln_fct->clone());
+Solution<double>* sln = new Solution<double>; 
+sln = static_cast<Solution<double>* > (sln_fct->clone());
 
 
 //---------------Elemente mit Vertex(dof) bestimmen
@@ -113,10 +119,15 @@ Solution<double>* sln = new Solution<double>; sln = static_cast<Solution<double>
 				//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 		double x_c_ref = 0.;
 		double y_c_ref = 0.; 
-		Element* e =NULL; 
-		int* index = new int[4];
-		for(int i =0;i<4;i++)  index[i] =  space->get_shapeset()->get_vertex_index(i,HERMES_MODE_QUAD);
-
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
+		Element* e =NULL; int* index;
+	if(mode == HERMES_MODE_QUAD){
+		index = new int[4];
+		for(int i =0;i<4;i++)  index[i] =  space->get_shapeset()->get_vertex_index(i,mode);
+	}else{
+		index = new int[3];
+		for(int i =0;i<3;i++)  index[i] =  space->get_shapeset()->get_vertex_index(i,mode);
+	}
 	for_all_active_elements(e, space->get_mesh()){
 			u_c[e->id]= sln->get_ref_value(e, x_c_ref, y_c_ref, 0, 0);
 			d_u_c_dx[e->id]= sln->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
@@ -295,9 +306,16 @@ Solution<double>* R_h_2 = new Solution<double>; R_h_2= static_cast<Solution<doub
 				//Mittelpunkt des Referenzelements (Einheitsquadrat)	
 		double x_c_ref = 0.;
 		double y_c_ref = 0.; 
+	if(mode == HERMES_MODE_TRIANGLE){x_c_ref = -2./3.; y_c_ref = -2./3.;}
 		Element* e =NULL; 
 		int* index = new int[4];
-		for(int i =0;i<4;i++)  index[i] =  space->get_shapeset()->get_vertex_index(i,HERMES_MODE_QUAD);
+	if(mode == HERMES_MODE_QUAD){
+		index = new int[4];
+		for(int i =0;i<4;i++)  index[i] =  space->get_shapeset()->get_vertex_index(i,mode);
+	}else{
+		index = new int[3];
+		for(int i =0;i<3;i++)  index[i] =  space->get_shapeset()->get_vertex_index(i,mode);
+	}
 
 	for_all_active_elements(e, space->get_mesh()){
 			u_c[e->id]= sln->get_ref_value(e, x_c_ref, y_c_ref, 0, 0);

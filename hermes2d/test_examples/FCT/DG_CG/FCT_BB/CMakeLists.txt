@@ -1,4 +1,4 @@
-project(DG_CG_solid)
+project(FCT_BB)
 
 add_executable(${PROJECT_NAME} main.cpp definitions.cpp lumped_projection.cpp)
 

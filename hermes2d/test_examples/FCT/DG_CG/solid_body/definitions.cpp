@@ -68,7 +68,7 @@ WeakForm<double>* CustomWeakForm::clone() const
   return new CustomWeakForm(*this);
 }
 
-//---------------convection-----------
+//---------------mass+convection-----------
 
     template<typename Real, typename Scalar>
     Scalar CustomWeakForm::CustomMatrixFormVolConvection::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
@@ -77,10 +77,10 @@ WeakForm<double>* CustomWeakForm::clone() const
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
 {
-	Real v_x =Real(1.);
-	Real v_y =Real(1.);
-		//Real v_x = (0.5- e->y[i]); 
- 	//	Real v_y = (e->x[i]-0.5) ; 
+	//Real v_x =Real(1.);
+	//Real v_y =Real(1.);
+		Real v_x = (0.5- e->y[i]); 
+ 		Real v_y = (e->x[i]-0.5) ; 
 
 		result += wt[i] * (u->val[i] *(v->val[i]/time_step - theta*(v->dx[i]*v_x+ v->dy[i]*v_y)));
 
@@ -117,10 +117,10 @@ Scalar CustomWeakForm::Streamline::matrix_form(int n, double *wt, Func<Scalar> *
 		double abs_v =calc_abs_v(elem);
 for (int i = 0; i < n; i++)
 {
-	Real v_x =Real(1.);
- 	Real v_y =Real(1.);
-		//Real v_x = (0.5- e->y[i]); 
- 		//Real v_y = (e->x[i]-0.5) ; 
+	//Real v_x =Real(1.);
+ //	Real v_y =Real(1.);
+		Real v_x = (0.5- e->y[i]); 
+ 		Real v_y = (e->x[i]-0.5) ; 
 		//Real abs_v = Hermes::sqrt(v_x*v_x+v_y*v_y);
 Real tau = diam/(2.*abs_v);
   result += wt[i] *(tau*(u->dx[i] * v_x + u->dy[i] * v_y ) *(v->dx[i] * v_x + v->dy[i] * v_y ));
@@ -158,10 +158,10 @@ double CustomWeakForm::CustomMatrixFormSurface::value(int n, double *wt, Func<do
   double result = 0.;
 	for (int i = 0; i < n; i++)
 	{
-			double v_x =  1.; 
-			double v_y = 1.;
-			//double v_x =(0.5- e->y[i]);
-			//double v_y = (e->x[i]-0.5) ; 
+			//double v_x =  1.; 
+			//double v_y = 1.;
+			double v_x =(0.5- e->y[i]);
+			double v_y = (e->x[i]-0.5) ; 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
    result += wt[i] *static_cast<CustomWeakForm*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
 		
@@ -190,10 +190,10 @@ Scalar CustomWeakForm::CustomMatrixFormInterface::matrix_form(int n, double *wt,
   Scalar result = Scalar(0);
   for (int i = 0; i < n; i++) 
   {
-	Real v_x =Real(1.);
- 	Real v_y =Real(1.);
-		//Real v_x = (0.5- e->y[i]); 
- 		//Real v_y = (e->x[i]-0.5) ; 
+	//Real v_x =Real(1.);
+ 	//Real v_y =Real(1.);
+		Real v_x = (0.5- e->y[i]); 
+ 		Real v_y = (e->x[i]-0.5) ; 
     Real a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     Real jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
     if(u->fn_central == NULL)
@@ -233,8 +233,10 @@ DiscontinuousFunc<double>* exact = ext[0];
 
   for (int i = 0; i < n; i++) 
   {
-			double v_x = 1.;
-			double v_y = 1.; 
+			//double v_x = 1.;
+			//double v_y = 1.; 
+		double v_x = (0.5- e->y[i]); 
+ 		double v_y = (e->x[i]-0.5) ; 
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     double jump_v =  v->val[i];
 
@@ -267,21 +269,23 @@ double CustomWeakForm::CustomVectorFormSurface::value(int n, double *wt, Func<do
    for (int i = 0; i < n; i++)
 	{ 
 		 //inlet
-			double v_x = 1.;
-			double v_y = 1.; 
+			//double v_x = 1.;
+		//	double v_y = 1.; 
+		double v_x = (0.5- e->y[i]); 
+ 		double v_y = (e->x[i]-0.5) ; 
 			double x = e->x[i]; 
 			double y = e->y[i];
 			double time = static_cast<CustomWeakForm*>(wf)->get_current_time(); 
 			double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
-			double exact = 0;
-				if(x==0)				
+			//double exact = 0;
+		/*		if(x==0)				
 					exact = -Hermes::sin(2*PI*time)*Hermes::sin(2*PI*(y-time));
 			if(y==0)		
 					exact = -Hermes::sin(2*PI*time)*Hermes::sin(2*PI*(x-time));
   			 
-			result -= wt[i] *exact* a_dot_n * v->val[i];
+			result -= wt[i] *exact* a_dot_n * v->val[i];*/
 				
-			//result -= wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(0, exact->val[i], a_dot_n) * v->val[i];
+			result -= wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(0, exact->val[i], a_dot_n) * v->val[i];
 
 	}
   
@@ -306,10 +310,10 @@ double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Fun
  	Func<double>* exact = ext[0];
    for (int i = 0; i < n; i++)
 		{ 
-			double v_x =  1.; 
-			double v_y = 1.;
-			//double v_x =(0.5- e->y[i]);
-			//double v_y = (e->x[i]-0.5) ; 
+			//double v_x =  1.; 
+			//double v_y = 1.;
+			double v_x =(0.5- e->y[i]);
+			double v_y = (e->x[i]-0.5) ; 
 			result += wt[i] *exact->val[i]* (v->val[i]/time_step +(1-theta)*( v_x*v->dx[i] + v_y*v->dy[i])) ;
 		}
  return result;
@@ -349,6 +353,39 @@ Ord CustomWeakForm::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
 }
 
 
+//---------------Massematrix-----------
+ CustomWeakFormMassmatrix::CustomWeakFormMassmatrix() : WeakForm<double>(1) {
+
+		CustomMatrixFormVolMassmatrix* mass_form= new CustomMatrixFormVolMassmatrix(0, 0);	
+		add_matrix_form(mass_form);
+
+  }
+
+
+    template<typename Real, typename Scalar>
+    Scalar CustomMatrixFormVolMassmatrix::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
+		     Scalar result = Scalar(0); 
+	  for (int i = 0; i < n; i++)
+		result += wt[i] * (u->val[i] * v->val[i]);
+	  return result;
+
+    };
+
+   double CustomMatrixFormVolMassmatrix::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const {
+      return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
+    };
+
+    Ord CustomMatrixFormVolMassmatrix::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, Func<Ord> **ext) const {
+      return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
+    };
+
+MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
+{
+  return new CustomMatrixFormVolMassmatrix(*this);
+}
 
 
 
@@ -392,10 +429,10 @@ double StreamlineDiffusionNorm::value(int n, double *wt, Func<double> *u, Func<d
 
    double result = double(0);
   for (int i = 0; i < n; i++)
-	{			double v_x =  1.; 
-			double v_y = 1.;
-			//double v_x =(0.5- e->y[i]);
-			//double v_y = (e->x[i]-0.5) ; 
+	{			//double v_x =  1.; 
+			//double v_y = 1.;
+			double v_x =(0.5- e->y[i]);
+			double v_y = (e->x[i]-0.5) ; 
     result += wt[i] * (v_x*u->dx[i] + v_y*u->dy[i]) * (v_x*v->dx[i] + v_y*v->dy[i]);
 	}
   return (result*diam/(abs_v));
@@ -408,10 +445,10 @@ double CustomNormFormSurf::value(int n, double *wt, Func<double> *u, Func<double
    double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-			double v_x =  1.; 
-			double v_y = 1.;
-			//double v_x =(0.5- e->y[i]);
-			//double v_y = (e->x[i]-0.5) ; 
+			//double v_x =  1.; 
+		//	double v_y = 1.;
+			double v_x =(0.5- e->y[i]);
+			double v_y = (e->x[i]-0.5) ; 
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
     result += wt[i] * u->val[i] * v->val[i] * a_dot_n;
 	}
@@ -424,10 +461,10 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
   double result = double(0);
   for (int i = 0; i < n; i++)
 	{
-			double v_x =  1.; 
-			double v_y = 1.;
-			//double v_x =(0.5- e->y[i]);
-			//double v_y = (e->x[i]-0.5) ; 
+			//double v_x =  1.; 
+			//double v_y = 1.;
+			double v_x =(0.5- e->y[i]);
+			double v_y = (e->x[i]-0.5) ; 
 		double a_dot_n = std::abs(v_x*e->nx[i]+ v_y* e->ny[i]);
     result += wt[i] * (u->val[i] - u->val_neighbor[i]) * (v->val[i] - v->val_neighbor[i]) * a_dot_n;
 		}
@@ -442,7 +479,7 @@ double CustomNormFormDG::value(int n, double *wt, DiscontinuousFunc<double> *u, 
 void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const 
 {
       
-/*  double radius = 0.;
+ double radius = 0.;
         //hump
 	double x_0 =0.25;
 	double y_0= 0.5;	
@@ -452,7 +489,7 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
 	}
-	else
+	/*else
 	{			
 		//cone
 		x_0 = 0.5;
@@ -462,18 +499,18 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
 		{ 	
 			dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 			dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
-		}
+		}*/
 		else
 		{
 			dx=0.; dy=0.;
 		}	
-  
-	}*/
+ /* 
+	}
 
 //-----------sinusoidal profile
 dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
 dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
-		
+		*/
 
 }
 
@@ -481,7 +518,7 @@ dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 {
        
   double result = 0.0;
-/*	double radius;
+	double radius;
         //hump
 	double x_0 =0.25;
 	double y_0= 0.5;	
@@ -491,7 +528,7 @@ dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 		 result = (1.0+ std::cos(PI*radius))/4.0;
 		return result;	
 	}
-	//slotted cylinder	
+/*	//slotted cylinder	
 	x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
@@ -510,7 +547,7 @@ dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 	}	*/
 
 //-----------sinusoidal profile	
-		result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);
+	//	result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);
 
        return result;
 

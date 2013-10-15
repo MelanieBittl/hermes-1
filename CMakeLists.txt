@@ -47,7 +47,7 @@ project(hermes)
 	#  Use second derivatives (that are turned off by default).
 	set(H2D_USE_SECOND_DERIVATIVES YES)
   
-  set(WITH_TC_MALLOC YES)
+  set(WITH_TC_MALLOC NO)
 
   # BSON 
   set(WITH_BSON NO)
@@ -119,7 +119,7 @@ project(hermes)
     #
     # Enable OpenMP for shared memory processing.
     #
-    set(WITH_OPENMP             YES)
+    set(WITH_OPENMP             NO)
 
     # If MPI is enabled, the MPI library installed on the system should be found by
     # CMake automatically. If the found library doesn't match the one used to compile the

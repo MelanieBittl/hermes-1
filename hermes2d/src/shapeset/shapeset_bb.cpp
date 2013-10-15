@@ -571,7 +571,7 @@ namespace Hermes
 				}else return 0.;		
 		}
 
-////////////////////-----------
+//////--------- Quads-------------------------------------------------
 
    // ORDER 1
     // Vertex functions
@@ -1475,36 +1475,62 @@ namespace Hermes
       comb_table = NULL;
     }
 
-ShapesetBB::~ShapesetBB(){
-		delete index_to_order[0];
-		delete index_to_order[1];
-		delete index_to_order;
-}
+		ShapesetBB::~ShapesetBB(){
+			delete [] index_to_order[0];
+			delete [] index_to_order[1];
+			delete [] index_to_order;
+		}
 
-double ShapesetBB::get_value(int n, int index, double x, double y, int component, ElementMode2D mode)
-{     
-	 if(index >= 0)
-      {
-        ShapesetBB::shape_fn_bb** shape_expansion = shape_table_bb[n][mode];
-        if(shape_expansion == NULL)
-        { // requested expansion (f, df/dx, df/dy, ddf/dxdx, ...) is not defined.
-          //just to keep the number of warnings low: warn just once about a given combinations of n, mode, and index.
-          static int warned_mode = -1, warned_index = -1, warned_n = 1;
-          this->warn_if(warned_mode != mode || warned_index != index || warned_n != n, "Requested undefined expansion %d (mode: %d) of a shape %d, returning 0", n, mode, index);
-          warned_mode = mode;
-          warned_index = index;
-          warned_n = n;
-          return 0.;
-        }
-        else
-        {        
-         return shape_expansion[component][index](x, y, space_order);
-       
-        }
-      }
-      else
-        return get_constrained_value(n, index, x, y, component, mode);
-}
+		double ShapesetBB::get_value(int n, int index, double x, double y, int component, ElementMode2D mode)
+		{     
+		 	if(index >= 0)
+				{
+				  ShapesetBB::shape_fn_bb** shape_expansion = shape_table_bb[n][mode];
+				  if(shape_expansion == NULL)
+				  { // requested expansion (f, df/dx, df/dy, ddf/dxdx, ...) is not defined.
+				    //just to keep the number of warnings low: warn just once about a given combinations of n, mode, and index.
+				    static int warned_mode = -1, warned_index = -1, warned_n = 1;
+				    this->warn_if(warned_mode != mode || warned_index != index || warned_n != n, "Requested undefined expansion %d (mode: %d) of a shape %d, returning 0", n, mode, index);
+				    warned_mode = mode;
+				    warned_index = index;
+				    warned_n = n;
+				    return 0.;
+				  }
+				  else
+				  {        
+				   return shape_expansion[component][index](x, y, space_order);
+				 
+				  }
+				}
+				else
+				  return get_constrained_value(n, index, x, y, component, mode);
+		}
+
+		double ShapesetBB::get_fn_value_order(int order, int index, double x, double y, int component, ElementMode2D mode)
+		{     
+		 	if(index >= 0)
+				{
+				  ShapesetBB::shape_fn_bb** shape_expansion = shape_table_bb[0][mode];
+				  if(shape_expansion == NULL)
+				  { // requested expansion (f, df/dx, df/dy, ddf/dxdx, ...) is not defined.
+				    //just to keep the number of warnings low: warn just once about a given combinations of n, mode, and index.
+				    static int warned_mode = -1, warned_index = -1, warned_n = 1;
+				    this->warn_if(warned_mode != mode || warned_index != index , "Requested undefined expansion %d (mode: %d) of a shape %d, returning 0",  mode, index);
+				    warned_mode = mode;
+				    warned_index = index;
+				    return 0.;
+				  }
+				  else
+				  {        
+				   return shape_expansion[component][index](x, y, order);
+				 
+				  }
+				}
+				else
+				  return get_constrained_value(0, index, x, y, component, mode);
+		}
+
+
     double ShapesetBB::get_constrained_value(int n, int index, double x, double y, int component, ElementMode2D mode)
     {
       index = -1 - index;

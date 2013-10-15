@@ -1,7 +1,7 @@
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(CSCMatrix<double>* mass_matrix,CSCMatrix<double>* lumped_matrix,CSCMatrix<double>* conv_matrix,CSCMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
+void antidiffusiveFlux(CSCMatrix<double>* mass_matrix,CSCMatrix<double>* lumped_matrix,CSCMatrix<double>* diffusion,double* u_high, double* u_L, double* u_old,double* flux_scalar, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
 { 
-	int ndof = conv_matrix->get_size();
+	int ndof = mass_matrix->get_size();
 	double alpha,f, plus, minus,mass, diff;
 	double* Ax_mass = mass_matrix->get_Ax();
 	int* Ai_mass = mass_matrix->get_Ai();
@@ -83,9 +83,9 @@ void antidiffusiveFlux(CSCMatrix<double>* mass_matrix,CSCMatrix<double>* lumped_
 
 
 //Assemble antidiffusive fluxes & Limiter
-void antidiffusiveFlux(CSCMatrix<double>* mass_matrix,CSCMatrix<double>* lumped_matrix,CSCMatrix<double>* conv_matrix,CSCMatrix<double>* diffusion,CSCMatrix<double>* diffusion_sd,CSCMatrix<double>* streamlinemass, double* u_high, double* u_L, double* u_old,double* flux_scalar, double* u_sd, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
+void antidiffusiveFlux(CSCMatrix<double>* mass_matrix,CSCMatrix<double>* lumped_matrix,CSCMatrix<double>* diffusion,CSCMatrix<double>* diffusion_sd,CSCMatrix<double>* streamlinemass, double* u_high, double* u_L, double* u_old,double* flux_scalar, double* u_sd, double* P_plus, double* P_minus, double* Q_plus, double* Q_minus,double* Q_plus_old, double* Q_minus_old,  double* R_plus, double* R_minus, int* smooth_dof=NULL  )
 { 
-	int ndof = conv_matrix->get_size();
+	int ndof = mass_matrix->get_size();
 	double alpha,f, plus, minus,mass, diff, mass_sd;
 	double* Ax_mass = mass_matrix->get_Ax();
 	int* Ai_mass = mass_matrix->get_Ai();

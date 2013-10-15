@@ -17,8 +17,8 @@ using namespace Hermes::Solvers;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 
-const int INIT_REF_NUM =2;                   // Number of initial refinements.
-const int P_INIT = 1;       						// Initial polynomial degree.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int P_INIT = 2;       						// Initial polynomial degree.
 const int P_MAX = 3; 
 const double h_max = 0.1;                       
 const double time_step = 1e-3;                           // Time step.
@@ -67,9 +67,9 @@ int main(int argc, char* argv[])
   EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an H1 space with default shapeset.
-//SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));	
 
-	SpaceSharedPtr<double> space(new H1Space<double>(mesh,&bcs, P_INIT));	
+	//SpaceSharedPtr<double> space(new H1Space<double>(mesh,&bcs, P_INIT));	
 
  // Initialize solution of lower & higher order
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>);
@@ -95,6 +95,7 @@ int main(int argc, char* argv[])
 	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
 	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 	//mview.show(space);
+	ScalarView highview("highSolution", new WinGeom(0, 500, 500, 400));
 
 
   // Output solution in VTK format.
@@ -160,7 +161,7 @@ bool mode_3D = true;
 		//	DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, space);
 		//	DiscreteProblem<double> * dp_convection = new DiscreteProblem<double> (&convection, space);
 
-		int ndof= space->get_num_dofs();;
+		int ndof= space->get_num_dofs();
     OGProjection<double> ogProjection;
   DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
   AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
@@ -184,7 +185,7 @@ do
 	
  	 mesh->copy(basemesh);
 	space->set_mesh(mesh);	space->set_uniform_order(P_INIT); space->assign_dofs(); 
-	ps=1; 
+	ps=1; ndof= space->get_num_dofs();
 //dp_mass->set_space(space); 
 //dp_convection->set_space(space); 
 //Adaptivity loop
@@ -301,13 +302,13 @@ if(ps==1){
 
 lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus);
 
-			/*Solution<double>::vector_to_solution(coeff_vec, space, u_new);
+			Solution<double>::vector_to_solution(coeff_vec, space, u_new);
 			sprintf(title, "proj. Loesung, ps=%i, ts=%i", ps,ts);
 			pview.set_title(title);
 			pview.show(u_new);
 
 			mview.show(space);		
-			View::wait(HERMES_WAIT_KEYPRESS);*/
+			View::wait(HERMES_WAIT_KEYPRESS);
 
 	//-------------rhs lower Order M_L/tau+ (1-theta)(K+D) u^n------------	
 //coeff_vec = u_old = u_n	
@@ -332,7 +333,8 @@ lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, 
 				e.print_msg();
 			}	
 				u_H = highOrd->get_sln_vector();  
-				//Solution<double> ::vector_to_solution(u_H, space, high_sln);	
+				Solution<double> ::vector_to_solution(u_H, space, high_sln);	
+highview.show(high_sln);
 
 
 		//---------------------------------------antidiffusive fluxes-----------------------------------
@@ -361,6 +363,7 @@ lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, 
 				 sview.set_title(title);
 					//mview.show(space);
 					sview.show(u_new);
+  View::wait();
 
 		u_prev->copy(u_new);
 

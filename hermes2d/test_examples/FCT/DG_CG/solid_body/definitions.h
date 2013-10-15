@@ -150,6 +150,35 @@ double theta;
 };
 
 
+//---------------Mass matrix
+class CustomMatrixFormVolMassmatrix : public MatrixFormVol<double>   
+
+{
+  public:
+    // This weak form is custom since it contains a nonlinearity in the diffusion term.
+    CustomMatrixFormVolMassmatrix(int i, int j) 
+      : MatrixFormVol<double>(i, j) { };
+
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
+                       Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, 
+                 Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, 
+            Geom<Ord> *e, Func<Ord> **ext) const;
+
+    MatrixFormVol<double>* clone() const;
+
+};
+
+class  CustomWeakFormMassmatrix  : public WeakForm<double>     
+{
+public:
+  CustomWeakFormMassmatrix();
+};
+
 
 //--------------------Error_calculation--------------
 

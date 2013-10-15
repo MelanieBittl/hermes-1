@@ -122,6 +122,8 @@ namespace Hermes
       /// domain, component is 0 for Scalar shapesets and 0 or 1 for vector shapesets.
       virtual double get_value(int n, int index, double x, double y, int component, ElementMode2D mode);
 
+virtual double get_fn_value_order(int order, int index, double x, double y, int component, ElementMode2D mode){};
+
       double get_fn_value (int index, double x, double y, int component, ElementMode2D mode);
       double get_dx_value (int index, double x, double y, int component, ElementMode2D mode);
       double get_dy_value (int index, double x, double y, int component, ElementMode2D mode);

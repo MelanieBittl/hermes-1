@@ -1,5 +1,6 @@
 #define HERMES_REPORT_ALL
 #include "definitions.h"
+#include "lumped_projection.h"
 
 using namespace RefinementSelectors;
 using namespace Hermes;
@@ -33,7 +34,8 @@ const std::string BDY_OUT = "outlet";
 
 
 #include "error_estimations.cpp"
-
+#include "mass_lumping.cpp"
+#include "p1_list.cpp"
 
 int main(int argc, char* argv[])
 {
@@ -56,7 +58,8 @@ mloader.load("unit.mesh", basemesh);
  // EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an space with default shapeset.  
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+    Shapeset* shape= new  ShapesetBB(P_INIT);
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, false));	
   //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
@@ -89,19 +92,35 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	char title[100];
     int ts = 1;
     double current_time =0.;
+
+bool* fct = new bool[ndof];	for(int i =0; i<ndof; i++) fct[i]= false;
+AsmList<double>*  al = new AsmList<double>;	
 	
-	int ref_ndof = space->get_num_dofs();	
-	//Hermes::Mixins::Loggable::Static::info(" ndof = %d ", ref_ndof); 
+	//Hermes::Mixins::Loggable::Static::info(" ndof = %d ", ndof); 
+
+/*	CustomWeakFormMassmatrix  massmatrix;
+	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ;  
+			DiscreteProblem<double> * dp_mass = new DiscreteProblem<double> (&massmatrix, space);
+	dp_mass->set_linear(true,false);
+			dp_mass->assemble(mass_matrix); 	
+vertex_dof_list(space, fct,al );
+
+			CSCMatrix<double> * lumped_matrix = massLumping(mass_matrix);
+		double* coeff_vec = new double[ndof]; 
+				Lumped_Projection::project_lumped(space, u_prev_time, coeff_vec,lumped_matrix);
+      Solution<double>::vector_to_solution(coeff_vec, space, u_new);
+
+			sview.show(u_new);
+  // Wait for the view to be closed.
+  View::wait();*/
 
 
-
-
-CustomWeakForm wf(u_prev_time, mesh,time_step, theta,theta_DG, all, DG, SD, false);
-CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, DG, false, true);
+	CustomWeakForm wf(u_prev_time, mesh,time_step, theta,theta_DG, all, DG, SD, false);
+	CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, DG, false, true);
 
 
 	CSCMatrix<double>* matrix = new CSCMatrix<double> ; 
-	SimpleVector<double> * rhs = new SimpleVector<double> (ref_ndof); 
+	SimpleVector<double> * rhs = new SimpleVector<double> (ndof); 
 	DiscreteProblem<double> * dp = new DiscreteProblem<double> (&wf,space);	
 	dp->set_linear(true,false);
 	dp->assemble(matrix);
@@ -118,7 +137,7 @@ fclose (matFile);
 
   do
   {
-	Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ref_ndof); 
+	Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ndof); 
 	wf_rhs.set_current_time(current_time);
 	dp_rhs->assemble(rhs);
 		UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(matrix,rhs); 
@@ -152,7 +171,7 @@ CustomWeakForm wf(u_prev_time, mesh,time_step, theta, all, DG, SD, true);
  // Initialize linear solver.
  Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
   do
-  {Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ref_ndof); 
+  {Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ndof); 
 					// Solve the linear problem.
 					try
 					{

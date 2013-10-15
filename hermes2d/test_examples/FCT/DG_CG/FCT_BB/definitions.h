@@ -62,7 +62,40 @@ public:
 //	~CustomWeakFormMassmatrix();
 };
 
-//---------------Konvektion-----------
+
+
+class CustomWeakFormConvection : public WeakForm<double>    //Konvektion
+{
+public:
+  CustomWeakFormConvection();
+};
+
+class CustomWeakFormInterface : public WeakForm<double>    //Konvektion
+{
+public:
+  CustomWeakFormInterface();
+};
+
+
+class CustomWeakFormSurface : public WeakForm<double>    //Surface
+{
+public:
+  CustomWeakFormSurface();
+};
+
+class CustomWeakFormStreamlineDiffusion : public WeakForm<double>    //streamlinediffusion_convection
+{
+public:
+  CustomWeakFormStreamlineDiffusion (MeshSharedPtr mesh);
+};
+
+
+class CustomWeakFormStreamlineDiffusionMass : public WeakForm<double>    //streamlinediffusion_mass
+{
+public:
+  CustomWeakFormStreamlineDiffusionMass(MeshSharedPtr mesh, double ts);
+};
+
 //--------surface----------------
   class CustomMatrixFormSurface : public MatrixFormSurf<double>
   {
@@ -78,6 +111,30 @@ public:
 
   };
 
+//------------interface------------
+  class CustomMatrixFormInterface : public MatrixFormDG<double>
+  {
+  public:
+    CustomMatrixFormInterface(int i, int j) : MatrixFormDG<double>(i, j) 
+    {
+    };
+
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, DiscontinuousFunc<Scalar> **u_ext, DiscontinuousFunc<Real> *u, DiscontinuousFunc<Real> *v, Geom<Real> *e, DiscontinuousFunc<Scalar> **ext) const;
+
+    virtual double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e, DiscontinuousFunc<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, DiscontinuousFunc<Ord> **u_ext, DiscontinuousFunc<Ord> *u, DiscontinuousFunc<Ord> *v, Geom<Ord> *e, DiscontinuousFunc<Ord> **ext) const;
+
+    MatrixFormDG<double>* clone() const;
+
+  double upwind_flux(double u_cent, double u_neib, double a_dot_n) const;
+
+  Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
+
+  };
+
+//---------------Konvektion-----------
 class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
 {
 public:
@@ -101,31 +158,7 @@ public:
 
 
 
-class CustomWeakFormConvection : public WeakForm<double>    //Konvektion
-{
-public:
-  CustomWeakFormConvection();
-};
 
-
-class CustomWeakFormSurface : public WeakForm<double>    //Surface
-{
-public:
-  CustomWeakFormSurface();
-};
-
-class CustomWeakFormStreamlineDiffusion : public WeakForm<double>    //streamlinediffusion_convection
-{
-public:
-  CustomWeakFormStreamlineDiffusion (MeshSharedPtr mesh);
-};
-
-
-class CustomWeakFormStreamlineDiffusionMass : public WeakForm<double>    //streamlinediffusion_mass
-{
-public:
-  CustomWeakFormStreamlineDiffusionMass(MeshSharedPtr mesh, double ts);
-};
 
 
 //streamline diffusion

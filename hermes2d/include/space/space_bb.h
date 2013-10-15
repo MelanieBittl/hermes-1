@@ -15,6 +15,8 @@ namespace Hermes
 		public:
 			SpaceBB();
 			SpaceBB(MeshSharedPtr mesh, int p_init = 1,	Shapeset* shapeset = NULL);
+      SpaceBB(MeshSharedPtr mesh, EssentialBCs<Scalar>* boundary_conditions, int p_init = 1,
+        Shapeset* shapeset = NULL);
 
 			virtual ~SpaceBB();
 
@@ -23,7 +25,7 @@ namespace Hermes
 			/// Copy from Space instance 'space'
 			virtual void copy(SpaceSharedPtr<Scalar> space, MeshSharedPtr new_mesh);
 
-      virtual Scalar* get_bc_projection(SurfPos* surf_pos, int order, EssentialBoundaryCondition<Scalar> *bc) {};
+      virtual Scalar* get_bc_projection(SurfPos* surf_pos, int order, EssentialBoundaryCondition<Scalar> *bc);
 
 		protected:
 
@@ -58,7 +60,7 @@ namespace Hermes
 
 			virtual void update_constraints();
 
-
+      virtual void precalculate_projection_matrix(int nv, double**& mat, double*& p);
 			friend class Space<Scalar>;
 		};
 	}

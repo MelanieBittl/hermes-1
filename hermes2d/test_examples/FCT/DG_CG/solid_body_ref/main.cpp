@@ -290,7 +290,7 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 			fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step,&regEst);
 	//-------------Compute final solution ---------------			
 				ref_sln_double = lowOrder.explicit_Correction(limited_flux);
-			Solution<double> ::vector_to_solution(ref_sln_double, ref_space, ref_sln);	
+			Solution<double>::vector_to_solution(ref_sln_double, ref_space, ref_sln);	
 			
 			
 			

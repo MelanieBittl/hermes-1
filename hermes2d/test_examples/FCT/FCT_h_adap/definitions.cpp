@@ -79,12 +79,6 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
     add_vector_form(vector_form);
   };
 
-/*	GradientReconstruction_1::~GradientReconstruction_1(){
-		delete get_mfvol()[0];
-		delete get_vfvol()[0];
-		WeakForm<double>::delete_all();
-	};*/
-
     template<typename Real, typename Scalar>
     Scalar GradientReconstructionMatForm_1 ::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
                        Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
@@ -206,7 +200,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
 	}
-	else{			
+/*	else{			
 		//cone
 		x_0 = 0.5;
 		y_0 = 0.25;
@@ -214,11 +208,11 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		if((radius< 1.0)&&(x!=x_0)) { 	
 				dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 			dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
-		}
+		}*/
 		else{dx=0.; dy=0.;
 		}	
   
-	}
+//	}
 		
 
 };
@@ -236,7 +230,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		return result;	
 	}
 	//slotted cylinder
-	x_0 = 0.5;
+	/*x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius <= 1) { 	
@@ -249,7 +243,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius<= 1.0) { 	
 		result = 1.0-radius;
-	}	
+	}	*/
        return result;
 };
 

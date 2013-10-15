@@ -74,7 +74,7 @@ bool HPAdapt::adapt(int* elements_to_refine,int* no_of_refinement_steps, int max
 		}		
 	}
 	  
-	if(changed==false){ info("nothing to refine/coarse");return false;}
+	if(changed==false){ info("nothing to refine/coarsen");return false;}
 
 
 
