@@ -21,7 +21,7 @@ const int P_INIT = 2;       						// Initial polynomial degree.
 const double time_step = 1e-3;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
-const double theta = 1.;
+const double theta = 0.;
 
 // Equation parameters.  
  
@@ -147,9 +147,9 @@ EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 	CSCMatrix<double> * matrix = new CSCMatrix<double> ;  
 	CSCMatrix<double> * mat_rhs = new CSCMatrix<double> ; 
 	CSCMatrix<double> * matrix_dS = new CSCMatrix<double> ; 
-	CSCMatrix<double> * matrix_DG = new CSCMatrix<double> ; 
+	//CSCMatrix<double> * matrix_DG = new CSCMatrix<double> ; 
 
-
+			SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
 
 			double* coeff_vec = new double[ndof];
 			double* coeff_vec_2 = new double[ndof];
@@ -188,7 +188,7 @@ ogProjection.project_global(spaces,Hermes::vector<MeshFunctionSharedPtr<double> 
 
 			 // Visualize the solution.
 			s1.show(prev_rho);
-View::wait(HERMES_WAIT_KEYPRESS);
+
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -197,8 +197,14 @@ View::wait(HERMES_WAIT_KEYPRESS);
  PressureFilter pressure(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), KAPPA);
 VelocityFilter vel_x(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 1);
   VelocityFilter vel_y(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e), 2);
+			vel_x.reinit();
+			s2.show(&vel_x);
+			//s3.show(&vel_y);
 
+        pressure.reinit();
+  		pressure_view.show(&pressure);
 
+View::wait(HERMES_WAIT_KEYPRESS);
 Space<double>::assign_dofs(spaces);
     dp_mass.assemble(mass_matrix);
 //Timestep loop
@@ -214,20 +220,18 @@ Space<double>::assign_dofs(spaces);
 			dp_boundary.assemble(matrix_dS);
 	 		//Hermes::Mixins::Loggable::Static::info("assemble K");
 		  dp_K.assemble(mat_rhs);
-		  dp_DG.assemble(matrix_DG);	
+		  dp_DG.assemble(vec_dg);	
 		}else{
 			//Hermes::Mixins::Loggable::Static::info("assemble dS");
 			dp_boundary_init.assemble(matrix_dS);
 	 		//Hermes::Mixins::Loggable::Static::info("assemble K");
 		  dp_K_init.assemble(mat_rhs);	
-		  dp_DG_init.assemble(matrix_DG);	
+		  dp_DG_init.assemble(vec_dg);	
 		}
 
 
-					//------------------------artificial DIFFUSION D---------------------------------------		
-
-			mat_rhs->add_sparse_matrix(matrix_dS); //L(U)+dS(U) 
-			mat_rhs->add_sparse_matrix(matrix_DG);
+			mat_rhs->add_sparse_matrix(matrix_dS); 
+			//mat_rhs->add_sparse_matrix(matrix_DG);
 
 			matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());
 			matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
@@ -236,15 +240,11 @@ Space<double>::assign_dofs(spaces);
 			mat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
 			mat_rhs->add_sparse_matrix(mass_matrix);  //M_L/t+(1-theta)L(U)
 
-
-
-	//-------------rhs lower Order M_L/tau+ (1-theta)(L) u^n------------		
+	
 			mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
-			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
+			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); vec_rhs->add_vector(vec_dg); 
 
 
-	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
-				//		  	Hermes::Mixins::Loggable::Static::info("Solution low order ");
 			UMFPackLinearMatrixSolver<double> * solver = new UMFPackLinearMatrixSolver<double> (matrix,vec_rhs);	
   try
   {

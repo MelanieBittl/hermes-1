@@ -7,32 +7,54 @@
 
 
 
- class EulerInterfaceBilinearForm: public MatrixFormDG<double>
+
+
+  class EulerEquationsVectorFormFlux : public VectorFormDG<double>
   {
   public:
-    EulerInterfaceBilinearForm(int i, int j, double kappa, EulerFluxes* fluxes, bool* cacheReady, double** P_plus_cache, double** P_minus_cache) 
-      : MatrixFormDG<double>(i, j), num_flux(new StegerWarmingNumericalFlux(kappa)), cacheReady(cacheReady), P_plus_cache(P_plus_cache), P_minus_cache(P_minus_cache), fluxes(fluxes) 
+    EulerEquationsVectorFormFlux(int i, double kappa, EulerFluxes* fluxes) 
+      : VectorFormDG<double>(i), num_flux(new HLLNumericalFlux(kappa)), fluxes(fluxes) 
     {
     }
 
-    ~EulerInterfaceBilinearForm() 
+    ~EulerEquationsVectorFormFlux()
     {
       delete num_flux;
     }
-    double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, DiscontinuousFunc<double> *u, 
-      DiscontinuousFunc<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const ;
 
-    MatrixFormDG<double>* clone()  const;
+    double value(int n, double *wt, DiscontinuousFunc<double> **u_ext, 
+      Func<double> *v, Geom<double> *e, DiscontinuousFunc<double>* *ext) const 
+    {
+      double result = 0.;
+      double w_L[4], w_R[4];
+      for (int point_i = 0; point_i < n; point_i++)
+      {
+        w_L[0] = ext[0]->val[point_i];
+        w_L[1] = ext[1]->val[point_i];
+        w_L[2] = ext[2]->val[point_i];
+        w_L[3] = ext[3]->val[point_i];
 
+        w_R[0] = ext[0]->val_neighbor[point_i];
+        w_R[1] = ext[1]->val_neighbor[point_i];
+        w_R[2] = ext[2]->val_neighbor[point_i];
+        w_R[3] = ext[3]->val_neighbor[point_i];
 
-    bool* cacheReady;
-    double** P_plus_cache;
-    double** P_minus_cache;
-    StegerWarmingNumericalFlux* num_flux;
+        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+      }
+
+      return -result * wf->get_current_time_step();
+    }
+
+    VectorFormDG<double>* clone()  const
+    { 
+      EulerEquationsVectorFormFlux* form = new EulerEquationsVectorFormFlux(this->i, this->num_flux->kappa, this->fluxes);
+      form->wf = this->wf;
+      return form;
+    }
+
+    HLLNumericalFlux* num_flux;
     EulerFluxes* fluxes;
   };
-
-
 
 class EulerInterface : public WeakForm<double>
 {
@@ -47,11 +69,8 @@ public:
 
   // Members.
   EulerFluxes* euler_fluxes;
-	RiemannInvariants* riemann_invariants;
 
-  bool cacheReadyDG;
-  double** P_plus_cache_DG;
-  double** P_minus_cache_DG;
+
 
 };
 

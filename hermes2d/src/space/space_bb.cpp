@@ -213,8 +213,23 @@ namespace Hermes
         if(part < 0) part ^=  ~0;
 
         nd = &this->ndata[nd->base->id];
+
+				Node* vn = e->vn[surf_num];
+				if(vn->is_constrained_vertex()) 
+					vn = e->vn[e->next_vert(surf_num)];
+
+				typename Space<Scalar>::NodeData* nd_vn = &this->ndata[vn->id];
+
         for (int j = 0, dof = nd->dof; j < nd->n; j++, dof += this->stride)
-          al->add_triplet(this->shapeset->get_constrained_edge_index(surf_num, j + 2, ori, part, e->get_mode()), dof, 1.0);
+					{         		al->add_triplet(this->shapeset->get_constrained_edge_index(surf_num, j + 2, ori, part, e->get_mode()), dof, 0.5);
+//coeff for edge-edge constraints. 
+        al->add_triplet(this->shapeset->get_constrained_edge_index(surf_num, j + 2, ori, part, e->get_mode()), nd_vn->dof, (nd_vn->dof >= 0) ? 0.5 : *(nd->vertex_bc_coef));
+
+					}
+
+
+		
+
       }
     }
  template<typename Scalar>
@@ -288,12 +303,12 @@ namespace Hermes
 
     template<typename Scalar>
     inline void SpaceBB<Scalar>::output_component(typename Space<Scalar>::BaseComponent*& current, typename Space<Scalar>::BaseComponent*& last, typename Space<Scalar>::BaseComponent* min,
-      Node*& edge, typename Space<Scalar>::BaseComponent*& edge_dofs)
+      Node*& edge, typename Space<Scalar>::BaseComponent*& edge_dofs, int order)
     {
       // if the dof is already in the list, just add half of the other coef
       if(last != NULL && last->dof == min->dof)
       {
-        last->coef += min->coef * 0.5;
+        last->coef += min->coef * std::pow(0.5, order);
         return;
       }
 
@@ -312,13 +327,13 @@ namespace Hermes
 
       // output new dof
       current->dof = min->dof;
-      current->coef = min->coef * 0.5;
+      current->coef = min->coef * std::pow(0.5, order);
       last = current++;
     }
 
     template<typename Scalar>
     typename Space<Scalar>::BaseComponent* SpaceBB<Scalar>::merge_baselists(typename Space<Scalar>::BaseComponent* l1, int n1, typename Space<Scalar>::BaseComponent* l2, int n2,
-      Node* edge, typename Space<Scalar>::BaseComponent*& edge_dofs, int& ncomponents)
+      Node* edge, typename Space<Scalar>::BaseComponent*& edge_dofs, int& ncomponents, int order)
     {
       // estimate the upper bound of the result size
       int max_result = n1 + n2;
@@ -333,14 +348,14 @@ namespace Hermes
       while (i1 < n1 && i2 < n2)
       {
         if(l1[i1].dof < l2[i2].dof)
-          output_component(current, last, l1 + i1++, edge, edge_dofs);
+          output_component(current, last, l1 + i1++, edge, edge_dofs, order);
         else
-          output_component(current, last, l2 + i2++, edge, edge_dofs);
+          output_component(current, last, l2 + i2++, edge, edge_dofs, order);
       }
 
       // finish the longer baselist
-      while (i1 < n1) output_component(current, last, l1 + i1++, edge, edge_dofs);
-      while (i2 < n2) output_component(current, last, l2 + i2++, edge, edge_dofs);
+      while (i1 < n1) output_component(current, last, l1 + i1++, edge, edge_dofs, order);
+      while (i2 < n2) output_component(current, last, l2 + i2++, edge, edge_dofs, order);
 
       // don't forget to reserve space for edge dofs if we haven't done that already
       if(edge != NULL)
@@ -371,8 +386,11 @@ namespace Hermes
       int j, k;
       EdgeInfo* ei[4] = { ei0, ei1, ei2, ei3 };
       typename Space<Scalar>::NodeData* nd;
+			int order = this->get_element_order(e->id);
 
-      if(this->get_element_order(e->id) == 0) return;
+      if(order == 0) return;
+
+				if(e->is_quad()) order = std::max(H2D_GET_H_ORDER(order),H2D_GET_V_ORDER(order)); 
 
       // on non-refined elements all we have to do is update edge nodes lying on constrained edges
       if(e->active)
@@ -450,7 +468,7 @@ namespace Hermes
           // merge the baselists
           typename Space<Scalar>::BaseComponent* edge_dofs;
           nd = &this->ndata[mid_vn->id];
-          nd->baselist = merge_baselists(bl[0], nc[0], bl[1], nc[1], en, edge_dofs, nd->ncomponents);
+          nd->baselist = merge_baselists(bl[0], nc[0], bl[1], nc[1], en, edge_dofs, nd->ncomponents,order);
           this->bc_data.push_back(nd->baselist);
 
           // set edge node coeffs to function values of the edge functions
@@ -459,7 +477,11 @@ namespace Hermes
           for (k = 0; k < nd->n; k++, edge_dofs++)
           {
             edge_dofs->dof = nd->dof + k*this->stride;
-            edge_dofs->coef = this->shapeset->get_fn_value(this->shapeset->get_edge_index(0, ei[i]->ori, k + 2, e->get_mode()), mid, -1.0, 0, e->get_mode());
+            //edge_dofs->coef = this->shapeset->get_fn_value(this->shapeset->get_edge_index(0, ei[i]->ori, k + 2, e->get_mode()), mid, -1.0, 0, e->get_mode());
+						if(nd->n==1)
+												edge_dofs->coef = 0.5;
+						if(nd->n==2) 	
+												edge_dofs->coef =3./8.;			
           }
 
           //dump_baselist(ndata[mid_vn->id]);

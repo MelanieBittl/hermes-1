@@ -1,0 +1,9 @@
+time =1.5708:  l2=4.5980e-03, ndof = 289 
+end:  l2=4.5980e-03, ndof = 289
+proj:  l2=2.5206e-03, ndof = 289
+time =1.5708:  l2=4.5980e-03, ndof = 289 
+end:  l2=4.5980e-03, ndof = 289
+proj:  l2=2.5206e-03, ndof = 289
+time =1.5708:  l2=4.5980e-03, ndof = 289 
+end:  l2=4.5980e-03, ndof = 289
+proj:  l2=2.5206e-03, ndof = 289

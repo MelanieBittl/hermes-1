@@ -91,63 +91,28 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
 
 		}
 //---------------Konvektion-----------
-
 //----------------------wf-
 
   CustomWeakFormConvection::CustomWeakFormConvection() : WeakForm<double>(1) {
     add_matrix_form(new CustomMatrixFormVolConvection(0, 0));
   };
 
-
-
-
-
-CustomWeakFormSurface::CustomWeakFormSurface(): WeakForm<double>(1) {
-	 add_matrix_form_surf(new CustomMatrixFormSurface(0, 0)); 
-  };
-
-//------------surface---------
-double CustomMatrixFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
-                                                Geom<double> *e, Func<double> **ext) const
-{
-  double result = 0.;
-	for (int i = 0; i < n; i++)
-	{
-			double v_x =(0.5- e->y[i]);
-			double v_y = (e->x[i]-0.5) ; 
-   double a_dot_n = (v_x*e->nx[i]+v_y*e->ny[i]);
-	if(a_dot_n>=0)
-   	result -= wt[i] *u->val[i]*a_dot_n * v->val[i];
-		
-	}
-		return result;
-
-}
-
-Ord CustomMatrixFormSurface::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
-                                           Geom<Ord> *e, Func<Ord> **ext) const
-{
-  Ord result = Ord(0);
-  for (int i = 0; i < n; i++)
-    result += wt[i] * v->val[i]*u->val[i];
-  return result;
-}
-
-MatrixFormSurf<double>* CustomMatrixFormSurface::clone() const
-{
-  return new CustomMatrixFormSurface(*this);
-}
-
-
-//convection------------
+//------------Matrix Form  Konvektion------------
     template<typename Real, typename Scalar>
     Scalar CustomMatrixFormVolConvection::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, 
                        Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const {
 
      Scalar result = Scalar(0); 
   for (int i = 0; i < n; i++)
-{		Real v_x = (0.5- e->y[i]); 
+{		
+	//Real v_x = Real(0.); 
+ 		//Real v_y = Real(1.); 
+			//Real v_x = (- e->y[i]); 
+ 			//Real v_y = (e->x[i]) ; 
+		Real v_x = (0.5- e->y[i]); 
  		Real v_y = (e->x[i]-0.5) ; 
+	//Real v_x = Real(1.); 
+ 		//Real v_y = Real(1.); 
     //result += -wt[i] * (v->val[i] *(u->dx[i] * (v_x) + u->dy[i] * (v_y) ));
 
 result += wt[i]*u->val[i]*(v->dx[i]*v_x+ v->dy[i]*v_y); //mit surface
@@ -170,6 +135,187 @@ double CustomMatrixFormVolConvection::value(int n, double *wt, Func<double> *u_e
    MatrixFormVol<double>* CustomMatrixFormVolConvection::clone() const
 {
   return new CustomMatrixFormVolConvection(*this);
+}
+//--------------------CN-Taylor-Galerkin----------------------------------------------------------
+
+  CustomWeakFormCNTG::CustomWeakFormCNTG(double ts): WeakForm<double>(1) 
+	{
+	 add_matrix_form_surf(new CustomMatrixFormSurface_CNTG(0, 0, ts)); 
+	 add_matrix_form(new CustomMatrixForm_CNTG(0, 0, ts)); 
+	};
+
+
+double CustomWeakFormCNTG::CustomMatrixForm_CNTG::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
+                                            Geom<double> *e, Func<double> **ext) const
+{
+  double result = 0.;
+		for (int i = 0; i < n; i++)
+		{
+				double v_x = (0.5- e->y[i]); 
+				double v_y = (e->x[i]-0.5) ; 
+				result -= wt[i] *((u->dx[i] * v_x + u->dy[i] * v_y ) *(v->dx[i] * v_x + v->dy[i] * v_y ));
+		}
+
+
+  return result*ts/12.;
+}
+
+Ord CustomWeakFormCNTG::CustomMatrixForm_CNTG::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+                                       Geom<Ord> *e, Func<Ord> **ext) const
+{
+  Ord result = Ord(0);
+  for (int i = 0; i < n; i++)
+				result -= wt[i] *((u->dx[i] + u->dy[i]  ) *(v->dx[i] + v->dy[i] ));
+  return result;
+}
+
+MatrixFormVol<double>* CustomWeakFormCNTG::CustomMatrixForm_CNTG::clone() const
+{
+  return new CustomWeakFormCNTG::CustomMatrixForm_CNTG(*this);
+}
+
+double CustomWeakFormCNTG::CustomMatrixFormSurface_CNTG::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
+                                            Geom<double> *e, Func<double> **ext) const
+{
+  double result = 0.;
+		for (int i = 0; i < n; i++)
+		{
+				double v_x = (0.5- e->y[i]); 
+				double v_y = (e->x[i]-0.5) ; 
+   		double a_dot_n = (v_x*e->nx[i]+v_y*e->ny[i]);
+				result += wt[i] *static_cast<CustomWeakFormCNTG*>(wf)->upwind_flux((u->dx[i]*v_x + u->dy[i]*v_y)*v->val[i], 0., a_dot_n);
+		}
+
+
+  return result*ts/12.;
+}
+
+Ord CustomWeakFormCNTG::CustomMatrixFormSurface_CNTG::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+                                       Geom<Ord> *e, Func<Ord> **ext) const
+{
+  Ord result = Ord(0);
+  for (int i = 0; i < n; i++)
+				result -= wt[i] *((u->dx[i] + u->dy[i]  ) *(v->dx[i] + v->dy[i] ));
+  return result;
+}
+
+MatrixFormSurf<double>* CustomWeakFormCNTG::CustomMatrixFormSurface_CNTG::clone() const
+{
+  return new CustomWeakFormCNTG::CustomMatrixFormSurface_CNTG(*this);
+}
+
+
+double CustomWeakFormCNTG::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
+{
+  return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
+}
+
+Ord CustomWeakFormCNTG::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
+{
+  return a_dot_n * (u_cent + u_neib);
+}
+
+//------------surface---------
+CustomWeakFormSurface::CustomWeakFormSurface(MeshFunctionSharedPtr<double> sln_prev_time): WeakForm<double>(1) {
+ this->set_ext(sln_prev_time);
+	 add_matrix_form_surf(new CustomMatrixFormSurface(0, 0)); 
+		add_vector_form_surf(new CustomVectorFormSurface(0) );
+  };
+//matrix form surface
+
+double CustomWeakFormSurface::CustomMatrixFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
+                                                Geom<double> *e, Func<double> **ext) const
+{
+  double result = 0.;
+	for (int i = 0; i < n; i++)
+	{
+			//double v_x = 1.;
+			//double v_y = 1.; 
+		double v_x = (0.5- e->y[i]); 
+ 		double v_y = (e->x[i]-0.5) ; 
+		//double v_x = -e->y[i];
+		//double v_y = e->x[i];
+	//	double v_x = 0.;
+		//double v_y = 1.;
+   double a_dot_n = (v_x*e->nx[i]+v_y*e->ny[i]);
+	//if(a_dot_n>=0)
+   	//result += wt[i] *u->val[i]*a_dot_n * v->val[i];
+		result -= wt[i] * static_cast<CustomWeakFormSurface*>(wf)->upwind_flux(u->val[i], 0., a_dot_n) * v->val[i];
+	}
+		return result;
+
+}
+
+Ord CustomWeakFormSurface::CustomMatrixFormSurface::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v,
+                                           Geom<Ord> *e, Func<Ord> **ext) const
+{
+  Ord result = Ord(0);
+  for (int i = 0; i < n; i++)
+    result += wt[i] * v->val[i]*u->val[i];
+  return result;
+}
+
+MatrixFormSurf<double>* CustomWeakFormSurface::CustomMatrixFormSurface::clone() const
+{
+  return new CustomWeakFormSurface::CustomMatrixFormSurface(*this);
+}
+//----------Dirichlet Vector surface Form
+double CustomWeakFormSurface::CustomVectorFormSurface::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
+                                                Geom<double> *e, Func<double> **ext) const
+{
+  double result = 0;
+ 	Func<double>* exact = ext[0];
+   for (int i = 0; i < n; i++)
+	{ 
+		 //inlet
+			//double v_x = 1.;
+			//double v_y = 1.; 
+		double v_x = (0.5- e->y[i]); 
+ 		double v_y = (e->x[i]-0.5) ; 		
+			//double x = e->x[i]; 
+			//double y = e->y[i];
+			//double time = static_cast<CustomWeakFormSurface*>(wf)->get_current_time(); 
+		//double v_x = -e->y[i];
+		//double v_y = e->x[i];
+		//double v_x = 0.;
+		//double v_y = 1.;
+
+			 double a_dot_n = (v_x*e->nx[i]+v_y*e->ny[i]);
+			//double exact = 0;
+			//	if(x==0)				
+				//	exact = -Hermes::sin(2*PI*time)*Hermes::sin(2*PI*(y-time));
+		//	if(y==0)		
+				//	exact = -Hermes::sin(2*PI*time)*Hermes::sin(2*PI*(x-time));
+  			
+//if(y==0) 
+			//result -= wt[i] *exact->val[i]* a_dot_n * v->val[i];
+				
+			result -= wt[i] * static_cast<CustomWeakFormSurface*>(wf)->upwind_flux(0, exact->val[i], a_dot_n) * v->val[i];
+
+	}
+  
+  return result;
+}
+
+Ord CustomWeakFormSurface::CustomVectorFormSurface::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const
+{
+  Ord result = Ord(10);
+  return result;
+}
+
+VectorFormSurf<double>* CustomWeakFormSurface::CustomVectorFormSurface::clone() const
+{
+  return new CustomWeakFormSurface::CustomVectorFormSurface(*this);
+}
+
+double CustomWeakFormSurface::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
+{
+  return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
+}
+
+Ord CustomWeakFormSurface::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
+{
+  return a_dot_n * (u_cent + u_neib);
 }
 
 //---------Streamline Diffusion---------------
@@ -238,12 +384,13 @@ Scalar StreamlineMass::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Fun
 		{
 				Real v_x = (0.5- e->y[i]); 
 				Real v_y = (e->x[i]-0.5) ; 
-				Real tau = diam/(2.*abs_v);
-				result += wt[i] *(tau*(u->val[i]/ts) *(v->dx[i] * v_x + v->dy[i] * v_y ));
+				//Real tau = diam/(2.*abs_v);
+				//result += wt[i] *(tau*(u->val[i]/ts) *(v->dx[i] * v_x + v->dy[i] * v_y ));
+				result -= wt[i] *((u->dx[i] * v_x + u->dy[i] * v_y ) *(v->dx[i] * v_x + v->dy[i] * v_y ));
 		}
 
 
-  return result;
+  return result*ts/12.;
 }
 
 double StreamlineMass::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v,
@@ -378,9 +525,9 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 //------------------- Initial condition ----------------
 
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
-      
-   	double radius = 0.;
-        //hump
+  dx=0.; dy=0.;    
+	double radius = 0.;
+     //hump
 	//double x_0 =0.25;
 double x_0 =0.5;
 	double y_0= 0.5;	
@@ -397,26 +544,39 @@ double x_0 =0.5;
 		if((radius< 1.0)&&(x!=x_0)) { 	
 				dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 			dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);	
-		}*/
+		}
 		else{dx=0.; dy=0.;
 		}	
   
-	//}
-		
+	//}*/
+
+//-----------sinusoidal profile
+//dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
+//dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
+
+/*
+	double radius = Hermes::sqrt(x*x+y*y);
+//double radius = x;
+	if((radius>= 0.25)&&(radius<=0.75)){		
+		double arg = PI*(radius-0.5)/0.25;
+		dx = -0.25*Hermes::sin(arg)*(PI/0.25)*x/radius;
+		dy	= -0.25*Hermes::sin(arg)*(PI/0.25)*y/radius;
+	//dy =0;
+	}else{	dx=0.; dy=0.;		}	*/
 
 };
 
  double CustomInitialCondition::value(double x, double y) const {
        
-     double result = 0.0;
-	double radius;
-        //hump
+    double result = 0.0;
+ 	double radius;
+       //hump
 	//double x_0 =0.25;
-double x_0 =0.5;
+	double x_0 =0.5;
 	double y_0= 0.5;	
 	radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if( radius<= 1.0) { 
-		 result = (1.0+ std::cos(PI*radius))/4.0;
+		 result = (1.0+ std::cos(PI*radius))/4.0; 			
 		return result;	
 	}
 /*	//slotted cylinder
@@ -434,7 +594,21 @@ x_0 = 0.5;
 	if(radius<= 1.0) { 	
 		result = 1.0-radius;
 	}	*/
-       return result;
+
+//-----------sinusoidal profile	
+	//	result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);
+
+/*
+		double radius = Hermes::sqrt(x*x+y*y);
+		//double radius = x;
+		if((radius>= 0.25)&&(radius<=0.75)){		
+			double arg = PI*(radius-0.5)/0.25;
+			result = 0.25*(1+Hermes::cos(arg));
+		}//else if((radius>= 0.2)&&(radius<=0.4))		result =1;	
+ */
+
+
+      return result;
 };
 
  Ord CustomInitialCondition::ord(double x, double y)  const {

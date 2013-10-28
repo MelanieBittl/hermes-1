@@ -63,21 +63,6 @@ public:
 };
 
 //---------------Konvektion-----------
-//--------surface----------------
-  class CustomMatrixFormSurface : public MatrixFormSurf<double>
-  {
-  public:
-    CustomMatrixFormSurface(int i, int j) : MatrixFormSurf<double>(i, j) {};
-
-
-    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double> **ext) const;
-
-    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
-
-    MatrixFormSurf<double>* clone() const;
-
-  };
-
 class CustomMatrixFormVolConvection : public MatrixFormVol<double>   
 {
 public:
@@ -107,12 +92,6 @@ public:
   CustomWeakFormConvection();
 };
 
-
-class CustomWeakFormSurface : public WeakForm<double>    //Surface
-{
-public:
-  CustomWeakFormSurface();
-};
 
 class CustomWeakFormStreamlineDiffusion : public WeakForm<double>    //streamlinediffusion_convection
 {
@@ -163,6 +142,96 @@ public:
 		double ts;
 
   };
+//--------------------CN-Taylor-Galerkin----------------------------------------------------------
+class CustomWeakFormCNTG : public WeakForm<double>    
+{
+public:
+  CustomWeakFormCNTG(double ts);
+
+	
+private:
+
+  class CustomMatrixFormSurface_CNTG : public MatrixFormSurf<double>
+  {
+  public:
+    CustomMatrixFormSurface_CNTG (int i, int j, double ts) : MatrixFormSurf<double>(i, j), ts(ts) {};
+
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+    MatrixFormSurf<double>* clone() const;
+		double ts;
+
+  };
+
+  class CustomMatrixForm_CNTG : public MatrixFormVol<double>
+  {
+  public:
+   CustomMatrixForm_CNTG (int i, int j,double ts) : MatrixFormVol<double>(i, j),ts(ts){};
+
+    template<typename Real, typename Scalar>
+    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, Geom<Real> *e, Func<Scalar> **ext) const;
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+    MatrixFormVol<double>* clone() const;
+
+		double ts;
+
+  };
+  double upwind_flux(double u_cent, double u_neib, double a_dot_n) const;
+
+  Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
+};
+
+
+
+//--------surface----------------
+
+class CustomWeakFormSurface : public WeakForm<double>    //Surface
+{
+public:
+  CustomWeakFormSurface(MeshFunctionSharedPtr<double> sln_prev_time);
+
+	
+private:
+
+  class CustomMatrixFormSurface : public MatrixFormSurf<double>
+  {
+  public:
+    CustomMatrixFormSurface(int i, int j) : MatrixFormSurf<double>(i, j) {};
+
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+    MatrixFormSurf<double>* clone() const;
+
+  };
+
+  class CustomVectorFormSurface : public VectorFormSurf<double>
+  {
+  public:
+    CustomVectorFormSurface(int i) : VectorFormSurf<double>(i) {};
+
+    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const;
+
+    virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, Func<Ord> **ext) const;
+
+    VectorFormSurf<double>* clone() const;
+
+  };
+  double upwind_flux(double u_cent, double u_neib, double a_dot_n) const;
+
+  Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
+};
+
+
 
 //---------Gradient Reconstruction---------------
 

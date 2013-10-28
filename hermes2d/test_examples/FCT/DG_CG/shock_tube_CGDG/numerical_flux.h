@@ -17,19 +17,19 @@ public:
   virtual double numerical_flux_i(int component, double w_L[4], double w_R[4],
           double nx, double ny) = 0;
 
-  virtual void numerical_flux_solid_wall(double result[4], double w_L[4], double nx, double ny) = 0;
+  virtual void numerical_flux_solid_wall(double result[4], double w_L[4], double nx, double ny) {};
   
-  virtual double numerical_flux_solid_wall_i(int component, double w_L[4], double nx, double ny) = 0;
+  virtual double numerical_flux_solid_wall_i(int component, double w_L[4], double nx, double ny) { return 0.0; };
 
   virtual void numerical_flux_inlet(double result[4], double w_L[4], double w_B[4],
-          double nx, double ny) = 0;
+    double nx, double ny) {};
   
   virtual double numerical_flux_inlet_i(int component, double w_L[4], double w_B[4],
-          double nx, double ny) = 0;
+    double nx, double ny) { return 0.0; };
 
-  virtual void numerical_flux_outlet(double result[4], double w_L[4], double pressure, double nx, double ny) = 0;
+  virtual void numerical_flux_outlet(double result[4], double w_L[4], double pressure, double nx, double ny) {};
   
-  virtual double numerical_flux_outlet_i(int component, double w_L[4], double pressure, double nx, double ny) = 0;
+  virtual double numerical_flux_outlet_i(int component, double w_L[4], double pressure, double nx, double ny) { return 0.0; };
 
   /// Rotates the state_vector into the local coordinate system.
   void Q(double result[4], double state_vector[4], double nx, double ny);
@@ -182,7 +182,44 @@ protected:
 
   // Utility quantities.
   double z_L, z_R, s_L, s_R, alpha;
-
 };
 
+class LaxFriedrichsNumericalFlux : public NumericalFlux
+{
+public:
+  LaxFriedrichsNumericalFlux(double kappa);
+
+  virtual void numerical_flux(double result[4], double w_L[4], double w_R[4],
+          double nx, double ny);
+  
+  virtual double numerical_flux_i(int component, double w_L[4], double w_R[4],
+          double nx, double ny);
+
+  void Euler_flux_1(double state[4], double result[4]);
+  double Euler_flux_1_i(int i, double state[4]);
+  void Euler_flux_2(double state[4], double result[4]);
+  double Euler_flux_2_i(int i, double state[4]);
+
+  double calculate_s(double state[4], double nx, double ny);
+};
+
+class HLLNumericalFlux : public NumericalFlux
+{
+public:
+  HLLNumericalFlux(double kappa);
+
+  virtual void numerical_flux(double result[4], double w_L[4], double w_R[4],
+          double nx, double ny);
+  
+  virtual double numerical_flux_i(int component, double w_L[4], double w_R[4],
+          double nx, double ny);
+
+  void Euler_flux_1(double state[4], double result[4]);
+  double Euler_flux_1_i(int i, double state[4]);
+  void Euler_flux_2(double state[4], double result[4]);
+  double Euler_flux_2_i(int i, double state[4]);
+
+  double calculate_s_L(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R);
+  double calculate_s_R(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R);
+};
 #endif

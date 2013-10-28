@@ -59,8 +59,6 @@ virtual double get_fn_value_order(int order, int index, double x, double y, int 
 
 		protected:
 			int space_order;
-			//int no_shape_fn;
-			//int no_shape_fn_quad;
 
 			shape_fn_bb*** shape_table_bb[6];
       /// Constructs the linear combination of edge functions, forming a constrained edge function.

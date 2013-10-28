@@ -1,12 +1,14 @@
 
  
-double calc_error( SpaceSharedPtr<double> ref_space, MeshFunctionSharedPtr<double> u_fct,MeshFunctionSharedPtr<double> u_init)
+double* calc_error( SpaceSharedPtr<double> ref_space, MeshFunctionSharedPtr<double> u_fct,MeshFunctionSharedPtr<double> u_init)
 {
       // order of integral
       const int order = 10;
 
       // initialize total_error
-      double total_error = 0.0;
+      double* total_error = new double[2];
+			total_error[0] = 0.;
+			total_error[1] = 0.;
 
       // element for the element loop
       Element *e =NULL;
@@ -53,8 +55,13 @@ Solution<double>* u_exact = new Solution<double>; u_exact = static_cast<Solution
 					if((x_coord[j]>=0.375)&&(x_coord[j]<=0.625))
 					{
 							if((y_coord[j]>=0.375)&&(y_coord[j]<=0.625))
-									total_error +=pt[j][2]*jac*( (v->val[j] - v_ex->val[j])*(v->val[j] - v_ex->val[j]) );   
-					}       
+									total_error[0] +=pt[j][2]*jac*( (v->val[j] - v_ex->val[j])*(v->val[j] - v_ex->val[j]) );   
+					} 
+					if((x_coord[j]>=0.4375)&&(x_coord[j]<=0.5625))
+					{
+							if((y_coord[j]>=0.4375)&&(y_coord[j]<=0.5625))
+									total_error[1] +=pt[j][2]*jac*( (v->val[j] - v_ex->val[j])*(v->val[j] - v_ex->val[j]) );   
+					}      
         }
 
 
@@ -68,11 +75,45 @@ Solution<double>* u_exact = new Solution<double>; u_exact = static_cast<Solution
 	delete u; 
 	delete u_exact;
 
-return Hermes::sqrt(total_error);
+return total_error;
  }
 
 
+void calc_error_total_time(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_prev_time,SpaceSharedPtr<double> space, double time)
+{
+int ndof = space->get_num_dofs();
+ 
+  ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
+  errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
+  errorCalculator_l2.calculate_errors(u_new, u_prev_time,false);
+double err_l2_2 = errorCalculator_l2.get_total_error_squared();
+//double* err_limit = calc_error(space, u_new, u_prev_time);
 
+
+FILE * pFile;
+pFile = fopen ("error.txt","a");
+fprintf (pFile, "time =%g:  l2=%.4e, ndof = %d \n",time, Hermes::sqrt(err_l2_2),ndof);
+    //fprintf (pFile, "time =%g:  l2=%.4e, limit_1=%.4e, limit_2=%.4e, ndof = %d",time, Hermes::sqrt(err_l2_2),Hermes::sqrt(err_limit[0]),Hermes::sqrt(err_limit[1]),ndof);
+fclose (pFile); 
+
+//delete [] err_limit;
+
+}
+
+void calc_error_proj(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_proj,SpaceSharedPtr<double> space)
+{
+	int ndof = space->get_num_dofs();
+	 
+		ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
+		errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
+		errorCalculator_l2.calculate_errors(u_new, u_proj,false);
+
+	double err_l2_2 = errorCalculator_l2.get_total_error_squared();
+	FILE * pFile;
+	pFile = fopen ("error.txt","a");
+		  fprintf (pFile, "proj:  l2=%.4e, ndof = %d\n",Hermes::sqrt(err_l2_2),ndof);
+	fclose (pFile); 
+}
 
 
 void calc_error_total(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_prev_time,SpaceSharedPtr<double> space)
@@ -80,23 +121,36 @@ void calc_error_total(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr
 int ndof = space->get_num_dofs();
  
   ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
-ErrorCalculator<double> errorCalculator_h1(AbsoluteError);
+//ErrorCalculator<double> errorCalculator_h1(AbsoluteError);
   errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
-  errorCalculator_h1.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_H1_NORM));
+  //errorCalculator_h1.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_H1_NORM));
   errorCalculator_l2.calculate_errors(u_new, u_prev_time,false);
-  errorCalculator_h1.calculate_errors(u_new, u_prev_time,false);
+ // errorCalculator_h1.calculate_errors(u_new, u_prev_time,false);
 
 double err_l2_2 = errorCalculator_l2.get_total_error_squared();
-double err_h1_2 = errorCalculator_h1.get_total_error_squared();
+//double err_h1_2 = errorCalculator_h1.get_total_error_squared();
 
-double err_limit = calc_error(space, u_new, u_prev_time);
 
-Hermes::Mixins::Loggable::Static::info(" l2=%.3e,h1 = %.3e, limit=%.3e, ndof = %d",Hermes::sqrt(err_l2_2),Hermes::sqrt(err_h1_2),err_limit,ndof);
+Hermes::Mixins::Loggable::Static::info("end:  l2=%.4e, ndof = %d", Hermes::sqrt(err_l2_2),ndof);
 
 FILE * pFile;
-pFile = fopen ("error.txt","w");
-    fprintf (pFile, " l2=%.4e,h1 = %.4e, limit=%.4e, ndof = %d",Hermes::sqrt(err_l2_2),Hermes::sqrt(err_h1_2),err_limit,ndof);
+pFile = fopen ("error.txt","a");
+    fprintf (pFile, "end:  l2=%.4e, ndof = %d\n",Hermes::sqrt(err_l2_2),ndof);
+fclose (pFile); 
+
+
+/*double* err_limit = calc_error(space, u_new, u_prev_time);
+
+Hermes::Mixins::Loggable::Static::info("end:  l2=%.4e, limit_1=%.4e, limit_2=%.4e, ndof = %d", Hermes::sqrt(err_l2_2),Hermes::sqrt(err_limit[0]),Hermes::sqrt(err_limit[1]),ndof);
+
+FILE * pFile;
+pFile = fopen ("error.txt","a");
+    fprintf (pFile, "end:  l2=%.4e, limit_1=%.4e, limit_2=%.4e, ndof = %d",Hermes::sqrt(err_l2_2),Hermes::sqrt(err_limit[0]),Hermes::sqrt(err_limit[1]),ndof);
 fclose (pFile);  
+
+delete [] err_limit;*/
+
+
 
 // Output solution in VTK format.
 //	Linearizer lin;

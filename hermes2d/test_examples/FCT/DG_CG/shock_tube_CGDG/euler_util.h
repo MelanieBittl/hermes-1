@@ -37,7 +37,16 @@ public:
   {
     Hermes::vector<MeshFunctionSharedPtr<double> > slns;
     for(int i = 0; i < this->num; i++)
-      slns.push_back(this->sln[i]->clone());
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        slns.push_back(new Solution<double>());
+        slns.back()->copy(this->sln[i]);
+      }
+      else
+        slns.push_back(this->sln[i]->clone()); 
+    }
     MachNumberFilter* filter = new MachNumberFilter(slns, this->kappa);
           
     return filter;
@@ -55,15 +64,22 @@ class VelocityFilter : public Hermes::Hermes2D::SimpleFilter<double>
 public: 
   VelocityFilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, int coord) : SimpleFilter<double>(solutions), coord(coord) {};
   ~VelocityFilter() 
-  {
-
-  };
+  {  };
 
   MeshFunction<double>*  clone() const
   {
     Hermes::vector<MeshFunctionSharedPtr<double> > slns;
     for(int i = 0; i < this->num; i++)
-      slns.push_back(this->sln[i]->clone());
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        slns.push_back(new Solution<double>());
+        slns.back()->copy(this->sln[i]);
+      }
+      else
+        slns.push_back(this->sln[i]->clone()); 
+    }
     VelocityFilter* filter = new VelocityFilter(slns,this->coord);
    
     return filter;
@@ -85,11 +101,18 @@ public:
 
   MeshFunction<double>*  clone() const
   {	
-      Hermes::vector<MeshFunctionSharedPtr<double> > slns;
-      for(int i = 0; i < this->num; i++)
+    Hermes::vector<MeshFunctionSharedPtr<double> > slns;
+    for(int i = 0; i < this->num; i++)
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
       {
-        slns.push_back(this->sln[i]->clone());
+        slns.push_back(new Solution<double>());
+        slns.back()->copy(this->sln[i]);
       }
+      else
+        slns.push_back(this->sln[i]->clone()); 
+    }
     PressureFilter* filter = new PressureFilter(slns, this->kappa);
 
     return filter;
@@ -113,7 +136,16 @@ public:
   {
     Hermes::vector<MeshFunctionSharedPtr<double> > slns;
     for(int i = 0; i < this->num; i++)
-      slns.push_back(this->sln[i]->clone());
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        slns.push_back(new Solution<double>());
+        slns.back()->copy(this->sln[i]);
+      }
+      else
+        slns.push_back(this->sln[i]->clone()); 
+    }
     EntropyFilter* filter = new EntropyFilter(slns, this->kappa, rho_ext, p_ext);
 
     return filter;

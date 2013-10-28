@@ -75,12 +75,14 @@ bool h_p_adap(SpaceSharedPtr<Scalar> space,	CSCMatrix<double> * mass_matrix,Mesh
 			if(elem_error[e->id] >tol_h){ 
 										refine = true; elements_to_refine[e->id] = 1; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]> (tol_h+i*std_dev_h))&&(i<2)){
-					 													no_of_refinement_steps[e->id]++; i++;
+					 									//				no_of_refinement_steps[e->id]++;
+ i++;
 					}
 			}else	if(elem_error[e->id] <EPS){ 
 										refine = true; elements_to_refine[e->id] = 4; no_of_refinement_steps[e->id]++; 
 					while((elem_error[e->id]< (EPS/i*100))&&(i<2)){
-					 													no_of_refinement_steps[e->id]++; i++;
+					 										//			no_of_refinement_steps[e->id]++; 
+											i++;
 					}
 			}else {
 					elements_to_refine[e->id] = 0;

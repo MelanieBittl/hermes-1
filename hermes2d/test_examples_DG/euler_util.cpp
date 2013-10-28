@@ -7,13 +7,9 @@
 double QuantityCalculator::calc_energy(double rho, double rho_v_x, double rho_v_y, double pressure, double kappa)
 {
   double to_return = pressure/(kappa - 1.0) + (rho_v_x*rho_v_x+rho_v_y*rho_v_y) / (2.0*rho);
-<<<<<<< HEAD
-  if(to_return < Hermes::Epsilon)
-    return Hermes::Epsilon;
-=======
   if(std::abs(to_return) < 1E-12 || to_return < 0.0)
     return 1E-12;
->>>>>>> lukas/devel
+
   return to_return;
 }
 
@@ -21,30 +17,18 @@ double QuantityCalculator::calc_energy(double rho, double rho_v_x, double rho_v_
 double QuantityCalculator::calc_pressure(double rho, double rho_v_x, double rho_v_y, double energy, double kappa)
 {
   double to_return = (kappa - 1.0) * (energy - (rho_v_x*rho_v_x + rho_v_y*rho_v_y) / (2.0*rho));
-<<<<<<< HEAD
-  if(to_return < Hermes::Epsilon)
-    return Hermes::Epsilon;
-=======
   if(std::abs(to_return) < 1E-12 || to_return < 0.0)
     return 1E-12;
->>>>>>> lukas/devel
   return to_return;
 }
 
 // Calculates speed of sound.
 double QuantityCalculator::calc_sound_speed(double rho, double rho_v_x, double rho_v_y, double energy, double kappa)
 {
-<<<<<<< HEAD
-  double to_return = std::sqrt(kappa * calc_pressure(rho, rho_v_x, rho_v_y, energy, kappa) / rho);
-
-  if(to_return < Hermes::Epsilon)
-    return Hermes::Epsilon;
-=======
   double to_return = std::sqrt((kappa * (kappa - 1.0)) * ((energy / rho) - (rho_v_x*rho_v_x + rho_v_y*rho_v_y) / (2.0*rho*rho)));
 
   if(std::abs(to_return) < 1E-12 || to_return < 0.0)
     return 1E-12;
->>>>>>> lukas/devel
   return to_return;
 }
 
@@ -1376,56 +1360,6 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Limi
 {
   int running_dofs = 0;
   int ndof = spaces[0]->get_num_dofs();
-<<<<<<< HEAD
-  double* original_sln_vector = limiter->get_solution_vector();
-  Element* e;
-  AsmList<double> al, al_density;
-  double* real_vector = new double[3 * ndof];
-  memset(real_vector, 0, sizeof(double) * 3 * ndof);
-  for(int component = 1; component < 4; component++)
-  {
-    for_all_active_elements(e, spaces[0]->get_mesh())
-    {
-      spaces[component]->get_element_assembly_list(e, &al);
-      spaces[0]->get_element_assembly_list(e, &al_density);
-
-      real_vector[al.dof[0] - ndof] = original_sln_vector[al.dof[0]] / original_sln_vector[al_density.dof[0]];
-      real_vector[al.dof[1] - ndof] = (original_sln_vector[al.dof[1]] - real_vector[al.dof[0] - ndof] * original_sln_vector[al_density.dof[1]]) / original_sln_vector[al_density.dof[0]];
-      real_vector[al.dof[2] - ndof] = (original_sln_vector[al.dof[2]] - real_vector[al.dof[0] - ndof] * original_sln_vector[al_density.dof[2]]) / original_sln_vector[al_density.dof[0]];
-    }
-  }
-
-  PostProcessing::Limiter<double> * real_component_limiter;
-  if(dynamic_cast<PostProcessing::VertexBasedLimiter*>(limiter))
-    real_component_limiter = new PostProcessing::VertexBasedLimiter(Hermes::vector<SpaceSharedPtr<double> >(spaces[1], spaces[2], spaces[3]), real_vector, dynamic_cast<PostProcessing::VertexBasedLimiter*>(limiter)->maximum_polynomial_order);
-  else
-  {
-    real_component_limiter = new FeistauerJumpDetector(Hermes::vector<SpaceSharedPtr<double> >(spaces[1], spaces[2], spaces[3]), real_vector);
-    dynamic_cast<FeistauerJumpDetector*>(real_component_limiter)->set_type(CoarseningJumpIndicatorAllToThemselves);
-  }
-
-  real_component_limiter->set_verbose_output(limiter->get_verbose_output());
-  real_component_limiter->get_solutions(Hermes::vector<MeshFunctionSharedPtr<double> >(slns[0], slns[1], slns[2]));
-  delete [] real_vector;
-  real_vector = real_component_limiter->get_solution_vector();
-
-  for(int component = 1; component < 4; component++)
-  for_all_active_elements(e, spaces[0]->get_mesh())
-  {
-    spaces[component]->get_element_assembly_list(e, &al);
-    spaces[0]->get_element_assembly_list(e, &al_density);
-
-    original_sln_vector[al.dof[1]] = original_sln_vector[al_density.dof[0]] * real_vector[al.dof[1] - ndof]
-    + original_sln_vector[al_density.dof[1]] * real_vector[al.dof[0] - ndof];
-
-    original_sln_vector[al.dof[2]] = original_sln_vector[al_density.dof[0]] * real_vector[al.dof[2] - ndof]
-    + original_sln_vector[al_density.dof[2]] * real_vector[al.dof[0] - ndof];
-  }
-
-  Solution<double>::vector_to_solutions(original_sln_vector, Hermes::vector<SpaceSharedPtr<double> >(spaces[1], spaces[2], spaces[3]), Hermes::vector<MeshFunctionSharedPtr<double> >(slns[0], slns[1], slns[2]));
-
-  delete real_component_limiter;
-=======
   double* density_sln_vector = limiter->get_solution_vector();
   Element* e;
   AsmList<double> al_density;
@@ -1476,7 +1410,6 @@ void limitVelocityAndEnergy(Hermes::vector<SpaceSharedPtr<double> > spaces, Limi
 
     delete real_component_limiter;
   }
->>>>>>> lukas/devel
 }
 
 FeistauerJumpDetector::FeistauerJumpDetector(SpaceSharedPtr<double> space, double* solution_vector) : PostProcessing::Limiter<double>(space, solution_vector)
@@ -1575,13 +1508,9 @@ void FeistauerJumpDetector::assemble_one_neighbor(NeighborSearch<double>& ns, in
       ns.central_transformations[neighbor_i]->apply_on(this->limited_solutions[component].get());
   }
 
-<<<<<<< HEAD
-  int order = DiscreteProblemDGAssembler<double>::dg_order;
-=======
   /// \todo
   //int order = DiscreteProblemDGAssembler<double>::dg_order;
   int order = 20;
->>>>>>> lukas/devel
   ns.set_quad_order(order);
 
   RefMap* refmap = this->limited_solutions[0]->get_refmap();
