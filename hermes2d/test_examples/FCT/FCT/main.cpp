@@ -15,15 +15,15 @@ using namespace Hermes::Solvers;
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
 const int INIT_NUM =7;                   // Number of initial refinements.
-const int P_INIT =1;       						// Initial polynomial degree.                      
-const double time_step =125e-7;                           // Time step.
-//const double T_FINAL = 2.*PI;                       // Time interval length. 
-const double T_FINAL = 0.5*PI; 
+const int P_INIT =2;       						// Initial polynomial degree.                      
+const double time_step =125e-6;                           // Time step.
+const double T_FINAL = 2.*PI;                       // Time interval length. 
+//const double T_FINAL = 0.5*PI; 
 //const double T_FINAL = 1.; 
 const double EPS = 1e-10;
 const double EPS_smooth = 1e-8;
 
-const bool FCT = false;
+const bool FCT = true;
 
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
 
@@ -337,12 +337,12 @@ antidiffusiveFlux(mass_matrix,mat_cntg,lumped_matrix,conv_matrix,diffusion,u_H, 
   // Increase time step counter
  	ts++;
 
-	if(current_time > time_counter*0.5*PI)
+/*	if(current_time > time_counter*0.5*PI)
 	{
 			calc_error_total_time(u_new, u_prev_time,space,current_time);
 			time_counter ++;
 	}
-
+*/
 
 }
 while (current_time < T_FINAL);

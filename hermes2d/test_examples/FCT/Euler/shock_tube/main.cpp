@@ -12,9 +12,9 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
-const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 125e-6;
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int P_INIT = 1;       						// Initial polynomial degree.
+const double time_step = 1e-3;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 0.5;
@@ -30,7 +30,7 @@ const double KAPPA = 1.4;
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
-//FCT & p-Adaptivity
+//FCT 
 #include "mass_lumping.cpp"
 #include "artificial_diffusion.cpp"
 #include "fct.cpp"    
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 	Hermes::vector<NormType> norms_l2(HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM);
 
  //--------- Visualization of pressure & velocity
-/*  ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
+  ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
   ScalarView s1("rho", new WinGeom(0, 0, 600, 300));
   ScalarView s2("v_x", new WinGeom(700, 0, 600, 300));
   ScalarView s3("v_y", new WinGeom(0, 400, 600, 300));
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
       s1.set_min_max_range(0, 1.);
       s2.set_min_max_range(0., 1.);
       s3.set_min_max_range(0, 0.1);
-			pressure_view.set_min_max_range(0.,1.);*/
+			pressure_view.set_min_max_range(0.,1.);
 
 //--------------Weakforms------------
   EulerEquationsWeakForm_K  wf_K_init(KAPPA, init_slns);
@@ -164,9 +164,9 @@ Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho
   MeshFunctionSharedPtr<double>  vel_x(new VelocityFilter(prev_slns, 1));
   MeshFunctionSharedPtr<double>  vel_y(new VelocityFilter(prev_slns, 2));
 
-			 // Visualize the solution.
-			//s1.show(prev_rho);
-//View::wait(HERMES_WAIT_KEYPRESS);
+			// Visualize the solution.
+			s1.show(prev_rho);
+View::wait(HERMES_WAIT_KEYPRESS);
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -230,7 +230,7 @@ do
 	
 
 			 // Visualize the solution.
-		/*		
+				
 				pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();

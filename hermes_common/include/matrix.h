@@ -556,6 +556,8 @@ namespace Hermes
 
       /// Get vector length.
       unsigned int get_size() const {return this->size;}
+
+      virtual void multiply_with_Scalar(Scalar y) = 0;
     protected:
       /// size of vector
       unsigned int size;
@@ -583,6 +585,7 @@ namespace Hermes
       virtual Vector<Scalar>* add_vector(Scalar* vec);
       virtual Vector<Scalar>* set_vector(Vector<Scalar>* vec);
       virtual Vector<Scalar>* set_vector(Scalar* vec);
+      virtual void multiply_with_Scalar(Scalar y);
       
       using Vector<Scalar>::export_to_file;
       using Vector<Scalar>::import_from_file;

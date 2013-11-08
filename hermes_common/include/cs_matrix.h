@@ -43,6 +43,13 @@ namespace Hermes
       /// @param[in] ax values
       void create(unsigned int size, unsigned int nnz, int* ap, int* ai, Scalar* ax);
 
+
+      /// Creates matrix in CS format using size, nnz, and the two arrays filled with zeros.
+      void create_pattern(unsigned int size, unsigned int nnz, int* ap, int* ai);
+
+      /// Creates matrix in CS format combining pattern of both matrices.
+      void create_merged_pattern(CSMatrix<Scalar>* mat_1,CSMatrix<Scalar>* mat_2);
+
       /// \brief Default constructor.
       CSMatrix();
       /// \brief Constructor with specific size

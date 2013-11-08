@@ -193,6 +193,99 @@ namespace Hermes
       }
     }
 
+
+    template<typename Scalar>
+    void CSMatrix<Scalar>::create_pattern(unsigned int size, unsigned int nnz, int* ap, int* ai)
+    {
+      this->nnz = nnz;
+      this->size = size;
+      this->Ap = new int[this->size + 1];
+      this->Ai = new int[nnz];
+      this->Ax = new Scalar[nnz];
+      for (unsigned int i = 0; i < this->size + 1; i++)
+        this->Ap[i] = ap[i];
+      for (unsigned int i = 0; i < nnz; i++)
+      {
+        this->Ax[i] = 0.;
+        this->Ai[i] = ai[i];
+      }
+    }
+
+    template<typename Scalar>
+    void CSMatrix<Scalar>::create_merged_pattern(CSMatrix<Scalar>* mat_1,CSMatrix<Scalar>* mat_2)
+		{
+			this->size = mat_1->get_size();
+			if(this->size !=mat_2->get_size()) throw Hermes::Exceptions::Exception("unequal size for merging");
+			int* ap_1 = mat_1->get_Ap();
+			int* ai_1 = mat_1->get_Ai();
+			int* ap_2 = mat_2->get_Ap();
+			int* ai_2 = mat_2->get_Ai();
+			int nnz_1 = mat_1->get_nnz();
+			int nnz_2 = mat_2->get_nnz();
+
+			this->nnz = 0; bool unequal_pattern = false;
+
+			for(int j= 0; j< this->size; j++)
+			{
+			int i_1 = ap_1[j];
+			int i_2 = ap_2[j];
+				while((i_1< ap_1[j+1])&&(i_2< ap_2[j+1]))
+				{
+						if(ai_1[i_1]==ai_2[i_2])
+						{
+							i_1++; i_2++; this->nnz++;
+						}else if(ai_1[i_1]>ai_2[i_2])
+						{
+								i_2++; this->nnz++; unequal_pattern = true;
+						}else if(ai_1[i_1]<ai_2[i_2])
+						{
+								i_1++; this->nnz++; unequal_pattern = true;
+						}
+				}
+				while(i_1< ap_1[j+1]){i_1++; this->nnz++; unequal_pattern = true;}
+				while(i_2< ap_2[j+1]){i_2++; this->nnz++; unequal_pattern = true;}
+
+
+
+			}
+			if((unequal_pattern==false)&&(this->nnz!=nnz_1))throw Hermes::Exceptions::Exception("unequal nnz1 for merging");
+			if(unequal_pattern==false) this->create_pattern(this->size, this->nnz, ap_1, ai_1);		
+			else{
+							this->Ap = new int[this->size + 1];
+							this->Ai = new int[this->nnz];
+							this->Ax = new Scalar[this->nnz];
+								int n = 0;
+
+							for(int j= 0; j< this->size; j++)
+							{
+								this->Ap[j] = n; 
+								int i_1 = ap_1[j];
+								int i_2 = ap_2[j];
+									while((i_1< ap_1[j+1])&&(i_2< ap_2[j+1]))
+									{		
+											this->Ax[n]=0.;
+											if(ai_1[i_1]==ai_2[i_2])
+											{												
+												this->Ai[n] = ai_1[i_1]; n++; i_1++; i_2++; 
+											}else if(ai_1[i_1]>ai_2[i_2])
+											{
+												this->Ai[n] = ai_2[i_2]; n++; i_2++; 
+											}else if(ai_1[i_1]<ai_2[i_2])
+											{
+												this->Ai[n] = ai_1[i_1]; n++; i_1++; 
+											}
+											
+									}
+								while(i_1< ap_1[j+1]){this->Ax[n]=0.;this->Ai[n] = ai_1[i_1]; n++; i_1++; }
+								while(i_2< ap_2[j+1]){this->Ax[n]=0.;this->Ai[n] = ai_2[i_2]; n++; i_2++; }
+								
+							}
+							if(n!=this->nnz)	throw Hermes::Exceptions::Exception("unequal nnz for merging");
+							this->Ap[this->size] = n;
+			}		
+		} 
+
+
     template<typename Scalar>
     void CSMatrix<Scalar>::switch_orientation()
     {

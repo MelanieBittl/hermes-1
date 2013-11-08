@@ -50,10 +50,10 @@ public:
   ExactWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", double diffusivity = 0., double s = 0., double sigma = 0., MeshFunctionSharedPtr<double> exact_solution = NULL);
 };
 
-class FullImplicitWeakForm : public WeakForm<double>
+class TimeDepWeakForm : public ExactWeakForm
 {
 public:
-  FullImplicitWeakForm(SolvedExample solvedExample, int explicitSchemeStep = 1, bool add_inlet = false, std::string inlet = "", double diffusivity = 0.);
+  TimeDepWeakForm(SolvedExample solvedExample, bool add_inlet = false, std::string inlet = "", double diffusivity = 0., double s = 0., double sigma = 0., MeshFunctionSharedPtr<double> exact_solution = NULL);
 };
 
 class MultiscaleWeakForm : public WeakForm<double>

@@ -528,8 +528,8 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
   dx=0.; dy=0.;    
 	double radius = 0.;
      //hump
-	//double x_0 =0.25;
-double x_0 =0.5;
+	double x_0 =0.25;
+//double x_0 =0.5;
 	double y_0= 0.5;	
 	radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if( radius<= 1.0) {		
@@ -571,8 +571,8 @@ double x_0 =0.5;
     double result = 0.0;
  	double radius;
        //hump
-	//double x_0 =0.25;
-	double x_0 =0.5;
+	double x_0 =0.25;
+	//double x_0 =0.5;
 	double y_0= 0.5;	
 	radius = (1.0/0.15) * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if( radius<= 1.0) { 
