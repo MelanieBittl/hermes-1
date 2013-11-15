@@ -12,17 +12,17 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const double time_step = 1e-3;
-const double T_FINAL = 0.231;                       // Time interval length. 
+const double T_FINAL = 3.;                       // Time interval length. 
 
 const double theta = 0.5;
 
 // Equation parameters.  
  
 // Inlet x-velocity (dimensionless).
-const double V1_EXT = 0.0;        
+const double V1_EXT = 3.5;        
 // Inlet y-velocity (dimensionless).
 const double V2_EXT = 0.0;        
 // Kappa.
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
   	printf("ndof: %d \n", ndof);
 
   // Initialize solutions, set initial conditions.
-		MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh));	
+		MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
 		MeshFunctionSharedPtr<double> init_rho_v_x(new   ConstantSolution<double>(mesh,  V1_EXT));	
 		MeshFunctionSharedPtr<double> init_rho_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
 		MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));	
@@ -98,10 +98,12 @@ int main(int argc, char* argv[])
   ScalarView s2("v_x", new WinGeom(700, 0, 600, 300));
   ScalarView s3("v_y", new WinGeom(0, 400, 600, 300));
   ScalarView s4("prev_e", new WinGeom(700, 700, 600, 300));
+  ScalarView mach_view("mach", new WinGeom(0, 700, 600, 300));
       s1.set_min_max_range(0, 1.);
       s2.set_min_max_range(0., 1.);
       s3.set_min_max_range(0, 0.1);
 			pressure_view.set_min_max_range(0.,1.);
+			mach_view.set_min_max_range(2.5,4.);
 
 //--------------Weakforms------------
   EulerEquationsWeakForm_K  wf_K_init(KAPPA, init_slns);
@@ -109,8 +111,7 @@ int main(int argc, char* argv[])
   EulerEquationsWeakForm_Mass wf_mass;
 
   EulerEquationsWeakForm_K*  wf_K= new EulerEquationsWeakForm_K(KAPPA, prev_slns);
-  EulerBoundary* wf_boundary= new EulerBoundary(KAPPA,
-Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, init_rho, init_rho_v_x, init_rho_v_y,  init_e));
+  EulerBoundary* wf_boundary= new EulerBoundary(KAPPA,Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, init_rho, init_rho_v_x, init_rho_v_y,  init_e));
   EulerEquationsWeakForm_K*  wf_K_low = new EulerEquationsWeakForm_K(KAPPA, low_slns);
   EulerBoundary* wf_boundary_low = new EulerBoundary(KAPPA,Hermes::vector<MeshFunctionSharedPtr<double> > (low_rho, low_rho_v_x, low_rho_v_y, low_e, init_rho, init_rho_v_x, init_rho_v_y,  init_e ));
 
@@ -152,9 +153,9 @@ Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho
     OGProjection<double> ogProjection;
 		Lumped_Projection lumpedProjection;
 
-	lumpedProjection.project_lumped(spaces, init_slns, coeff_vec, matrix_solver);
-  ogProjection.project_global(spaces,init_slns, coeff_vec_2, norms_l2 );
-	lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
+	//lumpedProjection.project_lumped(spaces, init_slns, coeff_vec, matrix_solver);
+  ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
+	//lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 	Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
 
@@ -164,14 +165,16 @@ Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho
   MeshFunctionSharedPtr<double>  vel_x(new VelocityFilter(prev_slns, 1));
   MeshFunctionSharedPtr<double>  vel_y(new VelocityFilter(prev_slns, 2));
 
-			// Visualize the solution.
-			s1.show(prev_rho);
-//View::wait(HERMES_WAIT_KEYPRESS);
+MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, KAPPA));
+		s1.show(prev_rho);
+		mach_view.show(mach);
 
 // Time stepping loop:
 	double current_time = 0.0; 
 	int ts = 1;
 	char title[100];
+
+	SimpleVector<double> * vec_bdry = new SimpleVector<double>(ndof);
 
 
 Space<double>::assign_dofs(spaces);
@@ -183,7 +186,14 @@ do
 			dp_boundary->assemble(matrix_dS);
 		  dp_K->assemble(lowmat_rhs);
 		}else{
-			dp_boundary_init.assemble(matrix_dS);
+			//dp_boundary_init.assemble(matrix_dS,vec_bdry);
+dp_boundary->assemble(matrix_dS,vec_bdry);
+			//	vec_bdry->multiply_with_Scalar(time_step);
+matrix_dS->multiply_with_vector(coeff_vec, coeff_vec_2); 
+
+for(int i=0; i<ndof; i++) 
+		if(vec_bdry->get(i)!=coeff_vec_2[i]) printf("%i : vec=%f, mat_vex=%f\n ",i, vec_bdry->get(i),coeff_vec_2[i]);
+
 		  dp_K_init.assemble(lowmat_rhs);				
 		}
 	//------------------------artificial DIFFUSION D---------------------------------------	
@@ -202,6 +212,7 @@ do
 	//-------------rhs lower Order M_L/tau+ (1-theta)(L) u^n------------		
 			lowmat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
+			vec_rhs->add_vector(vec_bdry);
 
 	//-------------------------solution of lower order------------ (M_L/t - theta L(U))U^L = (M_L/t+(1-theta)L(U))U^n
 			UMFPackLinearMatrixSolver<double> * lowOrd = new UMFPackLinearMatrixSolver<double> (low_matrix,vec_rhs);	
@@ -231,7 +242,7 @@ do
 
 			 // Visualize the solution.
 				
-				pressure->reinit();
+		/*		pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
 				sprintf(title, "pressure: ts=%i",ts);
@@ -245,7 +256,12 @@ do
 				s2.show(vel_x);
 				sprintf(title, "velocity (y): ts=%i",ts);
 				s3.set_title(title);
-				s3.show(vel_y);
+				s3.show(vel_y);*/
+
+			sprintf(title, "Mach: ts=%i",ts);
+			mach_view.set_title(title);
+			mach->reinit();
+			mach_view.show(mach);
 
   		
 

@@ -211,7 +211,7 @@
 				if(j==0){
         result += wt[i] * u->val[i] * constant
         * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_1_1_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i];
+          * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] * constant
         * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_2_1_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];
@@ -327,7 +327,7 @@
 				if(j==0){
         result += wt[i] * u->val[i] * constant
         * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_1_2_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i];
+          * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] * constant
         * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_2_2_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];

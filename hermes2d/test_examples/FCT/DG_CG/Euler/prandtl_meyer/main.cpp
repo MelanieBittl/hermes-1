@@ -17,21 +17,22 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 1e-3;
-const double T_FINAL = 0.13;                       // Time interval length. 
+const double time_step = 1e-4;
+const double T_FINAL = 3.;                       // Time interval length. 
 
 const double theta = 0.5;
 
 // Equation parameters.  
  
-// Inlet x-velocity (dimensionless).
-const double V1_EXT =1.;        
-// Inlet y-velocity (dimensionless).
-const double V2_EXT = 0.0;        
+     
 // Kappa.
-const double KAPPA = 1.4;  
+const double KAPPA = 1.4; 
+// Inlet x-velocity (dimensionless).
+const double V1_EXT =3.5;        
+// Inlet y-velocity (dimensionless).
+const double V2_EXT = 0.0;    
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -45,7 +46,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain2.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -76,7 +77,7 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 
   // Initialize solutions, set initial conditions.
  MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> init_rho_v_x(new CustomInitialCondition_rho(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> init_rho_v_x(new  ConstantSolution<double>(mesh,  V1_EXT));	
   MeshFunctionSharedPtr<double> init_rho_v_y(new  ConstantSolution<double>(mesh,  V2_EXT));	
   MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));
 
@@ -87,7 +88,7 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 
 
   MeshFunctionSharedPtr<double> boundary_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> boundary_v_x(new CustomInitialCondition_rho(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_x(new  ConstantSolution<double>(mesh,  V1_EXT));	
   MeshFunctionSharedPtr<double> boundary_v_y(new  ConstantSolution<double>(mesh, V2_EXT));	
   MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(mesh,KAPPA));	
 
@@ -100,25 +101,30 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
  //--------- Visualization of pressure & velocity
   ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
   ScalarView s1("rho", new WinGeom(0, 0, 600, 300));
- // ScalarView s2("v_x", new WinGeom(700, 0, 600, 300));
- // ScalarView s3("v_y", new WinGeom(0, 400, 600, 300));
-  //ScalarView s4("prev_e", new WinGeom(700, 700, 600, 300));
+ ScalarView s2("v_x", new WinGeom(700, 0, 600, 300));
+ ScalarView s3("v_y", new WinGeom(0, 400, 600, 300));
+//ScalarView s4("prev_e", new WinGeom(700, 700, 600, 300));
 
   ScalarView mach_view("mach", new WinGeom(0, 700, 600, 300));
-			mach_view.set_min_max_range(0.,4.);
+			s2.set_min_max_range(1.,4.);
+			s3.set_min_max_range(-1.,1.);
+			mach_view.set_min_max_range(2.5,4.);
+			pressure_view.set_min_max_range(0.,3.);
+			s1.set_min_max_range(1., 2.);
 
-	OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
+	//OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
 
-MeshFunctionSharedPtr<double> pressure_init(new PressureFilter(init_slns, KAPPA));
+
 MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA));
 		s1.show(init_rho);
-			pressure_view.show(pressure_init);
 		mach_view.show(mach_init);
 
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 //------------
-		NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+		//NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+
 
 	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
 	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux);
@@ -144,6 +150,7 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
     OGProjection<double> ogProjection;
 		SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
 		SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
+		SimpleVector<double> * vec_in = new SimpleVector<double> (ndof);
 		double* coeff_vec = new double[ndof];	
 		double* coeff_vec_2 = new double[ndof];
 
@@ -152,10 +159,9 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
   ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
 
-MeshFunctionSharedPtr<double> pressure_2(new PressureFilter(prev_slns, KAPPA));
+
 MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
 		s1.show(prev_rho);
-			pressure_view.show(pressure_2);
 		mach_view.show(mach_2);
 //View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -175,11 +181,13 @@ do
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof);
  	  
  	  if(ts!=1){
-			dp_boundary.assemble(mat_rhs);
+			dp_boundary.assemble(mat_rhs, vec_in);
+			vec_in->multiply_with_Scalar(time_step);
 		  dp_DG.assemble(vec_dg);	
 		}else{
-			dp_boundary_init.assemble(mat_rhs);
-		  dp_DG_init.assemble(vec_dg);	
+			dp_boundary_init.assemble(mat_rhs,vec_in);
+			vec_in->multiply_with_Scalar(time_step);
+		 dp_DG_init.assemble(vec_dg);	
 		}
 
 			matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());//L(U) = KU+SU
@@ -193,6 +201,7 @@ do
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
 			vec_dg->multiply_with_Scalar(time_step);
 			vec_rhs->add_vector(vec_dg); 
+			vec_rhs->add_vector(vec_in); 
 
 	//-------------------------solution of lower order------------ (M/t - theta L(U))U^L = (M/t+(1-theta)L(U))U^n
 			UMFPackLinearMatrixSolver<double> * solver = new UMFPackLinearMatrixSolver<double> (matrix,vec_rhs);	
@@ -208,27 +217,33 @@ do
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
 
 			// Visualize the solution.
-
-			sprintf(title, " ts=%i",ts);
 	/*	MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
-		MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
+		MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));
+			sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);
+			sprintf(title, "vy: ts=%i",ts);	
 			s3.set_title(title);
 			vel_x->reinit();
 			vel_y->reinit();
 			s2.show(vel_x);
 			s3.show(vel_y);
 			MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
-			MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, KAPPA));
-			mach_view.set_title(title);
+			sprintf(title, "Pressure: ts=%i",ts);
 			pressure_view.set_title(title);
-			s1.set_title(title);
-			radius_view.set_title(title);
 			pressure->reinit();
+			pressure_view.show(pressure);*/
+
+			MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, KAPPA));
+			sprintf(title, "Mach: ts=%i",ts);
+			mach_view.set_title(title);
 			mach->reinit();
+			mach_view.show(mach);
+
+			sprintf(title, "Density: ts=%i",ts);
+			s1.set_title(title);
 			s1.show(prev_rho);
-			pressure_view.show(pressure);
-		mach_view.show(mach);*/
+
+
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
