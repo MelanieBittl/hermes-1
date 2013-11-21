@@ -12,9 +12,9 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const double time_step = 1e-3;
+const double time_step = 2e-4;
 const double T_FINAL = 3.;                       // Time interval length. 
 
 const double theta = 0.5;
@@ -76,6 +76,11 @@ int main(int argc, char* argv[])
 		MeshFunctionSharedPtr<double> init_rho_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
 		MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));	
 
+		/*MeshFunctionSharedPtr<double> init_rho(new ConstantSolution<double>(mesh,  V1_EXT));	
+		MeshFunctionSharedPtr<double> init_rho_v_x(new   ConstantSolution<double>(mesh,  V1_EXT));	
+		MeshFunctionSharedPtr<double> init_rho_v_y(new   ConstantSolution<double>(mesh,  V1_EXT));	
+		MeshFunctionSharedPtr<double> init_e(new ConstantSolution<double>(mesh,  V1_EXT));*/
+
 		MeshFunctionSharedPtr<double> prev_rho(new Solution<double>);
 		MeshFunctionSharedPtr<double> prev_rho_v_x(new Solution<double>);
 		MeshFunctionSharedPtr<double> prev_rho_v_y(new Solution<double>);
@@ -103,7 +108,7 @@ int main(int argc, char* argv[])
       s2.set_min_max_range(0., 1.);
       s3.set_min_max_range(0, 0.1);
 			pressure_view.set_min_max_range(0.,1.);
-			mach_view.set_min_max_range(2.5,4.);
+			mach_view.set_min_max_range(2.5,3.3);
 
 //--------------Weakforms------------
   EulerEquationsWeakForm_K  wf_K_init(KAPPA, init_slns);
@@ -153,9 +158,9 @@ int main(int argc, char* argv[])
     OGProjection<double> ogProjection;
 		Lumped_Projection lumpedProjection;
 
-	//lumpedProjection.project_lumped(spaces, init_slns, coeff_vec, matrix_solver);
-  ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
-	//lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
+	lumpedProjection.project_lumped(spaces, init_slns, coeff_vec, matrix_solver);
+  ogProjection.project_global(spaces,init_slns, coeff_vec_2, norms_l2 );
+	lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 	Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
 
@@ -166,8 +171,8 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double>  vel_y(new VelocityFilter(prev_slns, 2));
 
 MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, KAPPA));
-		s1.show(prev_rho);
-		mach_view.show(mach);
+	//	s1.show(prev_rho);
+	//	mach_view.show(mach);
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -186,13 +191,13 @@ do
 			dp_boundary->assemble(matrix_dS);
 		  dp_K->assemble(lowmat_rhs);
 		}else{
-			//dp_boundary_init.assemble(matrix_dS,vec_bdry);
-dp_boundary->assemble(matrix_dS,vec_bdry);
-			//	vec_bdry->multiply_with_Scalar(time_step);
+			dp_boundary_init.assemble(matrix_dS,vec_bdry);
+			vec_bdry->multiply_with_Scalar(time_step);
+/*
 matrix_dS->multiply_with_vector(coeff_vec, coeff_vec_2); 
 
 for(int i=0; i<ndof; i++) 
-		if(vec_bdry->get(i)!=coeff_vec_2[i]) printf("%i : vec=%f, mat_vex=%f\n ",i, vec_bdry->get(i),coeff_vec_2[i]);
+		if(vec_bdry->get(i)!=coeff_vec_2[i]) printf("%i : vec=%f, mat_vex=%f\n ",i, vec_bdry->get(i),coeff_vec_2[i]);*/
 
 		  dp_K_init.assemble(lowmat_rhs);				
 		}
@@ -242,7 +247,7 @@ for(int i=0; i<ndof; i++)
 
 			 // Visualize the solution.
 				
-		/*		pressure->reinit();
+				pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
 				sprintf(title, "pressure: ts=%i",ts);
@@ -256,7 +261,7 @@ for(int i=0; i<ndof; i++)
 				s2.show(vel_x);
 				sprintf(title, "velocity (y): ts=%i",ts);
 				s3.set_title(title);
-				s3.show(vel_y);*/
+				s3.show(vel_y);
 
 			sprintf(title, "Mach: ts=%i",ts);
 			mach_view.set_title(title);
@@ -304,14 +309,13 @@ for(int i=0; i<ndof; i++)
 while (current_time < T_FINAL);
 
 				pressure->reinit();
-				vel_x->reinit();
-				vel_y->reinit();
+				mach->reinit();
+
         Linearizer lin_p;
 			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", true);
-        Linearizer lin_v_x;
-			lin_v_x.save_solution_vtk(vel_x, "vx_end.vtk", "velocity_x", true);
-        Linearizer lin_v_y;
-			lin_v_y.save_solution_vtk(vel_y, "vy_end.vtk", "velocity_y",true);
+        Linearizer lin_m;
+			lin_m.save_solution_vtk(mach, "m_end.vtk", "mach", true);
+
         Linearizer lin_rho;
 			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
 

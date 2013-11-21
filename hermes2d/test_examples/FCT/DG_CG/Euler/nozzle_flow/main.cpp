@@ -19,10 +19,10 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 2e-5;
+const double time_step = 1e-4;
 const double T_FINAL = 3.;                       // Time interval length. 
 
-const double theta = 1.;
+const double theta = 0.5;
 
 // Equation parameters.  
  
@@ -30,7 +30,7 @@ const double theta = 1.;
 // Kappa.
 const double KAPPA = 1.4; 
 // Inlet x-velocity (dimensionless).
-const double V1_EXT =3.5;        
+const double V1_EXT =0.2;        
 // Inlet y-velocity (dimensionless).
 const double V2_EXT = 0.0;    
 
@@ -46,11 +46,36 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
-  for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
+  for (int i=0; i < INIT_REF_NUM; i++)
+	{ 
+			basemesh->refine_all_elements();
+		//y-Koord. der Knoten auf cos-Kurve verschieben
+			Node* vn; 
+			for_all_vertex_nodes(vn, basemesh)
+			{	
+				if(vn->bnd) 
+					if((vn->x>0.)&&(vn->x<4.))		
+					{		if(vn->y>0.)
+							{
+									vn->y = (Hermes::cos(PI*vn->x/2.)+3.)/4. ;
+							}else if(vn->y<0.)
+									vn->y = -(Hermes::cos(PI*vn->x/2.)+3.)/4. ;
+					}
+			}
+		}
  	 mesh->copy(basemesh);
+
+
+
+
+/*
+   MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
+ meshview.show(mesh);
+   View::wait();*/
+
 
 bool serendipity = true;
 
@@ -108,11 +133,13 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
   ScalarView mach_view("mach", new WinGeom(0, 700, 600, 300));
 			s2.set_min_max_range(1.,4.);
 			s3.set_min_max_range(-1.,1.);
-			mach_view.set_min_max_range(2.5,3.3);
-			pressure_view.set_min_max_range(0.,3.);
-			s1.set_min_max_range(1., 2.);
+			mach_view.set_min_max_range(0.1, 0.5);
+			pressure_view.set_min_max_range(0.5,1.);
+			s1.set_min_max_range(0.9, 1.1);
 
-	//OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
+/*	OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
+m1view.show(spaces[0]);
+View::wait(HERMES_WAIT_KEYPRESS);
 
 /*
 MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA));
@@ -122,8 +149,8 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 //------------
-		//NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
-NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+		NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
 
 
 	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
@@ -135,8 +162,8 @@ NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
 
   // Initialize the FE problem.
   DiscreteProblem<double> dp_mass(&wf_mass,spaces);
-  DiscreteProblem<double> dp_boundary_init(&wf_boundary_init,spaces); 
-  DiscreteProblem<double> dp_boundary(&wf_boundary, spaces); 
+  DiscreteProblem<double> dp_init(&wf_boundary_init,spaces); 
+  DiscreteProblem<double> dp(&wf_boundary, spaces); 
   DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
   DiscreteProblem<double> dp_DG(&wf_DG, spaces);
 
@@ -181,11 +208,11 @@ do
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof);
  	  
  	  if(ts!=1){
-			dp_boundary.assemble(mat_rhs, vec_in);
+			dp.assemble(mat_rhs, vec_in);
 			vec_in->multiply_with_Scalar(time_step);
 		  dp_DG.assemble(vec_dg);	
 		}else{
-			dp_boundary_init.assemble(mat_rhs,vec_in);
+			dp_init.assemble(mat_rhs,vec_in);
 			vec_in->multiply_with_Scalar(time_step);
 		 dp_DG_init.assemble(vec_dg);	
 		}
@@ -226,12 +253,12 @@ do
 			vel_x->reinit();
 			vel_y->reinit();
 			s2.show(vel_x);
-			s3.show(vel_y);
+			s3.show(vel_y);*/
 			MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
 			sprintf(title, "Pressure: ts=%i",ts);
 			pressure_view.set_title(title);
 			pressure->reinit();
-			pressure_view.show(pressure);*/
+			pressure_view.show(pressure);
 
 			MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, KAPPA));
 			sprintf(title, "Mach: ts=%i",ts);

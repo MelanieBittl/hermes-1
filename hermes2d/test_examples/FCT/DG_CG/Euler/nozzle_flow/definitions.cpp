@@ -44,7 +44,7 @@
     prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), rho_ext(rho_ext), v1_ext (v1_ext), v2_ext(v2_ext), energy_ext (energy_ext) 
 	{
 
- 		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,0));
+ /*		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,0));
  		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,1));
  		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,2));
  		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,3));
@@ -62,7 +62,7 @@
     add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,0));
     add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,1));
     add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,2));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,3));
+    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,3));*/
 
     add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensity(0));
     add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensity(1));
@@ -136,16 +136,17 @@
 	double constant = 1.;
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
-if(e->x[i]!=-1.)
+//if(e->x[i]!=-2.)
+if((e->x[i]<8.)&&(e->x[i]>-2.))
   {		
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
+if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+
 
 		 if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
-				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-				else if(e->x[i]==-1.) bdry =2.;
+				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+				else if(e->x[i]==8.){ bdry=4;}
+				else if(e->x[i]==-2.) bdry =3.;
 				else throw Hermes::Exceptions::Exception("boundary");
 
 (static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
@@ -258,17 +259,16 @@ else constant = 0.5;
 	double constant = 1.;
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
-if(e->x[i]!=-1.)
+//if(e->x[i]!=-2.)
+if((e->x[i]<8.)&&(e->x[i]>-2.))
   {			
-
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
+				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 
 			if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
-				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-				else if(e->x[i]==-1.) bdry =2.;
+				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+				else if(e->x[i]==8.){ bdry=4;}
+				else if(e->x[i]==-2.) bdry =3.;
 				else throw Hermes::Exceptions::Exception("boundary");
 
 (static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
@@ -387,15 +387,16 @@ else constant = 0.5;
 
     Scalar result = Scalar(0);
     for (int i = 0;i < n;i++) 
-if(e->x[i]!=-1.)
-    {				
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
+//if(e->x[i]!=-2.)
+if((e->x[i]<8.)&&(e->x[i]>-2.))
+  {			
+				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 
 			if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
-				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-				else if(e->x[i]==-1.) bdry =2.;
+
+				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+				else if(e->x[i]==8.){ bdry=4;}
+				else if(e->x[i]==-2.) bdry =3.;
 				else throw Hermes::Exceptions::Exception("boundary");
 
 (static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
@@ -515,17 +516,16 @@ else constant = 0.5;
 
     Scalar result = Scalar(0);	
     for (int i = 0;i < n;i++) 
-if(e->x[i]!=-1.)
-    {				
-					
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
+//if(e->x[i]!=-2.)
+if((e->x[i]<8.)&&(e->x[i]>-2.))
+  {			
+				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 
 			if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
-				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-				else if(e->x[i]==-1.) bdry =2.;
+				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+				else if(e->x[i]==8.){ bdry=4;}
+				else if(e->x[i]==-2.) bdry =3.;
 				else throw Hermes::Exceptions::Exception("boundary");
 
 (static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
@@ -869,13 +869,13 @@ else constant = 0.5;
 
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++)
-if(e->x[i]==-1.)
+//if(e->x[i]==-2.)
+//if((e->x[i]==8.)||(e->x[i]==-2.))
 {
 
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
+if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+if(e->x[i]==-2.) bdry =3;
+else bdry = 4.;
 
 			rho = ext[0]->val[i]; 		
 			rho_v_x = ext[1]->val[i]; 
@@ -973,18 +973,18 @@ bdry =2;
 int bdry; bool solid = false;
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
-if(e->x[i]==-1.)      {
+//if(e->x[i]==-2.)
+//if((e->x[i]==8.)||(e->x[i]==-2.))
+{
+
+if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+if(e->x[i]==-2.) bdry =3;
+else bdry = 4.;
+
 			rho = ext[0]->val[i];  
 			rho_v_x = ext[1]->val[i]; 
 			rho_v_y = ext[2]->val[i]; 
 			rho_energy = ext[3]->val[i];
- 
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
-
-
 
     if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 				rho_ext = ext[4]->val[i];
@@ -1082,15 +1082,18 @@ int bdry; bool solid = false;
 
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
-if(e->x[i]==-1.) {
+//if(e->x[i]==-2.)
+//if((e->x[i]==8.)||(e->x[i]==-2.))
+{
+
+if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+if(e->x[i]==-2.) bdry =3;
+else bdry = 4.;
+
 			rho = ext[0]->val[i]; 
 			rho_v_x = ext[1]->val[i];
 			rho_v_y = ext[2]->val[i]; 
 			rho_energy = ext[3]->val[i]; 
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
 
 
     if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
@@ -1189,16 +1192,18 @@ bdry =2;
 
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
-if(e->x[i]==-1.){
+//if(e->x[i]==-2.)
+//if((e->x[i]==8.)||(e->x[i]==-2.))
+{
+
+if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+if(e->x[i]==-2.) bdry =3;
+else bdry = 4.;
+
 		rho = ext[0]->val[i]; 
 		rho_v_x = ext[1]->val[i]; 
 		rho_v_y = ext[2]->val[i]; 
 		rho_energy = ext[3]->val[i]; 
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
-
 
     if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 

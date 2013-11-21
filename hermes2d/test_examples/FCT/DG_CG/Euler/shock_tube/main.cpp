@@ -19,9 +19,9 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 125e-6;
+const double time_step = 5e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 0.5;
@@ -386,7 +386,7 @@ if((ps==2)||(new_adap ==false))
 			UMFPackLinearMatrixSolver<double> * newsol = new UMFPackLinearMatrixSolver<double> (lumped_matrix,vec_rhs);	
 			try{
 			 newsol->solve();
-			}catch(Hermes::Exceptions::Exception e){
+			}catch(Hermes::Exceptions::Exception e)	{
 				e.print_msg();
 			}	
 
@@ -398,7 +398,7 @@ if((ps==2)||(new_adap ==false))
 
 			// Visualize the solution.
 
-	/*	MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
+		MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
 		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
 		MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
 			sprintf(title, " ts=%i",ts);
@@ -412,7 +412,8 @@ if((ps==2)||(new_adap ==false))
 			s1.show(prev_rho);
 			s2.show(vel_x);
 			s3.show(vel_y);
-			pressure_view.show(pressure);*/
+			pressure_view.show(pressure);
+		m1view.show(spaces[0]);
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
 

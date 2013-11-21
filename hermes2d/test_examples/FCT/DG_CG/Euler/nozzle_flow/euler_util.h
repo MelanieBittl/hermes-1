@@ -10,7 +10,7 @@ using namespace Hermes::Hermes2D;
 class QuantityCalculator
 {
 public:
-  // Calculates energy from other quantities.
+  // Calculates energy*rho from other quantities. 
   static double calc_energy(double rho, double rho_v_x, double rho_v_y, double pressure, double kappa);
  
   // Calculates pressure from other quantities.

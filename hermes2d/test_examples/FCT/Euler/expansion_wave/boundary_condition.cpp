@@ -94,9 +94,7 @@ void calculate_A_n(double rho, double rho_v_x, double rho_v_y, double rho_energy
 
 for(int i =0;i<4;i++) A_n[i]=0.;
 
-	//double result =0.;
 
-	for(int i =0;i<4;i++)
 			for(int j=0;j<4;j++){
 					A_n[0] +=R[entry_i][j]*L[j][0]*lambda[j];
 					A_n[1] +=R[entry_i][j]*L[j][1]*lambda[j];
@@ -201,14 +199,11 @@ for(int i =0;i<4;i++) A_n[i]=0.;
 	double constant;
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
- //if(e->x[i]!=-1.)
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]!=-1.)
   {		
 			if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 
 		 if((mirror_condition==true)||(solid==false)){ 
-			//	bdry =riemann_invariants->get_bdry_info(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
-
 			if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
 				else bdry =2;
@@ -261,21 +256,22 @@ else constant = 0.5;
 				(euler_fluxes->A_1_0_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_0_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
+								  * e->ny[i])* dudu_j[0] +
 				(euler_fluxes->A_1_0_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_0_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
+								  * e->ny[i])*dudu_j[1]  +
 				(euler_fluxes->A_1_0_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_0_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
+								  * e->ny[i])*dudu_j[2]  +
 				(euler_fluxes->A_1_0_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_0_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
+								  * e->ny[i])*dudu_j[3] );
 
-				}
+					result -=wt[i]*v->val[i] *u->val[i]*0.5*(A_n[0]* dudu_j[0]+A_n[1]* dudu_j[1]+A_n[2]* dudu_j[2]+A_n[3]* dudu_j[3]);
+					}
 			
 		 }
     }
@@ -318,14 +314,11 @@ else constant = 0.5;
 	double constant;
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
- //if(e->x[i]!=-1.)
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]!=-1.)
   {			
 	if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	solid = true;	
 
 			if((mirror_condition==true)||(solid==false)){ 
-
-	//bdry =riemann_invariants->	get_bdry_info(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
 
 			if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
@@ -378,19 +371,20 @@ else constant = 0.5;
 				(euler_fluxes->A_1_1_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_1_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
+								  * e->ny[i])* dudu_j[0] +
 				(euler_fluxes->A_1_1_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_1_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
+								  * e->ny[i])*dudu_j[1]  +
 				(euler_fluxes->A_1_1_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_1_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
+								  * e->ny[i])*dudu_j[2]  +
 				(euler_fluxes->A_1_1_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_1_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
+								  * e->ny[i])*dudu_j[3] );
+					result -=wt[i]*v->val[i] *u->val[i]*0.5*(A_n[0]* dudu_j[0]+A_n[1]* dudu_j[1]+A_n[2]* dudu_j[2]+A_n[3]* dudu_j[3]);
 				}
 			}else{
 						if(j==0){
@@ -442,13 +436,11 @@ else constant = 0.5;
 
     Scalar result = Scalar(0);
     for (int i = 0;i < n;i++) 
- //if(e->x[i]!=-1.)
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]!=-1.)
     {				
 		 if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	 solid = true;
 
 			if((mirror_condition==true)||(solid==false)){ 
-				//	bdry =riemann_invariants->	get_bdry_info(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
 
 			if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
@@ -503,19 +495,20 @@ else constant = 0.5;
 				(euler_fluxes->A_1_2_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_2_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
+								  * e->ny[i])* dudu_j[0] +
 				(euler_fluxes->A_1_2_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_2_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
+								  * e->ny[i])*dudu_j[1]  +
 				(euler_fluxes->A_1_2_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_2_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
+								  * e->ny[i])*dudu_j[2]  +
 				(euler_fluxes->A_1_2_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_2_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
+								  * e->ny[i])*dudu_j[3] );
+					result -=wt[i]*v->val[i] *u->val[i]*0.5*(A_n[0]* dudu_j[0]+A_n[1]* dudu_j[1]+A_n[2]* dudu_j[2]+A_n[3]* dudu_j[3]);
 				}
 
 			}else{
@@ -568,13 +561,10 @@ else constant = 0.5;
 
     Scalar result = Scalar(0);	
     for (int i = 0;i < n;i++) 
- //if(e->x[i]!=-1.)
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]!=-1.)
     {				
 		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))		solid = true;
 			if((mirror_condition==true)||(solid==false)){ 
-				//bdry =riemann_invariants->	get_bdry_info(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
-
 			if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
 				else bdry =2;
@@ -626,19 +616,21 @@ else constant = 0.5;
 				(euler_fluxes->A_1_3_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_3_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
+								  * e->ny[i])* dudu_j[0] +
 				(euler_fluxes->A_1_3_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_3_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
+								  * e->ny[i])*dudu_j[1]  +
 				(euler_fluxes->A_1_3_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_3_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
+								  * e->ny[i])*dudu_j[2]  +
 				(euler_fluxes->A_1_3_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
 								  * e->nx[i]+
 				 euler_fluxes->A_2_3_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
+								  * e->ny[i])*dudu_j[3] );
+
+					result -=wt[i]*v->val[i] *u->val[i]*0.5*(A_n[0]* dudu_j[0]+A_n[1]* dudu_j[1]+A_n[2]* dudu_j[2]+A_n[3]* dudu_j[3]);
 
 				}
 				
@@ -681,13 +673,10 @@ else constant = 0.5;
 
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++)
- //if(e->x[i]==-1.)
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]==-1.)
 {
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))		solid = true;
-	//	bdry =2;
 
-
+	bdry =2;
 			rho = ext[0]->val[i]; 		
 			rho_v_x = ext[1]->val[i]; 
 			rho_v_y = ext[2]->val[i];  
@@ -699,8 +688,6 @@ if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
 				rho_v_y_ext = ext[6]->val[i];
 				rho_energy_ext = ext[7]->val[i];
 
-	//determine free-stream values
-			//	riemann_invariants->get_free_stream(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i], e->tx[i],e->ty[i],	new_variables, rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,bdry,solid);
 
 riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
@@ -787,11 +774,11 @@ riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]
 int bdry; bool solid = false;
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++) 
- //if(e->x[i]==-1.)
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]==-1.)
 {
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))		solid = true;
-	//	bdry =2;
+
+	bdry =2;
+
     
 			rho = ext[0]->val[i];  
 			rho_v_x = ext[1]->val[i]; 
@@ -805,7 +792,6 @@ if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
 				rho_v_y_ext = ext[6]->val[i];
 				rho_energy_ext = ext[7]->val[i];
 			
-				//riemann_invariants->get_free_stream(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i], e->tx[i],e->ty[i],	new_variables, rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, bdry, solid);
 riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
 					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];	
@@ -896,11 +882,10 @@ int bdry; bool solid = false;
 
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++)
- //if(e->x[i]==-1.)
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]==-1.)
 {
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))		solid = true;
-	//	bdry =2;
+
+	bdry =2;
 
 
 			rho = ext[0]->val[i]; 
@@ -917,7 +902,7 @@ if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
 			rho_v_y_ext = ext[6]->val[i];
 			rho_energy_ext = ext[7]->val[i];
 
-		//	riemann_invariants->get_free_stream(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i], e->tx[i],e->ty[i],	new_variables, rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, bdry, solid);
+
 riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
 					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];			
@@ -1006,11 +991,10 @@ riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]
 
   Scalar result = Scalar(0);
   for (int i = 0;i < n;i++)
- //if(e->x[i]==-1.)
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
+ if(e->x[i]==-1.)
 {
-		if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))		solid = true;
-	//	bdry =2;
+
+	bdry =2;
 
 		rho = ext[0]->val[i]; 
 		rho_v_x = ext[1]->val[i]; 
@@ -1024,7 +1008,6 @@ if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))
 		rho_v_y_ext = ext[6]->val[i];
 		rho_energy_ext = ext[7]->val[i];
 
-		//	riemann_invariants->get_free_stream(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i], e->tx[i],e->ty[i],	new_variables, rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, bdry, solid);
 riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
 				rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];			

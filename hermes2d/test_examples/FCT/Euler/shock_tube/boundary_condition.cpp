@@ -96,7 +96,7 @@ for(int i =0;i<4;i++) A_n[i]=0.;
 
 	//double result =0.;
 
-	for(int i =0;i<4;i++)
+
 			for(int j=0;j<4;j++){
 					A_n[0] +=R[entry_i][j]*L[j][0]*lambda[j];
 					A_n[1] +=R[entry_i][j]*L[j][1]*lambda[j];
@@ -453,7 +453,7 @@ for(int i =0;i<4;i++) A_n[i]=0.;
 				}else if(j==1){
         result += wt[i] * u->val[i] * constant
         * euler_fluxes->A_1_2_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i];
+          * e->nx[i]*v->val[i];
         result += wt[i] * u->val[i] * constant
         * euler_fluxes->A_2_2_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
           * e->ny[i]*v->val[i];

@@ -347,48 +347,7 @@ if(solid==true){  //solid wall
 					rho_v_y_new = rho_v_y_ext;
 					rho_energy_new = rho_energy_ext;
 					boundary = 2;			
-		}else{
-					double w_1,w_2,w_3,w_4;
-			if((lambda_1<0)&&(lambda_2_3<0)&&(lambda_4>=0)){//subsonic inlet		
-
-								boundary = 3;			
-								w_4 = RiemannInvariants::get_w4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-								w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-								w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
-								w_1 = w_4-4*QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa)/(kappa-1);
-			}else if((lambda_1<0)&&(lambda_2_3>=0)&&(lambda_4>=0)){//subsonic outlet
-
-								boundary = 4;
-								w_4 = RiemannInvariants::get_w4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-								w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-								w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
-								w_1 = w_4-4*QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa)/(kappa-1);		
-					}else{
-							boundary = 5;
-							if(lambda_1>=0){
-										w_1 = RiemannInvariants::get_w1(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
-							}else{
-										w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-							}
-							if(lambda_2_3>=0){
-										w_2 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
-										w_3 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy,t_x, t_y);
-							}else{
-										w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-										w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
-							}
-
-							if(lambda_4>=0){
-										w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
-							}else{
-										w_4 = RiemannInvariants::get_w4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-							}
-				}
-							rho_new = RiemannInvariants::get_rho(w_1, w_2, w_3,  w_4); 
-							rho_v_x_new =RiemannInvariants::get_rho_v_x(w_1, w_2,  w_3, w_4, n_x, t_x);	
-							rho_v_y_new = RiemannInvariants::get_rho_v_y(w_1, w_2, w_3, w_4, n_y, t_y);
-							rho_energy_new = RiemannInvariants::get_energy(w_1, w_2, w_3, w_4, n_x, n_y,  t_x, t_y);
-				}
+		}
 	}
 
 	new_variables[0]=  rho_new; 

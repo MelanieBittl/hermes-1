@@ -176,6 +176,153 @@ double RiemannInvariants::get_energy(double w_1, double w_2, double w_3, double 
 
 }
 
+
+void RiemannInvariants::get_ghost_state(int bdry,double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
+					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, double* ghost_state, bool solid)
+{
+
+		double w_1,w_2,w_3,w_4;	
+
+	if( solid==true){
+		ghost_state[0] = rho;
+		ghost_state[3] = rho_energy;
+		ghost_state[1] = rho_v_x - 2*n_x*( rho_v_x*n_x+ rho_v_y*n_y); 	
+		ghost_state[2] = rho_v_y- 2*n_y*( rho_v_x*n_x+ rho_v_y*n_y); 
+	}else if(bdry==1){ //supersonic outlet{
+		ghost_state[0] =  rho;
+		ghost_state[1] = rho_v_x;
+		ghost_state[2]=		rho_v_y;
+		ghost_state[3]= rho_energy;
+	}else if(bdry==2){//supersonic inlet
+		ghost_state[0] =  rho_ext;
+		ghost_state[1] = rho_v_x_ext;
+		ghost_state[2]=		rho_v_y_ext;
+		ghost_state[3]= rho_energy_ext;
+	
+	}else	if(bdry==3){//subsonic inlet
+		w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+		w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+		w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
+		w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+ 		double c = QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa);
+		ghost_state[0] =  std::pow(c*c/(kappa*w_2),1./(kappa-1));//rho
+		ghost_state[1] = (0.5*n_x*(w_1+w_4)+ t_x*w_3)*ghost_state[0] ;//vel_x*rho
+		ghost_state[2]=	(0.5*n_y*(w_1+w_4)+ t_y*w_3)*ghost_state[0]	;	//vel_y*rho
+		double pressure = ghost_state[0]*c*c/kappa;
+		ghost_state[3]= QuantityCalculator::calc_energy(ghost_state[0], ghost_state[1], ghost_state[2], pressure, kappa);//energy*rho
+		
+	}else if(bdry==4){//subsonic outlet
+		//w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+		w_2 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+		w_3 = RiemannInvariants::get_w3(rho, rho_v_x, rho_v_y, rho_energy, t_x, t_y);
+		w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+		double pressure_out =QuantityCalculator::calc_pressure(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, kappa);
+		double pressure_in = QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
+		w_1 = w_4 - 4./(kappa-1)*std::sqrt(kappa*pressure_out/rho*std::pow(pressure_in/pressure_out, 1./kappa));
+ 		double c = QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa);
+		ghost_state[0] =  std::pow(c*c/(kappa*w_2),1./(kappa-1));//rho
+		ghost_state[1] = (0.5*n_x*(w_1+w_4)+ t_x*w_3)*ghost_state[0] ;//vel_x*rho
+		ghost_state[2]=	(0.5*n_y*(w_1+w_4)+ t_y*w_3)*ghost_state[0]	;	//vel_y*rho
+		double pressure = ghost_state[0]*c*c/kappa;
+		ghost_state[3]= QuantityCalculator::calc_energy(ghost_state[0], ghost_state[1], ghost_state[2], pressure, kappa);//energy*rho
+	}
+}
+
+
+
+void RiemannInvariants::get_du_du(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
+					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext,int bdry, int entry_j, double* dudu){
+
+
+	double c = QuantityCalculator::calc_sound_speed(rho, rho_v_x, rho_v_y, rho_energy,kappa);
+	double c_ext = QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa);
+
+	if(bdry ==3){//subsonic inlet
+			double dw4_du;
+			if(entry_j==0){
+					dw4_du= -1./rho*(rho_v_x*n_x+rho_v_y*n_y)/rho+ kappa/c*(-rho_energy/(rho*rho)+(rho_v_x*rho_v_x+rho_v_y*rho_v_y)/(rho*rho*rho));		
+			}else if(entry_j==1){
+					dw4_du = n_x/rho-kappa*rho_v_x/(rho*rho*c);
+			}else if(entry_j==2){
+					dw4_du = n_y/rho-kappa*rho_v_y/(rho*rho*c);
+			}else if(entry_j==3){
+					dw4_du = kappa/(c*rho);
+			}else  throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no entry_j!");
+			double drho_du = rho_ext/(2.*c_ext)*dw4_du;
+
+				dudu[0] = drho_du;
+				dudu[1] = (rho_v_x_ext/rho_ext * drho_du + 0.5* n_x* rho_ext*dw4_du);
+				dudu[2] = (rho_v_y_ext/rho_ext * drho_du + 0.5* n_y* rho_ext*dw4_du);
+				double dp_du = (kappa-1.)*0.5*rho_ext*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
+				double w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+				double w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+				dudu[3] = (1./(kappa-1.)*dp_du+ (rho_v_x_ext*rho_v_x_ext + rho_v_y_ext*rho_v_y_ext)*drho_du/(2.*rho_ext*rho_ext)+0.25*rho_ext*(w_1+w_4)*dw4_du);
+			
+
+	}else if(bdry ==4){
+			double du_du,dv_du,dp_du, dw4_du, dw2_du, dw3_du;
+			double w_2 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+			if(entry_j==0){
+					dw4_du = -1./rho*(rho_v_x*n_x+rho_v_y*n_y)/rho+ kappa/c*(-rho_energy/(rho*rho)+(rho_v_x*rho_v_x+rho_v_y*rho_v_y)/(rho*rho*rho));	
+					dw2_du = (kappa-1.)*0.5/std::pow(rho,kappa)*(rho_v_x*rho_v_x+rho_v_y*rho_v_y)/(rho*rho)- kappa/rho*	w_2;
+					dw3_du = 1./rho*(rho_v_x/rho*n_y - rho_v_y/rho*n_x);
+			}else if(entry_j==1){
+					dw4_du = n_x/rho-kappa*rho_v_x/(rho*rho*c);
+					dw2_du = (1-kappa)/std::pow(rho,kappa)*rho_v_x/rho;
+					dw3_du = -n_y/rho;
+			}else if(entry_j==2){
+					dw4_du = n_y/rho-kappa*rho_v_y/(rho*rho*c);
+					dw2_du = (1.-kappa)/std::pow(rho,kappa)*rho_v_y/rho;
+					dw3_du = n_x/rho;
+			}else if(entry_j==3){
+					dw4_du = kappa/(c*rho);
+					dw2_du = (kappa-1.)/std::pow(rho,kappa);
+					dw3_du = 0.;
+			}else  throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no entry_j!");
+			double drho_du = rho_ext/(2.*c_ext)*dw4_du+ rho_ext/((1.-kappa)*w_2)*dw2_du;
+				dudu[0] =  drho_du;
+				du_du= 0.5*n_x*dw4_du-n_y*dw3_du;
+				dv_du = 0.5*n_y*dw4_du+n_x*dw3_du;
+ 				dudu[1] =  (rho_ext*du_du+rho_v_x_ext/rho_ext*drho_du);
+ 				dudu[2] =  (rho_ext*dv_du+rho_v_y_ext/rho_ext*drho_du);
+		double w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+		double w_3 = RiemannInvariants::get_w3(rho, rho_v_x, rho_v_y, rho_energy, t_x, t_y);
+		double w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+				dv_du= 2.*w_3*dw3_du+0.5*(w_1+w_4)*dw4_du;
+				dp_du = (kappa-1.)*0.5/kappa*rho_ext*c_ext*dw4_du+1./kappa*c_ext*c_ext*drho_du;		
+				dudu[3] =  (1./(1.-kappa)*dp_du+ 0.5*rho_ext*dv_du + (rho_v_x_ext*rho_v_x_ext+rho_v_y_ext*rho_v_y_ext)/(2.*rho*rho)*drho_du );
+			
+	}else if(bdry ==0){ //solid wall
+				if(entry_j==0){
+						dudu[0] = 1.;
+						dudu[1] = 0.;
+						dudu[2] = 0.;
+						dudu[3] = 0.;
+				}else if(entry_j==1){
+						dudu[0] = 0.;
+						dudu[1] = (n_y*n_y-n_x*n_x);
+						dudu[2] = (-2*n_x*n_y);
+						dudu[3] = 0.;
+				}else if(entry_j==2){
+						dudu[0] = 0.;
+						dudu[1] = (-2*n_x*n_y);
+						dudu[2] = (n_x*n_x-n_y*n_y);
+						dudu[3] = 0.;
+				}else if(entry_j==3){
+						dudu[0] = 0.;
+						dudu[1] = 0.;
+						dudu[2] = 0.;
+						dudu[3] = 1.;
+				}else  throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no entry_j!");
+
+
+	}else   throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no subsonic stream bdry = %i!", bdry);
+
+
+
+}
+
+/*
 int RiemannInvariants::get_bdry_info(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, double t_x, double t_y,
 					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, double* ghost_state, bool solid){
 
@@ -202,44 +349,31 @@ int RiemannInvariants::get_bdry_info(double rho, double rho_v_x, double rho_v_y,
 		ghost_state[2]=		rho_v_y_ext;
 		ghost_state[3]= rho_energy_ext;
 			return 2;			
+	}else	if((lambda_1<0)&&(lambda_2_3<0)&&(lambda_4>=0)){//subsonic inlet
+		w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+		w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+		w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
+		w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+ 		double c = QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa);
+		ghost_state[0] =  std::pow(c*c/(kappa*w_2),1./(kappa-1));//rho
+		ghost_state[1] = (0.5*n_x*(w_1+w_4)+ t_x*w_3)*ghost_state[0] ;//vel_x*rho
+		ghost_state[2]=	(0.5*n_y*(w_1+w_4)+ t_y*w_3)*ghost_state[0]	;	//vel_y*rho
+		double pressure = ghost_state[0]*c*c/kappa;
+		ghost_state[3]= QuantityCalculator::calc_energy(ghost_state[0], ghost_state[1], ghost_state[2], pressure, kappa);//energy*rho
+			return 3;			
+	}else if((lambda_1<0)&&(lambda_2_3>=0)&&(lambda_4>=0)){//subsonic outlet
+		w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+		w_2 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+		w_3 = RiemannInvariants::get_w3(rho, rho_v_x, rho_v_y, rho_energy, t_x, t_y);
+		w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+ 		double c = QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa);
+		ghost_state[0] =  std::pow(c*c/(kappa*w_2),1./(kappa-1));//rho
+		ghost_state[1] = (0.5*n_x*(w_1+w_4)+ t_x*w_3)*ghost_state[0] ;//vel_x*rho
+		ghost_state[2]=	(0.5*n_y*(w_1+w_4)+ t_y*w_3)*ghost_state[0]	;	//vel_y*rho
+		double pressure = ghost_state[0]*c*c/kappa;
+		ghost_state[3]= QuantityCalculator::calc_energy(ghost_state[0], ghost_state[1], ghost_state[2], pressure, kappa);//energy*rho
+		return 4;	
 	}else return 5;
-}
-
-void RiemannInvariants::get_du_du(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
-					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext,int bdry, int entry_j, double* dudu){
-
-
-	double c = QuantityCalculator::calc_sound_speed(rho, rho_v_x, rho_v_y, rho_energy,kappa);
-	double c_ext = QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa);
-
- if(bdry ==0){ //solid wall
-				if(entry_j==0){
-						dudu[0] = 1.;
-						dudu[1] = 0.;
-						dudu[2] = 0.;
-						dudu[3] = 0.;
-				}else if(entry_j==1){
-						dudu[0] = 0.;
-						dudu[1] = (n_y*n_y-n_x*n_x);
-						dudu[2] = (-2*n_x*n_y);
-						dudu[3] = 0.;
-				}else if(entry_j==2){
-						dudu[0] = 0.;
-						dudu[1] = (-2*n_x*n_y);
-						dudu[2] = (n_x*n_x-n_y*n_y);
-						dudu[3] = 0.;
-				}else if(entry_j==3){
-						dudu[0] = 0.;
-						dudu[1] = 0.;
-						dudu[2] = 0.;
-						dudu[3] = 1.;
-				}else  throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no entry_j!");
-
-
-	}else   throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no subsonic stream!");
-
-
-
 }
 
 
@@ -274,14 +408,58 @@ if(solid==true){  //solid wall
 					rho_v_y_new = rho_v_y_ext;
 					rho_energy_new = rho_energy_ext;
 					boundary = 2;			
-		}
+		}else{
+					double w_1,w_2,w_3,w_4;
+			if((lambda_1<0)&&(lambda_2_3<0)&&(lambda_4>=0)){//subsonic inlet		
+
+								boundary = 3;			
+								w_4 = RiemannInvariants::get_w4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+								w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+								w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
+								w_1 = w_4-4*QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa)/(kappa-1);
+			}else if((lambda_1<0)&&(lambda_2_3>=0)&&(lambda_4>=0)){//subsonic outlet
+
+								boundary = 4;
+								w_4 = RiemannInvariants::get_w4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+								w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+								w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
+								w_1 = w_4-4*QuantityCalculator::calc_sound_speed(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext,kappa)/(kappa-1);		
+					}else{
+							boundary = 5;
+							if(lambda_1>=0){
+										w_1 = RiemannInvariants::get_w1(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+							}else{
+										w_1 = RiemannInvariants::get_w1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+							}
+							if(lambda_2_3>=0){
+										w_2 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+										w_3 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy,t_x, t_y);
+							}else{
+										w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+										w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
+							}
+
+							if(lambda_4>=0){
+										w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+							}else{
+										w_4 = RiemannInvariants::get_w4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+							}
+				}
+							rho_new = RiemannInvariants::get_rho(w_1, w_2, w_3,  w_4); 
+							rho_v_x_new =RiemannInvariants::get_rho_v_x(w_1, w_2,  w_3, w_4, n_x, t_x);	
+							rho_v_y_new = RiemannInvariants::get_rho_v_y(w_1, w_2, w_3, w_4, n_y, t_y);
+							rho_energy_new = RiemannInvariants::get_energy(w_1, w_2, w_3, w_4, n_x, n_y,  t_x, t_y);
+				}
 	}
 
 	new_variables[0]=  rho_new; 
 	new_variables[1] = rho_v_x_new; 
 	new_variables[2] = rho_v_y_new;
 	new_variables[3] = rho_energy_new;
-}
+}*/
+
+
+
 //-----------------------------------------------------
 //-------------Discontinuity Detector---------------------
 //-----------------------------------------------------
