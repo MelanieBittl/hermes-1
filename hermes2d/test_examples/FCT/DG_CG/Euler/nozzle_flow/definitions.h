@@ -82,106 +82,12 @@ bool mirror_condition= true , int num_of_equations = 4);
 
 protected:
 
- class EulerBoundaryBilinearForm_rho: public MatrixFormSurf<double>
+//----------------------BilinearForm----------------------------------------------
+ class EulerEquationsBilinearForm : public MatrixFormVol<double>
   {
   public:
-    EulerBoundaryBilinearForm_rho(double kappa, int j) : MatrixFormSurf<double>(0,j), kappa(kappa),j(j) {}
+    EulerEquationsBilinearForm(int entry_i, int entry_j, double kappa) : MatrixFormVol<double>(entry_i,entry_j),entry_i(entry_i), entry_j(entry_j), kappa(kappa) {}
 
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
-
-    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const; 
-
-    MatrixFormSurf<double>* clone() const;
-
-		double kappa;
-	int j;
-	};
-
- class EulerBoundaryBilinearForm_vel_x: public MatrixFormSurf<double>
-  {
-  public:
-    EulerBoundaryBilinearForm_vel_x(double kappa,int j) : MatrixFormSurf<double>(1,j), kappa(kappa),j(j) {}
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
-
-    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const; 
-
-    MatrixFormSurf<double>* clone() const;
-
-		double kappa;
-		int j;
-	};
-
- class EulerBoundaryBilinearForm_vel_y: public MatrixFormSurf<double>
-  {
-  public:
-    EulerBoundaryBilinearForm_vel_y(double kappa,int j) : MatrixFormSurf<double>(2,j), kappa(kappa),j(j) {}
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
-
-    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const; 
-
-    MatrixFormSurf<double>* clone() const;
-
-		double kappa;
-		int j;
-	};
- class EulerBoundaryBilinearForm_e: public MatrixFormSurf<double>
-  {
-  public:
-    EulerBoundaryBilinearForm_e(double kappa,int j) : MatrixFormSurf<double>(3,j), kappa(kappa),j(j) {}
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
-
-    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const; 
-
-    MatrixFormSurf<double>* clone() const;
-
-		double kappa;
-		int j;
-	};
-
- class EulerEquationsBilinearFormDensity : public MatrixFormVol<double>
-  {
-  public:
-    EulerEquationsBilinearFormDensity(int j) : MatrixFormVol<double>(0,j), j(j) {}
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
       Geom<double> *e, Func<double>  **ext) const; 
@@ -191,89 +97,39 @@ protected:
       Func<Ord>  **ext) const; 
 
     MatrixFormVol<double>* clone() const;
-		int j;
+		int entry_j; int entry_i;
+double kappa;
 	};
 
- class EulerEquationsBilinearFormDensityVelX : public MatrixFormVol<double>
+//---Bilinear form bdry
+ class EulerBoundaryBilinearForm: public MatrixFormSurf<double>
   {
   public:
-    EulerEquationsBilinearFormDensityVelX(double kappa, int j)
-      : MatrixFormVol<double>(1,j), kappa(kappa), j(j) {}
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;
-
+    EulerBoundaryBilinearForm(double kappa,int entry_i, int entry_j) : MatrixFormSurf<double>(entry_i,entry_j),entry_i(entry_i), entry_j(entry_j), kappa(kappa) {}
+     
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const ;
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const ;
-
-   MatrixFormVol<double>* clone() const;
-
-    double kappa;
-		int j;
-  };
-
-  class EulerEquationsBilinearFormDensityVelY : public MatrixFormVol<double>
-  {
-  public:
-    EulerEquationsBilinearFormDensityVelY(double kappa,int j) 
-      : MatrixFormVol<double>(2,j), kappa(kappa), j(j) {}
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u,Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;
-   
-
-    double value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
       Geom<double> *e, Func<double>  **ext) const; 
+
 
     Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
       Func<Ord>  **ext) const; 
 
-    MatrixFormVol<double>* clone() const;
+    MatrixFormSurf<double>* clone() const;
 
-    double kappa;
-		int j;
-  };
+	int entry_j; 
+	int entry_i;
+	double kappa;
+	};
 
 
- class EulerEquationsBilinearFormEnergy : public MatrixFormVol<double>
+
+//--------------linearform boundary
+ class EulerBoundaryLinearform: public VectorFormSurf<double>
   {
   public:
-    EulerEquationsBilinearFormEnergy(double kappa, int j) 
-      : MatrixFormVol<double>(3,j), kappa(kappa), j(j) {}
+    EulerBoundaryLinearform(double kappa, int entry_i) : VectorFormSurf<double>(entry_i), kappa(kappa), entry_i(entry_i)  {}
 
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[],Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;
-
-
-    double value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const ;
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[],Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const;
-
-   MatrixFormVol<double>* clone() const;
-
-    double kappa;
-		int j;
-  };
-
-//linearform boundary
- class EulerBoundary_rho: public VectorFormSurf<double>
-  {
-  public:
-    EulerBoundary_rho(double kappa) : VectorFormSurf<double>(0), kappa(kappa)  {}
-
-    template<typename Real, typename Scalar>
-    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
@@ -286,75 +142,9 @@ protected:
     VectorFormSurf<double>* clone() const;
 
 		double kappa;
+		int entry_i;
 	};
 
- class EulerBoundary_v_x: public VectorFormSurf<double>
-  {
-  public:
-    EulerBoundary_v_x(double kappa) : VectorFormSurf<double>(1), kappa(kappa) {}
-
-    template<typename Real, typename Scalar>
-    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
-
-    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const; 
-
-    VectorFormSurf<double>* clone() const;
-
-		double kappa;
-
-	};
- class EulerBoundary_v_y: public VectorFormSurf<double>
-  {
-  public:
-    EulerBoundary_v_y(double kappa) : VectorFormSurf<double>(2), kappa(kappa) {}
-
-    template<typename Real, typename Scalar>
-    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
-
-    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const; 
-
-    VectorFormSurf<double>* clone() const;
-
-		double kappa;
-
-	};
-
- class EulerBoundary_e: public VectorFormSurf<double>
-  {
-  public:
-    EulerBoundary_e(double kappa) : VectorFormSurf<double>(3), kappa(kappa) {}
-
-    template<typename Real, typename Scalar>
-    Scalar vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;    
-     
-
-    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
-
-
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const; 
-
-    VectorFormSurf<double>* clone() const;
-
-		double kappa;
-
-	};
 
 
 };

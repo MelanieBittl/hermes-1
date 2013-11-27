@@ -18,7 +18,7 @@ using namespace Hermes::Solvers;
 
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
-const int P_INIT = 2;       						// Initial polynomial degree.
+const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 1e-4;
 const double T_FINAL = 3.;                       // Time interval length. 
 
@@ -149,8 +149,8 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 //------------
-		NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
-//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+		//NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
 
 
 	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
@@ -253,7 +253,7 @@ do
 			vel_x->reinit();
 			vel_y->reinit();
 			s2.show(vel_x);
-			s3.show(vel_y);*/
+			s3.show(vel_y);
 			MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
 			sprintf(title, "Pressure: ts=%i",ts);
 			pressure_view.set_title(title);
@@ -268,7 +268,7 @@ do
 
 			sprintf(title, "Density: ts=%i",ts);
 			s1.set_title(title);
-			s1.show(prev_rho);
+			s1.show(prev_rho);*/
 
 
 
@@ -284,8 +284,6 @@ do
 		matrix->free();
 
 }while (current_time < T_FINAL);
-
-
 
 
 		MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
