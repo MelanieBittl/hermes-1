@@ -33,7 +33,7 @@
 {   
 
 
-double pressure = 1./kappa;
+double pressure = 1./1.4;
 double rho = 1.;
 double rho_v_x = rho*0.2;
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->kappa);

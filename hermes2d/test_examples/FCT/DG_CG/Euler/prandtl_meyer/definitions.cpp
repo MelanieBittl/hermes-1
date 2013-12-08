@@ -38,56 +38,22 @@
 
     MatrixFormVol<double>* EulerEquationsBilinearFormTime::clone() const { return new EulerEquationsBilinearFormTime(component_i); }
 
-
+//_----------------------------------------------------------------------------------------------------------
 
 	EulerKS::EulerKS(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, bool mirror_condition,int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa)),kappa(kappa), riemann_invariants(new RiemannInvariants(kappa)), mirror_condition(mirror_condition),
     prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), rho_ext(rho_ext), v1_ext (v1_ext), v2_ext(v2_ext), energy_ext (energy_ext) 
 	{
 
- 		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,0));
- 		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,1));
- 		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,2));
- 		add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_rho(kappa,3));
+for(int k =0; k<4;k++)
+{
+		for(int i = 0; i<4;i++)
+		{	add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm(kappa,i,k));
+			add_matrix_form(new EulerKS::EulerEquationsBilinearForm(i,k,kappa));
 
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_x( kappa,0));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_x( kappa,1));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_x( kappa,2));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_x( kappa,3));
+		}
+		add_vector_form_surf(new EulerKS::EulerBoundaryLinearform(kappa, k));
+}
 
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_y( kappa,0));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_y( kappa,1));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_y( kappa,2));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_vel_y( kappa,3));
-
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,0));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,1));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,2));
-    add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm_e( kappa,3));
-
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensity(0));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensity(1));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensity(2));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensity(3));
-
-   add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelX(kappa,0));
-   add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelX(kappa,1));
-   add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelX(kappa,2));
-   add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelX(kappa,3));
-
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelY(kappa,0));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelY(kappa,1));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelY(kappa,2));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormDensityVelY(kappa,3));
-
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormEnergy(kappa,0));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormEnergy(kappa,1));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormEnergy(kappa,2));
-    add_matrix_form(new EulerKS::EulerEquationsBilinearFormEnergy(kappa,3));
-
-		add_vector_form_surf(new EulerKS::EulerBoundary_rho(kappa));
-    add_vector_form_surf(new EulerKS::EulerBoundary_v_x( kappa));
-    add_vector_form_surf(new EulerKS::EulerBoundary_v_y( kappa));
-    add_vector_form_surf(new EulerKS::EulerBoundary_e(kappa));
     
     this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));
 
@@ -123,23 +89,56 @@
     }
 
 
+//---------------------K----------------
 
-  template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundaryBilinearForm_rho::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  
+    double EulerKS::EulerEquationsBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
+      Geom<double> *e, Func<double>  **ext) const
+		 {
+      double result = 0.;
+      for (int i = 0;i < n;i++) 
+      {
+
+        result += wt[i] * u->val[i] *
+        ( (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
+          * v->dx[i]+        
+         (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j) 
+          * v->dy[i]);
+		
+      }
+      return result;
+    }
+    
+
+
+    Ord EulerKS::EulerEquationsBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+      Func<Ord>  **ext) const 
+    {
+      return Ord(10);
+    }
+
+    MatrixFormVol<double>* EulerKS::EulerEquationsBilinearForm::clone() const
+    {
+    return new EulerKS::EulerEquationsBilinearForm(this->entry_i, this->entry_j, this->kappa);
+    }
+
+
+
+//---Boudary Bilinearforms---------
+   double EulerKS::EulerBoundaryBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
+      Geom<double> *e, Func<double>  **ext) const
 {
 	int bdry =0;
-	double* ghost_state = new double[4];
+	double* ghost_state = new double[4];for(int l=0;l<4;l++) ghost_state[l]=0.;
 	double * A_n = new double[4];
 	double* dudu_j= new double[4];
 	bool solid = false;
 	double constant = 1.;
-  Scalar result = Scalar(0);
+  double result = 0.;
   for (int i = 0;i < n;i++) 
 if(e->x[i]!=-1.)
   {		
 if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
+else solid = false;
 
 		 if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
@@ -155,69 +154,64 @@ else constant = 0.5;
 
 
 			if(bdry!=1){
-						Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, 0, A_n); //0te-Zeile A_n
+					Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i,A_n); //ite-Zeile A_n
 
 				if(bdry!=2) 
 				{
-						(static_cast<EulerKS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,j,dudu_j);//j-te Spalte
+						(static_cast<EulerKS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
 				}
 			}
 
-				if(j==0){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==1){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==2){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==3){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}
-
-				if (bdry==2)
-		      result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				else if(bdry!=1){ 
-				 result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				result += wt[i]*v->val[i] *u->val[i]*0.5*(
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
-
-				}
+				
+        result += wt[i] * u->val[i] *v->val[i]* constant*
+        ( (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
+          * e->nx[i] +
+         (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j)  
+          * e->ny[i]);
 			
-		 }
+
+			if (bdry==2)
+	      		result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[entry_j];
+			else if(bdry!=1){ 
+			 	result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[entry_j];
+				for(int k =0;k<4;k++)
+				{result += wt[i]*v->val[i] *u->val[i]*0.5*(
+					((static_cast<EulerKS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],0,entry_i,k) 
+									  * e->nx[i]+
+					(static_cast<EulerKS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],1,entry_i,k) 
+									  * e->ny[i]  -A_n[k])* dudu_j[k]);
+				} 
+			}
+			
+		 }else{
+				if(entry_i==1)
+				{
+						if(entry_j==0){
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->nx[i]*
+						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);		
+	
+						}else if(entry_j==1){
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->nx[i];
+						}else if(entry_j==2){
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->nx[i];
+						}else if(entry_j==3){
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->nx[i];
+						}
+				}else if(entry_i==2)
+				{
+						if(entry_j==0){
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->ny[i]*
+						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);			
+						}else if(entry_j==1){
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->ny[i];
+						}else if(entry_j==2){
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
+						}else if(entry_j==3){
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->ny[i];
+						}
+
+				}
+			}
     }
 		delete [] ghost_state;
 		delete [] A_n;
@@ -227,627 +221,19 @@ else constant = 0.5;
   }  
 
 
-    double EulerKS::EulerBoundaryBilinearForm_rho::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
-    {
-      return matrix_form<double, double>(n, wt, u_ext,u, v, e, ext);
-    } 
 
 
-    Ord EulerKS::EulerBoundaryBilinearForm_rho::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerKS::EulerBoundaryBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
       Func<Ord>  **ext) const 
     {
-      return Ord(20);
+      return Ord(10);
     }
 
-    MatrixFormSurf<double>* EulerKS::EulerBoundaryBilinearForm_rho::clone() const
+    MatrixFormSurf<double>* EulerKS::EulerBoundaryBilinearForm::clone() const
     {
-					return new EulerKS::EulerBoundaryBilinearForm_rho(kappa, this->j);
+					return new EulerKS::EulerBoundaryBilinearForm(kappa,this->entry_i, this->entry_j);
     }
 
-//vel_x
-    template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundaryBilinearForm_vel_x::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  
-{
-	int bdry =0;
-	double* ghost_state = new double[4];
-	double * A_n = new double[4];
-	double* dudu_j= new double[4];
-	bool solid = false;
-	double constant = 1.;
-  Scalar result = Scalar(0);
-  for (int i = 0;i < n;i++) 
-if(e->x[i]!=-1.)
-  {			
-
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-
-			if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
-
-				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-				else if(e->x[i]==-1.) bdry =2.;
-				else throw Hermes::Exceptions::Exception("boundary");
-
-(static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
-
-if(bdry==1) constant =1.;
-else constant = 0.5;
-
-
-	if(bdry!=1){
-				Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, 1, A_n); //1te-Zeile A_n
-
-		if(bdry!=2) 
-		{
-				(static_cast<EulerKS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,j,dudu_j);//j-te Spalte
-		}
-	}
-
-				if(j==0){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==1){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==2){
-        result += wt[i] * u->val[i] *constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==3){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}
-				if (bdry==2)
-		      result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				else if(bdry!=1){ 
-				 result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				result += wt[i]*v->val[i] *u->val[i]*0.5*(
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
-				}
-			}else{
-						if(j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->nx[i]*
-						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);		
-	
-						}else if(j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->nx[i];
-						}else if(j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->nx[i];
-						}else if(j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->nx[i];
-						}
-			}
-    
-		}
-
-		delete [] ghost_state;
-		delete [] A_n;
-		delete [] dudu_j;
-    return (-result);
- }
-
-    double EulerKS::EulerBoundaryBilinearForm_vel_x::value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
-    {
-      return matrix_form<double, double>(n, wt, u_ext, u,v, e, ext);
-    }
-
-    Ord EulerKS::EulerBoundaryBilinearForm_vel_x::ord(int n, double *wt, Func<Ord> *u_ext[],Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(20);
-    }
-
-    MatrixFormSurf<double>* EulerKS::EulerBoundaryBilinearForm_vel_x::clone() const { return new EulerKS::EulerBoundaryBilinearForm_vel_x(kappa, this->j); }
-
-//vel_y
-  template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundaryBilinearForm_vel_y::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u,Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const 
-    {
-		int bdry =0;
-		double* ghost_state = new double[4];
-		double* dudu_j = new double[4];
-		double* A_n = new double[4]; 
-	bool solid = false;
-	double constant = 1.;
-
-    Scalar result = Scalar(0);
-    for (int i = 0;i < n;i++) 
-if(e->x[i]!=-1.)
-    {				
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-
-			if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
-				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-				else if(e->x[i]==-1.) bdry =2.;
-				else throw Hermes::Exceptions::Exception("boundary");
-
-(static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
-
-if(bdry==1) constant =1.;
-else constant = 0.5;
-
-					if(bdry!=1){
-								Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, 2, A_n); //2te-Zeile A_n
-
-
-						if(bdry!=2) 
-						{
-								(static_cast<EulerKS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,j,dudu_j);//j-te Spalte
-						}
-					}
-
-				if(j==0){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==1){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==2){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==3){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-           * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}
-				 if (bdry==2)
-		      result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				else if(bdry!=1){ 
-				 result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				result += wt[i]*v->val[i] *u->val[i]*0.5*(
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
-				}
-
-			}else{
-						if(j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->ny[i]*
-						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);			
-						}else if(j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->ny[i];
-						}else if(j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
-						}else if(j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->ny[i];
-						}
-			}
-		
-    }
-
-		delete [] ghost_state;
-		delete [] A_n;
-		delete [] dudu_j;
-    return (-result);
- }
-
-    double EulerKS::EulerBoundaryBilinearForm_vel_y::value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
-    {
-      return matrix_form<double, double>(n, wt, u_ext,u, v, e, ext);
-    }
-
-    Ord EulerKS::EulerBoundaryBilinearForm_vel_y::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(20);
-    }
-
-    MatrixFormSurf<double>* EulerKS::EulerBoundaryBilinearForm_vel_y::clone() const { return new EulerKS::EulerBoundaryBilinearForm_vel_y(kappa, this->j); }
-
-
-//energy
-  template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundaryBilinearForm_e::matrix_form(int n, double *wt, Func<Scalar> *u_ext[],Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const 
- {
-		int bdry =0;
-		double* ghost_state = new double[4];
-		double* dudu_j = new double[4];
-		double* A_n = new double[4];
-	bool solid = false;
-	double constant = 1.;
-
-    Scalar result = Scalar(0);	
-    for (int i = 0;i < n;i++) 
-if(e->x[i]!=-1.)
-    {				
-					
-if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-//if((e->y[i]<=0.)&&(e->x[i]<2.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-
-			if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
-
-				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-				else if(e->x[i]==-1.) bdry =2.;
-				else throw Hermes::Exceptions::Exception("boundary");
-
-(static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
-
-if(bdry==1) constant =1.;
-else constant = 0.5;
-
-				if(bdry!=1){
-							Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, 3, A_n); //3te-Zeile A_n
-					if(bdry!=2) 
-					{
-							(static_cast<EulerKS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,j,dudu_j);//j-te Spalte
-					}
-				}
-
-				if(j==0){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-           * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-           * e->ny[i]*v->val[i];
-				}else if(j==1){
-        result += wt[i] * u->val[i] *constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-           * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}else if(j==2){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-           * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-          * e->ny[i]*v->val[i];
-				}else if(j==3){
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-           * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * e->ny[i]*v->val[i];
-				}
-				if (bdry==2)
-		      result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				else if(bdry!=1){ 
-				 result += wt[i]*v->val[i] *u->val[i]*0.5*A_n[j];
-				result += wt[i]*v->val[i] *u->val[i]*0.5*(
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_0<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]  -A_n[0])* dudu_j[0] +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_1<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[1])*dudu_j[1]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_2<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[2])*dudu_j[2]  +
-				((static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->nx[i]+
-				 (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_3<Scalar>(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3]) 
-								  * e->ny[i]-A_n[3])*dudu_j[3] );
-
-				}
-				
-     }
-		}
-		delete [] ghost_state;
-		delete [] A_n;
-		delete [] dudu_j;
-    return (-result);
-  }
-
-    double EulerKS::EulerBoundaryBilinearForm_e::value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
-    {
-      return matrix_form<double, double>(n, wt, u_ext, u,v, e, ext);
-    }
-
-    Ord EulerKS::EulerBoundaryBilinearForm_e::ord(int n, double *wt, Func<Ord> *u_ext[],Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const
-    {
-      return Ord(20);
-    }
-
-    MatrixFormSurf<double>* EulerKS::EulerBoundaryBilinearForm_e::clone() const { return new EulerKS::EulerBoundaryBilinearForm_e(kappa, this->j); }
-
-
-
-//---------------------K----------------
-
-    template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerEquationsBilinearFormDensity::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  
-		 {
-      Scalar result = Scalar(0);
-      for (int i = 0;i < n;i++) 
-      {
-			if(j==0){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if(j==1){
-				
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if(j==2){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if(j==3){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-				}
-      }
-      return result;
-    }
-    
-     
-
-    double EulerKS::EulerEquationsBilinearFormDensity::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
-    {
-      return matrix_form<double, double>(n, wt, u_ext,u, v, e, ext);
-    } 
-
-
-    Ord EulerKS::EulerEquationsBilinearFormDensity::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(20);
-    }
-
-    MatrixFormVol<double>* EulerKS::EulerEquationsBilinearFormDensity::clone() const
-    {
-    return new EulerKS::EulerEquationsBilinearFormDensity(this->j);
-    }
-
-
-
-    template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerEquationsBilinearFormDensityVelX::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  
-    {
-      Scalar result = Scalar(0);
-      for (int i = 0;i < n;i++) 
-      {
-			if(j==0){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if (j==1){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if (j==2){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if (j==3){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-				}
-      }
-      return result;
-    }
-
-    double EulerKS::EulerEquationsBilinearFormDensityVelX::value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
-    {
-      return matrix_form<double, double>(n, wt, u_ext, u,v, e, ext);
-    }
-
-    Ord EulerKS::EulerEquationsBilinearFormDensityVelX::ord(int n, double *wt, Func<Ord> *u_ext[],Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(20);
-    }
-
-    MatrixFormVol<double>* EulerKS::EulerEquationsBilinearFormDensityVelX::clone() const { return new EulerKS::EulerEquationsBilinearFormDensityVelX(kappa,this->j); }
-
-
-
-    template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerEquationsBilinearFormDensityVelY::matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u,Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const 
-    {
-      Scalar result = Scalar(0);
-      for (int i = 0;i < n;i++) 
-      {
-			if(j==0){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if (j==1){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if (j==2){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if (j==3){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-				}
-      }
-      return result;
-    }
-
-    double EulerKS::EulerEquationsBilinearFormDensityVelY::value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
-    {
-      return matrix_form<double, double>(n, wt, u_ext,u, v, e, ext);
-    }
-
-    Ord EulerKS::EulerEquationsBilinearFormDensityVelY::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(20);
-    }
-
-    MatrixFormVol<double>* EulerKS::EulerEquationsBilinearFormDensityVelY::clone() const { return new EulerKS::EulerEquationsBilinearFormDensityVelY(kappa,this->j); }
-
-
-  template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerEquationsBilinearFormEnergy::matrix_form(int n, double *wt, Func<Scalar> *u_ext[],Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const 
-    {
-      Scalar result = Scalar(0);
-      for (int i = 0;i < n;i++) 
-      {
-			 if (j==0){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_0<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-          * v->dy[i];
-			}else if (j==1){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_1<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-			}else if (j==2){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_2<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i]) 
-          * v->dy[i];
-			}else if (j==3){
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dx[i];
-        result += wt[i] * u->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_3<Scalar>(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], Scalar(0)) 
-          * v->dy[i];
-				}
-      }
-      return result;
-    }
-
-    double EulerKS::EulerEquationsBilinearFormEnergy::value(int n, double *wt, Func<double> *u_ext[],Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
-    {
-      return matrix_form<double, double>(n, wt, u_ext, u,v, e, ext);
-    }
-
-    Ord EulerKS::EulerEquationsBilinearFormEnergy::ord(int n, double *wt, Func<Ord> *u_ext[],Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const
-    {
-      return Ord(20);
-    }
-
-
-    MatrixFormVol<double>* EulerKS::EulerEquationsBilinearFormEnergy::clone() const { return new EulerKS::EulerEquationsBilinearFormEnergy(kappa,this->j); }
 
 
 
@@ -855,115 +241,10 @@ else constant = 0.5;
 //------------------------------------------------------------------
 //----------------------------Linearforms---------------------------------
 //----------------------------------------------
-//rho
- template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundary_rho::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  		 
-		 {
-		double rho_new= 0.; double rho_v_x_new=0.; double rho_v_y_new=0.; double rho_energy_new=0.; 
-		double lambda =0.;
-		double* new_variables = new double[4];
-		double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
-		double rho, rho_v_x, rho_v_y, rho_energy;
-		int bdry=0.; bool solid = false;
-
-  Scalar result = Scalar(0);
-  for (int i = 0;i < n;i++)
-if(e->x[i]==-1.)
-{
-
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
-
-			rho = ext[0]->val[i]; 		
-			rho_v_x = ext[1]->val[i]; 
-			rho_v_y = ext[2]->val[i];  
-			rho_energy = ext[3]->val[i]; 
-
-     if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
-				rho_ext = ext[4]->val[i];
-				rho_v_x_ext = ext[5]->val[i];
-				rho_v_y_ext = ext[6]->val[i];
-				rho_energy_ext = ext[7]->val[i];
-
-(static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
-
-					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];		
-
-		      result += wt[i] *e->nx[i]*v->val[i]*0.5* (rho_new
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-					+	ext[0]->val[i]
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy)) ;
-		      result += wt[i]* e->ny[i]*v->val[i]*0.5*( rho_new
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new)  
-						+ext[0]->val[i]
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy));
-		      result += wt[i]  * e->nx[i]*v->val[i] *0.5* (rho_v_x_new
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-							+ ext[1]->val[i]
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-		      result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_x_new
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-		      + ext[1]->val[i]
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-		      result += wt[i]* e->nx[i]*v->val[i] *0.5*(rho_v_y_new
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-		      + ext[2]->val[i]
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-		      result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_y_new
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-		       +ext[2]->val[i]
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-		      result += wt[i]* e->nx[i]*v->val[i] *0.5*( rho_energy_new
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-		       +ext[3]->val[i]
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_0_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy))  ;
-		      result += wt[i]* e->ny[i]*v->val[i] * 0.5* ( rho_energy_new 
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-		      + ext[3]->val[i] 
-		      * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_0_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-
-				if(bdry!=1)	
-						result -= wt[i]*v->val[i]* 0.5 * 
-								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, 0);
 
 
-				}
-		
-			
-		}
-//}
-
-		delete [] new_variables;
-
-    return (-result);
-    }      
-
-
-    double EulerKS::EulerBoundary_rho::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
+    double EulerKS::EulerBoundaryLinearform::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
       Geom<double> *e, Func<double>  **ext) const
-    {
-      return EulerKS::EulerBoundary_rho::vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    } 
-
-
-    Ord EulerKS::EulerBoundary_rho::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(10);
-    }
-
-    VectorFormSurf<double>* EulerKS::EulerBoundary_rho::clone() const
-    {
-					return new EulerKS::EulerBoundary_rho(this->kappa);
-    }
-
-//rho_velocity_x
- template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundary_v_x::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  
 		 {
 		double rho_new=0.; double rho_v_x_new=0.; double rho_v_y_new=0.; double rho_energy_new=0.; 
 		double lambda =0.;
@@ -971,20 +252,20 @@ bdry =2;
 		double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
 		double rho, rho_v_x, rho_v_y, rho_energy;
 int bdry; bool solid = false;
-  Scalar result = Scalar(0);
+  double result = 0.;
   for (int i = 0;i < n;i++) 
-if(e->x[i]==-1.)      {
+if(e->x[i]==-1.)
+{
+
+				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
+				else if(e->x[i]==-1.) bdry =2.;
+				else throw Hermes::Exceptions::Exception("boundary");
+
 			rho = ext[0]->val[i];  
 			rho_v_x = ext[1]->val[i]; 
 			rho_v_y = ext[2]->val[i]; 
 			rho_energy = ext[3]->val[i];
- 
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
-
-
 
     if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 				rho_ext = ext[4]->val[i];
@@ -997,51 +278,31 @@ bdry =2;
 
 					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];	
 
-        result += wt[i] *e->nx[i]*v->val[i]*0.5* (rho_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-				+	ext[0]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy)) ;
-        result += wt[i]* e->ny[i]*v->val[i]*0.5*( rho_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new)  
-					+ext[0]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy));
-        result += wt[i]  * e->nx[i]*v->val[i] *0.5* (rho_v_x_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-						+ ext[1]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_x_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[1]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->nx[i]*v->val[i] *0.5*(rho_v_y_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[2]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_y_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-         +ext[2]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->nx[i]*v->val[i] *0.5*( rho_energy_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-         +ext[3]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_1_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy))  ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* ( rho_energy_new 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[3]->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_1_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
+				for(int k =0; k<4;k++)
+				{
+							  result += wt[i] *e->nx[i]*v->val[i]*0.5* (new_variables[k]*
+							   (static_cast<EulerKS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,0,entry_i,k) 
+									+	ext[k]->val[i]
+							  * (static_cast<EulerKS*>(wf))->euler_fluxes->A(rho, rho_v_x, rho_v_y, rho_energy,0,entry_i,k)) ;
+							  result += wt[i]* e->ny[i]*v->val[i]*0.5*( new_variables[k]*
+							   (static_cast<EulerKS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,1,entry_i,k) 
+										+ext[k]->val[i]
+							  * (static_cast<EulerKS*>(wf))->euler_fluxes->A(rho, rho_v_x, rho_v_y, rho_energy,1,entry_i,k)) ;
+
+				}
 
 		if(bdry!=1)		
-						result -= wt[i]*v->val[i]* 0.5 * 
-								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, 1);
+			result -= wt[i]*v->val[i]* 0.5 * 
+								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
 
-
-//lambda = calculate_lambda_max(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa);
-//result -= wt[i]*v->val[i]* 0.5 *lambda*(rho_energy_new - ext[1]->val[i]);
 
 				}else{//solid wall ->no mirror
+						if(entry_i==1)
 							result += wt[i]*v->val[i]*e->nx[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
+						else if(entry_i==2)
+							result += wt[i]*v->val[i]*e->ny[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
 				}
-			//}
+			
 			
 		}
 		delete [] new_variables;
@@ -1049,234 +310,16 @@ bdry =2;
    }      
 
 
-    double EulerKS::EulerBoundary_v_x::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
-    {
-      return EulerKS::EulerBoundary_v_x::vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    } 
 
-
-    Ord EulerKS::EulerBoundary_v_x::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerKS::EulerBoundaryLinearform::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return Ord(10);
     }
 
-    VectorFormSurf<double>* EulerKS::EulerBoundary_v_x::clone() const
+    VectorFormSurf<double>* EulerKS::EulerBoundaryLinearform::clone() const
     {
-					return new EulerKS::EulerBoundary_v_x(this->kappa);
+					return new EulerKS::EulerBoundaryLinearform(this->kappa, this->entry_i);
     }
-
-
-//rho_velocity_y
- template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundary_v_y::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  
-		 {
-	double rho_new=0.; double rho_v_x_new=0.; double rho_v_y_new=0.; double rho_energy_new=0.; 
-	double lambda =0.;
-double* new_variables = new double[4];
-double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
-double rho, rho_v_x, rho_v_y, rho_energy;
-int bdry; bool solid = false;
-
-  Scalar result = Scalar(0);
-  for (int i = 0;i < n;i++) 
-if(e->x[i]==-1.) {
-			rho = ext[0]->val[i]; 
-			rho_v_x = ext[1]->val[i];
-			rho_v_y = ext[2]->val[i]; 
-			rho_energy = ext[3]->val[i]; 
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
-
-
-    if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
-
-			rho_ext = ext[4]->val[i];
-			rho_v_x_ext = ext[5]->val[i];
-			rho_v_y_ext = ext[6]->val[i];
-			rho_energy_ext = ext[7]->val[i];
-
-
-(static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
-
-					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];			
-
-        result += wt[i] *e->nx[i]*v->val[i]*0.5* (rho_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-				+	ext[0]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy)) ;
-        result += wt[i]* e->ny[i]*v->val[i]*0.5*( rho_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new)  
-					+ext[0]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy));
-        result += wt[i]  * e->nx[i]*v->val[i] *0.5* (rho_v_x_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-						+ ext[1]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_x_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[1]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->nx[i]*v->val[i] *0.5*(rho_v_y_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[2]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_y_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-         +ext[2]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->nx[i]*v->val[i] *0.5*( rho_energy_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-         +ext[3]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_2_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy))  ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* ( rho_energy_new 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[3]->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_2_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-
-			if(bdry!=1)		
-						result -= wt[i]*v->val[i]* 0.5 * 
-								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, 2);
-
-
-//lambda = calculate_lambda_max(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i], rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa);
-//result -= wt[i]*v->val[i]* 0.5 *lambda*(rho_energy_new - ext[2]->val[i]);
-
-			}else{//solid wall
-				result += wt[i]*v->val[i]*e->ny[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
-			}
-		// }
-		}
-		delete [] new_variables;
-    return (-result);
-   }     
-
-
-    double EulerKS::EulerBoundary_v_y::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
-    {
-      return EulerKS::EulerBoundary_v_y::vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    } 
-
-
-    Ord EulerKS::EulerBoundary_v_y::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(10);
-    }
-
-    VectorFormSurf<double>* EulerKS::EulerBoundary_v_y::clone() const
-    {
-					return new EulerKS::EulerBoundary_v_y(this->kappa);
-    }
-
-
-//rho_energy
- template<typename Real, typename Scalar>
-    Scalar EulerKS::EulerBoundary_e::vector_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const  
-		 {
-	double rho_new=0.; double rho_v_x_new=0.; double rho_v_y_new=0.; double rho_energy_new=0.; 
-	double lambda =0.;
-	double* new_variables = new double[4];
-	double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
-	double rho, rho_v_x, rho_v_y, rho_energy;
-	int bdry; bool solid = false;
-
-  Scalar result = Scalar(0);
-  for (int i = 0;i < n;i++) 
-if(e->x[i]==-1.){
-		rho = ext[0]->val[i]; 
-		rho_v_x = ext[1]->val[i]; 
-		rho_v_y = ext[2]->val[i]; 
-		rho_energy = ext[3]->val[i]; 
-			/*if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>=-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
-			else */
-bdry =2;
-
-
-    if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
-
-		rho_ext = ext[4]->val[i];
-		rho_v_x_ext = ext[5]->val[i];
-		rho_v_y_ext = ext[6]->val[i];
-		rho_energy_ext = ext[7]->val[i];
-
-
-(static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
-
-				rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];			
-
-        result += wt[i] *e->nx[i]*v->val[i]*0.5* (rho_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-				+	ext[0]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy)) ;
-        result += wt[i]* e->ny[i]*v->val[i]*0.5*( rho_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_0<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new)  
-					+ext[0]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_0<Scalar>(rho, rho_v_x, rho_v_y, rho_energy));
-        result += wt[i]  * e->nx[i]*v->val[i] *0.5* (rho_v_x_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-						+ ext[1]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_x_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_1<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[1]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_1<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->nx[i]*v->val[i] *0.5*(rho_v_y_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[2]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* (rho_v_y_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_2<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-         +ext[2]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_2<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-        result += wt[i]* e->nx[i]*v->val[i] *0.5*( rho_energy_new
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-         +ext[3]->val[i]
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_1_3_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy))  ;
-        result += wt[i]* e->ny[i]*v->val[i] * 0.5* ( rho_energy_new 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_3<Scalar>(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new) 
-        + ext[3]->val[i] 
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A_2_3_3<Scalar>(rho, rho_v_x, rho_v_y, rho_energy) ) ;
-
-			if(bdry!=1)		
-						result -= wt[i]*v->val[i]* 0.5 * 
-								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, 3);
-
-				//lambda = calculate_lambda_max(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i], rho_new,rho_v_x_new, rho_v_y_new, rho_energy_new, kappa);
-				//result -= wt[i]*v->val[i]* 0.5 *lambda*(rho_energy_new - ext[3]->val[i]);
-				}
-			}
-		//}
-	
-		delete [] new_variables;
-            return (-result);
-    }      
-
-
-    double EulerKS::EulerBoundary_e::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
-    {
-      return EulerKS::EulerBoundary_e::vector_form<double, double>(n, wt, u_ext, v, e, ext);
-    } 
-
-
-    Ord EulerKS::EulerBoundary_e::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(10);
-    }
-
-    VectorFormSurf<double>* EulerKS::EulerBoundary_e::clone() const
-    {
-					return new EulerKS::EulerBoundary_e(this->kappa);
-    }
-
 
 

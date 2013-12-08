@@ -97,8 +97,9 @@ protected:
       Func<Ord>  **ext) const; 
 
     MatrixFormVol<double>* clone() const;
-		int entry_j; int entry_i;
-double kappa;
+		int entry_j; 
+	int entry_i;
+	double kappa;
 	};
 
 //---Bilinear form bdry

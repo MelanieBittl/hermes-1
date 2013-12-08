@@ -22,7 +22,7 @@ const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 1e-4;
 const double T_FINAL = 3.;                       // Time interval length. 
 
-const double theta = 0.5;
+const double theta = 1.;
 
 // Equation parameters.  
  
@@ -78,16 +78,26 @@ int main(int argc, char* argv[])
 
 
 bool serendipity = true;
+/*
+SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));*/
 
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
-/*	SpaceSharedPtr<double> space_rho(new SpaceBB<double>(mesh, P_INIT));	
+	/*SpaceSharedPtr<double> space_rho(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));*/
+		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));
+
+		SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
 
 
 	int dof_rho = space_rho->get_num_dofs();
@@ -133,9 +143,9 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
   ScalarView mach_view("mach", new WinGeom(0, 700, 600, 300));
 			s2.set_min_max_range(1.,4.);
 			s3.set_min_max_range(-1.,1.);
-			mach_view.set_min_max_range(0.1, 0.5);
-			pressure_view.set_min_max_range(0.5,1.);
-			s1.set_min_max_range(0.9, 1.1);
+			mach_view.set_min_max_range(0.17, 0.48);
+			pressure_view.set_min_max_range(0.68,0.72);
+			s1.set_min_max_range(0.91, 1.);
 
 /*	OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
 m1view.show(spaces[0]);
@@ -149,8 +159,8 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 //------------
-		//NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
-NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+		NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
 
 
 	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
@@ -210,11 +220,11 @@ do
  	  if(ts!=1){
 			dp.assemble(mat_rhs, vec_in);
 			vec_in->multiply_with_Scalar(time_step);
-		  dp_DG.assemble(vec_dg);	
+		  	dp_DG.assemble(vec_dg);	
 		}else{
 			dp_init.assemble(mat_rhs,vec_in);
 			vec_in->multiply_with_Scalar(time_step);
-		 dp_DG_init.assemble(vec_dg);	
+		 	dp_DG_init.assemble(vec_dg);	
 		}
 
 			matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());//L(U) = KU+SU
@@ -244,7 +254,7 @@ do
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
 
 			// Visualize the solution.
-	/*	MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+		/*MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
 		MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));
 			sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);

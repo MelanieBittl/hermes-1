@@ -47,7 +47,7 @@
 for(int k =0; k<4;k++)
 {
 		for(int i = 0; i<4;i++)
-		{	//add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm(kappa,i,k));
+		{	add_matrix_form_surf(new EulerKS::EulerBoundaryBilinearForm(kappa,i,k));
 			add_matrix_form(new EulerKS::EulerEquationsBilinearForm(i,k,kappa));
 
 		}
@@ -88,12 +88,46 @@ for(int k =0; k<4;k++)
     return wf;
     }
 
+
+//---------------------K----------------
+
+    double EulerKS::EulerEquationsBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
+      Geom<double> *e, Func<double>  **ext) const
+		 {
+      double result = 0.;
+      for (int i = 0;i < n;i++) 
+      {
+
+        result += wt[i] * u->val[i] *
+        ( (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
+          * v->dx[i]+        
+         (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j) 
+          * v->dy[i]);
+		
+      }
+      return result;
+    }
+    
+
+
+    Ord EulerKS::EulerEquationsBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+      Func<Ord>  **ext) const 
+    {
+      return Ord(10);
+    }
+
+    MatrixFormVol<double>* EulerKS::EulerEquationsBilinearForm::clone() const
+    {
+    return new EulerKS::EulerEquationsBilinearForm(this->entry_i, this->entry_j, this->kappa);
+    }
+
+
 //---Boudary Bilinearforms---------
    double EulerKS::EulerBoundaryBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
       Geom<double> *e, Func<double>  **ext) const
 {
 	int bdry =0;
-	double* ghost_state = new double[4];
+	double* ghost_state = new double[4];for(int l=0;l<4;l++) ghost_state[l]=0.;
 	double * A_n = new double[4];
 	double* dudu_j= new double[4];
 	bool solid = false;
@@ -101,15 +135,16 @@ for(int k =0; k<4;k++)
   double result = 0.;
   for (int i = 0;i < n;i++) 
 //if(e->x[i]!=-2.)
-//if((e->x[i]<8.)&&(e->x[i]>-2.))
+if((e->x[i]<8.)&&(e->x[i]>-2.))
   {		
 if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+else solid = false;
 
 		 if(((static_cast<EulerKS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
 				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
-				else if(e->x[i]==8.){ bdry=4;}
-				else if(e->x[i]==-2.) bdry =3.;
+				else if(e->x[i]==8.){ bdry=3;}
+				else if(e->x[i]==-2.) bdry =4.;
 				else throw Hermes::Exceptions::Exception("boundary");
 
 (static_cast<EulerKS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
@@ -119,7 +154,7 @@ else constant = 0.5;
 
 
 			if(bdry!=1){
-						Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i, A_n); //ite-Zeile A_n
+					Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i,A_n); //ite-Zeile A_n
 
 				if(bdry!=2) 
 				{
@@ -128,12 +163,11 @@ else constant = 0.5;
 			}
 
 				
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
-          * e->nx[i]*v->val[i];
-        result += wt[i] * u->val[i] * constant
-        * (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j)  
-          * e->ny[i]*v->val[i];
+        result += wt[i] * u->val[i] *v->val[i]* constant*
+        ( (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
+          * e->nx[i] +
+         (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j)  
+          * e->ny[i]);
 			
 
 			if (bdry==2)
@@ -202,37 +236,6 @@ else constant = 0.5;
 
 
 
-//---------------------K----------------
-
-    double EulerKS::EulerEquationsBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
-		 {
-      double result = 0.;
-      for (int i = 0;i < n;i++) 
-      {
-
-        result += wt[i] * u->val[i] *
-        ( (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
-          * v->dx[i]+        
-         (static_cast<EulerKS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j) 
-          * v->dy[i]);
-		
-      }
-      return result;
-    }
-    
-
-
-    Ord EulerKS::EulerEquationsBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(10);
-    }
-
-    MatrixFormVol<double>* EulerKS::EulerEquationsBilinearForm::clone() const
-    {
-    return new EulerKS::EulerEquationsBilinearForm(this->entry_i, this->entry_j, this->kappa);
-    }
 
 
 //------------------------------------------------------------------
@@ -252,10 +255,11 @@ int bdry; bool solid = false;
   double result = 0.;
   for (int i = 0;i < n;i++) 
 //if(e->x[i]==-2.)
-//if((e->x[i]==8.)||(e->x[i]==-2.))
+if((e->x[i]==8.)||(e->x[i]==-2.))
 {
 
 if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
+else solid = false;
 if(e->x[i]==-2.) bdry =3;
 else bdry = 4.;
 
@@ -293,16 +297,13 @@ else bdry = 4.;
 								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
 
 
-//lambda = calculate_lambda_max(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa);
-//result -= wt[i]*v->val[i]* 0.5 *lambda*(rho_energy_new - ext[1]->val[i]);
-
 				}else{//solid wall ->no mirror
 						if(entry_i==1)
 							result += wt[i]*v->val[i]*e->nx[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
 						else if(entry_i==2)
 							result += wt[i]*v->val[i]*e->ny[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
 				}
-			//}
+			
 			
 		}
 		delete [] new_variables;

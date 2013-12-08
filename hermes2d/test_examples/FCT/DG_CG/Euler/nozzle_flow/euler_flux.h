@@ -16,7 +16,7 @@ public:
   typedef double (*A_fn)(double, double, double, double, double);
 
   
-  double A(double rho, double rho_v_x, double rho_v_y, double energy, int i, int j, int k);
+  double A(double rho, double rho_v_x, double rho_v_y, double rho_energy, int i, int j, int k);
 
   protected:
     double kappa;

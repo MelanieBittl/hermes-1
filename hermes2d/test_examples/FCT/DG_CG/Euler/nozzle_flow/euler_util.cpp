@@ -36,9 +36,9 @@ double QuantityCalculator::calc_sound_speed(double rho, double rho_v_x, double r
 }
 
   // Calculates enthalpy.
-double QuantityCalculator::enthalpy(double rho, double rho_v_x, double rho_v_y, double energy, double kappa){
+double QuantityCalculator::enthalpy(double rho, double rho_v_x, double rho_v_y, double rho_energy, double kappa){
 
-double to_return= (energy+ QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y,energy,kappa))/rho;
+double to_return= (rho_energy+ QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y,rho_energy,kappa))/rho;
   //if(std::abs(to_return) < 1E-12 || to_return < 0.0)
     //return 1E-12;
 // if(to_return < 0.0)
@@ -180,13 +180,14 @@ double RiemannInvariants::get_energy(double w_1, double w_2, double w_3, double 
 void RiemannInvariants::get_ghost_state(int bdry,double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
 					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, double* ghost_state, bool solid)
 {
+
 		double w_1,w_2,w_3,w_4;	
 	if( solid==true){
 		ghost_state[0] = rho;
 		ghost_state[3] = rho_energy;
 		ghost_state[1] = rho_v_x - 2*n_x*( rho_v_x*n_x+ rho_v_y*n_y); 	
 		ghost_state[2] = rho_v_y- 2*n_y*( rho_v_x*n_x+ rho_v_y*n_y); 
-	}else if(bdry==1){ //supersonic outlet{
+	}else if(bdry==1){ //supersonic outlet
 		ghost_state[0] =  rho;
 		ghost_state[1] = rho_v_x;
 		ghost_state[2]=		rho_v_y;
@@ -195,9 +196,8 @@ void RiemannInvariants::get_ghost_state(int bdry,double rho, double rho_v_x, dou
 		ghost_state[0] =  rho_ext;
 		ghost_state[1] = rho_v_x_ext;
 		ghost_state[2]=		rho_v_y_ext;
-		ghost_state[3]= rho_energy_ext;
-	
-	}else	if(bdry==3){//subsonic inlet
+		ghost_state[3]= rho_energy_ext;	
+	}else if(bdry==3){//subsonic inlet
 		w_2 = RiemannInvariants::get_w2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
 		w_3 = RiemannInvariants::get_w3(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, t_x, t_y);
 		w_4 = RiemannInvariants::get_w4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
@@ -208,7 +208,6 @@ void RiemannInvariants::get_ghost_state(int bdry,double rho, double rho_v_x, dou
 		ghost_state[1] =get_rho_v_x(w_1, w_2, w_3, w_4, n_x,  t_x);
 		ghost_state[2] =get_rho_v_y(w_1, w_2, w_3, w_4, n_y,  t_y);
 		ghost_state[3] =get_energy(w_1, w_2, w_3, w_4,  n_x,  n_y,  t_x,  t_y);
-
 		
 	}else if(bdry==4){//subsonic outlet
 		w_2 = RiemannInvariants::get_w2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
@@ -217,6 +216,7 @@ void RiemannInvariants::get_ghost_state(int bdry,double rho, double rho_v_x, dou
 		double pressure_out =QuantityCalculator::calc_pressure(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, kappa);
 		double pressure_in = QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
 		w_1 = w_4 - 4./(kappa-1)*std::sqrt(kappa*pressure_out/rho*std::pow(pressure_in/pressure_out, 1./kappa));
+
 		ghost_state[0]= get_rho(w_1, w_2, w_3, w_4);
 		ghost_state[1] =get_rho_v_x(w_1, w_2, w_3, w_4, n_x,  t_x);
 		ghost_state[2] =get_rho_v_y(w_1, w_2, w_3, w_4, n_y,  t_y);
@@ -258,8 +258,45 @@ double w_1,w_2,w_3,w_4;
 				dudu[0] = drho_du;
 				dudu[1] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
 				dudu[2] = (v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
-				double dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
+				double dp_du = ((kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext*drho_du)/kappa;
 				dudu[3] = (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
+
+/*
+					dw4_du= -1./rho*(rho_v_x*n_x+rho_v_y*n_y)/rho+ kappa/c*(-rho_energy/(rho*rho)+(rho_v_x*rho_v_x+rho_v_y*rho_v_y)/(rho*rho*rho));	
+			double drho_du = rho_ghost/(2.*c_ext)*dw4_du;
+double dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
+	if(entry_j==0) dudu[0] = drho_du;
+	else if(entry_j==1) dudu[0] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
+	else if(entry_j==2) dudu[0]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
+	else if(entry_j==3) dudu[0]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
+
+					dw4_du = n_x/rho-kappa*rho_v_x/(rho*rho*c);
+drho_du = rho_ghost/(2.*c_ext)*dw4_du;
+ dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
+	if(entry_j==0) dudu[1] = drho_du;
+	else if(entry_j==1) dudu[1] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
+	else if(entry_j==2) dudu[1]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
+	else if(entry_j==3) dudu[1]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
+
+					dw4_du = n_y/rho-kappa*rho_v_y/(rho*rho*c);
+drho_du = rho_ghost/(2.*c_ext)*dw4_du;
+ dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
+	if(entry_j==0) dudu[2] = drho_du;
+	else if(entry_j==1) dudu[2] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
+	else if(entry_j==2) dudu[2]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
+	else if(entry_j==3) dudu[2]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
+
+					dw4_du = kappa/(c*rho);
+drho_du = rho_ghost/(2.*c_ext)*dw4_du;
+ dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
+	if(entry_j==0) dudu[3] = drho_du;
+	else if(entry_j==1) dudu[3] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
+	else if(entry_j==2) dudu[3]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
+	else if(entry_j==3) dudu[3]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);*/
+
+
+
+
 			
 
 	}else if(bdry ==4){//outlet

@@ -17,9 +17,9 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 2e-5;
+const double time_step = 2e-3;
 const double T_FINAL = 3.;                       // Time interval length. 
 
 const double theta = 1.;
@@ -122,8 +122,8 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 //------------
-		//NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
-NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+		NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
 
 
 	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
