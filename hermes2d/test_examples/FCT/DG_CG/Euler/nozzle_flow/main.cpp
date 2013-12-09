@@ -20,7 +20,7 @@ using namespace Hermes::Solvers;
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 1e-4;
-const double T_FINAL = 3.;                       // Time interval length. 
+const double T_FINAL = 6.;                       // Time interval length. 
 
 const double theta = 1.;
 
@@ -165,23 +165,32 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 
 	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
 	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux);
-	EulerKS wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-	EulerKS wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+	EulerK wf_convection_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+	EulerK wf_convection(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass;
+
+	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+
+
+
 
 
   // Initialize the FE problem.
   DiscreteProblem<double> dp_mass(&wf_mass,spaces);
-  DiscreteProblem<double> dp_init(&wf_boundary_init,spaces); 
-  DiscreteProblem<double> dp(&wf_boundary, spaces); 
+  DiscreteProblem<double> dp_init(&wf_convection_init,spaces); 
+  DiscreteProblem<double> dp(&wf_convection, spaces); 
   DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
   DiscreteProblem<double> dp_DG(&wf_DG, spaces);
 
+  DiscreteProblem<double> dp_bdry_init(&wf_bdry_init,spaces); 
+  DiscreteProblem<double> dp_bdry(&wf_bdry, spaces); 
 
   // Set up the solver, matrix, and rhs according to the solver selection. 
 	CSCMatrix<double> * matrix = new CSCMatrix<double>;  
 	CSCMatrix<double> * mat_rhs = new CSCMatrix<double>; 
 	CSCMatrix<double> * mass_matrix = new CSCMatrix<double>;  
+	CSCMatrix<double> * dS_matrix = new CSCMatrix<double>;  
 
 
     OGProjection<double> ogProjection;
@@ -210,6 +219,13 @@ MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
 
 		Space<double>::assign_dofs(spaces);
 		  dp_mass.assemble(mass_matrix);
+/*
+dp_bdry_init.assemble(mat_rhs, vec_in);
+mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
+
+for(int i =0 ; i<ndof; i++) 
+if(coeff_vec_2[i]!= vec_in->get(i)) printf("%i:  %f   ,   %f \n",i, coeff_vec_2[i], vec_in->get(i));
+//printf("%i, coeff = %f :  %f   ,   %f \n",i,coeff_vec[i], coeff_vec_2[i], vec_in->get(i));*/
 
 //Timestep loop
 do
@@ -218,19 +234,28 @@ do
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof);
  	  
  	  if(ts!=1){
-			dp.assemble(mat_rhs, vec_in);
+			//dp.assemble(mat_rhs, vec_in);
+			dp.assemble(mat_rhs);
+			dp_bdry.assemble(dS_matrix, vec_in);
 			vec_in->multiply_with_Scalar(time_step);
 		  	dp_DG.assemble(vec_dg);	
 		}else{
-			dp_init.assemble(mat_rhs,vec_in);
+			//dp_init.assemble(mat_rhs,vec_in);
+			dp_init.assemble(mat_rhs);
+			dp_bdry_init.assemble(dS_matrix, vec_in);
 			vec_in->multiply_with_Scalar(time_step);
 		 	dp_DG_init.assemble(vec_dg);	
 		}
 
-			matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());//L(U) = KU+SU
-			matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
+
+
+				matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());//L(U) = KU+SU
+		matrix->add_sparse_matrix(dS_matrix);
+		matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
 			matrix->add_sparse_matrix(mass_matrix); 				//M/t - theta L(U)
-			mat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)
+			mat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)|
+			dS_matrix->multiply_with_Scalar(-theta*time_step); 
+			mat_rhs->add_sparse_matrix(dS_matrix);
 			mat_rhs->add_sparse_matrix(mass_matrix);  //M/t+(1-theta)L(U)
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
@@ -281,7 +306,6 @@ do
 			s1.show(prev_rho);*/
 
 
-
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
 	  // Update global time.
@@ -311,9 +335,9 @@ do
 			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
 
 
-
+/*
 Orderizer ord_space;
-ord_space.save_orders_vtk(spaces[0], "space.vtk");
+ord_space.save_orders_vtk(spaces[0], "space.vtk");*/
 
 
 

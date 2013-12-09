@@ -51,15 +51,15 @@ double time_step; int num_of_equations;
 
 
 
-class EulerKS : public WeakForm<double>
+class EulerK : public WeakForm<double>
 {
 public:
 
-  EulerKS(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, 
+  EulerK(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, 
 MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, 
 bool mirror_condition= true , int num_of_equations = 4);
 
-	~EulerKS();
+	~EulerK();
 
     WeakForm<double>* clone() const;
 
@@ -101,6 +101,44 @@ protected:
 	int entry_i;
 	double kappa;
 	};
+
+};
+
+
+
+
+
+class EulerS : public WeakForm<double>
+{
+public:
+
+  EulerS(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, 
+MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, 
+bool mirror_condition= true , int num_of_equations = 4);
+
+	~EulerS();
+
+    WeakForm<double>* clone() const;
+
+
+  // Members.
+  EulerFluxes* euler_fluxes;
+	RiemannInvariants* riemann_invariants;
+	bool mirror_condition;
+	double kappa;
+
+  MeshFunctionSharedPtr<double> prev_density;
+  MeshFunctionSharedPtr<double> prev_density_vel_x;
+  MeshFunctionSharedPtr<double> prev_density_vel_y;
+  MeshFunctionSharedPtr<double> prev_energy;
+
+  MeshFunctionSharedPtr<double> rho_ext;
+  MeshFunctionSharedPtr<double> v1_ext;
+  MeshFunctionSharedPtr<double> v2_ext;
+  MeshFunctionSharedPtr<double> energy_ext;
+
+protected:
+
 
 //---Bilinear form bdry
  class EulerBoundaryBilinearForm: public MatrixFormSurf<double>
@@ -149,6 +187,7 @@ protected:
 
 
 };
+
 
 
 

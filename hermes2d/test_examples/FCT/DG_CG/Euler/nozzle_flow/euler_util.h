@@ -359,13 +359,17 @@ class Boundary_helpers
 												0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
 												n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
 
-		
+		/*u[0] = -rho;
+		u[1]= -rho_v_x;
+		u[2]= -rho_v_y;
+			u[3] = -rho_energy ;*/
 
 			double result =0.;
 
 			for(int i =0;i<4;i++)
 					for(int j=0;j<4;j++)
 							result +=R[entry][j]*L[j][i]*u[i]*lambda[j];
+
 
 			return result;		
 
@@ -382,10 +386,6 @@ class Boundary_helpers
 			double v_y_mean = (rho_v_y/std::sqrt(rho) + rho_v_y_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
 			double H_mean = (QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*std::sqrt(rho) + QuantityCalculator::enthalpy(rho_new, rho_v_x_new,rho_v_y_new, rho_energy_new, kappa)*std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
 
-	/*	v_x_mean = 0.5*(rho_v_x/rho + rho_v_x_new/rho_new);
-		v_y_mean = 0.5*(rho_v_y/rho + rho_v_y_new/rho_new);
-H_mean = QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*0.5 + QuantityCalculator::enthalpy(rho_new, rho_v_x_new,rho_v_y_new, rho_energy_new, kappa)*0.5;*/
-
 
 			double c_mean = std::sqrt((kappa-1)*(H_mean- 0.5*(v_x_mean*v_x_mean+v_y_mean*v_y_mean)));
 			double v_n = v_x_mean*n_x+v_y_mean*n_y;
@@ -398,14 +398,14 @@ H_mean = QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*0
 
 		//Eintraege siehe Diss Moeller Appendix C
 			double R[4][4] = { 1, 1, 1, 0, 
-								v_x_mean-c_mean*n_x, v_x_mean, v_x_mean+c_mean*n_x, n_y,
-								v_y_mean-c_mean*n_y, v_y_mean, v_y_mean+c_mean*n_y, -n_x,
-								H_mean-c_mean*v_n, q, H_mean+c_mean*v_n, v_x_mean*n_y-v_y_mean*n_x};
+												v_x_mean-c_mean*n_x, v_x_mean, v_x_mean+c_mean*n_x, n_y,
+												v_y_mean-c_mean*n_y, v_y_mean, v_y_mean+c_mean*n_y, -n_x,
+												H_mean-c_mean*v_n, q, H_mean+c_mean*v_n, v_x_mean*n_y-v_y_mean*n_x};
 
 			double L[4][4] = {0.5*(b_1+v_n/c_mean), 0.5*(-b_2*v_x_mean-n_x/c_mean), 0.5*(-b_2*v_y_mean-n_y/c_mean), 0.5*b_2,
-								1-b_1, b_2*v_x_mean, b_2*v_y_mean, -b_2,
-								0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
-								n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
+												1-b_1, b_2*v_x_mean, b_2*v_y_mean, -b_2,
+												0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
+												n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
 
 			for(int i =0;i<4;i++) A_n[i]=0.;
 	
@@ -419,9 +419,6 @@ H_mean = QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*0
 
 
 		};
-
-
-
 
 
 
