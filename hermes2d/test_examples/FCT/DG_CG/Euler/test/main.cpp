@@ -17,9 +17,9 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 2e-3;
+const double time_step = 1e-3;
 const double T_FINAL = 3.;                       // Time interval length. 
 
 const double theta = 1.;
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -77,7 +77,7 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 
   // Initialize solutions, set initial conditions.
  MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> init_rho_v_x(new  ConstantSolution<double>(mesh,  V1_EXT));	
+  MeshFunctionSharedPtr<double> init_rho_v_x(new  CustomInitialCondition_rho_v_x(mesh,KAPPA));	
   MeshFunctionSharedPtr<double> init_rho_v_y(new  ConstantSolution<double>(mesh,  V2_EXT));	
   MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));
 
@@ -86,11 +86,11 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
     MeshFunctionSharedPtr<double> prev_rho_v_y(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_e(new Solution<double>);
 
-
-  MeshFunctionSharedPtr<double> boundary_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> boundary_v_x(new  ConstantSolution<double>(mesh,  V1_EXT));	
+double current_time = 0.0; 
+  MeshFunctionSharedPtr<double> boundary_rho(new BoundaryCondition_rho(mesh, current_time,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_x(new  BoundaryCondition_rho_v_x(mesh, current_time,KAPPA));	
   MeshFunctionSharedPtr<double> boundary_v_y(new  ConstantSolution<double>(mesh, V2_EXT));	
-  MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_e(new BoundaryCondition_rho_e(mesh, current_time,KAPPA));	
 
 	Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 	Hermes::vector<MeshFunctionSharedPtr<double> > init_slns(init_rho, init_rho_v_x, init_rho_v_y, init_e);
@@ -106,12 +106,12 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 //ScalarView s4("prev_e", new WinGeom(700, 700, 600, 300));
 
   ScalarView mach_view("mach", new WinGeom(0, 700, 600, 300));
-			s2.set_min_max_range(1.,4.);
+			/*s2.set_min_max_range(1.,4.);
 			s3.set_min_max_range(-1.,1.);
 			mach_view.set_min_max_range(2.5,3.3);
 			pressure_view.set_min_max_range(0.,3.);
 			s1.set_min_max_range(1., 2.);
-
+*/
 	//OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
 
 /*
@@ -175,7 +175,7 @@ MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 // Time stepping loop:
-	double current_time = 0.0; 
+	
 	int ts = 1;
 	char title[100];	
 
@@ -237,7 +237,7 @@ mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(),
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
 
 			// Visualize the solution.
-	/*	MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
 		MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));
 			sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);
@@ -251,7 +251,7 @@ mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(),
 			sprintf(title, "Pressure: ts=%i",ts);
 			pressure_view.set_title(title);
 			pressure->reinit();
-			pressure_view.show(pressure);*/
+			pressure_view.show(pressure);
 
 			MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, KAPPA));
 			sprintf(title, "Mach: ts=%i",ts);
@@ -269,6 +269,13 @@ mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(),
 
 	  // Update global time.
   current_time += time_step;
+
+BoundaryCondition_rho* rho = static_cast<BoundaryCondition_rho*>(boundary_rho.get_solution());
+rho->set_time(current_time);
+BoundaryCondition_rho_v_x* rho_v_x = static_cast<BoundaryCondition_rho_v_x*>(boundary_v_x.get_solution());
+rho_v_x->set_time(current_time);
+BoundaryCondition_rho_e* rho_e = static_cast<BoundaryCondition_rho_e*>(boundary_e.get_solution());
+rho_e->set_time(current_time);
 
   // Increase time step counter
   ts++;

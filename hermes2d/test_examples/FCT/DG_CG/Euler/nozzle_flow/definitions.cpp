@@ -44,16 +44,9 @@
     prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), rho_ext(rho_ext), v1_ext (v1_ext), v2_ext(v2_ext), energy_ext (energy_ext) 
 	{
 
-for(int k =0; k<4;k++)
-{
+	for(int k =0; k<4;k++)
 		for(int i = 0; i<4;i++)
-		{	//add_matrix_form_surf(new EulerK::EulerBoundaryBilinearForm(kappa,i,k));
-			add_matrix_form(new EulerK::EulerEquationsBilinearForm(i,k,kappa));
-
-		}
-		//add_vector_form_surf(new EulerK::EulerBoundaryLinearform(kappa, k));
-}
-
+			add_matrix_form(new EulerK::EulerEquationsBilinearForm(i,k,kappa));	
     
     this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));
 
@@ -62,7 +55,6 @@ for(int k =0; k<4;k++)
 
 	EulerK ::~EulerK ()
 	{
-
 		delete euler_fluxes;
 		delete riemann_invariants;	
 	};
@@ -127,14 +119,13 @@ for(int k =0; k<4;k++)
     prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), rho_ext(rho_ext), v1_ext (v1_ext), v2_ext(v2_ext), energy_ext (energy_ext) 
 	{
 
-for(int k =0; k<4;k++)
-{
-		for(int i = 0; i<4;i++)
-		{	add_matrix_form_surf(new EulerS::EulerBoundaryBilinearForm(kappa,i,k));
-
+		for(int k =0; k<4;k++)
+		{
+			for(int i = 0; i<4;i++)
+				add_matrix_form_surf(new EulerS::EulerBoundaryBilinearForm(kappa,i,k));
+			
+			add_vector_form_surf(new EulerS::EulerBoundaryLinearform(kappa, k));
 		}
-		add_vector_form_surf(new EulerS::EulerBoundaryLinearform(kappa, k));
-}
 
     
     this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy, rho_ext, v1_ext, v2_ext, energy_ext));

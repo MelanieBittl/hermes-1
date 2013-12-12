@@ -173,14 +173,15 @@
   double result = 0.;
   for (int i = 0;i < n;i++) 
   {		
-				if((e->x[i]==-0.5)||(e->x[i]==0.5))	{	solid = true; bdry =0;}
+				if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else solid = false;
 
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
 
-				if((e->x[i]>-0.5)&&(e->x[i]<0.5)){ bdry=1; constant =1.;}
-				else if((e->x[i]==-0.5)||(e->x[i]==0.5)) constant= 0.5;
+				if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+				else if((e->x[i]==1.)){ bdry=1;}
+				else if(e->x[i]==-1.) bdry =2.;
 				else throw Hermes::Exceptions::Exception("boundary");
 
 
@@ -293,10 +294,8 @@ int bdry; bool solid = false;
   double result = 0.;
   for (int i = 0;i < n;i++) 
 {
-				if((e->x[i]==-0.5)||(e->x[i]==0.5))	{	solid = true; bdry =0;}
+if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else solid = false;
-
-
 
 			rho = ext[0]->val[i];  
 			rho_v_x = ext[1]->val[i]; 
@@ -310,8 +309,9 @@ int bdry; bool solid = false;
 				rho_energy_ext = ext[7]->val[i];
 
 
-				if((e->x[i]>-0.5)&&(e->x[i]<0.5)){ bdry=1; }
-				else if((e->x[i]==-0.5)||(e->x[i]==0.5))	{	solid = true; bdry =0;}
+				if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+				else if((e->x[i]==1.)){ bdry=1;}
+				else if(e->x[i]==-1.) bdry =2.;
 				else throw Hermes::Exceptions::Exception("boundary");
 
 			

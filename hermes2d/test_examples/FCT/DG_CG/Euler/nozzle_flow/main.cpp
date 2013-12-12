@@ -15,7 +15,8 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-
+#include "mass_lumping.cpp"
+#include "artificial_diffusion.cpp"
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
@@ -29,8 +30,7 @@ const double theta = 1.;
      
 // Kappa.
 const double KAPPA = 1.4; 
-// Inlet x-velocity (dimensionless).
-const double V1_EXT =0.2;        
+    
 // Inlet y-velocity (dimensionless).
 const double V2_EXT = 0.0;    
 
@@ -47,6 +47,7 @@ int main(int argc, char* argv[])
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
   mloader.load("domain.mesh", basemesh);
+
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++)
@@ -112,7 +113,7 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 
   // Initialize solutions, set initial conditions.
  MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> init_rho_v_x(new  ConstantSolution<double>(mesh,  V1_EXT));	
+  MeshFunctionSharedPtr<double> init_rho_v_x(new  CustomInitialCondition_v_x_rho(mesh,KAPPA));	
   MeshFunctionSharedPtr<double> init_rho_v_y(new  ConstantSolution<double>(mesh,  V2_EXT));	
   MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));
 
@@ -123,7 +124,7 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 
 
   MeshFunctionSharedPtr<double> boundary_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> boundary_v_x(new  ConstantSolution<double>(mesh,  V1_EXT));	
+  MeshFunctionSharedPtr<double> boundary_v_x(new  CustomInitialCondition_v_x_rho(mesh,KAPPA));	
   MeshFunctionSharedPtr<double> boundary_v_y(new  ConstantSolution<double>(mesh, V2_EXT));	
   MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(mesh,KAPPA));	
 
@@ -146,6 +147,7 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 			mach_view.set_min_max_range(0.17, 0.48);
 			pressure_view.set_min_max_range(0.68,0.72);
 			s1.set_min_max_range(0.91, 1.);
+
 
 /*	OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
 m1view.show(spaces[0]);
@@ -191,6 +193,8 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 	CSCMatrix<double> * mat_rhs = new CSCMatrix<double>; 
 	CSCMatrix<double> * mass_matrix = new CSCMatrix<double>;  
 	CSCMatrix<double> * dS_matrix = new CSCMatrix<double>;  
+CSCMatrix<double> * dg_matrix = new CSCMatrix<double>; 
+CSCMatrix<double> * K_matrix = new CSCMatrix<double>; 
 
 
     OGProjection<double> ogProjection;
@@ -199,6 +203,8 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 		SimpleVector<double> * vec_in = new SimpleVector<double> (ndof);
 		double* coeff_vec = new double[ndof];	
 		double* coeff_vec_2 = new double[ndof];
+
+
 
 
 //Projection of the initial condition
@@ -219,6 +225,8 @@ MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
 
 		Space<double>::assign_dofs(spaces);
 		  dp_mass.assemble(mass_matrix);
+mass_matrix->multiply_with_Scalar(1./time_step);
+
 /*
 dp_bdry_init.assemble(mat_rhs, vec_in);
 mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
@@ -234,36 +242,38 @@ do
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof);
  	  
  	  if(ts!=1){
-			//dp.assemble(mat_rhs, vec_in);
-			dp.assemble(mat_rhs);
+			dp.assemble(K_matrix);
 			dp_bdry.assemble(dS_matrix, vec_in);
-			vec_in->multiply_with_Scalar(time_step);
-		  	dp_DG.assemble(vec_dg);	
+		  	dp_DG.assemble(dg_matrix,vec_dg);	
 		}else{
-			//dp_init.assemble(mat_rhs,vec_in);
-			dp_init.assemble(mat_rhs);
+			dp_init.assemble(K_matrix);
 			dp_bdry_init.assemble(dS_matrix, vec_in);
-			vec_in->multiply_with_Scalar(time_step);
-		 	dp_DG_init.assemble(vec_dg);	
+		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}
 
 
-
-				matrix->create(mat_rhs->get_size(),mat_rhs->get_nnz(), mat_rhs->get_Ap(), mat_rhs->get_Ai(),mat_rhs->get_Ax());//L(U) = KU+SU
+		//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
 		matrix->add_sparse_matrix(dS_matrix);
-		matrix->multiply_with_Scalar(-theta*time_step);  //-theta L(U)
-			matrix->add_sparse_matrix(mass_matrix); 				//M/t - theta L(U)
-			mat_rhs->multiply_with_Scalar((1.0-theta)*time_step);  //(1-theta)L(U)|
-			dS_matrix->multiply_with_Scalar(-theta*time_step); 
-			mat_rhs->add_sparse_matrix(dS_matrix);
+		matrix->add_sparse_matrix(K_matrix);
+		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
+			matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
+
+			//K_matrix->multiply_with_Scalar((1.0-theta));  //(1-theta)L(U)|
+
+		mat_rhs->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+		mat_rhs->add_sparse_matrix(dS_matrix);
+//mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(), dS_matrix->get_Ai(),dS_matrix->get_Ax());
+			mat_rhs->multiply_with_Scalar(-theta); 			
+			//mat_rhs->add_sparse_matrix(K_matrix);			
 			mat_rhs->add_sparse_matrix(mass_matrix);  //M/t+(1-theta)L(U)
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
 			mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
 			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
-			vec_dg->multiply_with_Scalar(time_step);
 			vec_rhs->add_vector(vec_dg); 
 			vec_rhs->add_vector(vec_in); 
+
 
 	//-------------------------solution of lower order------------ (M/t - theta L(U))U^L = (M/t+(1-theta)L(U))U^n
 			UMFPackLinearMatrixSolver<double> * solver = new UMFPackLinearMatrixSolver<double> (matrix,vec_rhs);	
@@ -274,9 +284,14 @@ do
 			}			
 
 		for(int i=0; i<ndof;i++)
+		{
 					coeff_vec[i] = solver->get_sln_vector()[i];
+							}
+		
 
-			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
+			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
+
+	
 
 			// Visualize the solution.
 		/*MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
@@ -288,7 +303,7 @@ do
 			vel_x->reinit();
 			vel_y->reinit();
 			s2.show(vel_x);
-			s3.show(vel_y);
+			s3.show(vel_y);*/
 			MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
 			sprintf(title, "Pressure: ts=%i",ts);
 			pressure_view.set_title(title);
@@ -303,7 +318,7 @@ do
 
 			sprintf(title, "Density: ts=%i",ts);
 			s1.set_title(title);
-			s1.show(prev_rho);*/
+			s1.show(prev_rho);
 
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
@@ -316,6 +331,7 @@ do
 
 		delete solver;
 		matrix->free();
+		mat_rhs->free();
 
 }while (current_time < T_FINAL);
 
@@ -345,6 +361,9 @@ ord_space.save_orders_vtk(spaces[0], "space.vtk");*/
 			delete mass_matrix;
 			delete matrix;
 			delete mat_rhs;
+delete dS_matrix;
+delete dg_matrix;
+delete K_matrix;
 
 			delete[] coeff_vec_2;
 			delete [] coeff_vec;

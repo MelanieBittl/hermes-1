@@ -1,7 +1,7 @@
 #include "initial_condition.h"
 
 //------------------- Initial condition ----------------
-
+//----------density
  void CustomInitialCondition_rho::derivatives(double x, double y, double& dx, double& dy) const {      
 		dx = 0.0;
 		dy = 0.0;
@@ -19,6 +19,29 @@
  MeshFunction<double>* CustomInitialCondition_rho::clone() const {     
 			return new CustomInitialCondition_rho(this->mesh, kappa);
  };
+//----------rho_v_x_
+
+
+ void CustomInitialCondition_v_x_rho::derivatives(double x, double y, double& dx, double& dy) const {      
+		dx = 0.0;
+		dy = 0.0;
+};
+
+ double CustomInitialCondition_v_x_rho::value(double x, double y) const 
+	{       
+			return 0.2;
+};
+
+ Ord CustomInitialCondition_v_x_rho::ord(double x, double y)   const {
+      return Ord(4);
+};
+
+ MeshFunction<double>* CustomInitialCondition_v_x_rho::clone() const {     
+			return new CustomInitialCondition_v_x_rho(this->mesh, kappa);
+ };
+
+
+
 
 
 //----------energy----------

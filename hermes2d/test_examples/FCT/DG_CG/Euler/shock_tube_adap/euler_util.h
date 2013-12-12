@@ -154,32 +154,7 @@ protected:
 
   double kappa;
 };
-class RadiusVelocityFilter : public Hermes::Hermes2D::SimpleFilter<double>
-{
-public: 
-  RadiusVelocityFilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions) : SimpleFilter<double>(solutions) {};
 
-  MeshFunction<double>* clone() const
-  {
-    Hermes::vector<MeshFunctionSharedPtr<double> > slns;
-    for(int i = 0; i < this->num; i++)
-    {
-      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
-      if(solution && solution->get_type() == HERMES_SLN)
-      {
-        slns.push_back(new Solution<double>());
-        slns.back()->copy(this->sln[i]);
-      }
-      else
-        slns.push_back(this->sln[i]->clone()); 
-    }
-    RadiusVelocityFilter* filter = new RadiusVelocityFilter(slns);
-    return filter;
-  }
-protected:
-  virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
-
-};
 
 class EntropyFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
@@ -250,9 +225,6 @@ public:
 
 	void get_du_du(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
 					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, int bdry, int entry_j, double* dudu);
-
-	void get_ghost_state(int bdry,double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y,double t_x, double t_y,
-					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, double* ghost_state, bool solid);
 
 protected:
 	double kappa;
@@ -330,6 +302,27 @@ protected:
 class Boundary_helpers
 {
 	public:
+		static double calculate_lambda_max(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, 
+							double rho_new, double rho_v_x_new, double rho_v_y_new, double rho_energy_new, double kappa){
+
+			double v_x_mean = (rho_v_x/std::sqrt(rho) + rho_v_x_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
+			double v_y_mean = (rho_v_y/std::sqrt(rho) + rho_v_y_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
+			double H_mean = (QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*std::sqrt(rho) + QuantityCalculator::enthalpy(rho_new, rho_v_x_new,rho_v_y_new, rho_energy_new, kappa)*std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
+			double c_mean = std::sqrt((kappa-1)*(H_mean- 0.5*(v_x_mean*v_x_mean+v_y_mean*v_y_mean)));
+
+		double lambda_1,lambda_2, lambda_3;
+		lambda_1 = fabs(n_x*v_x_mean + n_y*v_y_mean-c_mean);
+		lambda_2 = fabs(n_x*v_x_mean + n_y*v_y_mean);
+		lambda_3 = fabs(n_x*v_x_mean + n_y*v_y_mean+c_mean);
+
+		if(lambda_1>lambda_2)
+				if(lambda_1>lambda_3) return lambda_1;
+				else return lambda_3;
+		else 
+				if(lambda_2>lambda_3) return lambda_2;
+				else return lambda_3;
+		};
+
 
 		static double calculate_A_n_U(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, 
 							double rho_new, double rho_v_x_new, double rho_v_y_new, double rho_energy_new, double kappa, int entry){
@@ -359,7 +352,10 @@ class Boundary_helpers
 												0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
 												n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
 
-		
+			//lambda*L
+		//	for(int i =0;i<4;i++)
+				//	for(int j=0;j<4;j++)
+						//	L[i][j] *= lambda[i];			
 
 			double result =0.;
 
@@ -373,20 +369,11 @@ class Boundary_helpers
 		};
 
 
-
-
-
 		static void calculate_A_n(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, 
 							double rho_new, double rho_v_x_new, double rho_v_y_new, double rho_energy_new, double kappa, int entry_i, double* A_n){
 			double v_x_mean = (rho_v_x/std::sqrt(rho) + rho_v_x_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
 			double v_y_mean = (rho_v_y/std::sqrt(rho) + rho_v_y_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
 			double H_mean = (QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*std::sqrt(rho) + QuantityCalculator::enthalpy(rho_new, rho_v_x_new,rho_v_y_new, rho_energy_new, kappa)*std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
-
-	/*	v_x_mean = 0.5*(rho_v_x/rho + rho_v_x_new/rho_new);
-		v_y_mean = 0.5*(rho_v_y/rho + rho_v_y_new/rho_new);
-H_mean = QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*0.5 + QuantityCalculator::enthalpy(rho_new, rho_v_x_new,rho_v_y_new, rho_energy_new, kappa)*0.5;*/
-
-
 			double c_mean = std::sqrt((kappa-1)*(H_mean- 0.5*(v_x_mean*v_x_mean+v_y_mean*v_y_mean)));
 			double v_n = v_x_mean*n_x+v_y_mean*n_y;
 			double q = 0.5*(v_x_mean*v_x_mean+v_y_mean*v_y_mean);
@@ -398,96 +385,28 @@ H_mean = QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*0
 
 		//Eintraege siehe Diss Moeller Appendix C
 			double R[4][4] = { 1, 1, 1, 0, 
-								v_x_mean-c_mean*n_x, v_x_mean, v_x_mean+c_mean*n_x, n_y,
-								v_y_mean-c_mean*n_y, v_y_mean, v_y_mean+c_mean*n_y, -n_x,
-								H_mean-c_mean*v_n, q, H_mean+c_mean*v_n, v_x_mean*n_y-v_y_mean*n_x};
+												v_x_mean-c_mean*n_x, v_x_mean, v_x_mean+c_mean*n_x, n_y,
+												v_y_mean-c_mean*n_y, v_y_mean, v_y_mean+c_mean*n_y, -n_x,
+												H_mean-c_mean*v_n, q, H_mean+c_mean*v_n, v_x_mean*n_y-v_y_mean*n_x};
 
 			double L[4][4] = {0.5*(b_1+v_n/c_mean), 0.5*(-b_2*v_x_mean-n_x/c_mean), 0.5*(-b_2*v_y_mean-n_y/c_mean), 0.5*b_2,
-								1-b_1, b_2*v_x_mean, b_2*v_y_mean, -b_2,
-								0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
-								n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
+												1-b_1, b_2*v_x_mean, b_2*v_y_mean, -b_2,
+												0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
+												n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
 
-			for(int i =0;i<4;i++) A_n[i]=0.;
-	
-			for(int j=0;j<4;j++){
-					A_n[0] +=R[entry_i][j]*L[j][0]*lambda[j];
-					A_n[1] +=R[entry_i][j]*L[j][1]*lambda[j];
-					A_n[2] +=R[entry_i][j]*L[j][2]*lambda[j];
-					A_n[3] +=R[entry_i][j]*L[j][3]*lambda[j];
-				}
-
-
-
-		};
-
-
-
-
-
-
-	/*
-		static double calculate_lambda_max(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, 
-							double rho_new, double rho_v_x_new, double rho_v_y_new, double rho_energy_new, double kappa){
-
-			double v_x_mean = (rho_v_x/std::sqrt(rho) + rho_v_x_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
-			double v_y_mean = (rho_v_y/std::sqrt(rho) + rho_v_y_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
-			double H_mean = (QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*std::sqrt(rho) + QuantityCalculator::enthalpy(rho_new, rho_v_x_new,rho_v_y_new, rho_energy_new, kappa)*std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
-			double c_mean = std::sqrt((kappa-1)*(H_mean- 0.5*(v_x_mean*v_x_mean+v_y_mean*v_y_mean)));
-
-		double lambda_1,lambda_2, lambda_3;
-		lambda_1 = fabs(n_x*v_x_mean + n_y*v_y_mean-c_mean);
-		lambda_2 = fabs(n_x*v_x_mean + n_y*v_y_mean);
-		lambda_3 = fabs(n_x*v_x_mean + n_y*v_y_mean+c_mean);
-
-		if(lambda_1>lambda_2)
-				if(lambda_1>lambda_3) return lambda_1;
-				else return lambda_3;
-		else 
-				if(lambda_2>lambda_3) return lambda_2;
-				else return lambda_3;
-		};
-
-
-
-	static double* calculate_A_n(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, 
-							double rho_new, double rho_v_x_new, double rho_v_y_new, double rho_energy_new, double kappa, int entry_i){
-			double v_x_mean = (rho_v_x/std::sqrt(rho) + rho_v_x_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
-			double v_y_mean = (rho_v_y/std::sqrt(rho) + rho_v_y_new/std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
-			double H_mean = (QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, kappa)*std::sqrt(rho) + QuantityCalculator::enthalpy(rho_new, rho_v_x_new,rho_v_y_new, rho_energy_new, kappa)*std::sqrt(rho_new))/(std::sqrt(rho) +std::sqrt(rho_new));
-			double c_mean = std::sqrt((kappa-1)*(H_mean- 0.5*(v_x_mean*v_x_mean+v_y_mean*v_y_mean)));
-			double v_n = v_x_mean*n_x+v_y_mean*n_y;
-			double q = 0.5*(v_x_mean*v_x_mean+v_y_mean*v_y_mean);
-			double b_2 = (kappa-1)/(c_mean*c_mean);
-			double b_1 = b_2*q;
-			double lambda[4] ={fabs(v_n- c_mean),fabs(v_n),fabs(v_n + c_mean),fabs(v_n)};
-
-
-
-		//Eintraege siehe Diss Moeller Appendix C
-			double R[4][4] = { 1, 1, 1, 0, 
-								v_x_mean-c_mean*n_x, v_x_mean, v_x_mean+c_mean*n_x, n_y,
-								v_y_mean-c_mean*n_y, v_y_mean, v_y_mean+c_mean*n_y, -n_x,
-								H_mean-c_mean*v_n, q, H_mean+c_mean*v_n, v_x_mean*n_y-v_y_mean*n_x};
-
-			double L[4][4] = {0.5*(b_1+v_n/c_mean), 0.5*(-b_2*v_x_mean-n_x/c_mean), 0.5*(-b_2*v_y_mean-n_y/c_mean), 0.5*b_2,
-								1-b_1, b_2*v_x_mean, b_2*v_y_mean, -b_2,
-								0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
-								n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
-
-		double* A_n = new double[4];
 		for(int i =0;i<4;i++) A_n[i]=0.;
 
+			//double result =0.;
 
 
-				for(int j=0;j<4;j++){
+					for(int j=0;j<4;j++){
 							A_n[0] +=R[entry_i][j]*L[j][0]*lambda[j];
 							A_n[1] +=R[entry_i][j]*L[j][1]*lambda[j];
 							A_n[2] +=R[entry_i][j]*L[j][2]*lambda[j];
 							A_n[3] +=R[entry_i][j]*L[j][3]*lambda[j];
 						}
-				return A_n;
 
-		};*/
+		};
 
 };
 
