@@ -23,7 +23,7 @@ const int P_INIT = 2;       						// Initial polynomial degree.
 const double time_step = 5e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
-const double theta = 1.;
+const double theta = 0.5;
 
 // Equation parameters.  
  
@@ -61,20 +61,15 @@ int main(int argc, char* argv[])
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
  	 mesh->copy(basemesh);
 
+
 /*
-SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
-SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
-SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));	
-
-
 SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
 
-bool serendipity = true;
 
+bool serendipity = true;
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
@@ -226,6 +221,8 @@ delete [] vec_2;
 	int ts = 1;
 	char title[100];	
 
+
+
 	for(int i = 0; i<4;i++) spaces[i]->set_uniform_order(P_INIT);
 	Space<double>::assign_dofs(spaces);
 	ndof = Space<double>::get_num_dofs(spaces);
@@ -243,14 +240,24 @@ delete [] vec_2;
 
 
 	NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
+	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
-	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux);
+	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants );
 	EulerK wf_convection(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
 	DiscreteProblem<double> dp(&wf_convection, spaces); 
 	DiscreteProblem<double> dp_DG(&wf_DG, spaces);
 	DiscreteProblem<double> dp_bdry(&wf_bdry, spaces); 
+
+/*	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
+	EulerK wf_convection_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+
+  DiscreteProblem<double> dp_init(&wf_convection_init,spaces);
+  DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
+  DiscreteProblem<double> dp_bdry_init(&wf_bdry_init,spaces); */
 
 	SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
 	SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
@@ -262,11 +269,10 @@ delete [] vec_2;
 
 Space<double>::assign_dofs(spaces);
 
-//Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
+/*
+Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
- /* MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
-  MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
- MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
+
 			pressure->reinit();
 			vel_x->reinit();
 			vel_y->reinit();
@@ -274,7 +280,7 @@ Space<double>::assign_dofs(spaces);
 			s2.show(vel_x);
 			s3.show(vel_y);
   		pressure_view.show(pressure);
-//View::wait(HERMES_WAIT_KEYPRESS);
+View::wait(HERMES_WAIT_KEYPRESS);
 */
 
 //Timestep loop
@@ -282,25 +288,30 @@ do
 {	 
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof); 	  
  	
+ 	 // if(ts!=1){
 			dp.assemble(K_matrix);
 			dp_bdry.assemble(dS_matrix, vec_in);
-		  	dp_DG.assemble(vec_dg);	
-
-
+			//dp_DG.assemble(vec_dg);	
+		  	dp_DG.assemble(dg_matrix,vec_dg);	
+		/*}else{
+			dp_init.assemble(K_matrix);
+			dp_bdry_init.assemble(dS_matrix, vec_in);
+		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
+		}*/
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
 
-//matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-//matrix->add_sparse_matrix(K_matrix);
+matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+matrix->add_sparse_matrix(K_matrix);
 
-		matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
 		matrix->add_sparse_matrix(dS_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 			matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
 
 
-		//mat_rhs->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-		//mat_rhs->add_sparse_matrix(dS_matrix);
-mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(), dS_matrix->get_Ai(),dS_matrix->get_Ax());
+		mat_rhs->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+		mat_rhs->add_sparse_matrix(dS_matrix);
+//mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(), dS_matrix->get_Ai(),dS_matrix->get_Ax());
 mat_rhs->add_sparse_matrix(K_matrix);
 			mat_rhs->multiply_with_Scalar(-theta); 
 mat_rhs->add_sparse_matrix(K_matrix);						
@@ -331,8 +342,10 @@ mat_rhs->add_sparse_matrix(K_matrix);
 	
 
 			// Visualize the solution.
-/*		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
-		MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));
+  MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
+  MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+ MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
+
 			sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);
 			sprintf(title, "vy: ts=%i",ts);	
@@ -341,7 +354,7 @@ mat_rhs->add_sparse_matrix(K_matrix);
 			vel_y->reinit();
 			s2.show(vel_x);
 			s3.show(vel_y);
-			MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
+
 			sprintf(title, "Pressure: ts=%i",ts);
 			pressure_view.set_title(title);
 			pressure->reinit();
@@ -350,7 +363,7 @@ mat_rhs->add_sparse_matrix(K_matrix);
 
 			sprintf(title, "Density: ts=%i",ts);
 			s1.set_title(title);
-			s1.show(prev_rho);*/
+			s1.show(prev_rho);
 
 
 	//View::wait(HERMES_WAIT_KEYPRESS);

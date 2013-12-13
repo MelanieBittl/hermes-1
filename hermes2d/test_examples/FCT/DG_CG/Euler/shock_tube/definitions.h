@@ -55,8 +55,7 @@ class EulerK : public WeakForm<double>
 public:
 
   EulerK(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, 
-MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, 
-bool mirror_condition= true , int num_of_equations = 4);
+MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy,  int num_of_equations = 4);
 
 	~EulerK();
 
@@ -65,8 +64,6 @@ bool mirror_condition= true , int num_of_equations = 4);
 
   // Members.
   EulerFluxes* euler_fluxes;
-	RiemannInvariants* riemann_invariants;
-	bool mirror_condition;
 	double kappa;
 
   MeshFunctionSharedPtr<double> prev_density;
