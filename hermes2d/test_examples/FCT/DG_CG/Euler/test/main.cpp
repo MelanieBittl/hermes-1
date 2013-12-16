@@ -19,7 +19,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 1e-3;
+const double time_step = 1e-4;
 const double T_FINAL = 3.;                       // Time interval length. 
 
 const double theta = 1.;
@@ -128,9 +128,9 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 
 	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
 	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux);
-	EulerK wf_convection_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-	EulerK wf_convection(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-  EulerEquationsWeakForm_Mass wf_mass;
+	EulerK wf_convection_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+	EulerK wf_convection(KAPPA,prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+  EulerEquationsWeakForm_Mass wf_mass(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
 	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
 	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
@@ -159,7 +159,8 @@ CSCMatrix<double> * K_matrix = new CSCMatrix<double>;
     OGProjection<double> ogProjection;
 		SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
 		SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
-		SimpleVector<double> * vec_in = new SimpleVector<double> (ndof);
+		SimpleVector<double> * vec_bdry = new SimpleVector<double> (ndof);
+		SimpleVector<double> * vec_conv = new SimpleVector<double> (ndof);
 		double* coeff_vec = new double[ndof];	
 		double* coeff_vec_2 = new double[ndof];
 
@@ -190,37 +191,43 @@ do
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof);
  	  
  	  if(ts!=1){
-			dp.assemble(K_matrix);
-			dp_bdry.assemble(dS_matrix, vec_in);
+			dp.assemble(K_matrix, vec_conv);
+			dp_bdry.assemble(dS_matrix, vec_bdry);
 		  	dp_DG.assemble(dg_matrix,vec_dg);	
 		}else{
-			dp_init.assemble(K_matrix);
-			dp_bdry_init.assemble(dS_matrix, vec_in);
+			dp_init.assemble(K_matrix, vec_conv);
+			dp_bdry_init.assemble(dS_matrix, vec_bdry);
 		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}
 
 
 		matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
 //matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+	//	matrix->add_sparse_matrix(K_matrix);
 		matrix->add_sparse_matrix(dS_matrix);
-		//matrix->add_sparse_matrix(K_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 			matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
 
-			//K_matrix->multiply_with_Scalar((1.0-theta));  //(1-theta)L(U)|
-
-		//mat_rhs->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-		//mat_rhs->add_sparse_matrix(dS_matrix);
-mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(), dS_matrix->get_Ai(),dS_matrix->get_Ax());
+			
+/*
+		mat_rhs->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+		mat_rhs->add_sparse_matrix(dS_matrix);
+//mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(), dS_matrix->get_Ai(),dS_matrix->get_Ax());
+matrix->add_sparse_matrix(K_matrix);
 			mat_rhs->multiply_with_Scalar(-theta); 			
 			//mat_rhs->add_sparse_matrix(K_matrix);			
 			mat_rhs->add_sparse_matrix(mass_matrix);  //M/t+(1-theta)L(U)
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-			mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
-			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
+			mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); */
+
+
+			matrix->multiply_with_vector(coeff_vec, coeff_vec_2);
+			vec_rhs->zero(); 
+			vec_rhs->add_vector(coeff_vec_2); 
 			vec_rhs->add_vector(vec_dg); 
-			vec_rhs->add_vector(vec_in); 
+			vec_rhs->add_vector(vec_bdry); 
+			vec_rhs->add_vector(vec_conv); 
 
 
 	//-------------------------solution of lower order------------ (M/t - theta L(U))U^L = (M/t+(1-theta)L(U))U^n
@@ -233,6 +240,8 @@ mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(),
 
 		for(int i=0; i<ndof;i++)
 					coeff_vec[i] = solver->get_sln_vector()[i];
+
+		
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
 
@@ -270,10 +279,10 @@ mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(),
 	  // Update global time.
   current_time += time_step;
 
-BoundaryCondition_rho* rho = static_cast<BoundaryCondition_rho*>(boundary_rho.get_solution());
-rho->set_time(current_time);
-BoundaryCondition_rho_v_x* rho_v_x = static_cast<BoundaryCondition_rho_v_x*>(boundary_v_x.get_solution());
-rho_v_x->set_time(current_time);
+//BoundaryCondition_rho* rho = static_cast<BoundaryCondition_rho*>(boundary_rho.get_solution());
+//rho->set_time(current_time);
+//BoundaryCondition_rho_v_x* rho_v_x = static_cast<BoundaryCondition_rho_v_x*>(boundary_v_x.get_solution());
+//rho_v_x->set_time(current_time);
 BoundaryCondition_rho_e* rho_e = static_cast<BoundaryCondition_rho_e*>(boundary_e.get_solution());
 rho_e->set_time(current_time);
 
@@ -318,6 +327,8 @@ ord_space.save_orders_vtk(spaces[0], "space.vtk");
 			delete [] coeff_vec;
 			delete vec_rhs;
 			delete vec_dg;
+			delete vec_bdry;
+			delete vec_conv;
 
 			delete num_flux;
 

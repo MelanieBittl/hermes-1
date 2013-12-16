@@ -94,12 +94,6 @@ Space<double>::assign_dofs(spaces);
   MeshFunctionSharedPtr<double> init_rho_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
   MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));	
 
-  MeshFunctionSharedPtr<double> proj_rho(new Solution<double>);	
-  MeshFunctionSharedPtr<double> proj_rho_v_x(new Solution<double>);	
-  MeshFunctionSharedPtr<double> proj_rho_v_y(new Solution<double>);	
-  MeshFunctionSharedPtr<double> proj_e(new Solution<double>);	
-
-
 
   MeshFunctionSharedPtr<double> prev_rho(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_x(new Solution<double>);
@@ -115,7 +109,6 @@ Space<double>::assign_dofs(spaces);
 
 
 	Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-Hermes::vector<MeshFunctionSharedPtr<double> > proj_slns(proj_rho, proj_rho_v_x, proj_rho_v_y, proj_e);
 	Hermes::vector<MeshFunctionSharedPtr<double> > init_slns(init_rho, init_rho_v_x, init_rho_v_y, init_e);
 
 
@@ -139,14 +132,13 @@ Hermes::vector<MeshFunctionSharedPtr<double> > proj_slns(proj_rho, proj_rho_v_x,
 	OrderView m4view("mesh", new WinGeom(1500, 0, 500, 400));
 
 //------------
-  EulerEquationsWeakForm_Mass wf_mass;
+    EulerEquationsWeakForm_Mass wf_mass(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   // Initialize the FE problem.
   DiscreteProblem<double> dp_mass(&wf_mass,spaces);
 
 
   // Set up the solver, matrix, and rhs according to the solver selection. 
 	CSCMatrix<double> * matrix = new CSCMatrix<double>;  
-	CSCMatrix<double> * mat_rhs = new CSCMatrix<double>; 
 	CSCMatrix<double> * mass_matrix = new CSCMatrix<double>;  
 	CSCMatrix<double> * dS_matrix = new CSCMatrix<double>;  
 CSCMatrix<double> * dg_matrix = new CSCMatrix<double>; 
@@ -155,14 +147,18 @@ CSCMatrix<double> * K_matrix = new CSCMatrix<double>;
  
     OGProjection<double> ogProjection;
 	Lumped_Projection lumpedProjection;
+/*
+double* coeff_vec_init = new double[ndof];
+  ogProjection.project_global(spaces,init_slns, coeff_vec_init, norms_l2 );
+	Solution<double>::vector_to_solutions(coeff_vec_init, spaces, prev_slns);*/
 
 //Projection of the initial condition
 
 	double* coeff_vec_init = new double[ndof];
   ogProjection.project_global(spaces,init_slns, coeff_vec_init, norms_l2 );
-	Solution<double>::vector_to_solutions(coeff_vec_init, spaces, proj_slns);	
+	Solution<double>::vector_to_solutions(coeff_vec_init, spaces, prev_slns);	
 
-		KrivodonovaDiscontinuityDetector dis_detect_init(spaces, proj_slns);
+		KrivodonovaDiscontinuityDetector dis_detect_init(spaces, prev_slns);
 		std::set<int> discont_elem =	dis_detect_init.get_discontinuous_element_ids();
 		DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
 		HPAdapt adapting(spaces, &error_calculator);
@@ -171,8 +167,10 @@ CSCMatrix<double> * K_matrix = new CSCMatrix<double>;
 		//m1view.show(spaces[0]);
 		//m2view.show(spaces[1]);m3view.show(spaces[2]);m4view.show(spaces[3]);
 
-	 delete [] coeff_vec_init; 
+	 delete [] coeff_vec_init;
 
+	//for(int i = 0; i<4;i++) spaces[i]->set_uniform_order(1);
+	//Space<double>::assign_dofs(spaces);
 
 int ndof_p1 = Space<double>::get_num_dofs(spaces);
 //printf("ndof_p1=%i\n", ndof_p1);
@@ -198,7 +196,6 @@ Space<double>::assign_dofs(spaces);
 				ogProjection.project_global(spaces,init_slns, vec_2, norms_l2);
 		lumped_flux_limiter(mass_matrix, lumped_matrix, vec_1, vec_2,	P_plus, P_minus, Q_plus, Q_minus, R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e,fct);
 
-//Solution<double>::vector_to_solutions(vec_1, spaces, proj_slns);
 
 Solution<double>::vector_to_solutions(vec_1, spaces, prev_slns);
 
@@ -239,12 +236,19 @@ delete [] vec_2;
 	mass_matrix->multiply_with_Scalar(1./time_step);
 
 
-	NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
 	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
+ 
+	NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
+//NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
+
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
 	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants );
-	EulerK wf_convection(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+	EulerK wf_convection(KAPPA,  prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
 	DiscreteProblem<double> dp(&wf_convection, spaces); 
@@ -259,9 +263,10 @@ delete [] vec_2;
   DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
   DiscreteProblem<double> dp_bdry_init(&wf_bdry_init,spaces); */
 
-	SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
-	SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
-	SimpleVector<double> * vec_in = new SimpleVector<double> (ndof);
+		SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
+		SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
+		SimpleVector<double> * vec_bdry = new SimpleVector<double> (ndof);
+		SimpleVector<double> * vec_conv = new SimpleVector<double> (ndof);
 	double* coeff_vec = new double[ndof];	
 	double* coeff_vec_2 = new double[ndof];
 
@@ -288,40 +293,35 @@ do
 {	 
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof); 	  
  	
- 	 // if(ts!=1){
-			dp.assemble(K_matrix);
-			dp_bdry.assemble(dS_matrix, vec_in);
-			//dp_DG.assemble(vec_dg);	
-		  	dp_DG.assemble(dg_matrix,vec_dg);	
+ 	// if(ts!=1){
+			dp.assemble(K_matrix, vec_conv);
+			dp_bdry.assemble(dS_matrix, vec_bdry);
+			dp_DG.assemble(vec_dg);	
+		  	//dp_DG.assemble(dg_matrix,vec_dg);	
 		/*}else{
-			dp_init.assemble(K_matrix);
-			dp_bdry_init.assemble(dS_matrix, vec_in);
+			dp_init.assemble(K_matrix, vec_conv);
+			dp_bdry_init.assemble(dS_matrix, vec_bdry);
 		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}*/
+
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
 
-matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-matrix->add_sparse_matrix(K_matrix);
+//matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+//matrix->add_sparse_matrix(K_matrix);
 
-		//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
 		matrix->add_sparse_matrix(dS_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
-			matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
+		matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
 
-
-		mat_rhs->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-		mat_rhs->add_sparse_matrix(dS_matrix);
-//mat_rhs->create(dS_matrix->get_size(),dS_matrix->get_nnz(), dS_matrix->get_Ap(), dS_matrix->get_Ai(),dS_matrix->get_Ax());
-mat_rhs->add_sparse_matrix(K_matrix);
-			mat_rhs->multiply_with_Scalar(-theta); 
-mat_rhs->add_sparse_matrix(K_matrix);						
-			mat_rhs->add_sparse_matrix(mass_matrix);  //M/t+(1-theta)L(U)
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-			mat_rhs->multiply_with_vector(coeff_vec, coeff_vec_2); 
-			vec_rhs->zero(); vec_rhs->add_vector(coeff_vec_2); 
-			vec_rhs->add_vector(vec_dg); 
-			vec_rhs->add_vector(vec_in); 
+		matrix->multiply_with_vector(coeff_vec, coeff_vec_2);
+		vec_rhs->zero(); 
+		vec_rhs->add_vector(coeff_vec_2); 
+		vec_rhs->add_vector(vec_dg); 
+		vec_rhs->add_vector(vec_bdry); 
+		vec_rhs->add_vector(vec_conv); 
 
 
 	//-------------------------solution of lower order------------ (M/t - theta L(U))U^L = (M/t+(1-theta)L(U))U^n
@@ -342,7 +342,7 @@ mat_rhs->add_sparse_matrix(K_matrix);
 	
 
 			// Visualize the solution.
-  MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
+/*  MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
   MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
  MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
 
@@ -364,7 +364,7 @@ mat_rhs->add_sparse_matrix(K_matrix);
 			sprintf(title, "Density: ts=%i",ts);
 			s1.set_title(title);
 			s1.show(prev_rho);
-
+*/
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -376,7 +376,7 @@ mat_rhs->add_sparse_matrix(K_matrix);
 
 		delete solver;
 		matrix->free();
-		mat_rhs->free();
+
 
 }while (current_time < T_FINAL);
 
@@ -409,8 +409,7 @@ mat_rhs->add_sparse_matrix(K_matrix);
 
 		//Cleanup
 			delete mass_matrix;
-			delete matrix;
-			delete mat_rhs;
+			delete matrix;			
 delete dS_matrix;
 delete dg_matrix;
 delete K_matrix;
@@ -421,7 +420,8 @@ delete K_matrix;
 			delete [] coeff_vec;
 			delete vec_rhs;
 			delete vec_dg;
-delete vec_in;
+			delete vec_bdry;
+			delete vec_conv;
 
 
 

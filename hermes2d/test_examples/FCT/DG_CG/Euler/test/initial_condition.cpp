@@ -92,8 +92,8 @@ return new CustomInitialCondition_e(this->mesh,kappa);
 
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
-
-		return Hermes::sin(time)+1.;
+return 1.;
+		//return Hermes::sin(time)+1.;
 };
 
  Ord BoundaryCondition_rho::ord(double x, double y)   const {
@@ -115,8 +115,8 @@ return new CustomInitialCondition_e(this->mesh,kappa);
 
  double BoundaryCondition_rho_v_x::value(double x, double y) const 
 	{    			
-
-		return (Hermes::sin(time)+1.)*3.5;
+		return 3.5;
+		//return (Hermes::sin(time)+1.)*3.5;
 };
 
  Ord BoundaryCondition_rho_v_x::ord(double x, double y)   const {
@@ -140,8 +140,8 @@ return new CustomInitialCondition_e(this->mesh,kappa);
  double BoundaryCondition_rho_e::value(double x, double y) const 
 	{    			
 
-double pressure = 1.;
-double  rho=  (Hermes::sin(time)+1.);
+double pressure = (Hermes::sin(time)+1.);
+double  rho= 1.; // (Hermes::sin(time)+1.);
 
 double rho_v_x = rho*3.5;
 

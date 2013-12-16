@@ -50,10 +50,10 @@ double EulerInterface::EulerEquationsVectorFormFlux::value(int n, double *wt, Di
         w_R[2] = ext[2]->val_neighbor[point_i];
         w_R[3] = ext[3]->val_neighbor[point_i];
 
-      //  result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
+        result += wt[point_i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[point_i], e->ny[point_i]) * v->val[point_i];
 
 
-				for(int k =0; k<4;k++)
+			/*	for(int k =0; k<4;k++)
 				{
 							  result += wt[point_i] *e->nx[point_i]*v->val[point_i]*0.5* (w_L[k]*
 							   (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_L[0], w_L[1], w_L[2], w_L[3],0,this->i,k) 
@@ -67,7 +67,7 @@ double EulerInterface::EulerEquationsVectorFormFlux::value(int n, double *wt, Di
 				}
 
 			result -= wt[point_i]*v->val[point_i]* 0.5 * 
-								Boundary_helpers::calculate_A_n_U(w_L[0], w_L[1], w_L[2], w_L[3], e->nx[point_i], e->ny[point_i],w_R[0], w_R[1], w_R[2], w_R[3], kappa, this->i);
+								Boundary_helpers::calculate_A_n_U(w_L[0], w_L[1], w_L[2], w_L[3], e->nx[point_i], e->ny[point_i],w_R[0], w_R[1], w_R[2], w_R[3], kappa, this->i);*/
 
 
 
@@ -112,9 +112,9 @@ double * A_n = new double[4];
         w_R[3] = ext[3]->val_neighbor[point_i];
 
 
-//double s_right = std::abs(((e->nx[point_i] * w_R[1]) + (e->ny[point_i] * w_R[2])) / w_R[0]) + QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->kappa);
-//double s_left = std::abs(((e->nx[point_i] * w_L[1]) + (e->ny[point_i] * w_L[2])) / w_L[0]) + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->kappa);
-//result += wt[point_i]*jump_v*jump_u*std::max(s_left, s_right);
+double s_right = std::abs(((e->nx[point_i] * w_R[1]) + (e->ny[point_i] * w_R[2])) / w_R[0]) + QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->kappa);
+double s_left = std::abs(((e->nx[point_i] * w_L[1]) + (e->ny[point_i] * w_L[2])) / w_L[0]) + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->kappa);
+result += wt[point_i]*jump_v*jump_u*std::max(s_left, s_right);
 
     if(u->fn_central != NULL)
         result += wt[point_i]*0.5*jump_v *( u->val[point_i] * 
@@ -130,8 +130,8 @@ double * A_n = new double[4];
 					  * e->ny[point_i]) );
 
 
-	Boundary_helpers::calculate_A_n(w_L[0], w_L[1], w_L[2], w_L[3], e->nx[i],e->ny[i] , w_R[0], w_R[1], w_R[2], w_R[3], kappa, this->i,A_n);
-	result += wt[point_i]*jump_v*jump_u*0.5* A_n[this->j];	
+/*	Boundary_helpers::calculate_A_n(w_L[0], w_L[1], w_L[2], w_L[3], e->nx[i],e->ny[i] , w_R[0], w_R[1], w_R[2], w_R[3], kappa, this->i,A_n);
+	result += wt[point_i]*jump_v*jump_u*0.5* A_n[this->j];	*/
 		 
 		
 
