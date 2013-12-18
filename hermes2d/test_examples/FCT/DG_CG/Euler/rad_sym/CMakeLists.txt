@@ -1,6 +1,6 @@
 project(radi_sym)
 
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp euler_util.cpp initial_condition.cpp interface.cpp numerical_flux.cpp lumped_projection.cpp hp_adapt.cpp )
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp euler_util.cpp initial_condition.cpp interface.cpp numerical_flux.cpp lumped_projection.cpp hp_adapt.cpp euler_flux.cpp )
 #include (${hermes2d_SOURCE_DIR}/CMake.common)
 #set_common_target_properties(${PROJECT_NAME})
 

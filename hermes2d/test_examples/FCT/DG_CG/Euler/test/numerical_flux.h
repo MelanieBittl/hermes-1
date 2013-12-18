@@ -1,6 +1,7 @@
 #ifndef NUMERICAL_FLUX_H
 #define NUMERICAL_FLUX_H
 #include "euler_util.h"
+#include "euler_flux.h"
 
 class NumericalFlux
 {
@@ -222,4 +223,26 @@ public:
   double calculate_s_L(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R);
   double calculate_s_R(double state_L[4], double state_R[4], double nx, double ny, double speed_of_sound_L, double speed_of_sound_R);
 };
+
+
+class ApproxRoeNumericalFlux : public NumericalFlux
+{
+public:
+  ApproxRoeNumericalFlux(double kappa,EulerFluxes* euler_flux);
+
+
+  virtual void numerical_flux(double result[4], double w_L[4], double w_R[4],
+          double nx, double ny) ;
+
+  virtual double numerical_flux_i(int component, double w_L[4], double w_R[4],
+          double nx, double ny);
+
+
+
+protected:
+EulerFluxes* euler_flux;
+
+};
+
+
 #endif

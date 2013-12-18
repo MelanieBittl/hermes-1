@@ -29,7 +29,8 @@
 
  double CustomInitialCondition_v_x_rho::value(double x, double y) const 
 	{       
-			return 0.2;
+			//return 0.2;
+			return 1.;
 };
 
  Ord CustomInitialCondition_v_x_rho::ord(double x, double y)   const {
@@ -56,9 +57,9 @@
 {   
 
 
-double pressure = 1./1.4;
+double pressure = 1./kappa;
 double rho = 1.;
-double rho_v_x = rho*0.2;
+double rho_v_x = 1.; //0.2;
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->kappa);
 
 

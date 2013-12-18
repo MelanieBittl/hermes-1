@@ -52,7 +52,7 @@ protected:
     }
 
 			NumericalFlux* num_flux;
-double kappa;
+			double kappa;
 
   };
 

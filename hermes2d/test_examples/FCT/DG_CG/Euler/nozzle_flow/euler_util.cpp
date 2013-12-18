@@ -259,45 +259,7 @@ double w_1,w_2,w_3,w_4;
 				dudu[1] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
 				dudu[2] = (v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
 				double dp_du = ((kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext*drho_du)/kappa;
-				dudu[3] = (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
-
-/*
-					dw4_du= -1./rho*(rho_v_x*n_x+rho_v_y*n_y)/rho+ kappa/c*(-rho_energy/(rho*rho)+(rho_v_x*rho_v_x+rho_v_y*rho_v_y)/(rho*rho*rho));	
-			double drho_du = rho_ghost/(2.*c_ext)*dw4_du;
-double dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
-	if(entry_j==0) dudu[0] = drho_du;
-	else if(entry_j==1) dudu[0] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
-	else if(entry_j==2) dudu[0]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
-	else if(entry_j==3) dudu[0]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
-
-					dw4_du = n_x/rho-kappa*rho_v_x/(rho*rho*c);
-drho_du = rho_ghost/(2.*c_ext)*dw4_du;
- dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
-	if(entry_j==0) dudu[1] = drho_du;
-	else if(entry_j==1) dudu[1] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
-	else if(entry_j==2) dudu[1]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
-	else if(entry_j==3) dudu[1]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
-
-					dw4_du = n_y/rho-kappa*rho_v_y/(rho*rho*c);
-drho_du = rho_ghost/(2.*c_ext)*dw4_du;
- dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
-	if(entry_j==0) dudu[2] = drho_du;
-	else if(entry_j==1) dudu[2] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
-	else if(entry_j==2) dudu[2]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
-	else if(entry_j==3) dudu[2]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);
-
-					dw4_du = kappa/(c*rho);
-drho_du = rho_ghost/(2.*c_ext)*dw4_du;
- dp_du = (kappa-1.)*0.5*rho_ghost*c_ext*dw4_du + c_ext*c_ext/kappa*drho_du;
-	if(entry_j==0) dudu[3] = drho_du;
-	else if(entry_j==1) dudu[3] = (v_x_ghost* drho_du + 0.5* n_x* rho_ghost*dw4_du);
-	else if(entry_j==2) dudu[3]=(v_y_ghost * drho_du + 0.5* n_y* rho_ghost*dw4_du);
-	else if(entry_j==3) dudu[3]= (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);*/
-
-
-
-
-			
+				dudu[3] = (1./(kappa-1.)*dp_du+ (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)*0.5*drho_du+0.25*rho_ghost*(w_1+w_4)*dw4_du);			
 
 	}else if(bdry ==4){//outlet
 		double du_du,dv_du,dp_du, dw4_du, dw2_du, dw3_du;

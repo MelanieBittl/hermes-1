@@ -68,6 +68,14 @@ SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));
 SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
 
+SpaceSharedPtr<double> spacel2_rho(new L2Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> spacel2_rho_v_x(new L2Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> spacel2_rho_v_y(new L2Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> spacel2_e(new L2Space<double>(mesh, P_INIT));
+Hermes::vector<SpaceSharedPtr<double> > spacesl2(spacel2_rho, spacel2_rho_v_x, spacel2_rho_v_y, spacel2_e);
+Space<double>::assign_dofs(spacesl2);
+int ndofl2 = Space<double>::get_num_dofs(spacesl2);
+
 
 bool serendipity = true;
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
@@ -147,14 +155,18 @@ CSCMatrix<double> * K_matrix = new CSCMatrix<double>;
  
     OGProjection<double> ogProjection;
 	Lumped_Projection lumpedProjection;
-/*
-double* coeff_vec_init = new double[ndof];
+
+/*double* coeff_vec_init = new double[ndof];
   ogProjection.project_global(spaces,init_slns, coeff_vec_init, norms_l2 );
 	Solution<double>::vector_to_solutions(coeff_vec_init, spaces, prev_slns);*/
 
+double* coeff_vec_l2 = new double[ndofl2];
+  ogProjection.project_global(spacesl2,init_slns, coeff_vec_l2, norms_l2 );
+	Solution<double>::vector_to_solutions(coeff_vec_l2, spacesl2, prev_slns);
+
 //Projection of the initial condition
 
-	double* coeff_vec_init = new double[ndof];
+/*	double* coeff_vec_init = new double[ndof];
   ogProjection.project_global(spaces,init_slns, coeff_vec_init, norms_l2 );
 	Solution<double>::vector_to_solutions(coeff_vec_init, spaces, prev_slns);	
 
@@ -205,9 +217,32 @@ Solution<double>::vector_to_solutions(vec_1, spaces, prev_slns);
 			delete [] Q_minus;
 			delete [] R_plus;
 			delete [] R_minus;
-
 delete [] vec_1; 
 delete [] vec_2;
+
+
+*/
+
+
+  MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
+  MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+ MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
+
+
+			pressure->reinit();
+			vel_x->reinit();
+			vel_y->reinit();
+			s1.show(prev_rho);     
+			s2.show(vel_x);
+			s3.show(vel_y);
+  		pressure_view.show(pressure);
+View::wait(HERMES_WAIT_KEYPRESS);
+
+
+
+
+
+
 
 
 
@@ -238,9 +273,9 @@ delete [] vec_2;
 
 	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
  
-	NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
 //NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
-//NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 //NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
 //NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
 //NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
@@ -256,7 +291,7 @@ delete [] vec_2;
 	DiscreteProblem<double> dp_bdry(&wf_bdry, spaces); 
 
 /*	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
-	EulerK wf_convection_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+	EulerK wf_convection_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
 	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
 
   DiscreteProblem<double> dp_init(&wf_convection_init,spaces);
@@ -274,9 +309,31 @@ delete [] vec_2;
 
 Space<double>::assign_dofs(spaces);
 
-/*
-Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
+
+for(int i = 0; i<ndof; i++) coeff_vec_2[i]= 0.;
+
+Element* e =NULL;
+		AsmList<double>*  al = new AsmList<double>;	
+	for_all_active_elements(e, spaces[0]->get_mesh()){
+			spaces[0]->get_element_assembly_list(e, al);
+	  	for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
+		  int index =  spaces[0]->get_shapeset()->get_vertex_index(iv,HERMES_MODE_QUAD);
+				Node* vn = e->vn[iv];				
+				if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
+					for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
+						if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
+												coeff_vec_2[al->get_dof()[j]]	= coeff_vec[al->get_dof()[j]];
+
+						}
+					}
+				 }
+			}
+		}
+
+
+
+Solution<double>::vector_to_solutions(coeff_vec_2, spaces, prev_slns);
 
 			pressure->reinit();
 			vel_x->reinit();
@@ -286,7 +343,7 @@ Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 			s3.show(vel_y);
   		pressure_view.show(pressure);
 View::wait(HERMES_WAIT_KEYPRESS);
-*/
+
 
 //Timestep loop
 do
@@ -296,8 +353,8 @@ do
  	// if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
 			dp_bdry.assemble(dS_matrix, vec_bdry);
-			dp_DG.assemble(vec_dg);	
-		  	//dp_DG.assemble(dg_matrix,vec_dg);	
+			//dp_DG.assemble(vec_dg);	
+		  	dp_DG.assemble(dg_matrix,vec_dg);	
 		/*}else{
 			dp_init.assemble(K_matrix, vec_conv);
 			dp_bdry_init.assemble(dS_matrix, vec_bdry);
@@ -306,10 +363,10 @@ do
 
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
 
-//matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-//matrix->add_sparse_matrix(K_matrix);
+matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+matrix->add_sparse_matrix(K_matrix);
 
-		matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
 		matrix->add_sparse_matrix(dS_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 		matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
@@ -342,9 +399,7 @@ do
 	
 
 			// Visualize the solution.
-/*  MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
-  MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
- MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
+
 
 			sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);
@@ -364,7 +419,7 @@ do
 			sprintf(title, "Density: ts=%i",ts);
 			s1.set_title(title);
 			s1.show(prev_rho);
-*/
+
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -385,7 +440,7 @@ do
 
 
 
-
+/*
 
 		MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
 		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
@@ -402,8 +457,7 @@ do
 			lin_v_y.save_solution_vtk(vel_y, "vy_end.vtk", "velocity_y",true);
         Linearizer lin_rho;
 			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
-
-
+*/
 
 
 

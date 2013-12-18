@@ -10,30 +10,7 @@
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
-
-
-
-//-----------------------------Bilinearform for Time-Discretization
-
- class EulerEquationsBilinearFormTime : public MatrixFormVol<double>
-  {
-  public:
-    EulerEquationsBilinearFormTime(int i) : MatrixFormVol<double>(i, i),component_i(i) {}
-
-    template<typename Real, typename Scalar>
-    Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const ;
-
-    virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const ;
-
-   virtual Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const ;
-
-    MatrixFormVol<double>* clone() const;
-    // Member.
-    int component_i;
-  };
+using namespace Hermes::Hermes2D::WeakFormsH1;
 
 
 
@@ -46,16 +23,18 @@ public:
 
     WeakForm<double>* clone() const;
 
-double time_step; int num_of_equations;
+ int num_of_equations;
 };
 
+
+//------------------------------
 
 
 class EulerK : public WeakForm<double>
 {
 public:
 
-  EulerK(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, 
+  EulerK(double kappa,
 MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, 
 bool mirror_condition= true , int num_of_equations = 4);
 
@@ -75,10 +54,6 @@ bool mirror_condition= true , int num_of_equations = 4);
   MeshFunctionSharedPtr<double> prev_density_vel_y;
   MeshFunctionSharedPtr<double> prev_energy;
 
-  MeshFunctionSharedPtr<double> rho_ext;
-  MeshFunctionSharedPtr<double> v1_ext;
-  MeshFunctionSharedPtr<double> v2_ext;
-  MeshFunctionSharedPtr<double> energy_ext;
 
 protected:
 
@@ -100,6 +75,29 @@ protected:
 		int entry_j; 
 	int entry_i;
 	double kappa;
+	};
+
+
+
+ class  EulerEquationsLinearForm: public VectorFormVol<double>
+  {
+  public:
+   EulerEquationsLinearForm(int entry_i, double kappa) : VectorFormVol<double>(entry_i), entry_i(entry_i), kappa(kappa) {}
+
+     
+
+    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
+      Geom<double> *e, Func<double>  **ext) const; 
+
+
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+      Func<Ord>  **ext) const; 
+
+    VectorFormVol<double>* clone() const;
+
+	int entry_i;
+	double kappa;
+
 	};
 
 };
@@ -187,8 +185,6 @@ protected:
 
 
 };
-
-
 
 
 

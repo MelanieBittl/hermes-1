@@ -122,12 +122,19 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 //------------
-		NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
+ 
 	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
+NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
 
+	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
-	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
-	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux);
+	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
+	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
 	EulerK wf_convection_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
 	EulerK wf_convection(KAPPA,prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);

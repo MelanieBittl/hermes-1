@@ -1065,3 +1065,52 @@ double HLLNumericalFlux::calculate_s_R(double state_L[4], double state_R[4], dou
 
   return std::max(first_component, second_component) + max_speed_of_sound;
 }
+
+
+
+
+
+ApproxRoeNumericalFlux::ApproxRoeNumericalFlux(double kappa,EulerFluxes* euler_flux) : NumericalFlux(kappa), euler_flux(euler_flux)
+{
+}
+
+double ApproxRoeNumericalFlux::numerical_flux_i(int component, double w_L[4], double w_R[4],
+                                                    double nx, double ny)
+{
+double result = 0.;
+for(int k =0; k<4;k++)
+{
+			   result += nx* (w_L[k]*euler_flux->A(w_L[0], w_L[1], w_L[2], w_L[3],0,component,k) 
+					+	w_R[k]* euler_flux->A(w_R[0], w_R[1], w_R[2], w_R[3],0,component,k)) 
+				+  ny*( w_L[k]*euler_flux->A(w_L[0], w_L[1], w_L[2], w_L[3], 1,component,k) 
+						+w_R[k] * euler_flux->A(w_R[0], w_R[1], w_R[2], w_R[3],1,component,k)) ;
+
+}
+
+			result -= Boundary_helpers::calculate_A_n_U(w_L[0], w_L[1], w_L[2], w_L[3], nx, ny,w_R[0], w_R[1], w_R[2], w_R[3], kappa, component);
+
+
+  return (result*0.5);
+}
+
+void ApproxRoeNumericalFlux::numerical_flux(double result[4], double w_L[4], double w_R[4],
+          double nx, double ny) 
+{
+for(int i =0;i<4; i++) result[i]=0.;
+	for(int component  = 0; component<4;component++)
+	{
+		for(int k =0; k<4;k++)
+		{
+		   result[component] += nx* (w_L[k]*euler_flux->A(w_L[0], w_L[1], w_L[2], w_L[3],0,component,k) 
+				+	w_R[k]* euler_flux->A(w_R[0], w_R[1], w_R[2], w_R[3],0,component,k)) 
+			+  ny*( w_L[k]*euler_flux->A(w_L[0], w_L[1], w_L[2], w_L[3], 1,component,k) 
+					+w_R[k] * euler_flux->A(w_R[0], w_R[1], w_R[2], w_R[3],1,component,k)) ;
+
+		}
+
+			result[component] -= Boundary_helpers::calculate_A_n_U(w_L[0], w_L[1], w_L[2], w_L[3], nx, ny,w_R[0], w_R[1], w_R[2], w_R[3], kappa, component);
+
+	}
+}
+
+

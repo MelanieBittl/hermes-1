@@ -2,12 +2,11 @@
 #include "euler_util.h"
 #include "definitions.h"
 #include "initial_condition.h"
-#include "boundary_condition.h"
 #include "interface.h"
 #include "lumped_projection.h"
 #include "euler_flux.h"
 #include "hp_adapt.h"
-#include "boundary_convection.h"
+
 
 
 
@@ -145,24 +144,35 @@ Space<double>::assign_dofs(spaces);
 	OrderView m4view("mesh", new WinGeom(1500, 0, 500, 400));
 
 //------------
-NumericalFlux* num_flux = new LaxFriedrichsNumericalFlux(KAPPA);
+	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
+ 
+	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
+NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
 
-  EulerEquationsWeakForm_K  wf_K_init(KAPPA,  init_slns);
+	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
+
+
+
+  EulerK   wf_K_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
   //EulerBoundary wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux);
+EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
 
   EulerEquationsWeakForm_Mass wf_mass;
-  EulerEquationsWeakForm_K  wf_K(KAPPA,prev_slns);
+  EulerK   wf_K(KAPPA,  prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   //EulerBoundary wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux);
+	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
 
-  EulerEquationsWeakForm_K  wf_K_low(KAPPA, low_slns);
+  EulerK   wf_K_low(KAPPA,low_rho, low_rho_v_x, low_rho_v_y, low_e  );
  // EulerBoundary wf_boundary_low(KAPPA,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e,low_rho, low_rho_v_x, low_rho_v_y, low_e  );
 
 
-EulerKS wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-EulerKS wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-EulerKS wf_boundary_low(KAPPA,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e,low_rho, low_rho_v_x, low_rho_v_y, low_e  );
+EulerS wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+EulerS wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+EulerS wf_boundary_low(KAPPA,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e,low_rho, low_rho_v_x, low_rho_v_y, low_e  );
 
 
   // Initialize the FE problem.
