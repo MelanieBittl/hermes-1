@@ -197,11 +197,11 @@ else solid = false;
 
 				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 				else if(e->x[i]==8.){ 
-					//bdry=4; 
-						bdry = 1.;
+					bdry=4; //sub out
+					//	bdry = 1.;  //sup out
 				}else if(e->x[i]==-2.){ 
-					//bdry =3.
-						bdry =2.;
+					bdry =3.;  //sub in
+					//	bdry =2.;  //sup in
 				}else throw Hermes::Exceptions::Exception("boundary");
 
 (static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
@@ -315,11 +315,11 @@ int bdry; bool solid = false;
 
 			if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 				else if(e->x[i]==8.){ 
-						//bdry=4; 
-						bdry = 1.;
+						bdry=4; 
+						//bdry = 1.;
 				}else if(e->x[i]==-2.){ 
-						//bdry =3.
-						bdry =2.;
+						bdry =3.;
+						//bdry =2.;
 				}else throw Hermes::Exceptions::Exception("boundary");
 
 			rho = ext[0]->val[i];  

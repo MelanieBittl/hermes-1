@@ -232,16 +232,16 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
   double result = 0.;
   for (int i = 0;i < n;i++) 
   {		
-				if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else solid = false;
-
+				//if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+				//else solid = false;
+solid = true; bdry =0;
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
 
-				if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+				/*if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else if((e->x[i]==1.)){ bdry=1;}
 				else if(e->x[i]==-1.) bdry =2.;
-				else throw Hermes::Exceptions::Exception("boundary");
+				else throw Hermes::Exceptions::Exception("boundary");*/
 
 
 
@@ -353,9 +353,9 @@ int bdry; bool solid = false;
   double result = 0.;
   for (int i = 0;i < n;i++) 
 {
-if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else solid = false;
-
+//if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+	//			else solid = false;
+solid = true; bdry =0;
 			rho = ext[0]->val[i];  
 			rho_v_x = ext[1]->val[i]; 
 			rho_v_y = ext[2]->val[i]; 
@@ -367,11 +367,11 @@ if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				rho_v_y_ext = ext[6]->val[i];
 				rho_energy_ext = ext[7]->val[i];
 
-
+/*
 				if((e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else if((e->x[i]==1.)){ bdry=1;}
 				else if(e->x[i]==-1.) bdry =2.;
-				else throw Hermes::Exceptions::Exception("boundary");
+				else throw Hermes::Exceptions::Exception("boundary");*/
 
 			
 

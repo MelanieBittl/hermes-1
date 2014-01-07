@@ -20,8 +20,8 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
-const double time_step = 1e-5;
-const double T_FINAL = 6.;                       // Time interval length. 
+const double time_step = 1e-1;//1e-5;
+const double T_FINAL = 600.;                       // Time interval length. 
 
 const double theta = 1.;
 
@@ -46,7 +46,11 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain2.mesh", basemesh);
+Element* e = NULL;Node* vn=NULL;
+
+ //for_all_active_elements(e, basemesh)
+	//	basemesh->refine_quad_to_triangles(e);
 
 
   // Perform initial mesh refinements (optional).
@@ -54,24 +58,33 @@ int main(int argc, char* argv[])
 	{ 
 			basemesh->refine_all_elements();
 		//y-Koord. der Knoten auf cos-Kurve verschieben
-			Node* vn; 
+			 
 			for_all_vertex_nodes(vn, basemesh)
 			{	
 				if(vn->bnd) 
 					if((vn->x>0.)&&(vn->x<4.))		
 					{		if(vn->y>0.)
 							{
-									vn->y = (Hermes::cos(PI*vn->x/2.)+3.)/16.+0.75 ;
-								//vn->y = (Hermes::cos(PI*vn->x/2.)+3.)/4.;
+									//vn->y = (Hermes::cos(PI*vn->x/2.)+3.)/16.+0.75 ;
+								vn->y = (Hermes::cos(PI*vn->x/2.)+3.)/4.;
 							}else if(vn->y<0.)
-									vn->y = -(Hermes::cos(PI*vn->x/2.)+3.)/16.-0.75 ;
-							//vn->y = -(Hermes::cos(PI*vn->x/2.)+3.)/4.;
+									//vn->y = -(Hermes::cos(PI*vn->x/2.)+3.)/16.-0.75 ;
+							vn->y = -(Hermes::cos(PI*vn->x/2.)+3.)/4.;
 					}
 			}
 		}
+
  	 mesh->copy(basemesh);
-
-
+double delta_x = 100; double delta_max= 0.;
+for_all_active_elements(e, basemesh)
+{
+		for(int i = 1; i<e->get_nvert(); i++)
+		{
+			delta_x = std::fabs(e->vn[i]->x - e->vn[i-1]->x);
+			if(delta_x>delta_max) delta_max = delta_x;
+		}
+}
+printf("CFL = %f \n", time_step/delta_max*0.2);
 
 
 /*
@@ -192,8 +205,8 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 	EulerK wf_convection(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass;
 
-	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e,false);
+	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,false);
 
 
 
@@ -318,7 +331,7 @@ do
                         vel_x->reinit();
                         vel_y->reinit();
                         s2.show(vel_x);
-                        s3.show(vel_y);
+                        s3.show(vel_y);*/
                         MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
                         sprintf(title, "Pressure: ts=%i",ts);
                         pressure_view.set_title(title);
@@ -334,7 +347,7 @@ do
                         sprintf(title, "Density: ts=%i",ts);
                         s1.set_title(title);
                         s1.show(prev_rho);
-				s5.show(diff_slns[0]);*/
+				s5.show(diff_slns[0]);
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 

@@ -85,6 +85,7 @@ namespace Hermes
       template<typename T> friend class HcurlSpace;
       template<typename T> friend class HdivSpace;
  	  template<typename T> friend class L2_SEMI_CG_Space;
+	  template<typename T> friend class L2_NEW_Space;
  	  template<typename T> friend class SpaceBB;
     };
 
@@ -221,6 +222,7 @@ namespace Hermes
       template<typename T> friend class HcurlSpace;
       template<typename T> friend class HdivSpace;
 	  template<typename T> friend class L2_SEMI_CG_Space;
+	  template<typename T> friend class L2_NEW_Space;
 	  template<typename T> friend class SpaceBB;
     };
   }

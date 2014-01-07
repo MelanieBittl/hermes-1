@@ -220,6 +220,7 @@ virtual double get_fn_value_order(int order, int index, double x, double y, int 
       template<typename Scalar> friend class HcurlSpace;
       template<typename Scalar> friend class HdivSpace;
       template<typename Scalar> friend class L2_SEMI_CG_Space;
+      template<typename Scalar> friend class L2_NEW_Space;
       template<typename Scalar> friend class SpaceBB;
       template<typename Scalar> friend class L2MarkerWiseConstSpace;
 

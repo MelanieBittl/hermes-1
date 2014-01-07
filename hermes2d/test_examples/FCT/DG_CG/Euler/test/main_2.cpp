@@ -16,22 +16,26 @@ using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
 
+
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 5e-4;
-const double T_FINAL = 0.231;                       // Time interval length.                   
+const double time_step = 1e-5;
+const double T_FINAL = 3.;                       // Time interval length. 
+
 // Equation parameters.  
  
      
 // Kappa.
 const double KAPPA = 1.4; 
 // Inlet x-velocity (dimensionless).
-const double V1_EXT =0.0;        
+const double V1_EXT =3.5;        
 // Inlet y-velocity (dimensionless).
 const double V2_EXT = 0.0;    
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
+// Set visual output for every nth step.
+const unsigned int EVERY_NTH_STEP = 1;
 
 int main(int argc, char* argv[])
 {
@@ -80,29 +84,28 @@ SpaceSharedPtr<double> space_e(new L2_NEW_Space<double>(mesh, P_INIT, serendipit
   Hermes::Mixins::Loggable::Static::info("ndof: %d \n", ndof);
 
   // Initialize solutions, set initial conditions.
-  MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh));	
-  MeshFunctionSharedPtr<double> init_rho_v_x(new   ConstantSolution<double>(mesh,  V1_EXT));	
-  MeshFunctionSharedPtr<double> init_rho_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
-  MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));	
+ MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> init_rho_v_x(new  CustomInitialCondition_rho_v_x(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> init_rho_v_y(new  ConstantSolution<double>(mesh,  V2_EXT));	
+  MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));
 
-
-  MeshFunctionSharedPtr<double> prev_rho(new Solution<double>);
+  	MeshFunctionSharedPtr<double> prev_rho(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_x(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_y(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_e(new Solution<double>);
 
-
-  MeshFunctionSharedPtr<double> boundary_rho(new CustomInitialCondition_rho(mesh));	
-  MeshFunctionSharedPtr<double> boundary_v_x(new   ConstantSolution<double>(mesh,  V1_EXT));	
-  MeshFunctionSharedPtr<double> boundary_v_y(new   ConstantSolution<double>(mesh,  V2_EXT));	
-  MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(mesh,KAPPA));
+double current_time = 0.0; 
+  MeshFunctionSharedPtr<double> boundary_rho(new BoundaryCondition_rho(mesh, current_time,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_x(new  BoundaryCondition_rho_v_x(mesh, current_time,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_y(new  ConstantSolution<double>(mesh, V2_EXT));	
+  MeshFunctionSharedPtr<double> boundary_e(new BoundaryCondition_rho_e(mesh, current_time,KAPPA));	
 
 	Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 	Hermes::vector<MeshFunctionSharedPtr<double> > init_slns(init_rho, init_rho_v_x, init_rho_v_y, init_e);
 
 	Hermes::vector<NormType> norms_l2(HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM);
 
-double current_time =0;
+
  //--------- Visualization of pressure & velocity
   ScalarView pressure_view("Pressure", new WinGeom(700, 400, 600, 300));
   ScalarView s1("rho", new WinGeom(0, 0, 600, 300));
@@ -144,8 +147,8 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 	EulerK wf_convection(KAPPA,prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
-	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e,false);
+	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,false);
 
 
 
@@ -199,7 +202,7 @@ MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
 	int ts = 1;
 	char title[100];
 
-double t_k = time_step/2.;
+double t_k = time_step;
 double t_k_1= time_step;	
 double tau_1 = (t_k+t_k_1)/(t_k_1);
 double tau_2 = t_k/t_k_1;
@@ -213,53 +216,50 @@ do
   	//Hermes::Mixins::Loggable::Static::info("dofs=%i,%i,%i,%i= %i", dof_rho, dof_v_x,dof_v_y, dof_e, ndof);
   	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof);
  	  
- 	 if(ts!=1){
+ 	  if(ts!=1){
 		for(int i = 0; i<ndof; i++) mc_u_n_1[i] = -t_k/(t_k*(t_k+t_k_1))*mc_u_n[i];
 		mass_matrix->multiply_with_vector(coeff_vec, mc_u_n); 
 		K_matrix->free();
 		K_matrix->create(K_matrix_new->get_size(),K_matrix_new->get_nnz(), K_matrix_new->get_Ap(), K_matrix_new->get_Ai(),K_matrix_new->get_Ax());
 		s_n_1->zero();
 		s_n_1->add_vector(vec_bdry);
-		//s_n_1->add_vector(vec_dg);
-		dp.assemble(dg_matrix);
-		dp_bdry.assemble(vec_bdry);
-	  	dp_DG.assemble(K_matrix_new,vec_dg);
-		K_matrix_new->add_sparse_matrix(dg_matrix);
+		s_n_1->add_vector(vec_dg);
+			dp.assemble(K_matrix_new);
+			dp_bdry.assemble(vec_bdry);
+		  	dp_DG.assemble(vec_dg);	
 		s_n->zero();
 		s_n->add_vector(vec_bdry);
-		//s_n->add_vector(vec_dg);
+		s_n->add_vector(vec_dg);
 		s_n->multiply_with_Scalar(tau_1);
 		s_n_1->multiply_with_Scalar(-tau_2);
-	}else{
-			dp_init.assemble(dg_matrix);
+		}else{
+			dp_init.assemble(K_matrix_new);
 			dp_bdry_init.assemble(vec_bdry);
-		 	dp_DG_init.assemble(K_matrix_new,vec_dg);	
-			K_matrix_new->add_sparse_matrix(dg_matrix);
-			K_matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
-			
+		 	dp_DG_init.assemble(vec_dg);	
+		K_matrix->create(K_matrix_new->get_size(),K_matrix_new->get_nnz(), K_matrix_new->get_Ap(), K_matrix_new->get_Ai(),K_matrix_new->get_Ax());
 
-			mass_matrix->multiply_with_vector(coeff_vec, mc_u_n);
-			for(int i = 0; i<ndof; i++) mc_u_n_1[i] = -t_k/(t_k*(t_k+t_k_1))*mc_u_n[i]; 
-			s_n->zero(); s_n_1->zero();
-			s_n->add_vector(vec_bdry);
-			//s_n->add_vector(vec_dg);
-			s_n_1->add_vector(s_n);
-			s_n->multiply_with_Scalar(tau_1);
-			s_n_1->multiply_with_Scalar(-tau_2);
+		mass_matrix->multiply_with_vector(coeff_vec, mc_u_n);
+		for(int i = 0; i<ndof; i++) mc_u_n_1[i] = -t_k/(t_k*(t_k+t_k_1))*mc_u_n[i]; 
+s_n->zero(); s_n_1->zero();
+s_n->add_vector(vec_bdry);
+s_n->add_vector(vec_dg);
+s_n_1->add_vector(s_n);
+s_n->multiply_with_Scalar(tau_1);
+s_n_1->multiply_with_Scalar(-tau_2);
 		}
 
 
-		K_n_1->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
-		K_n_1->multiply_with_Scalar(tau_2); 
-		K_n->create(K_matrix_new->get_size(),K_matrix_new->get_nnz(), K_matrix_new->get_Ap(), K_matrix_new->get_Ai(),K_matrix_new->get_Ax());
-		K_n->multiply_with_Scalar(-tau_1); 
+K_n_1->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
+K_n_1->multiply_with_Scalar(tau_2); 
+K_n->create(K_matrix_new->get_size(),K_matrix_new->get_nnz(), K_matrix_new->get_Ap(), K_matrix_new->get_Ai(),K_matrix_new->get_Ax());
+K_n->multiply_with_Scalar(-tau_1); 
 
 
 		mat_rhs->create(mass_matrix->get_size(),mass_matrix->get_nnz(), mass_matrix->get_Ap(), mass_matrix->get_Ai(),mass_matrix->get_Ax());
 		mat_rhs->multiply_with_Scalar((2.*t_k+t_k_1)/((t_k_1+t_k)*t_k)); 
-		matrix->create(K_n->get_size(),K_n->get_nnz(), K_n->get_Ap(),K_n->get_Ai(),K_n->get_Ax());
-		matrix->add_sparse_matrix(K_n_1);		
-		matrix->add_sparse_matrix(mat_rhs);	
+matrix->create(K_n->get_size(),K_n->get_nnz(), K_n->get_Ap(),K_n->get_Ai(),K_n->get_Ax());
+				matrix->add_sparse_matrix(K_n_1);		
+matrix->add_sparse_matrix(mat_rhs);	
 
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------	
@@ -319,6 +319,13 @@ do
 
 	  // Update global time.
   current_time += time_step;
+
+BoundaryCondition_rho* rho = static_cast<BoundaryCondition_rho*>(boundary_rho.get_solution());
+rho->set_time(current_time);
+BoundaryCondition_rho_v_x* rho_v_x = static_cast<BoundaryCondition_rho_v_x*>(boundary_v_x.get_solution());
+rho_v_x->set_time(current_time);
+BoundaryCondition_rho_e* rho_e = static_cast<BoundaryCondition_rho_e*>(boundary_e.get_solution());
+rho_e->set_time(current_time);
 
 
   // Increase time step counter

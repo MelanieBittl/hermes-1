@@ -88,6 +88,7 @@ namespace Hermes
     template<typename Scalar> class HcurlSpace;
     template<typename Scalar> class HdivSpace;
 		template<typename Scalar> class L2_SEMI_CG_Space;
+      template<typename Scalar> class L2_NEW_Space;
 	  template<typename Scalar> class SpaceBB;
 
     /** @defgroup spaces FEM Spaces

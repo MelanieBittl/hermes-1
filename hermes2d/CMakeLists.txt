@@ -172,6 +172,7 @@ project(hermes2d)
     src/space/space_hdiv.cpp
     src/space/space_h2d_xml.cpp
     src/space/space_l2_semi_cg.cpp
+	src/space/space_l2_new.cpp
 
     src/views/base_view.cpp
     src/views/mesh_view.cpp
@@ -323,6 +324,8 @@ project(hermes2d)
     src/space/space_l2.cpp
     src/space/space_hdiv.cpp
     src/space/space_h2d_xml.cpp
+    src/space/space_l2_semi_cg.cpp
+	src/space/space_l2_new.cpp
   )
   
   SOURCE_GROUP(
@@ -438,6 +441,7 @@ project(hermes2d)
     include/space/space_hdiv.h
     include/space/space_h2d_xml.h
 	include/space/space_l2_semi_cg.h
+	include/space/space_l2_new.h
 
 
     include/views/base_view.h
@@ -591,6 +595,8 @@ project(hermes2d)
     include/space/space_l2.h
     include/space/space_hdiv.h
     include/space/space_h2d_xml.h
+	include/space/space_l2_semi_cg.h
+	include/space/space_l2_new.h
   )
   
   SOURCE_GROUP(
