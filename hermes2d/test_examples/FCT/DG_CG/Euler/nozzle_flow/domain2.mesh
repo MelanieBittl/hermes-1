@@ -28,12 +28,12 @@ boundaries =
 		{ 1, 2, "solid" },
 		{ 2, 3, "solid"},
 		{ 3, 4, "solid" },
-		{ 4, 9, "solid" },
+		{ 4, 9, "out" },
 		{ 9, 8, "solid" },
 		{ 8, 7, "solid" },
 		{ 7, 6, "solid" },
 		{ 6, 5, "solid" },
-		{ 5, 0, "solid" }
+		{ 5, 0, "in" }
 }
 
 

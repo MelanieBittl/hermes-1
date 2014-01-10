@@ -4,7 +4,6 @@
 #include "euler_util.h"
 #include "euler_flux.h"
 #include "hermes2d.h"
-#include "numerical_flux.h"
  #define PI (3.141592653589793)   
 
 
@@ -13,22 +12,46 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::WeakFormsH1;
 
-
-
-
 //---------------WeakForms---------------
 class EulerEquationsWeakForm_Mass : public WeakForm<double>
 {
 public:
-  EulerEquationsWeakForm_Mass(int num_of_equations = 4);
+  EulerEquationsWeakForm_Mass(MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, int num_of_equations = 4);
 
     WeakForm<double>* clone() const;
 
- int num_of_equations;
+
+  MeshFunctionSharedPtr<double> prev_density;
+  MeshFunctionSharedPtr<double> prev_density_vel_x;
+  MeshFunctionSharedPtr<double> prev_density_vel_y;
+  MeshFunctionSharedPtr<double> prev_energy;
+int num_of_equations;
+protected:
+//--------------linearform mass
+ class MassLinearform: public VectorFormVol<double>
+  {
+  public:
+    MassLinearform(int entry_i) : VectorFormVol<double>(entry_i) {}
+
+     
+
+    double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
+      Geom<double> *e, Func<double>  **ext) const; 
+
+
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+      Func<Ord>  **ext) const; 
+
+    VectorFormVol<double>* clone() const;
+
+	};
+
+
 };
 
 
-//------------------------------
+
+
 
 
 class EulerK : public WeakForm<double>
@@ -111,7 +134,7 @@ class EulerS : public WeakForm<double>
 {
 public:
 
-  EulerS(double kappa,MeshSharedPtr mesh,NumericalFlux* num_flux,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, 
+  EulerS(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, 
 MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, 
 bool mirror_condition= true , int num_of_equations = 4);
 
@@ -121,9 +144,7 @@ bool mirror_condition= true , int num_of_equations = 4);
 
 
   // Members.
-MeshSharedPtr mesh;
   EulerFluxes* euler_fluxes;
-NumericalFlux* num_flux;
 	RiemannInvariants* riemann_invariants;
 	bool mirror_condition;
 	double kappa;
@@ -145,7 +166,7 @@ protected:
  class EulerBoundaryBilinearForm: public MatrixFormSurf<double>
   {
   public:
-    EulerBoundaryBilinearForm(double kappa,int entry_i, int entry_j,NumericalFlux* num_flux) : MatrixFormSurf<double>(entry_i,entry_j),entry_i(entry_i), entry_j(entry_j),num_flux(num_flux), kappa(kappa) {}
+    EulerBoundaryBilinearForm(double kappa,int entry_i, int entry_j) : MatrixFormSurf<double>(entry_i,entry_j),entry_i(entry_i), entry_j(entry_j), kappa(kappa) {}
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
@@ -160,7 +181,6 @@ protected:
 	int entry_j; 
 	int entry_i;
 	double kappa;
-NumericalFlux* num_flux;
 	};
 
 
@@ -169,7 +189,7 @@ NumericalFlux* num_flux;
  class EulerBoundaryLinearform: public VectorFormSurf<double>
   {
   public:
-    EulerBoundaryLinearform(double kappa, int entry_i,NumericalFlux* num_flux) : VectorFormSurf<double>(entry_i), kappa(kappa),num_flux(num_flux), entry_i(entry_i)  {}
+    EulerBoundaryLinearform(double kappa, int entry_i) : VectorFormSurf<double>(entry_i), kappa(kappa), entry_i(entry_i)  {}
 
      
 
@@ -184,12 +204,15 @@ NumericalFlux* num_flux;
 
 		double kappa;
 		int entry_i;
-NumericalFlux* num_flux;
 	};
 
 
 
 };
+
+
+
+
 
 
 

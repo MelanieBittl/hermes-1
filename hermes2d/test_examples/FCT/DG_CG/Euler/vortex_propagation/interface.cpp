@@ -75,8 +75,8 @@ Ord result = Ord(10);
 double EulerInterface::EulerEquationsBilinearFormFlux::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, DiscontinuousFunc<double> *u, DiscontinuousFunc<double> *v, Geom<double> *e, DiscontinuousFunc<double> **ext) const
 {
         double result = 0.;
-      double w_L[4], w_R[4],w_mid[4];
-	double * A_n = new double[4];
+      double w_L[4], w_R[4];
+double * A_n = new double[4];
       for (int point_i = 0; point_i < n; point_i++)
       {
 		double jump_v = (v->fn_central == NULL ? -v->val_neighbor[point_i] : v->val[point_i]);
@@ -94,52 +94,18 @@ double EulerInterface::EulerEquationsBilinearFormFlux::value(int n, double *wt, 
         w_R[2] = ext[2]->val_neighbor[point_i];
         w_R[3] = ext[3]->val_neighbor[point_i];
 
-		w_mid[0] = 0.5*(w_L[0]+w_R[0]);
-		w_mid[1] = 0.5*(w_L[1]+w_R[1]);
-		w_mid[2] = 0.5*(w_L[2]+w_R[2]);
-		w_mid[3] = 0.5*(w_L[3]+w_R[3]);
-
-
-
 
 double s_right = std::abs(((e->nx[point_i] * w_R[1]) + (e->ny[point_i] * w_R[2])) / w_R[0]) + QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->kappa);
 double s_left = std::abs(((e->nx[point_i] * w_L[1]) + (e->ny[point_i] * w_L[2])) / w_L[0]) + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->kappa);
 result += wt[point_i]*jump_v*jump_u*std::max(s_left, s_right);
 
 
-	/*result += wt[point_i]*jump_v * mid_u * 0.5*
-        ( (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_L[0], w_L[1], w_L[2], w_L[3],0,this->i,this->j) 
-          * e->nx[point_i]+        
-         (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_L[0], w_L[1], w_L[2], w_L[3],1,this->i,this->j) 
-          * e->ny[point_i] +
-(static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_R[0], w_R[1], w_R[2], w_R[3],0,this->i,this->j) 
-          * e->nx[point_i]+        
-         (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_R[0], w_R[1], w_R[2], w_R[3],1,this->i,this->j) 
-          * e->ny[point_i]
-			);*/
-
-result += wt[point_i]*jump_v * mid_u * 
-        ( (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_mid[0], w_mid[1], w_mid[2], w_mid[3],0,this->i,this->j) 
-          * e->nx[point_i]+        
-         (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_mid[0], w_mid[1], w_mid[2], w_mid[3],1,this->i,this->j) 
-          * e->ny[point_i]);
-
-/*
-if(u->fn_central != NULL){
-
-result += wt[point_i]*jump_v * mid_u * 
+	result += wt[point_i]*jump_v * mid_u * 
         ( (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_L[0], w_L[1], w_L[2], w_L[3],0,this->i,this->j) 
           * e->nx[point_i]+        
          (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_L[0], w_L[1], w_L[2], w_L[3],1,this->i,this->j) 
           * e->ny[point_i]);
 
-}else{
-result += wt[point_i]*jump_v * mid_u * 
-        ( (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_R[0], w_R[1], w_R[2], w_R[3],0,this->i,this->j) 
-          * e->nx[point_i]+        
-         (static_cast<EulerInterface*>(wf))->euler_fluxes->A(w_R[0], w_R[1], w_R[2], w_R[3],1,this->i,this->j) 
-          * e->ny[point_i]	);
-}*/
 
 
 

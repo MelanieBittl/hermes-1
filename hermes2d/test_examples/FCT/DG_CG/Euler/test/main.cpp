@@ -156,6 +156,19 @@ ScalarView s4("prev_e", new WinGeom(700, 700, 600, 300));
 ScalarView radius_view("radius_velocity", new WinGeom(0, 700, 600, 300));
 
 radius_view.set_min_max_range(0,0.1);
+Linearizer lin_p, lin_m, lin_rho, lin_r;
+
+		MeshFunctionSharedPtr<double> pressure_init(new PressureFilter(init_slns, KAPPA));
+
+
+				pressure_init->reinit();
+    
+			lin_p.save_solution_vtk(pressure_init, "p_init.vtk", "pressure", true);
+
+
+			lin_rho.save_solution_vtk(init_slns[0], "rho_init.vtk", "density", true);
+
+
 
 /*	OrderView m1view("mesh", new WinGeom(1000, 0, 500, 400));m1view.show(spaces[0]);
 m1view.show(spaces[0]);
@@ -243,7 +256,7 @@ double norm_rel = 1000;
 		Space<double>::assign_dofs(spaces);
 		  dp_mass.assemble(mass_matrix);
 mass_matrix->multiply_with_Scalar(1./time_step);
-Linearizer lin_p, lin_m, lin_rho, lin_r;
+
 
 //Timestep loop
 do

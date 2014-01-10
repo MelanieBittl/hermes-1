@@ -243,7 +243,7 @@ do
 	
 
 			 // Visualize the solution.
-			/*	pressure->reinit();
+				pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
 				vel_r->reinit();

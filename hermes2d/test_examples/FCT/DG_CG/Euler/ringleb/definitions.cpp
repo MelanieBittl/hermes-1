@@ -1,24 +1,65 @@
 #include "definitions.h"
 
 
-  EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
+  EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy,int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations),prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy)
 	{
-		for(int k =0; k<num_of_equations;k++)		
+    this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density, prev_density_vel_x, prev_density_vel_y, prev_energy));
+		for(int k =0; k<4;k++)
+		{
+			add_vector_form(new EulerEquationsWeakForm_Mass::MassLinearform(k));
 			add_matrix_form(new DefaultMatrixFormVol<double>(k,k)); 
-		
+		} 
+
 	}
 
 
 	    WeakForm<double>* EulerEquationsWeakForm_Mass::clone() const
     {
-      const_cast<EulerEquationsWeakForm_Mass*>(this)->warned_nonOverride = false;
-      return new EulerEquationsWeakForm_Mass(this->num_of_equations);
+    EulerEquationsWeakForm_Mass* wf;
+    wf = new EulerEquationsWeakForm_Mass(this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy,4);
+
+    wf->ext.clear();
+
+    for(unsigned int i = 0; i < this->ext.size(); i++)
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        wf->ext.push_back(new Solution<double>());
+        wf->ext.back()->copy(this->ext[i]);
+      }
+      else
+        wf->ext.push_back(this->ext[i]->clone());
+    }
+    return wf;
     }
     
+    
 
-//_----------------------------------------------------------------------------------------------------------
+    double EulerEquationsWeakForm_Mass::MassLinearform::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
+      Geom<double> *e, Func<double>  **ext) const
+		{
+			double result = 0.;
+          for (int k = 0; k < n; k++) {
+            result += wt[k] * ext[this->i]->val[k]* v->val[k];
+          }
 
-	
+		}
+
+
+    Ord EulerEquationsWeakForm_Mass::MassLinearform::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+      Func<Ord>  **ext) const
+		{
+		return Ord(10);
+		}
+
+    VectorFormVol<double>* EulerEquationsWeakForm_Mass::MassLinearform::clone() const
+	{
+	return new EulerEquationsWeakForm_Mass::MassLinearform(*this);
+};
+    
+
+
 //_---------------Matrix K -------------------------------------------------------------------------------------------
 
 	EulerK::EulerK(double kappa, MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, bool mirror_condition,int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa)),kappa(kappa), riemann_invariants(new RiemannInvariants(kappa)), mirror_condition(mirror_condition),
@@ -131,17 +172,18 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
     {
     return new EulerK::EulerEquationsLinearForm(this->entry_i, this->kappa);
     }
+
 //---------------------------Boundary only------------------------
-	EulerS::EulerS(double kappa,MeshSharedPtr mesh,NumericalFlux* num_flux,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, bool mirror_condition,int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa)),kappa(kappa), riemann_invariants(new RiemannInvariants(kappa)), mirror_condition(mirror_condition),
-    prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), rho_ext(rho_ext), v1_ext (v1_ext), v2_ext(v2_ext), energy_ext (energy_ext), mesh(mesh) 
+	EulerS::EulerS(double kappa,MeshSharedPtr mesh,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, bool mirror_condition,int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa)),kappa(kappa), riemann_invariants(new RiemannInvariants(kappa)), mirror_condition(mirror_condition),
+    prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), rho_ext(rho_ext), v1_ext (v1_ext), v2_ext(v2_ext), energy_ext (energy_ext) , mesh(mesh)
 	{
 
 		for(int k =0; k<4;k++)
 		{
 			for(int i = 0; i<4;i++)
-				add_matrix_form_surf(new EulerS::EulerBoundaryBilinearForm(kappa,i,k,num_flux));
+				add_matrix_form_surf(new EulerS::EulerBoundaryBilinearForm(kappa,i,k));
 			
-			add_vector_form_surf(new EulerS::EulerBoundaryLinearform(kappa, k,num_flux));
+			add_vector_form_surf(new EulerS::EulerBoundaryLinearform(kappa, k));
 		}
 
     
@@ -160,7 +202,7 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 	WeakForm<double>* EulerS::clone() const
     {
     EulerS* wf;
-    wf = new EulerS(this->kappa,this->mesh,this->num_flux,this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->mirror_condition,4);
+    wf = new EulerS(this->kappa,this->mesh,this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->mirror_condition,4);
 
     wf->ext.clear();
 
@@ -192,35 +234,26 @@ Mesh::MarkersConversion::StringValid marker_to_check =
 static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
   for (int i = 0;i < n;i++) 
   {	
-		/*	if(marker_to_check.marker == "out")
+
+			if(marker_to_check.marker == "out")
 			{
-				bdry =4;solid = false;		
+				bdry =2.;		
 			}else if(marker_to_check.marker == "in")
 			{	
-				bdry=3;solid = false;	
-			}else if(marker_to_check.marker == "solid")
-			{		solid = true; bdry =0;
-			}else throw Hermes::Exceptions::Exception("boundary");*/
+				bdry=1;
 	
-				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
-				else if(e->x[i]==8.){ continue;
-					bdry=4;solid==false; //sub out
-					//	bdry = 1.;  //sup out
-				}else if(e->x[i]==-2.){ continue;
-					bdry =3.;solid==false;  //sub in
-					//	bdry =2.;  //sup in
-				}else throw Hermes::Exceptions::Exception("boundary");
+			}else if(marker_to_check.marker == "wallr")
+			{		solid = true; bdry =0;
+			}else if(marker_to_check.marker == "walll")
+			{
+				solid = true; bdry =0;	
+			}else 
+				printf("nothing");
 
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
-			/*	if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
-				else if(e->x[i]==8.){ 
-					bdry=4; //sub out
-					//	bdry = 1.;  //sup out
-				}else if(e->x[i]==-2.){ 
-					bdry =3.;  //sub in
-					//	bdry =2.;  //sup in
-				}else throw Hermes::Exceptions::Exception("boundary");*/
+
+
 
 (static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
 
@@ -306,7 +339,7 @@ else constant = 0.5;
 
     MatrixFormSurf<double>* EulerS::EulerBoundaryBilinearForm::clone() const
     {
-					return new EulerS::EulerBoundaryBilinearForm(kappa,this->entry_i, this->entry_j, this->num_flux);
+					return new EulerS::EulerBoundaryBilinearForm(kappa,this->entry_i, this->entry_j);
     }
 
 
@@ -314,7 +347,7 @@ else constant = 0.5;
 
 
 //------------------------------------------------------------------
-//----------------------------Linearforms---------------------------------
+//----------------------------Linearform Boundary---------------------------------
 //----------------------------------------------
 
 
@@ -328,18 +361,24 @@ else constant = 0.5;
 		double rho, rho_v_x, rho_v_y, rho_energy;
 int bdry; bool solid = false;
   double result = 0.;
-     double w_L[4], w_R[4];
+Mesh::MarkersConversion::StringValid marker_to_check = 
+static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
   for (int i = 0;i < n;i++) 
 {
-
-			if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0; }
-				else if(e->x[i]==8.){ 
-						bdry=4; solid==false;
-						//bdry = 1.;
-				}else if(e->x[i]==-2.){ 
-						bdry =3.; solid==false;
-						//bdry =2.;
-				}else throw Hermes::Exceptions::Exception("boundary");
+			if(marker_to_check.marker == "out")
+			{
+				bdry =4;		
+			}else if(marker_to_check.marker == "in")
+			{	
+				bdry=3;
+	
+			}else if(marker_to_check.marker == "wallr")
+			{		solid = true; bdry =0;
+			}else if(marker_to_check.marker == "walll")
+			{
+				solid = true; bdry =0;	
+			}else 
+				printf("nothing");
 
 			rho = ext[0]->val[i];  
 			rho_v_x = ext[1]->val[i]; 
@@ -351,6 +390,7 @@ int bdry; bool solid = false;
 				rho_v_x_ext = ext[5]->val[i];
 				rho_v_y_ext = ext[6]->val[i];
 				rho_energy_ext = ext[7]->val[i];
+
 			
 
 (static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
@@ -373,20 +413,6 @@ int bdry; bool solid = false;
 		if(bdry!=1)		
 			result -= wt[i]*v->val[i]* 0.5 * 
 								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
-
-
-     /*   w_L[0] = ext[0]->val[i];
-        w_L[1] = ext[1]->val[i];
-        w_L[2] = ext[2]->val[i];
-        w_L[3] = ext[3]->val[i];
-
-        w_R[0] = new_variables[0];
-        w_R[1] = new_variables[1];
-        w_R[2] = new_variables[2];
-        w_R[3] = new_variables[3];
-
-        result += wt[i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[i], e->ny[i]) * v->val[i];*/
-
 
 
 				}else{//solid wall ->no mirror
@@ -412,6 +438,6 @@ int bdry; bool solid = false;
 
     VectorFormSurf<double>* EulerS::EulerBoundaryLinearform::clone() const
     {
-					return new EulerS::EulerBoundaryLinearform(this->kappa, this->entry_i, this->num_flux);
+					return new EulerS::EulerBoundaryLinearform(this->kappa, this->entry_i);
     }
 
