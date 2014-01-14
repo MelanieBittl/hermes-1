@@ -19,7 +19,7 @@ using namespace Hermes::Solvers;
 #include "artificial_diffusion.cpp"
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
-const int P_INIT =1;       						// Initial polynomial degree.
+const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 0.1;//1e-5;
 const double T_FINAL = 60000000.;                       // Time interval length. 
 
@@ -98,22 +98,18 @@ bool serendipity = true;
 	/*	SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
-/*
+		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));*/
+
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
-	/*SpaceSharedPtr<double> space_rho(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));
 
-	*/	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
+		/*SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
+		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
 
 
 	int dof_rho = space_rho->get_num_dofs();
@@ -192,21 +188,21 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
  
 	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
 //NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
-NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 //NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
 //NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
-	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
-	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
+	EulerInterface wf_DG_init(KAPPA,mesh, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
+	EulerInterface wf_DG(KAPPA,mesh, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
 	EulerK wf_convection_init(KAPPA,init_rho, init_rho_v_x, init_rho_v_y, init_e);
 	EulerK wf_convection(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass;
 
 	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, false);
-	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,false);
+	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, false);
 
 
 
@@ -258,7 +254,7 @@ MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
 	char title[100];	
 double norm = 1000;
 double norm_rel = 1000;
-double residual = 0.;
+double residual = 10.;
 
 		Space<double>::assign_dofs(spaces);
 		  dp_mass.assemble(mass_matrix);
@@ -269,7 +265,8 @@ mass_matrix->multiply_with_Scalar(1./time_step);
 do
 {	 
   //if(ts  % 100 == 1)
-	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, norm =%f, norm_rel = %f, res = %f", ts, current_time, ndof, norm, norm_rel,residual); 	  
+	//Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, norm =%f, norm_rel = %f, res = %f", ts, current_time, ndof, norm, norm_rel,residual); 
+Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res = %f", ts, current_time, ndof, residual); 	  
  	
  	 if(ts!=1){
 
@@ -318,6 +315,9 @@ matrix->add_sparse_matrix(lumped_matrix);
 
 }else */
 
+if(residual<1e-2)
+mass_matrix->multiply_with_Scalar(1./10.);
+
 matrix->add_sparse_matrix(mass_matrix); 
 
 //matrix_2->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
@@ -356,8 +356,10 @@ for(int i = 1; i<ndof; i++)
 			}catch(Hermes::Exceptions::Exception e){
 				e.print_msg();
 			}	
-			norm = get_l2_norm(solver->get_sln_vector(), ndof);	
-		Solution<double>::vector_to_solutions(solver->get_sln_vector(), spaces, diff_slns);	
+for(int i=0; i<ndof;i++)		
+					coeff_vec_2[i]= solver->get_sln_vector()[i] - coeff_vec[i];
+			norm = get_l2_norm(coeff_vec_2, ndof);	
+		Solution<double>::vector_to_solutions(coeff_vec_2, spaces, diff_slns);	
 
 		for(int i=0; i<ndof;i++)		
 					coeff_vec[i]= solver->get_sln_vector()[i];
@@ -380,7 +382,7 @@ for(int i = 1; i<ndof; i++)
                         vel_y->reinit();
                         s2.show(vel_x);
                         s3.show(vel_y);*/
-                        MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
+             /*           MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
                         sprintf(title, "Pressure: ts=%i",ts);
                         pressure_view.set_title(title);
                         pressure->reinit();
@@ -395,7 +397,7 @@ for(int i = 1; i<ndof; i++)
                         sprintf(title, "Density: ts=%i",ts);
                         s1.set_title(title);
                         s1.show(prev_rho);
-				s5.show(diff_slns[0]);
+				s5.show(diff_slns[0]);*/
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -444,9 +446,25 @@ if(diff!=NULL) delete diff;
 double abs = get_l2_norm(coeff_vec, ndof);
 norm_rel= norm/abs;
 
+int bound = 0;
+for(int i = 0;	i<10; i++)
+{
+	if(residual < 1./std::pow(10,i)) bound = i;
+	else break;
+}
+Hermes::Mixins::Loggable::Static::info("res = %f < 10^(-%i)", residual, bound); 	  
+ 	
+FILE * pFile;
+pFile = fopen ("residual.txt","a");
+    fprintf (pFile,"res = %f < 10^(-%i), norm =%f, norm_rel = %f \n", residual, bound, norm, norm_rel);
+fclose (pFile);
 
-}while ((current_time < T_FINAL)||(norm <1e-12)||(norm_rel<1e-08));
 
+
+}//while ((current_time < T_FINAL)||(  norm <1e-12)||(norm_rel<1e-08));
+while ((current_time < T_FINAL)&&(residual>1e-10));
+
+if(residual<=1e-8) printf("Residual small enough");
 
 
 Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time); 	  
@@ -456,7 +474,17 @@ Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time);
 
 				pressure->reinit();
 				mach->reinit();
-			  char filename[40];
+
+        Linearizer lin_p;
+			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", true);
+        Linearizer lin_m;
+			lin_m.save_solution_vtk(mach, "m_end.vtk", "mach", true);
+        Linearizer lin_rho;
+			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
+
+
+
+	/*		  char filename[40];
 			  sprintf(filename, "p-%i.vtk", ts );
 
         Linearizer lin_p;
@@ -468,13 +496,7 @@ sprintf(filename, "m-%i.vtk", ts );
 
 sprintf(filename, "rho-%i.vtk", ts );
         Linearizer lin_rho;
-			lin_rho.save_solution_vtk(prev_slns[0], filename, "density", true);
-
-
-/*
-Orderizer ord_space;
-ord_space.save_orders_vtk(spaces[0], "space.vtk");*/
-
+			lin_rho.save_solution_vtk(prev_slns[0], filename, "density", true);*/
 
 
 		//Cleanup

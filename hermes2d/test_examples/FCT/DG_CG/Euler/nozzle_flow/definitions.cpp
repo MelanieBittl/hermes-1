@@ -190,23 +190,41 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
   double result = 0.;
 Mesh::MarkersConversion::StringValid marker_to_check = 
 static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
+
+double nx, ny, tx, ty;
+/*
+Element* elem = static_cast<EulerS*>(wf)->mesh->get_element_fast(e->id);
+ int a = e->isurf; int b = elem->next_vert(a);
+double ny =  elem->vn[a]->x - elem->vn[b]->x  ;
+double nx = elem->vn[b]->y - elem->vn[a]->y ;
+double norm = std::sqrt(nx*nx+ny*ny);
+ny*=1./norm; nx*=1./norm;
+double tx = -ny; double ty = nx;
+*/
+
   for (int i = 0;i < n;i++) 
   {	
-		/*	if(marker_to_check.marker == "out")
+			/*if(marker_to_check.marker == "out")
 			{
-				bdry =4;solid = false;		
+				bdry =4;solid = false;		continue;
 			}else if(marker_to_check.marker == "in")
 			{	
-				bdry=3;solid = false;	
+				bdry=3;solid = false;	continue;
 			}else if(marker_to_check.marker == "solid")
 			{		solid = true; bdry =0;
 			}else throw Hermes::Exceptions::Exception("boundary");*/
+
+
+nx = e->nx[i];
+ny = e->ny[i];
+tx = e->tx[i];
+ty = e->ty[i];
 	
 				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
-				else if(e->x[i]==8.){ continue;
+				else if(e->x[i]==8.){ //continue;
 					bdry=4;solid==false; //sub out
 					//	bdry = 1.;  //sup out
-				}else if(e->x[i]==-2.){ continue;
+				}else if(e->x[i]==-2.){ //continue;
 					bdry =3.;solid==false;  //sub in
 					//	bdry =2.;  //sup in
 				}else throw Hermes::Exceptions::Exception("boundary");
@@ -222,27 +240,27 @@ static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marke
 					//	bdry =2.;  //sup in
 				}else throw Hermes::Exceptions::Exception("boundary");*/
 
-(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
+(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
 
 if(bdry==1) constant =1.;
 else constant = 0.5;
 
 
 			if(bdry!=1){
-					Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i,A_n); //ite-Zeile A_n
+					Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i,A_n); //ite-Zeile A_n
 
 				if(bdry!=2) 
 				{
-						(static_cast<EulerS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
+						(static_cast<EulerS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny ,tx, ty, ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
 				}
 			}
 
 				
         result += wt[i] * u->val[i] *v->val[i]* constant*
         ( (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
-          * e->nx[i] +
+          * nx +
          (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j)  
-          * e->ny[i]);
+          * ny);
 					 	
 
 			if (bdry==2)
@@ -252,9 +270,9 @@ else constant = 0.5;
 				for(int k =0;k<4;k++)
 				{result += wt[i]*v->val[i] *u->val[i]*0.5*(
 					((static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],0,entry_i,k) 
-									  * e->nx[i]+
+									  * nx+
 					(static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],1,entry_i,k) 
-									  * e->ny[i] -A_n[k])* dudu_j[k]);
+									  * ny -A_n[k])* dudu_j[k]);
 				} 
 			}
 			
@@ -262,27 +280,27 @@ else constant = 0.5;
 				if(entry_i==1)
 				{
 						if(entry_j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->nx[i]*
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*nx*
 						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);		
 	
 						}else if(entry_j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->nx[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*nx;
 						}else if(entry_j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->nx[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*nx;
 						}else if(entry_j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->nx[i];
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*nx;
 						}
 				}else if(entry_i==2)
 				{
 						if(entry_j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->ny[i]*
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*ny*
 						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);			
 						}else if(entry_j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->ny[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*ny;
 						}else if(entry_j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*ny;
 						}else if(entry_j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->ny[i];
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ny;
 						}
 
 				}
@@ -329,16 +347,44 @@ else constant = 0.5;
 int bdry; bool solid = false;
   double result = 0.;
      double w_L[4], w_R[4];
+double nx, ny, tx, ty;
+Mesh::MarkersConversion::StringValid marker_to_check = 
+static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
+
+/*
+Element* elem = static_cast<EulerS*>(wf)->mesh->get_element_fast(e->id);
+ int a = e->isurf; int b = elem->next_vert(a);
+double ny =  elem->vn[a]->x - elem->vn[b]->x  ;
+double nx = elem->vn[b]->y - elem->vn[a]->y ;
+double norm = std::sqrt(nx*nx+ny*ny);
+ny*=1./norm; nx*=1./norm;
+double tx = -ny; double ty = nx;
+*/
   for (int i = 0;i < n;i++) 
 {
+
+	/*	if(marker_to_check.marker == "out")
+			{
+				bdry =4;solid = false;	
+			}else if(marker_to_check.marker == "in")
+			{	
+				bdry=3;solid = false;	
+			}else if(marker_to_check.marker == "solid")
+			{		solid = true; bdry =0;
+			}else throw Hermes::Exceptions::Exception("boundary");*/
+
+nx = e->nx[i];
+ny = e->ny[i];
+tx = e->tx[i];
+ty = e->ty[i];
 
 			if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0; }
 				else if(e->x[i]==8.){ 
 						bdry=4; solid==false;
-						//bdry = 1.;
+						bdry = 1.;
 				}else if(e->x[i]==-2.){ 
 						bdry =3.; solid==false;
-						//bdry =2.;
+						bdry =2.;
 				}else throw Hermes::Exceptions::Exception("boundary");
 
 			rho = ext[0]->val[i];  
@@ -353,17 +399,17 @@ int bdry; bool solid = false;
 				rho_energy_ext = ext[7]->val[i];
 			
 
-(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
+(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
 					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];	
 
 				for(int k =0; k<4;k++)
 				{
-							  result += wt[i] *e->nx[i]*v->val[i]*0.5* (new_variables[k]*
+							  result += wt[i] *nx*v->val[i]*0.5* (new_variables[k]*
 							   (static_cast<EulerS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,0,entry_i,k) 
 									+	ext[k]->val[i]
 							  * (static_cast<EulerS*>(wf))->euler_fluxes->A(rho, rho_v_x, rho_v_y, rho_energy,0,entry_i,k)) ;
-							  result += wt[i]* e->ny[i]*v->val[i]*0.5*( new_variables[k]*
+							  result += wt[i]* ny*v->val[i]*0.5*( new_variables[k]*
 							   (static_cast<EulerS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,1,entry_i,k) 
 										+ext[k]->val[i]
 							  * (static_cast<EulerS*>(wf))->euler_fluxes->A(rho, rho_v_x, rho_v_y, rho_energy,1,entry_i,k)) ;
@@ -372,10 +418,10 @@ int bdry; bool solid = false;
 
 		if(bdry!=1)		
 			result -= wt[i]*v->val[i]* 0.5 * 
-								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
+								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, nx, ny,  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
 
 
-     /*   w_L[0] = ext[0]->val[i];
+      /*  w_L[0] = ext[0]->val[i];
         w_L[1] = ext[1]->val[i];
         w_L[2] = ext[2]->val[i];
         w_L[3] = ext[3]->val[i];
@@ -385,15 +431,15 @@ int bdry; bool solid = false;
         w_R[2] = new_variables[2];
         w_R[3] = new_variables[3];
 
-        result += wt[i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, e->nx[i], e->ny[i]) * v->val[i];*/
+        result += wt[i] * this->num_flux->numerical_flux_i(this->i, w_L, w_R, nx, ny) * v->val[i];*/
 
 
 
 				}else{//solid wall ->no mirror
 						if(entry_i==1)
-							result += wt[i]*v->val[i]*e->nx[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
+							result += wt[i]*v->val[i]*nx*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
 						else if(entry_i==2)
-							result += wt[i]*v->val[i]*e->ny[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
+							result += wt[i]*v->val[i]*ny*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
 				}
 			
 			

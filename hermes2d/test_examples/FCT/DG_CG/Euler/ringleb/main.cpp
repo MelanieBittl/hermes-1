@@ -364,7 +364,8 @@ do
 {	 
   //if(ts  % 100 == 1)
 	//Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, norm =%f, norm_rel = %f", ts, current_time, ndof, norm, norm_rel); 	  
-	Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, norm =%f, norm_rel = %f, res = %f", ts, current_time, ndof, norm, norm_rel,residual); 		
+	//Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, norm =%f, norm_rel = %f, res = %f", ts, current_time, ndof, norm, norm_rel,residual); 	
+Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res = %f", ts, current_time, ndof, residual); 	
  	 if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
 			dp_bdry.assemble(dS_matrix, vec_bdry);
