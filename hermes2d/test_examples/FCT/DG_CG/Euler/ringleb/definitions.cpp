@@ -389,9 +389,7 @@ static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marke
 				rho_ext = ext[4]->val[i];
 				rho_v_x_ext = ext[5]->val[i];
 				rho_v_y_ext = ext[6]->val[i];
-				rho_energy_ext = ext[7]->val[i];
-
-			
+				rho_energy_ext = ext[7]->val[i];			
 
 (static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 

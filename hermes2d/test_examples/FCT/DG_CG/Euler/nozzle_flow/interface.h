@@ -61,7 +61,7 @@ protected:
   class  EulerEquationsBilinearFormFlux : public MatrixFormDG<double>
   {
   public:
-    EulerEquationsBilinearFormFlux(int i, int j, double kappa ) : MatrixFormDG<double>(i, j), kappa(kappa)
+    EulerEquationsBilinearFormFlux(int i, int j, double kappa,NumericalFlux* num_flux ) : MatrixFormDG<double>(i, j), kappa(kappa),num_flux(num_flux)
     {
     };
 
@@ -73,6 +73,7 @@ protected:
     MatrixFormDG<double>* clone() const;
 
 double kappa;
+NumericalFlux* num_flux;
 
 
   };

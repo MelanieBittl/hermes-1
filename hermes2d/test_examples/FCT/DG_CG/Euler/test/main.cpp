@@ -15,7 +15,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
-const double time_step = 1e-3;
+const double time_step = 1e-2;
 const double T_FINAL = 0.5;                       // Time interval length. 
 
 const double theta = 1.;
@@ -194,8 +194,8 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
-	EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
-	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
+		EulerInterface wf_DG_init(KAPPA,mesh, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
+	EulerInterface wf_DG(KAPPA,mesh, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
 	EulerK wf_convection_init(KAPPA,init_rho, init_rho_v_x, init_rho_v_y, init_e);
 	EulerK wf_convection(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
@@ -267,21 +267,21 @@ do
  	 if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
 			dp_bdry.assemble(dS_matrix, vec_bdry);
-			dp_DG.assemble(vec_dg);	
-		  	//dp_DG.assemble(dg_matrix,vec_dg);	
+			//dp_DG.assemble(vec_dg);	
+		  	dp_DG.assemble(dg_matrix,vec_dg);	
 		}else{
 			dp_init.assemble(K_matrix, vec_conv);
 			dp_bdry_init.assemble(dS_matrix, vec_bdry);
-				dp_DG.assemble(vec_dg);	
-		 	//dp_DG_init.assemble(dg_matrix,vec_dg);	
+			//	dp_DG.assemble(vec_dg);	
+		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}
 
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
 
-//matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-//matrix->add_sparse_matrix(K_matrix);
+matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+matrix->add_sparse_matrix(K_matrix);
 
-		matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
 		matrix->add_sparse_matrix(dS_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 		matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
@@ -317,7 +317,7 @@ do
 	
 
 			// Visualize the solution.
-           /*    MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+               MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
                 MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));
                         sprintf(title, "vx: ts=%i",ts);        
                         s2.set_title(title);
@@ -349,7 +349,7 @@ radius_view.show(radius);
                         s1.show(prev_rho);
 						s4.show(prev_e);
 				//s5.show(diff_slns[0]);
-*/
+
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
 if(current_time == 0.3){

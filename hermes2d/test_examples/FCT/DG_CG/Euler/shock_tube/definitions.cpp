@@ -232,10 +232,15 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 	bool solid = false;
 	double constant = 1.;
   double result = 0.;
+double nx, ny, tx, ty;
   for (int i = 0;i < n;i++) 
   {		
 				if((e->x[i]==-0.5)||(e->x[i]==0.5))	{	solid = true; bdry =0;}
-				else solid = false;
+				else{solid = false;}
+nx = e->nx[i];
+ny = e->ny[i];
+tx = e->tx[i];
+ty = e->ty[i];
 
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
@@ -245,28 +250,27 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 				else throw Hermes::Exceptions::Exception("boundary");
 
 
-
-(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
+(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
 
 if(bdry==1) constant =1.;
 else constant = 0.5;
 
 
 			if(bdry!=1){
-					Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i,A_n); //ite-Zeile A_n
+					Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i,A_n); //ite-Zeile A_n
 
 				if(bdry!=2) 
 				{
-						(static_cast<EulerS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
+						(static_cast<EulerS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny ,tx, ty, ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
 				}
 			}
 
 				
         result += wt[i] * u->val[i] *v->val[i]* constant*
         ( (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
-          * e->nx[i] +
+          * nx +
          (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j)  
-          * e->ny[i]);
+          * ny);
 					 	
 
 			if (bdry==2)
@@ -276,9 +280,9 @@ else constant = 0.5;
 				for(int k =0;k<4;k++)
 				{result += wt[i]*v->val[i] *u->val[i]*0.5*(
 					((static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],0,entry_i,k) 
-									  * e->nx[i]+
+									  * nx+
 					(static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],1,entry_i,k) 
-									  * e->ny[i] -A_n[k])* dudu_j[k]);
+									  * ny -A_n[k])* dudu_j[k]);
 				} 
 			}
 			
@@ -286,27 +290,27 @@ else constant = 0.5;
 				if(entry_i==1)
 				{
 						if(entry_j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->nx[i]*
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*nx*
 						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);		
 	
 						}else if(entry_j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->nx[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*nx;
 						}else if(entry_j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->nx[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*nx;
 						}else if(entry_j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->nx[i];
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*nx;
 						}
 				}else if(entry_i==2)
 				{
 						if(entry_j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->ny[i]*
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*ny*
 						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);			
 						}else if(entry_j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->ny[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*ny;
 						}else if(entry_j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*ny;
 						}else if(entry_j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->ny[i];
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ny;
 						}
 
 				}

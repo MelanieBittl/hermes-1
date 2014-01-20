@@ -188,19 +188,11 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 	bool solid = false;
 	double constant = 1.;
   double result = 0.;
+ double w_L[4], w_R[4];
 Mesh::MarkersConversion::StringValid marker_to_check = 
 static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
 
 double nx, ny, tx, ty;
-/*
-Element* elem = static_cast<EulerS*>(wf)->mesh->get_element_fast(e->id);
- int a = e->isurf; int b = elem->next_vert(a);
-double ny =  elem->vn[a]->x - elem->vn[b]->x  ;
-double nx = elem->vn[b]->y - elem->vn[a]->y ;
-double norm = std::sqrt(nx*nx+ny*ny);
-ny*=1./norm; nx*=1./norm;
-double tx = -ny; double ty = nx;
-*/
 
   for (int i = 0;i < n;i++) 
   {	
@@ -223,22 +215,12 @@ ty = e->ty[i];
 				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 				else if(e->x[i]==8.){ //continue;
 					bdry=4;solid==false; //sub out
-					//	bdry = 1.;  //sup out
 				}else if(e->x[i]==-2.){ //continue;
 					bdry =3.;solid==false;  //sub in
-					//	bdry =2.;  //sup in
 				}else throw Hermes::Exceptions::Exception("boundary");
 
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
-			/*	if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
-				else if(e->x[i]==8.){ 
-					bdry=4; //sub out
-					//	bdry = 1.;  //sup out
-				}else if(e->x[i]==-2.){ 
-					bdry =3.;  //sub in
-					//	bdry =2.;  //sup in
-				}else throw Hermes::Exceptions::Exception("boundary");*/
 
 (static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
 
@@ -255,7 +237,53 @@ else constant = 0.5;
 				}
 			}
 
-				
+/*
+        w_L[0] = ext[0]->val[i];
+        w_L[1] = ext[1]->val[i];
+        w_L[2] = ext[2]->val[i];
+        w_L[3] = ext[3]->val[i];
+
+        w_R[0] = ghost_state[0];
+        w_R[1] = ghost_state[1];
+        w_R[2] = ghost_state[2];
+        w_R[3] = ghost_state[3];
+
+
+	double s_right = std::fabs(((nx * w_R[1]) + (ny * w_R[2])) / w_R[0]) + QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->kappa);
+	double s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]) + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->kappa);
+
+if((bdry==4)||(bdry==0))
+{
+	if(entry_i==entry_j) result += wt[i]*v->val[i]*u->val[i]*std::max(s_left, s_right)*0.5;
+ result += wt[i] * u->val[i] *v->val[i]*0.5*
+        ( (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
+          * nx +
+         (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j)  
+          * ny);
+
+				for(int k =0;k<4;k++)
+				{result += wt[i]*v->val[i] *u->val[i]*0.5*(
+					((static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],0,entry_i,k) 
+									  * nx+
+					(static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],1,entry_i,k) 
+									  * ny )* dudu_j[k]);
+					if(k==entry_i)result -= wt[i]*v->val[i] *u->val[i]*0.5*dudu_j[k]*std::max(s_left, s_right);
+				} 
+
+
+}else{
+ result += wt[i] * u->val[i] *v->val[i]*
+        ( (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
+          * nx +
+         (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j)  
+          * ny);
+
+
+}*/
+
+
+
+			
         result += wt[i] * u->val[i] *v->val[i]* constant*
         ( (static_cast<EulerS*>(wf))->euler_fluxes->A(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
           * nx +
@@ -351,15 +379,7 @@ double nx, ny, tx, ty;
 Mesh::MarkersConversion::StringValid marker_to_check = 
 static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
 
-/*
-Element* elem = static_cast<EulerS*>(wf)->mesh->get_element_fast(e->id);
- int a = e->isurf; int b = elem->next_vert(a);
-double ny =  elem->vn[a]->x - elem->vn[b]->x  ;
-double nx = elem->vn[b]->y - elem->vn[a]->y ;
-double norm = std::sqrt(nx*nx+ny*ny);
-ny*=1./norm; nx*=1./norm;
-double tx = -ny; double ty = nx;
-*/
+
   for (int i = 0;i < n;i++) 
 {
 
@@ -380,11 +400,9 @@ ty = e->ty[i];
 
 			if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0; }
 				else if(e->x[i]==8.){ 
-						bdry=4; solid==false;
-						bdry = 1.;
+						bdry=4; solid==false; 				
 				}else if(e->x[i]==-2.){ 
-						bdry =3.; solid==false;
-						bdry =2.;
+						bdry =3.; solid==false;					
 				}else throw Hermes::Exceptions::Exception("boundary");
 
 			rho = ext[0]->val[i];  
@@ -421,7 +439,7 @@ ty = e->ty[i];
 								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, nx, ny,  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
 
 
-      /*  w_L[0] = ext[0]->val[i];
+  /*      w_L[0] = ext[0]->val[i];
         w_L[1] = ext[1]->val[i];
         w_L[2] = ext[2]->val[i];
         w_L[3] = ext[3]->val[i];
@@ -460,4 +478,7 @@ ty = e->ty[i];
     {
 					return new EulerS::EulerBoundaryLinearform(this->kappa, this->entry_i, this->num_flux);
     }
+
+
+
 

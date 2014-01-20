@@ -884,7 +884,7 @@ void LaxFriedrichsNumericalFlux::numerical_flux(double result[4], double w_L[4],
     second_flux[i] = 0.5 * (second_flux_left[i] + second_flux_right[i]);
 
   for(int i = 0; i < 4; i++)
-    result[i] = (first_flux[i] * nx) + (second_flux[i] * ny) - (std::max(s_left, s_right) * (w_R[i] - w_L[i]));
+    result[i] = (first_flux[i] * nx) + (second_flux[i] * ny) - (std::max(s_left, s_right)*0.5 * (w_R[i] - w_L[i]));
 }
 
 double LaxFriedrichsNumericalFlux::numerical_flux_i(int component, double w_L[4], double w_R[4],

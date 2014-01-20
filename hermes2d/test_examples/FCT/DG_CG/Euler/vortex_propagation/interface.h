@@ -12,7 +12,7 @@ class EulerInterface : public WeakForm<double>
 {
 public:
 
-  EulerInterface(double kappa, MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy,NumericalFlux* num_flux,  EulerFluxes* euler_fluxes,
+  EulerInterface(double kappa, MeshSharedPtr mesh,MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy,NumericalFlux* num_flux,  EulerFluxes* euler_fluxes,
 RiemannInvariants* riemann_invariants,int num_of_equations = 4);
 
 	~EulerInterface();
@@ -22,6 +22,7 @@ RiemannInvariants* riemann_invariants,int num_of_equations = 4);
 
   // Members.
 NumericalFlux* num_flux;
+MeshSharedPtr mesh;
   EulerFluxes* euler_fluxes;
 RiemannInvariants* riemann_invariants;
 
@@ -60,7 +61,7 @@ protected:
   class  EulerEquationsBilinearFormFlux : public MatrixFormDG<double>
   {
   public:
-    EulerEquationsBilinearFormFlux(int i, int j, double kappa ) : MatrixFormDG<double>(i, j), kappa(kappa)
+    EulerEquationsBilinearFormFlux(int i, int j, double kappa,NumericalFlux* num_flux ) : MatrixFormDG<double>(i, j), kappa(kappa),num_flux(num_flux)
     {
     };
 
@@ -72,6 +73,7 @@ protected:
     MatrixFormDG<double>* clone() const;
 
 double kappa;
+NumericalFlux* num_flux;
 
 
   };

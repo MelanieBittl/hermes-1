@@ -155,16 +155,17 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
-
+	EulerInterface wf_DG_init(KAPPA,mesh, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
+	EulerInterface wf_DG(KAPPA,mesh, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
 
   EulerK   wf_K_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
   //EulerBoundary wf_boundary_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-EulerInterface wf_DG_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
+
 
   EulerEquationsWeakForm_Mass wf_mass;
   EulerK   wf_K(KAPPA,  prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   //EulerBoundary wf_boundary(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-	EulerInterface wf_DG(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
+
 
   EulerK   wf_K_low(KAPPA,low_rho, low_rho_v_x, low_rho_v_y, low_e  );
  // EulerBoundary wf_boundary_low(KAPPA,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e,low_rho, low_rho_v_x, low_rho_v_y, low_e  );

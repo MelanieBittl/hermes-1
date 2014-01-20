@@ -20,7 +20,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
-const double time_step = 0.1;//1e-5;
+const double time_step = 1.;//1e-5;
 const double T_FINAL = 60000000.;                       // Time interval length. 
 
 const double theta = 1.;
@@ -38,6 +38,10 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 
 // Set visual output for every nth step.
 const unsigned int EVERY_NTH_STEP = 1;
+
+
+
+
 
 int main(int argc, char* argv[])
 {
@@ -106,7 +110,7 @@ SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, 
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
 
-		/*SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
+	/*	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
@@ -185,13 +189,10 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 //------------
 
 	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
- 
-	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
-//NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
-NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
+
+NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
@@ -201,8 +202,8 @@ NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
 	EulerK wf_convection(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass;
 
-	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, false);
-	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, false);
+	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e,false);
+	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,false);
 
 
 
@@ -315,7 +316,8 @@ matrix->add_sparse_matrix(lumped_matrix);
 
 }else */
 
-if(residual<1e-2)
+
+if((residual<1e-3))
 mass_matrix->multiply_with_Scalar(1./10.);
 
 matrix->add_sparse_matrix(mass_matrix); 
@@ -382,7 +384,7 @@ for(int i=0; i<ndof;i++)
                         vel_y->reinit();
                         s2.show(vel_x);
                         s3.show(vel_y);*/
-             /*           MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
+                       MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
                         sprintf(title, "Pressure: ts=%i",ts);
                         pressure_view.set_title(title);
                         pressure->reinit();
@@ -397,7 +399,7 @@ for(int i=0; i<ndof;i++)
                         sprintf(title, "Density: ts=%i",ts);
                         s1.set_title(title);
                         s1.show(prev_rho);
-				s5.show(diff_slns[0]);*/
+				s5.show(diff_slns[0]);
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -462,7 +464,7 @@ fclose (pFile);
 
 
 }//while ((current_time < T_FINAL)||(  norm <1e-12)||(norm_rel<1e-08));
-while ((current_time < T_FINAL)&&(residual>1e-10));
+while ((current_time < T_FINAL)&&(residual>1e-12));
 
 if(residual<=1e-8) printf("Residual small enough");
 

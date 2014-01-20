@@ -1,5 +1,31 @@
 #include "initial_condition.h"
 
+double calculate_a(double x, double y, double kappa)
+{
+	double q = 0.5;	
+	double a =std::sqrt(1.-(kappa-1.)/2.*q*q);
+double rho, q_2, J, f_a, dJ,drho,dq_2,df_a, a_old;
+	for(int i = 0; i<100;i++)
+	{
+		rho = std::pow(a, (2./(kappa-1.)));
+		 q_2 = 2./(kappa-1.) * (1-a*a);
+			J = 1./a + 1./(3.*std::pow(a,3)) +1./(5.*std::pow(a,5))-0.5*std::log((1.+a)/(1-a));	
+		 f_a = std::pow(x+J*0.5, 2) + std::pow(y,2) - 1./(4*rho*rho*q_2*q_2);
+		if(std::fabs(f_a)<1e-10) break;
+		 dJ = -(1./(a*a) + 1./(std::pow(a,4)) +1./(std::pow(a,6))+1./(1-a*a));
+		 drho = 2./(kappa-1.)*std::pow(a, (2./(kappa-1.)-1.));
+		 dq_2 = -4./(kappa-1.) * a;
+		 df_a= 	(x+0.5*J)*dJ + 0.25*(1./std::pow(q_2,2)*2*drho/std::pow(rho,3)+2*dq_2/(rho*rho*std::pow(q_2,3)));
+
+		 a_old = a;
+		a = a_old - f_a/df_a;
+
+	}
+//printf("a= %f, f(a) = %f, f'(a) = %f \n", a, f_a, df_a);
+return a; 
+}
+
+
 //------------------- Initial condition ----------------
 
  void CustomInitialCondition_rho::derivatives(double x, double y, double& dx, double& dy) const {      
@@ -11,12 +37,10 @@
 
  double CustomInitialCondition_rho::value(double x, double y) const 
 	{    			
-		double q = 0.5;
-		double		a = std::sqrt(1.-(this->kappa-1.)/2.*q*q);
-		double		rho = std::pow(a, (2./(this->kappa-1.)));
+	double a = calculate_a(x,y, this->kappa)	; 
+	double	rho = std::pow(a, (2./(kappa-1.)));
 
-//return rho;
-	return 0.5;			
+return rho;	
 };
 
  Ord CustomInitialCondition_rho::ord(double x, double y)   const {
@@ -36,10 +60,11 @@
  double CustomInitialCondition_rho_v_x::value(double x, double y) const 
 	{     
 
-		double q = 0.5;
-		double		a = std::sqrt(1.-(this->kappa-1.)/2.*q*q);
+		
+		double a = calculate_a(x,y, this->kappa); 
 		double		rho = std::pow(a, (2./(this->kappa-1.)));
-
+double q_2 = 2./(kappa-1.) * (1-a*a);
+double q = Hermes::sqrt(q_2)/2.;
 
 return q*rho;
 
@@ -67,17 +92,19 @@ return q*rho;
 
  double CustomInitialCondition_e::value(double x, double y) const 
 {  
-		double q = 0.5;
-		double		a = std::sqrt(1.-(this->kappa-1.)/2.*q*q);
+		
+		double a = calculate_a(x,y, this->kappa); 
 		double		rho = std::pow(a, (2./(this->kappa-1.)));
+double q_2 = 2./(kappa-1.) * (1-a*a);
+double q = Hermes::sqrt(q_2)/2.;
 
-//double pressure = 1./this->kappa*std::pow(a, (2.*this->kappa/(this->kappa-1.))); 
+double pressure = 1./this->kappa*std::pow(a, (2.*this->kappa/(this->kappa-1.))); 
 
-double pressure = 1./this->kappa*std::pow(rho, this->kappa);
+
 
 double rho_v_x = rho*q;
 
-	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->kappa);
+	return QuantityCalculator::calc_energy(rho, rho_v_x ,rho_v_x, pressure, this->kappa);
 
 
 };
@@ -102,12 +129,12 @@ return new CustomInitialCondition_e(this->mesh,kappa);
 
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
-		double q = 0.5;
-		double		a = std::sqrt(1.-(this->kappa-1.)/2.*q*q);
-		double		rho = std::pow(a, (2./(this->kappa-1.)));
+	double a = calculate_a(x,y, this->kappa)	; 
+	double	rho = std::pow(a, (2./(kappa-1.)));
+
+return rho;	
 
 
-return rho;
 };
 
  Ord BoundaryCondition_rho::ord(double x, double y)   const {
@@ -129,10 +156,11 @@ return rho;
 
  double BoundaryCondition_rho_v_x::value(double x, double y) const 
 	{    			
-		double q = 0.5;
-		double		a = std::sqrt(1.-(this->kappa-1.)/2.*q*q);
+		
+		double a = calculate_a(x,y, this->kappa); 
 		double		rho = std::pow(a, (2./(this->kappa-1.)));
-
+double q_2 = 2./(kappa-1.) * (1-a*a);
+double q = Hermes::sqrt(q_2)/2.;
 
 return q*rho;
 };
@@ -158,16 +186,19 @@ return q*rho;
  double BoundaryCondition_rho_e::value(double x, double y) const 
 	{    			
 
-		double q = 0.5;
-		double		a = std::sqrt(1.-(this->kappa-1.)/2.*q*q);
+		double a = calculate_a(x,y, this->kappa); 
 		double		rho = std::pow(a, (2./(this->kappa-1.)));
+double q_2 = 2./(kappa-1.) * (1-a*a);
+double q = Hermes::sqrt(q_2)/2.;
 
 double pressure = 1./this->kappa*std::pow(a, (2.*this->kappa/(this->kappa-1.))); 
 
 
+
 double rho_v_x = rho*q;
 
-	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->kappa);
+	return QuantityCalculator::calc_energy(rho, rho_v_x ,rho_v_x, pressure, this->kappa);
+
 
 
 };
