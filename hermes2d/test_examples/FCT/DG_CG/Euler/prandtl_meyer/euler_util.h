@@ -359,10 +359,6 @@ class Boundary_helpers
 												0.5*(b_1-v_n/c_mean), 0.5*(-b_2*v_x_mean+n_x/c_mean), 0.5*(-b_2*v_y_mean+n_y/c_mean), 0.5*b_2,
 												n_x*v_y_mean-n_y*v_x_mean, n_y,  -n_x, 0};
 
-		/*u[0] = -rho;
-		u[1]= -rho_v_x;
-		u[2]= -rho_v_y;
-			u[3] = -rho_energy ;*/
 
 			double result =0.;
 

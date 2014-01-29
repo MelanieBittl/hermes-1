@@ -185,15 +185,17 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 	double constant = 1.;
   double result = 0.;
   for (int i = 0;i < n;i++) 
-  {		if(e->x[i]==-1.) continue;
+  {		
 				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+ 				else if(e->y[i]==1.){	solid = true; bdry =0;}
 				else solid = false;
 
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
 				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
 				else if(e->x[i]==-1.) bdry =2.;
+				else if(e->x[i]==1.){ bdry=1;}
+				//else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}				
 				else throw Hermes::Exceptions::Exception("boundary");
 
 
@@ -304,6 +306,7 @@ int bdry; bool solid = false;
   for (int i = 0;i < n;i++) 
 {
 if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+else if(e->y[i]==1.){	solid = true; bdry =0;}
 				else solid = false;
 
 			rho = ext[0]->val[i];  
@@ -319,8 +322,9 @@ if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 
 
 				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
-				else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
 				else if(e->x[i]==-1.) bdry =2.;
+				else if(e->x[i]==1.){ bdry=1;}
+				//else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
 				else throw Hermes::Exceptions::Exception("boundary");
 
 			

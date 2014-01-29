@@ -21,6 +21,9 @@ public:
 
   // Calculates enthalpy.
   static double enthalpy(double rho, double rho_v_x, double rho_v_y, double energy, double kappa);
+
+  // Calculates mach number.
+  static double calc_mach(double rho, double rho_v_x, double rho_v_y, double energy, double kappa);
 };
 
 //----------------------------------------------------------------------------------

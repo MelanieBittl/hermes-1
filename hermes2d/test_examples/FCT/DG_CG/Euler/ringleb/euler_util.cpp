@@ -47,6 +47,19 @@ double to_return= (rho_energy+ QuantityCalculator::calc_pressure(rho, rho_v_x, r
 return to_return;
 }
 
+
+  // Calculates mach.
+double QuantityCalculator::calc_mach(double rho, double rho_v_x, double rho_v_y, double rho_energy, double kappa){
+
+double c= QuantityCalculator::calc_sound_speed(rho, rho_v_x, rho_v_y,rho_energy,kappa);
+
+double to_return = std::sqrt(rho_v_x*rho_v_x+rho_v_y*rho_v_y)/(rho*c);
+
+
+return to_return;
+}
+
+
 //----------------------------------------------------------------------------------
 //----------------------Filters.--------------------------------------
 //----------------------------------------------------------------------------------

@@ -7,4 +7,5 @@ add_subdirectory("stationary_problem")
 add_subdirectory("stationary_problem_2")
 add_subdirectory("stationary_problem_convection_diffusion")
 add_subdirectory("Euler")
+add_subdirectory("Partikel")
 

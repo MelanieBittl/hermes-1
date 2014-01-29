@@ -901,7 +901,7 @@ double LaxFriedrichsNumericalFlux::numerical_flux_i(int component, double w_L[4]
   double second_flux_right = this->Euler_flux_2_i(component, w_R);
   double second_flux = 0.5 * (second_flux_left + second_flux_right);
 
-  return (first_flux * nx) + (second_flux * ny) - (std::max(s_left, s_right) * (w_R[component] - w_L[component]));
+  return (first_flux * nx) + (second_flux * ny) - (std::max(s_left, s_right) *0.5* (w_R[component] - w_L[component]));
 }
 
 void LaxFriedrichsNumericalFlux::Euler_flux_1(double state[4], double result[4])

@@ -5,4 +5,4 @@ add_subdirectory("rad_sym")
 add_subdirectory("nozzle_flow")
 add_subdirectory("ringleb")
 add_subdirectory("test")
-add_subdirectory("vortex_propagation")
+

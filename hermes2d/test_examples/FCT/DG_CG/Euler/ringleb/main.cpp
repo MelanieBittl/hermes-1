@@ -5,14 +5,17 @@
 #include "interface.h"
 #include "euler_flux.h"
 
-#include "mass_lumping.cpp"
-#include "artificial_diffusion.cpp"
+
 
 using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
+
+#include "mass_lumping.cpp"
+#include "artificial_diffusion.cpp"
+#include "util.cpp"
 
 const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
@@ -23,6 +26,10 @@ const double theta = 1.;
 
 // Equation parameters.  
  
+const bool DG = false;
+const bool FCT = true;
+
+const bool Newton_boost = false;
      
 // Kappa.
 const double KAPPA = 1.4; 
@@ -35,27 +42,20 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 // Set visual output for every nth step.
 const unsigned int EVERY_NTH_STEP = 1;
 
-bool equal(double x, double y)
-{
-		if(std::fabs(x-y)< 1e-10) return true;
-		else false;
-}
+
 
 int main(int argc, char* argv[])
 {
 
-
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 Element* e = NULL;
 Node* vn=NULL; 
 
-
-
   // Perform initial mesh refinements (optional).
-  for (int ref=0; ref < INIT_REF_NUM; ref++)
+  for (int ref=0; ref < INIT_REF_NUM-1; ref++)
 	{ 
 		basemesh->refine_all_elements();
 	}
@@ -83,7 +83,7 @@ double a, rho,q, p, J, k ;
 							break;	
 						}
 				}
-				if(int_node<0) printf("error");
+				if(int_node<0) printf("error111");
 				q= 0.5;
 				a = std::sqrt(1.-(KAPPA-1.)/2.*q*q);
 				rho = std::pow(a, (2./(KAPPA-1.)));
@@ -110,7 +110,7 @@ double a, rho,q, p, J, k ;
 				rho = std::pow(a, (2./(KAPPA-1.)));
 				p = 1./KAPPA*std::pow(a, (2.*KAPPA/(KAPPA-1.)));
 				J = 1./a + 1./(3.*std::pow(a,3)) +1./(5.*std::pow(a,5))-0.5*std::log((1.+a)/(1-a));			
-				vn->x = 1./(2.*rho)*(2./(k*k)-1./(q*q))-J/2.;
+				if(std::fabs(vn->x) == 1.)	vn->x = 1./(2.*rho)*(2./(k*k)-1./(q*q))-J/2.;
 
 
 			}else if(std::fabs(vn->x) == 1.)			
@@ -128,7 +128,7 @@ double a, rho,q, p, J, k ;
 							break;	
 						}
 				}
-				if(int_node==0) printf("error");
+				if(int_node==0) printf("error2222");
 				if(vn->x<0){k = 1.5; q = k-abs_node*h;  if(int_node>0) node_pair[0][int_node] = vn;
 				}else{ k = 0.7; q = k-abs_node*h*0.2;	if(int_node>0) node_pair[1][int_node] = vn; }
 				
@@ -167,21 +167,58 @@ int coord_y, coord_x;
 				if(vn->y >0) vn->y = vn_1->y + coord_x*delta_y;	
 				if(vn->y <0) vn->y = -(vn_1->y +coord_x*delta_y);				
 
+			}else if((vn->bnd)&&(vn->y== 0)){
+
+				for(int i = 1; i< (no_en_per_side); i++)
+					if(equal(vn->x,-1+i*h)){coord_x = i; break;}
+
+
+				vn_1 = node_pair[0][0];
+				vn_2 = node_pair[1][0];
+				double delta_x = (vn_2->x - vn_1->x)/no_en_per_side;
+				if(coord_x!= 0.) vn->x = vn_1->x + coord_x *delta_x;
+
+
+
 			}
 
 		}
 
 		
 
-				
+
+//basemesh->refine_towards_boundary("out",1,false,true);
+//basemesh->refine_towards_boundary("in",1,false,true);			
+//basemesh->refine_towards_boundary("walll",1,false, true);
+//basemesh->refine_towards_boundary("wallr",1,false, true);	
+
+/*
+	for_all_vertex_nodes(vn, basemesh)
+	{
+		if(vn->bnd)
+		{
+			if( boundary_test(vn->x, vn->y, KAPPA)== 0)
+			{
+				if(vn->x<0.1) //inner wall k = 1.5
+				{
+					//vn->x = calculate_x(1.5, vn->y, KAPPA);
+					vn->y = calculate_y(1.5, vn->x, KAPPA);
+	
+				}else if(vn->x>0.1) //outer wall, k = 0.7
+				{
+					vn->x = calculate_x(0.7, vn->y, KAPPA);
+			//vn->y = calculate_y(0.7, vn->x, KAPPA);
+				}	
+
+			}
+
+		}
+	}
+*/
 
 
+ mesh->copy(basemesh);
 
-/* MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
- meshview.show(basemesh);
-   View::wait();*/
-
- 	 mesh->copy(basemesh);
 double delta_x = 100; double delta_max= 0.;
 for_all_active_elements(e, basemesh)
 {
@@ -191,10 +228,10 @@ for_all_active_elements(e, basemesh)
 			if(delta_x>delta_max) delta_max = delta_x;
 		}
 }
-printf("CFL = %f \n", time_step/delta_max*0.5);
-
+printf("CFL = %f \n", time_step/delta_max*0.75);
 
 /*
+
    MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
  meshview.show(mesh);
    View::wait();*/
@@ -206,7 +243,7 @@ SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));*/
-/*
+
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
@@ -217,10 +254,10 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 		SpaceSharedPtr<double> space_rho_v_y(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));*/
 
-		SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
+	/*	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
+		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_I+NIT));	
+		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
 
 
 	int dof_rho = space_rho->get_num_dofs();
@@ -234,10 +271,17 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
   Hermes::Mixins::Loggable::Static::info("ndof: %d \n", ndof);
 
   // Initialize solutions, set initial conditions.
- MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
+
+
+MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
   MeshFunctionSharedPtr<double> init_rho_v_x(new  CustomInitialCondition_rho_v_x(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> init_rho_v_y(new  CustomInitialCondition_rho_v_x(mesh,KAPPA));	
+ MeshFunctionSharedPtr<double> init_rho_v_y(new  CustomInitialCondition_rho_v_y(mesh,KAPPA));	
   MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));
+
+ /*MeshFunctionSharedPtr<double> init_rho(new  BoundaryCondition_rho(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> init_rho_v_x(new   BoundaryCondition_rho_v_x(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> init_rho_v_y(new   BoundaryCondition_rho_v_y(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> init_e(new  BoundaryCondition_rho_e(mesh,KAPPA));*/
 
   	MeshFunctionSharedPtr<double> prev_rho(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_x(new Solution<double>);
@@ -251,10 +295,16 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
     MeshFunctionSharedPtr<double> diff_e(new Solution<double>);
 
 
-  MeshFunctionSharedPtr<double> boundary_rho(new BoundaryCondition_rho(mesh,KAPPA));	
+MeshFunctionSharedPtr<double> boundary_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_x(new  CustomInitialCondition_rho_v_x(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_y(new  CustomInitialCondition_rho_v_y(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(mesh,KAPPA));
+
+
+ /* MeshFunctionSharedPtr<double> boundary_rho(new BoundaryCondition_rho(mesh,KAPPA));	
   MeshFunctionSharedPtr<double> boundary_v_x(new  BoundaryCondition_rho_v_x(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> boundary_v_y(new  BoundaryCondition_rho_v_x(mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> boundary_e(new BoundaryCondition_rho_e(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_y(new  BoundaryCondition_rho_v_y(mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_e(new BoundaryCondition_rho_e(mesh,KAPPA));*/	
 
 	Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 	Hermes::vector<MeshFunctionSharedPtr<double> > init_slns(init_rho, init_rho_v_x, init_rho_v_y, init_e);
@@ -272,17 +322,22 @@ ScalarView s4("prev_e", new WinGeom(700, 700, 600, 300));
 
   ScalarView s5("diff_rho", new WinGeom(700, 0, 600, 300));
   ScalarView mach_view("mach", new WinGeom(0, 700, 600, 300));
-			//s2.set_min_max_range(-1.,1.);
+			s2.set_min_max_range(0.3,0.6);
 			//s3.set_min_max_range(-1.,1.);
-			//mach_view.set_min_max_range(0.0, 0.1);
+			mach_view.set_min_max_range(0.5, 1.5);
 			//pressure_view.set_min_max_range(0.68,0.72);
-			//s1.set_min_max_range(0.9, 1.6);
+			s1.set_min_max_range(0.2, 0.9);
 s5.set_min_max_range(-0.1,0.1);
 
                         s1.show(init_rho);
 						s4.show(init_e);
 s2.show(init_rho_v_x);
 						s3.show(init_rho_v_y);
+
+
+     MeshFunctionSharedPtr<double> mach_init(new MachNumberFilter(init_slns, KAPPA));
+
+                        mach_view.show(mach_init);
 
 Linearizer lin_p, lin_m, lin_rho;
 
@@ -291,13 +346,11 @@ Linearizer lin_p, lin_m, lin_rho;
 //------------
 
 	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
- 
-	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+
 //NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
-//NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
-NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
+NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
@@ -359,68 +412,87 @@ double residual = 10000.;
 
 		Space<double>::assign_dofs(spaces);
 		  dp_mass.assemble(mass_matrix);
-mass_matrix->multiply_with_Scalar(1./time_step);
-CSCMatrix<double> * lumped_matrix = massLumping(mass_matrix);
+if(time_step!=1.) mass_matrix->multiply_with_Scalar(1./time_step);
+CSCMatrix<double> * lumped_matrix;
+if(FCT) lumped_matrix = massLumping(mass_matrix);
 
 //Timestep loop
 do
 {	 
-  //if(ts  % 100 == 1)
-	//Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, norm =%f, norm_rel = %f", ts, current_time, ndof, norm, norm_rel); 	  
-	//Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, norm =%f, norm_rel = %f, res = %f", ts, current_time, ndof, norm, norm_rel,residual); 	
+
 Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res = %f", ts, current_time, ndof, residual); 	
- 	 //if(ts!=1){
+ 	// if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
 			dp_bdry.assemble(dS_matrix, vec_bdry);
-			//dp_DG.assemble(vec_dg);	
-		  	dp_DG.assemble(dg_matrix,vec_dg);	
+			if(DG) dp_DG.assemble(dg_matrix,vec_dg);	
 		/*}else{
 			dp_init.assemble(K_matrix, vec_conv);
-			dp_bdry_init.assemble(dS_matrix, vec_bdry);
-				//dp_DG.assemble(vec_dg);	
+			dp_bdry_init.assemble(dS_matrix, vec_bdry);					
 		 	//dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}*/
 
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
 
-matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-matrix->add_sparse_matrix(K_matrix);
+		if(DG) {
+			matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
+			matrix->add_sparse_matrix(K_matrix);
+		}else{
+			matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		}
 
-CSCMatrix<double>* diff= NULL;
+		CSCMatrix<double>* diff= NULL;
 
-/*matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
-	diff = artificialDiffusion(KAPPA,coeff_vec,spaces,dof_rho,dof_v_x, dof_v_y, dof_e,K_matrix);
-			 matrix->add_sparse_matrix(diff);*/
+		if(FCT)
+		{
+			diff = artificialDiffusion(KAPPA,coeff_vec,spaces,dof_rho,dof_v_x, dof_v_y, dof_e,K_matrix);
+			matrix->add_sparse_matrix(diff);
+		}
 
+		if(Newton_boost)
+		{
+			if((residual<1e-2))
+			{
+				if(FCT) lumped_matrix->multiply_with_Scalar(1./10.);
+				else mass_matrix->multiply_with_Scalar(1./10.);
+			}
+		}
 
 		matrix->add_sparse_matrix(dS_matrix);
-		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
-		matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
-//matrix->add_sparse_matrix(lumped_matrix); 
+		matrix->multiply_with_Scalar(-theta);  //-theta L(U)
+
+		if(FCT)	matrix->add_sparse_matrix(lumped_matrix); 
+		else	matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
+
 
 //matrix_2->create(diff->get_size(),diff->get_nnz(), diff->get_Ap(), diff->get_Ai(),diff->get_Ax());
 	//	matrix_2->multiply_with_Scalar(-theta);  //-theta L(U)	
 
+/*
 matrix_2->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
 matrix_2->zero();
 matrix_2->add_sparse_matrix(dS_matrix);
 matrix_2->multiply_with_Scalar(-theta);
+//matrix_2->add_sparse_matrix(lumped_matrix); 
 matrix_2->add_sparse_matrix(mass_matrix); 
 
-
+*/
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-		matrix_2->multiply_with_vector(coeff_vec, coeff_vec_2);
+		//matrix_2->multiply_with_vector(coeff_vec, coeff_vec_2);
+//mass_matrix->multiply_with_vector(coeff_vec, coeff_vec_2);
 		vec_rhs->zero(); 
-		vec_rhs->add_vector(coeff_vec_2); 		
+		//vec_rhs->add_vector(coeff_vec_2); 		
 		vec_rhs->add_vector(vec_bdry); 
-		//vec_rhs->add_vector(vec_conv); 
+		vec_rhs->add_vector(vec_conv); 
+		if(DG) vec_rhs->add_vector(vec_dg); 
+
+vec_res->zero();
 residual = 0;
-vec_res->add_vector(vec_dg); 
+		if(DG) vec_res->add_vector(vec_dg); 
 		vec_res->add_vector(vec_bdry); 
 		vec_res->add_vector(vec_conv); 
-for(int i = 1; i<ndof; i++)
-	residual +=vec_rhs->get(i)*vec_rhs->get(i);
+for(int i = 0; i<ndof; i++)
+	residual +=vec_res->get(i)*vec_res->get(i);
 
 
 	//-------------------------solution of lower order------------ (M/t - theta L(U))U^L = (M/t+(1-theta)L(U))U^n
@@ -430,13 +502,17 @@ for(int i = 1; i<ndof; i++)
 			}catch(Hermes::Exceptions::Exception e){
 				e.print_msg();
 			}	
-for(int i=0; i<ndof;i++)		
+			/*for(int i=0; i<ndof;i++)		
 					coeff_vec_2[i]= solver->get_sln_vector()[i] - coeff_vec[i];
 			norm = get_l2_norm(coeff_vec_2, ndof);	
-		Solution<double>::vector_to_solutions(coeff_vec_2, spaces, diff_slns);	
+		Solution<double>::vector_to_solutions(coeff_vec_2, spaces, diff_slns);*/	
+for(int i=0; i<ndof;i++)		
+					coeff_vec_2[i]= solver->get_sln_vector()[i];
+			norm = get_l2_norm(coeff_vec_2, ndof);	
+		Solution<double>::vector_to_solutions(coeff_vec_2, spaces, diff_slns);
 
 		for(int i=0; i<ndof;i++)		
-					coeff_vec[i]= solver->get_sln_vector()[i];
+					coeff_vec[i]+= solver->get_sln_vector()[i];
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
@@ -500,7 +576,7 @@ norm_rel= norm/abs;
 }while ((current_time < T_FINAL)&&(residual>1e-12));
 
 
-Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time); 	  
+Hermes::Mixins::Loggable::Static::info("end_time %3.5f, residual = %e",current_time,residual); 	  
 
 
 		MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));

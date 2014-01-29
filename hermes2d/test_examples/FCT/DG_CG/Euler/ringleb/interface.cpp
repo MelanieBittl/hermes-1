@@ -121,7 +121,6 @@ double nx, ny, tx, ty;
 	double s_right = std::fabs(((nx * w_R[1]) + (ny * w_R[2])) / w_R[0]) + QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->kappa);
 	double s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]) + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->kappa);
 
-
 	if(this->i==this->j) result += wt[point_i]*jump_v*jump_u*std::max(s_left, s_right)*0.5;
 
 

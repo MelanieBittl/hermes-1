@@ -18,9 +18,9 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
-const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 5e-4;
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int P_INIT = 1;       						// Initial polynomial degree.
+const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 1.;
@@ -155,11 +155,12 @@ CSCMatrix<double> * K_matrix = new CSCMatrix<double>;
  
     OGProjection<double> ogProjection;
 	Lumped_Projection lumpedProjection;
-
-/*double* coeff_vec_init = new double[ndof];
+/*
+double* coeff_vec_init = new double[ndof];
   ogProjection.project_global(spaces,init_slns, coeff_vec_init, norms_l2 );
-	Solution<double>::vector_to_solutions(coeff_vec_init, spaces, prev_slns);*/
-
+	Solution<double>::vector_to_solutions(coeff_vec_init, spaces, prev_slns);
+Space<double>::assign_dofs(spaces);
+*/
 
 //Projection of the initial condition
 
@@ -278,12 +279,11 @@ View::wait(HERMES_WAIT_KEYPRESS);
 
 	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
  
-	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
+
 //NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
-//NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
-NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
+NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
@@ -348,7 +348,7 @@ Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);*/
 			s3.show(vel_y);
   		pressure_view.show(pressure);
 //View::wait(HERMES_WAIT_KEYPRESS);
-
+Linearizer lin_p, lin_v_x, lin_v_y, lin_rho;
 
 //Timestep loop
 do
@@ -411,7 +411,7 @@ matrix_2->add_sparse_matrix(mass_matrix);
 			// Visualize the solution.
 
 
-			sprintf(title, "vx: ts=%i",ts);	
+		/*	sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);
 			sprintf(title, "vy: ts=%i",ts);	
 			s3.set_title(title);
@@ -428,7 +428,7 @@ matrix_2->add_sparse_matrix(mass_matrix);
 
 			sprintf(title, "Density: ts=%i",ts);
 			s1.set_title(title);
-			s1.show(prev_rho);
+			s1.show(prev_rho);*/
 
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
@@ -442,7 +442,20 @@ matrix_2->add_sparse_matrix(mass_matrix);
 		delete solver;
 		matrix->free();
 		matrix_2->free();
+if((current_time >= 0.12)&&(current_time < 0.121))
+{
+				pressure->reinit();
+				vel_x->reinit();
+				vel_y->reinit();
+			lin_p.save_solution_vtk(pressure, "p_12.vtk", "pressure", true);
+        
+			lin_v_x.save_solution_vtk(vel_x, "vx_12.vtk", "velocity_x", true);
+ 
+			lin_v_y.save_solution_vtk(vel_y, "vy_12.vtk", "velocity_y",true);
+     
+			lin_rho.save_solution_vtk(prev_slns[0], "rho_12.vtk", "density", true);
 
+}
 
 }while (current_time < T_FINAL);
 
@@ -459,13 +472,13 @@ matrix_2->add_sparse_matrix(mass_matrix);
 				pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
-        Linearizer lin_p;
+        
 			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", true);
-        Linearizer lin_v_x;
+        
 			lin_v_x.save_solution_vtk(vel_x, "vx_end.vtk", "velocity_x", true);
-        Linearizer lin_v_y;
+ 
 			lin_v_y.save_solution_vtk(vel_y, "vy_end.vtk", "velocity_y",true);
-        Linearizer lin_rho;
+     
 			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
 
 
@@ -477,6 +490,7 @@ matrix_2->add_sparse_matrix(mass_matrix);
 delete dS_matrix;
 delete dg_matrix;
 delete K_matrix;
+delete matrix_2;
 
 
 

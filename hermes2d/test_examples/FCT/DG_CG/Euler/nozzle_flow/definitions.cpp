@@ -177,6 +177,21 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
     }
     return wf;
     }
+
+double steigung(double x, double y)
+{
+if(y>0)
+ return (-0.25*0.5*PI*(Hermes::sin(PI*x/2.)));
+else
+ return (0.25*0.5*PI*(Hermes::sin(PI*x/2.)));
+}
+
+double normalized(double x, double y)
+{
+
+	return Hermes::sqrt(x*x+y*y);
+}
+
 //---Boudary Bilinearforms---------
    double EulerS::EulerBoundaryBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
       Geom<double> *e, Func<double>  **ext) const
@@ -189,28 +204,40 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 	double constant = 1.;
   double result = 0.;
  double w_L[4], w_R[4];
-Mesh::MarkersConversion::StringValid marker_to_check = 
-static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
 
 double nx, ny, tx, ty;
+double nx_ghost, ny_ghost, tx_ghost, ty_ghost;
 
   for (int i = 0;i < n;i++) 
   {	
-			/*if(marker_to_check.marker == "out")
-			{
-				bdry =4;solid = false;		continue;
-			}else if(marker_to_check.marker == "in")
-			{	
-				bdry=3;solid = false;	continue;
-			}else if(marker_to_check.marker == "solid")
-			{		solid = true; bdry =0;
-			}else throw Hermes::Exceptions::Exception("boundary");*/
 
 
 nx = e->nx[i];
 ny = e->ny[i];
 tx = e->tx[i];
 ty = e->ty[i];
+nx_ghost = nx;
+ny_ghost = ny;
+tx_ghost = tx;
+ty_ghost = ty;
+
+if((e->x[i]>0.)&&(e->x[i]<4.))
+{
+double m = steigung(e->x[i],e->y[i]);
+double norm = normalized(1,m);
+
+ if(e->y[i] <0)
+{
+	tx_ghost = 1./norm;
+	ty_ghost = m/norm;
+}else 
+{
+	tx_ghost = -1./norm;
+	ty_ghost = -m/norm;
+}
+	nx_ghost = ty_ghost; ny_ghost = -tx_ghost;
+
+}
 	
 				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 				else if(e->x[i]==8.){ //continue;
@@ -222,7 +249,7 @@ ty = e->ty[i];
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
 
-(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
+(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state(bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx_ghost,ny_ghost,tx_ghost,ty_ghost, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state, solid);
 
 if(bdry==1) constant =1.;
 else constant = 0.5;
@@ -375,28 +402,37 @@ if((bdry==4)||(bdry==0))
 int bdry; bool solid = false;
   double result = 0.;
      double w_L[4], w_R[4];
-double nx, ny, tx, ty;
-Mesh::MarkersConversion::StringValid marker_to_check = 
-static_cast<EulerS*>(wf)->mesh->get_boundary_markers_conversion().get_user_marker(e->edge_marker);
-
-
+double nx, ny, tx, ty, nx_ghost, ny_ghost, tx_ghost, ty_ghost;
   for (int i = 0;i < n;i++) 
 {
 
-	/*	if(marker_to_check.marker == "out")
-			{
-				bdry =4;solid = false;	
-			}else if(marker_to_check.marker == "in")
-			{	
-				bdry=3;solid = false;	
-			}else if(marker_to_check.marker == "solid")
-			{		solid = true; bdry =0;
-			}else throw Hermes::Exceptions::Exception("boundary");*/
 
 nx = e->nx[i];
 ny = e->ny[i];
 tx = e->tx[i];
 ty = e->ty[i];
+nx_ghost = nx;
+ny_ghost = ny;
+tx_ghost = tx;
+ty_ghost = ty;
+
+if((e->x[i]>0.)&&(e->x[i]<4.))
+{
+double m = steigung(e->x[i],e->y[i]);
+double norm = normalized(1,m);
+
+ if(e->y[i] <0)
+{
+	tx_ghost = 1./norm;
+	ty_ghost = m/norm;
+}else 
+{
+	tx_ghost = -1./norm;
+	ty_ghost = -m/norm;
+}
+	nx_ghost = ty_ghost; ny_ghost = -tx_ghost;
+}
+
 
 			if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0; }
 				else if(e->x[i]==8.){ 
@@ -417,7 +453,7 @@ ty = e->ty[i];
 				rho_energy_ext = ext[7]->val[i];
 			
 
-(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
+(static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx_ghost,ny_ghost,tx_ghost,ty_ghost, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
 					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];	
 

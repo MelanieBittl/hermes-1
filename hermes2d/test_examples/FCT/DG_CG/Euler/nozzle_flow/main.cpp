@@ -20,7 +20,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
-const double time_step = 1.;//1e-5;
+const double time_step = 0.5;//1e-5;
 const double T_FINAL = 60000000.;                       // Time interval length. 
 
 const double theta = 1.;
@@ -202,8 +202,8 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 	EulerK wf_convection(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass;
 
-	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e,false);
-	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,false);
+	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
 
 
 
@@ -317,7 +317,7 @@ matrix->add_sparse_matrix(lumped_matrix);
 }else */
 
 
-if((residual<1e-3))
+if((residual<1e-2))
 mass_matrix->multiply_with_Scalar(1./10.);
 
 matrix->add_sparse_matrix(mass_matrix); 
@@ -458,13 +458,14 @@ Hermes::Mixins::Loggable::Static::info("res = %f < 10^(-%i)", residual, bound);
  	
 FILE * pFile;
 pFile = fopen ("residual.txt","a");
-    fprintf (pFile,"res = %f < 10^(-%i), norm =%f, norm_rel = %f \n", residual, bound, norm, norm_rel);
+    fprintf (pFile,"res = %e < 10^(-%i), norm =%e, norm_rel = %e \n", residual, bound, norm, norm_rel);
 fclose (pFile);
 
 
 
-}//while ((current_time < T_FINAL)||(  norm <1e-12)||(norm_rel<1e-08));
-while ((current_time < T_FINAL)&&(residual>1e-12));
+}
+//while ((current_time < T_FINAL)&&(residual>1e-12));
+while ((ts < 100)&&(residual>1e-10));
 
 if(residual<=1e-8) printf("Residual small enough");
 

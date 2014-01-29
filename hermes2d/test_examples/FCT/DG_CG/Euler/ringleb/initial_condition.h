@@ -41,7 +41,20 @@ public:
 	double kappa;
 };
 
+class CustomInitialCondition_rho_v_y : public ExactSolutionScalar<double>
+{
+public:
+  CustomInitialCondition_rho_v_y(MeshSharedPtr mesh, double kappa) : ExactSolutionScalar<double>(mesh), kappa(kappa)  {};
+   ~CustomInitialCondition_rho_v_y(){};
 
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+ virtual Ord ord(double x, double y)  const ;
+  virtual MeshFunction<double>* clone() const;
+	double kappa;
+};
 
 class CustomInitialCondition_e : public ExactSolutionScalar<double>
 {
@@ -95,6 +108,22 @@ class BoundaryCondition_rho_v_x : public ExactSolutionScalar<double>
 public:
   BoundaryCondition_rho_v_x(MeshSharedPtr mesh, double kappa) : ExactSolutionScalar<double>(mesh), kappa(kappa), time(time)  {};
    ~BoundaryCondition_rho_v_x(){};
+
+  virtual void derivatives (double x, double y, double& dx, double& dy) const ;
+
+  virtual double value (double x, double y) const;
+
+ virtual Ord ord(double x, double y)  const ;
+  virtual MeshFunction<double>* clone() const;
+	void set_time(double t){time = t;}
+	double kappa;
+	double time;
+};
+class BoundaryCondition_rho_v_y : public ExactSolutionScalar<double>
+{
+public:
+  BoundaryCondition_rho_v_y(MeshSharedPtr mesh, double kappa) : ExactSolutionScalar<double>(mesh), kappa(kappa), time(time)  {};
+   ~BoundaryCondition_rho_v_y(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
 

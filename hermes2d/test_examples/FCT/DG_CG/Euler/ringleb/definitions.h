@@ -12,6 +12,7 @@ using namespace Hermes;
 using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::WeakFormsH1;
 
+
 //---------------WeakForms---------------
 class EulerEquationsWeakForm_Mass : public WeakForm<double>
 {
