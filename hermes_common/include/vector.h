@@ -74,7 +74,8 @@ namespace Hermes
     vector(const T& a, const T& b, const T& c, const T& d, const T& e, const T& f, const T& g, const T& h, const T& i, const T& j, const T& k, const T& l, const T& m, const T& n) { this->reserve(14); this->push_back(a); this->push_back(b); this->push_back(c); this->push_back(d); this->push_back(e); this->push_back(f); this->push_back(g); this->push_back(h); this->push_back(i); this->push_back(j); this->push_back(k); this->push_back(l); this->push_back(m); this->push_back(n);};
     /// 15 parameters constructor.
     vector(const T& a, const T& b, const T& c, const T& d, const T& e, const T& f, const T& g, const T& h, const T& i, const T& j, const T& k, const T& l, const T& m, const T& n, const T& o) { this->reserve(15); this->push_back(a); this->push_back(b); this->push_back(c); this->push_back(d); this->push_back(e); this->push_back(f); this->push_back(g); this->push_back(h); this->push_back(i); this->push_back(j); this->push_back(k); this->push_back(l); this->push_back(m); this->push_back(n); this->push_back(o);};
-
+    /// 16 parameters constructor.
+    vector(const T& a, const T& b, const T& c, const T& d, const T& e, const T& f, const T& g, const T& h, const T& i, const T& j, const T& k, const T& l, const T& m, const T& n, const T& o, const T& p) { this->reserve(16); this->push_back(a); this->push_back(b); this->push_back(c); this->push_back(d); this->push_back(e); this->push_back(f); this->push_back(g); this->push_back(h); this->push_back(i); this->push_back(j); this->push_back(k); this->push_back(l); this->push_back(m); this->push_back(n); this->push_back(o);this->push_back(p);};
     // Look up an integer number in an array.
     int find_index_slow(const T& x) {
       for (int i=0; i < this->size(); i++) {
