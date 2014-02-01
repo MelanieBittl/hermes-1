@@ -130,28 +130,26 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
       Geom<double> *e, Func<double>  **ext) const
 {
       double result = 0.;
-		if(particle)
-		{
-			  for (int i = 0;i < n;i++)       
-				for(int k =0; k<4;k++)
-				{
-				  result += wt[i] * ext[k]->val[i]*( v->dx[i]*
-				   (static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],0,(entry_i-4),k) 
-				  + v->dy[i]*
-				   (static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],1,(entry_i-4),k));
-				}		
-			  
 
-		}else{
-			  for (int i = 0;i < n;i++)       
-				for(int k =0; k<4;k++)
-				{
-				  result += wt[i] * ext[k]->val[i]*( v->dx[i]*
-				   (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,k) 
-				  + v->dy[i]*
-				   (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,k));
-				}      
+	for (int i = 0;i < n;i++) 
+	{      
+		for(int k =0; k<4;k++)
+		{
+			if(particle)
+			{	  result += wt[i] * ext[k+4]->val[i]*( v->dx[i]*
+					   (static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],0,(entry_i-4),k) 
+					  + v->dy[i]*
+					   (static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],1,(entry_i-4),k));	  
+
+			}else{
+
+					  result += wt[i] * ext[k]->val[i]*( v->dx[i]*
+					   (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,k) 
+					  + v->dy[i]*
+					   (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,k));
+			}      
 		}
+	}
       return result;
 }
 
@@ -226,12 +224,14 @@ if((entry_i==0)||(entry_i==4)) return 0;
       double result = 0.;
 
 		double material_density = (static_cast<EulerSource*>(wf))->particle_density;
-		double d = 1.;
-		double C_D = 1.;
-		double c_vg = 1.;
-		double c_vp = 1.;
-		double Nu = 1.;
-		double kap = 1.;
+		double d = 1e-5;		
+		double c_vg = 743.;
+		double c_vp = 1380.;
+		double c_pg = 1040;
+		double Pr = 0.75;		
+		double mu = 2.76*1e-5;
+		double kap = c_pg*mu/Pr;
+
 
       
 		for (int i = 0;i < n;i++){
@@ -257,6 +257,13 @@ if((entry_i==0)||(entry_i==4)) return 0;
 		double v1_diff = (v_x_g - v_x_p);
 		double v2_diff = (v_y_g - v_y_p);
 		double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
+
+		double Re = rho_g*d*v_diff_abs/mu;
+		double C_D = 0.44;
+		if(Re<1000) C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
+
+		
+		double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
 
 		double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
 		double T_p = 1./c_vp*(rho_e_p/rho_p-0.5*(v_x_p*v_x_p+v_y_p*v_y_p));
@@ -355,7 +362,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 
 		}
 
-      return result;
+      return (result);
     }
     
 
@@ -380,7 +387,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 
 	if((entry_i==0)||(entry_i==4)) return 0;
 double material_density = (static_cast<EulerSource*>(wf))->particle_density;
-		double d = 1.;		
+		double d = 1e-5;		
 		double c_vg = 743.;
 		double c_vp = 1380.;
 		double c_pg = 1040;
@@ -430,13 +437,13 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 
 //gas phase
 			if(entry_i==1)  //vx			  
-					 result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v1_diff* v_diff_abs;
+					 result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*0.75;
 			else if(entry_i==2)//vy
-					result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v2_diff* v_diff_abs;
+					result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*0.75;
 			else if(entry_i ==3)	//e
 			{
-				result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v1_diff* v_diff_abs*v_x_p;
-				result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v2_diff* v_diff_abs*v_y_p;
+				result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*v_x_p*0.75;
+				result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*v_y_p*0.75;
 				result -= wt[i]*v->val[i]*Nu*6.*kap/(d*d)*alpha_p*(T_g-T_p);
 
 			}
@@ -444,13 +451,13 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 //particle phase
 
 			else if(entry_i==5)//vx			  
-					  result += wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v1_diff* v_diff_abs;
+					  result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*0.75;
 			else if(entry_i==6)//vy
-					result += wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v2_diff* v_diff_abs;
+					result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*0.75;
 			else if(entry_i ==7)	//ve
 			{
-				result += wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v1_diff* v_diff_abs*v_x_p;
-				result += wt[i]*v->val[i]*rho_g*alpha_p*C_D*d*v2_diff* v_diff_abs*v_y_p;
+				result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*v_x_p*0.75;
+				result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*v_y_p*0.75;
 				result += wt[i]*v->val[i]*Nu*6.*kap/(d*d)*alpha_p*(T_g-T_p);
 			}
 			  
@@ -559,8 +566,8 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
   {		
 
 		 bdry =0;
-if(e->x[i]== -1) bdry = 2;
-if(e->x[i]== 1) bdry = 1;
+	if(e->x[i]== 0) bdry = 2;
+	if(e->x[i]== 1) bdry = 1;
 
 	if(bdry==1) constant =1.;
 	else constant = 0.5;
@@ -588,7 +595,7 @@ if(e->x[i]== 1) bdry = 1;
 					Boundary_helpers::calculate_A_p_n( rho, rho_v_x, rho_v_y, rho_energy, e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], gamma, (entry_i-4),A_n);				
 					result += wt[i]*v->val[i] *u->val[i]*0.5* A_n[(entry_j-4)];
 				}
-			}			
+			}else constant = 1.;			
 
 		result += wt[i] * u->val[i] *v->val[i]* constant*
 		    ( (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_p(rho, rho_v_x, rho_v_y, rho_energy,0,(entry_i-4),(entry_j-4)) 
@@ -612,9 +619,6 @@ if(e->x[i]== 1) bdry = 1;
 
 	 		if(bdry!=0){ 
 				(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state(bdry,rho, rho_v_x, rho_v_y, rho_energy, e->nx[i],e->ny[i],e->tx[i],e->ty[i], rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, ghost_state);
-
-
-
 
 				if(bdry!=1){
 						Boundary_helpers::calculate_A_n(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], gamma, entry_i,A_n); //ite-Zeile A_n
@@ -646,12 +650,12 @@ if(e->x[i]== 1) bdry = 1;
 					} 
 				}
 			
-			}else{
+			}else{ 
 					if(entry_i==1)
 					{
 							if(entry_j==0){
 								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*0.5*e->nx[i]*
-							(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);		
+							(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);	
 	
 							}else if(entry_j==1){
 								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[1]->val[i]/ext[0]->val[i]*e->nx[i];
@@ -720,7 +724,7 @@ int bdry;
   for (int i = 0;i < n;i++) 
 	{
 		 bdry =0;
-if(e->x[i]== -1) bdry = 2;
+if(e->x[i]== 0) bdry = 2;
 if(e->x[i]== 1) bdry = 1;
 
 	//----------particle---------------------
@@ -749,16 +753,16 @@ if(bdry==0) continue;
 				{
 				  result += wt[i] *e->nx[i]*v->val[i]*0.5* (ghost_state[k]*
 				   (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_p(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,0,(entry_i-4),k) 
-						+	ext[k]->val[i]
+						+	ext[k+8]->val[i]
 				  * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_p(rho, rho_v_x, rho_v_y, rho_energy,0,(entry_i-4),k)) ;
 				  result += wt[i]* e->ny[i]*v->val[i]*0.5*( ghost_state[k]*
 				   (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_p(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,1,(entry_i-4),k) 
-							+ext[k]->val[i]
+							+ext[k+8]->val[i]
 				  * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_p(rho, rho_v_x, rho_v_y, rho_energy,1,(entry_i-4),k)) ;
 
 				}
 
-				if(bdry!=1)		
+				if((bdry ==3)||(bdry ==2)) //inlet	
 					result -= wt[i]*v->val[i]* 0.5 * 
 										Boundary_helpers::calculate_A_p_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, gamma, (entry_i-4));
 

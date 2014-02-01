@@ -472,8 +472,8 @@ double H_mean = (QuantityCalculator::enthalpy(rho, rho_v_x,rho_v_y, rho_energy, 
 		double vn_ext = std::fabs(n_x*rho_v_x_new+n_y*rho_v_y_new)/rho_new;			
 			double d = std::max(vn, vn_ext);
 
-			for(int i =0;i<4;i++) A_n[i]=0.;			
-					A_n[entry_i] =d;
+			for(int i =0;i<4;i++) A_n[i]=d;			
+					
 
 				
 

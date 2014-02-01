@@ -159,7 +159,7 @@ namespace Hermes
         case HERMES_HCURL_SPACE: norm = HERMES_HCURL_NORM; break;
         case HERMES_HDIV_SPACE: norm = HERMES_HDIV_NORM; break;
         case HERMES_L2_SPACE: norm = HERMES_L2_NORM; break;
-				case HERMES_L2_SEMI_SPACE: norm = HERMES_L2_NORM; break;
+		case HERMES_L2_SEMI_SPACE: norm = HERMES_L2_NORM; break;
         case HERMES_L2_MARKERWISE_CONST_SPACE: norm = HERMES_L2_NORM; break;
         default: throw Hermes::Exceptions::Exception("Unknown space type in OGProjection<Scalar>::project_global().");
         }

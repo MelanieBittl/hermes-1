@@ -18,8 +18,8 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
-const double time_step = 1e-2;
-const double T_FINAL = 0.5;                       // Time interval length. 
+const double time_step = 1e-5;
+const double T_FINAL = 50000000000;                       // Time interval length. 
 
 const double theta = 1.;
 
@@ -35,8 +35,6 @@ const double SIGMA = std::pow(10,8.);
 //Particle density
 const double density = 4000.; 
     
-// Inlet y-velocity (dimensionless).
-const double V2_EXT = 0.0;    
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -63,17 +61,6 @@ Element* e = NULL;Node* vn=NULL;
 
  	 mesh->copy(basemesh);
 
-double delta_x = 100; double delta_max= 0.;
-for_all_active_elements(e, basemesh)
-{
-		for(int i = 1; i<e->get_nvert(); i++)
-		{
-			delta_x = std::fabs(e->vn[i]->x - e->vn[i-1]->x);
-			if(delta_x>delta_max) delta_max = delta_x;
-		}
-}
-printf("CFL = %f \n", time_step/delta_max*0.2);
-
 
 /*
    MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
@@ -83,10 +70,17 @@ printf("CFL = %f \n", time_step/delta_max*0.2);
 
 bool serendipity = true;
 /*
-SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));*/
+		SpaceSharedPtr<double> space_rho_g(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_x_g(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_y_g(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_e_g(new H1Space<double>(mesh, P_INIT));
+
+
+		SpaceSharedPtr<double> space_rho_p(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_x_p(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_y_p(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_e_p(new H1Space<double>(mesh, P_INIT));
+*/
 
 SpaceSharedPtr<double> space_rho_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
@@ -98,11 +92,8 @@ SpaceSharedPtr<double> space_rho_v_x_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT
 SpaceSharedPtr<double> space_rho_v_y_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
-	/*	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
 
+//int dof_1 = space_rho_g->get_num_dofs();
 
   Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho_g, space_rho_v_x_g, space_rho_v_y_g, space_e_g,space_rho_p, space_rho_v_x_p, space_rho_v_y_p, space_e_p);
 	Space<double>::assign_dofs(spaces);
@@ -110,15 +101,27 @@ SpaceSharedPtr<double> space_e_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, sere
   Hermes::Mixins::Loggable::Static::info("ndof: %d \n", ndof);
 
   // Initialize solutions, set initial conditions.
- MeshFunctionSharedPtr<double> init_rho_g(new ConstantSolution<double>(mesh,  1.));	
-  MeshFunctionSharedPtr<double> init_rho_v_x_g(new  ConstantSolution<double>(mesh,  1.));	
-  MeshFunctionSharedPtr<double> init_rho_v_y_g(new  ConstantSolution<double>(mesh,  V2_EXT));	
-  MeshFunctionSharedPtr<double> init_rho_e_g(new ConstantSolution<double>(mesh,  1.));
+ MeshFunctionSharedPtr<double> init_rho_g(new ConstantSolution<double>(mesh,  6.));	
+  MeshFunctionSharedPtr<double> init_rho_v_x_g(new  BoundaryCondition_rho_v_x(mesh, GAMMA) );	
+  MeshFunctionSharedPtr<double> init_rho_v_y_g(new  ConstantSolution<double>(mesh,  0.));	
+  MeshFunctionSharedPtr<double> init_rho_e_g(new BoundaryCondition_rho_e(mesh, GAMMA));
 
- MeshFunctionSharedPtr<double> init_rho_p(new ConstantSolution<double>(mesh, 0.1));	
-  MeshFunctionSharedPtr<double> init_rho_v_x_p(new  ConstantSolution<double>(mesh,  0.));	
-  MeshFunctionSharedPtr<double> init_rho_v_y_p(new  ConstantSolution<double>(mesh,  V2_EXT));	
-  MeshFunctionSharedPtr<double> init_rho_e_p(new ConstantSolution<double>(mesh,  0.1));
+ MeshFunctionSharedPtr<double> init_rho_p(new ConstantSolution<double>(mesh, 3.4));	
+  MeshFunctionSharedPtr<double> init_rho_v_x_p(new  BoundaryCondition_rho_v_x(mesh, GAMMA,true));	
+  MeshFunctionSharedPtr<double> init_rho_v_y_p(new  ConstantSolution<double>(mesh,  0.));	
+  MeshFunctionSharedPtr<double> init_rho_e_p(new BoundaryCondition_rho_e(mesh, GAMMA,true));
+
+
+  MeshFunctionSharedPtr<double> bdry_rho_g(new ConstantSolution<double>(mesh,  6.));	
+  MeshFunctionSharedPtr<double> bdry_rho_v_x_g(new  BoundaryCondition_rho_v_x(mesh, GAMMA) );	
+  MeshFunctionSharedPtr<double> bdry_rho_v_y_g(new  ConstantSolution<double>(mesh, 0.));	
+  MeshFunctionSharedPtr<double> bdry_rho_e_g(new BoundaryCondition_rho_e(mesh, GAMMA));	
+
+  MeshFunctionSharedPtr<double> bdry_rho_p(new ConstantSolution<double>(mesh, 3.4));	
+  MeshFunctionSharedPtr<double> bdry_rho_v_x_p(new  BoundaryCondition_rho_v_x(mesh, GAMMA,true));	
+  MeshFunctionSharedPtr<double> bdry_rho_v_y_p(new  ConstantSolution<double>(mesh, 0.));	
+  MeshFunctionSharedPtr<double> bdry_rho_e_p(new BoundaryCondition_rho_e(mesh, GAMMA,true));	
+
 
   	MeshFunctionSharedPtr<double> prev_rho_g(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_x_g(new Solution<double>);
@@ -129,17 +132,6 @@ SpaceSharedPtr<double> space_e_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, sere
     MeshFunctionSharedPtr<double> prev_rho_v_x_p(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_y_p(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_e_p(new Solution<double>);
-
-
-  MeshFunctionSharedPtr<double> bdry_rho_g(new ConstantSolution<double>(mesh,  1.));	
-  MeshFunctionSharedPtr<double> bdry_rho_v_x_g(new  ConstantSolution<double>(mesh,  1.));	
-  MeshFunctionSharedPtr<double> bdry_rho_v_y_g(new  ConstantSolution<double>(mesh, V2_EXT));	
-  MeshFunctionSharedPtr<double> bdry_rho_e_g(new ConstantSolution<double>(mesh,  1.));	
-
-  MeshFunctionSharedPtr<double> bdry_rho_p(new ConstantSolution<double>(mesh, 0.5));	
-  MeshFunctionSharedPtr<double> bdry_rho_v_x_p(new  ConstantSolution<double>(mesh, 1.));	
-  MeshFunctionSharedPtr<double> bdry_rho_v_y_p(new  ConstantSolution<double>(mesh, V2_EXT));	
-  MeshFunctionSharedPtr<double> bdry_rho_e_p(new ConstantSolution<double>(mesh,  1.));	
 
 	Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns_g(prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g);
 	Hermes::vector<MeshFunctionSharedPtr<double> > init_slns_g(init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g);
@@ -197,16 +189,21 @@ MeshFunctionSharedPtr<double> mach_init_g(new  MachNumberFilter(init_slns_g, GAM
 //------------
 
 	EulerFluxes* euler_fluxes = new EulerFluxes(GAMMA);
-//NumericalFlux* num_flux =new ApproxRoeNumericalFlux(GAMMA, euler_fluxes); 
+
 NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(GAMMA);
-//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(GAMMA);
+
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(GAMMA);
 
 
+/*
+	EulerInterface wf_DG_init(GAMMA,mesh,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p,num_flux,euler_fluxes,riemann_invariants);
+	EulerInterface wf_DG(GAMMA,mesh, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p,num_flux,euler_fluxes,riemann_invariants);
 
-	//EulerInterface wf_DG_init(GAMMA,mesh, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,euler_fluxes,riemann_invariants);
-	//EulerInterface wf_DG(GAMMA,mesh, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,euler_fluxes,riemann_invariants);
 
+  DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
+  DiscreteProblem<double> dp_DG(&wf_DG, spaces);
+
+*/
 
 	EulerK wf_convection_init(GAMMA,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
 	EulerK wf_convection(GAMMA, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
@@ -214,7 +211,6 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(GAMMA);
 
 	EulerBoundary wf_bdry_init(GAMMA, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
 	EulerBoundary wf_bdry(GAMMA, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
-
 
   EulerPenalty wf_penalty_init(SIGMA,density,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
 EulerPenalty wf_penalty(SIGMA, density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
@@ -239,8 +235,6 @@ EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_
   DiscreteProblem<double> dp_source(&wf_source, spaces); 
 
 
- // DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
-  //DiscreteProblem<double> dp_DG(&wf_DG, spaces);
 
   // Set up the solver, matrix, and rhs according to the solver selection. 
 	CSCMatrix<double> matrix;  
@@ -249,13 +243,12 @@ EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_
 	CSCMatrix<double>  conv_matrix; 
 	CSCMatrix<double>  penalty_matrix;
 	CSCMatrix<double>  bdry_matrix;  
-
-//CSCMatrix<double> dg_matrix; 
+	CSCMatrix<double> dg_matrix; 
 
 
 
     OGProjection<double> ogProjection;
-		//SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
+		SimpleVector<double>  vec_dg(ndof);
 		SimpleVector<double>  vec_rhs(ndof);
 		SimpleVector<double>  vec_bdry(ndof);
 		SimpleVector<double>  vec_conv(ndof);
@@ -270,10 +263,21 @@ EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_
 
 //Projection of the initial condition
   ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
-			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
+			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
 
-//View::wait(HERMES_WAIT_KEYPRESS);
+
+            /*            s1_g.show(prev_rho_g);                       
+                        s2_g.show(prev_rho_v_x_g);
+                        s3_g.show(prev_rho_v_y_g);
+                        s4_g.show(prev_rho_e_g);
+                        s1_p.show(prev_rho_p);
+                        s2_p.show(prev_rho_v_x_p);
+                        s3_p.show(prev_rho_v_y_p);
+                        s4_p.show(prev_rho_e_p);
+
+
+View::wait(HERMES_WAIT_KEYPRESS);*/
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -281,11 +285,12 @@ EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_
 	char title[100];	
 double norm = 1000;
 double norm_rel = 1000;
-
+ Hermes::Mixins::Loggable::Static::info("Assembling mass"); 	
 		Space<double>::assign_dofs(spaces);
 		  dp_mass.assemble(&mass_matrix);
 mass_matrix.multiply_with_Scalar(1./time_step);
-CSCMatrix<double> * lumped_matrix = massLumping(&mass_matrix);
+CSCMatrix<double> * lumped_matrix;
+//lumped_matrix = massLumping(&mass_matrix);
 //Timestep loop
 do
 {	 
@@ -310,23 +315,25 @@ do
 		
 
 //matrix.create(dg_matrix.get_size(),dg_matrix.get_nnz(), dg_matrix.get_Ap(), dg_matrix.get_Ai(),dg_matrix.get_Ax());
-//matrix.add_sparse_matrix(conv_matrix);
-CSCMatrix<double>* diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
+//matrix.add_sparse_matrix(&source_matrix);
+//CSCMatrix<double>* diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
 
 		matrix.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.get_Ap(), source_matrix.get_Ai(),source_matrix.get_Ax());
+//matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
+//matrix.add_sparse_matrix(&dg_matrix);
 		matrix.add_sparse_matrix(&bdry_matrix);
 		matrix.add_sparse_matrix(&conv_matrix);
-matrix.add_sparse_matrix(diff);
+//matrix.add_sparse_matrix(diff);
 		matrix.add_sparse_matrix(&penalty_matrix);
 		matrix.multiply_with_Scalar(-theta); 
-matrix.add_sparse_matrix(lumped_matrix);  
-		//matrix.add_sparse_matrix(&mass_matrix); 			
+//matrix.add_sparse_matrix(lumped_matrix);  
+		matrix.add_sparse_matrix(&mass_matrix); 			
 
 	//-------------rhs: ------------		
 	//	matrix.multiply_with_vector(coeff_vec, coeff_vec_2);
 		vec_rhs.zero(); 
 		//vec_rhs.add_vector(coeff_vec_2); 
-		//vec_rhs.add_vector(vec_dg); 
+		//vec_rhs.add_vector(&vec_dg); 
 		vec_rhs.add_vector(&vec_bdry); 
 		vec_rhs.add_vector(&vec_conv); 
 		vec_rhs.add_vector(&vec_penalty); 
@@ -400,7 +407,7 @@ sprintf(title, "energy_particle: ts=%i",ts);
 
 		delete solver;
 		matrix.free();
-		delete diff;
+		//delete diff;
  
 
 

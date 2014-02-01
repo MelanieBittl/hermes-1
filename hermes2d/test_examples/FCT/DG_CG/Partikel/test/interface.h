@@ -54,7 +54,7 @@ protected:
 
 			NumericalFlux* num_flux;
 			double gamma;
-			double entry_i;
+			int entry_i;
 
   };
 

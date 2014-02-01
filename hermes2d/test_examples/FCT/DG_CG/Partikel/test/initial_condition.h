@@ -14,7 +14,7 @@ using namespace Hermes::Hermes2D;
 class CustomInitialCondition_rho : public ExactSolutionScalar<double>
 {
 public:
-  CustomInitialCondition_rho(MeshSharedPtr mesh, double gamma) : ExactSolutionScalar<double>(mesh), gamma(gamma)  {};
+  CustomInitialCondition_rho(MeshSharedPtr mesh, double gamma, bool particle=false) : ExactSolutionScalar<double>(mesh), gamma(gamma),particle(particle)  {};
    ~CustomInitialCondition_rho(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
@@ -24,12 +24,13 @@ public:
  virtual Ord ord(double x, double y)  const ;
   virtual MeshFunction<double>* clone() const;
 	double gamma;
+	bool particle;
 };
 
 class CustomInitialCondition_rho_v_x : public ExactSolutionScalar<double>
 {
 public:
-  CustomInitialCondition_rho_v_x(MeshSharedPtr mesh, double gamma) : ExactSolutionScalar<double>(mesh), gamma(gamma)  {};
+  CustomInitialCondition_rho_v_x(MeshSharedPtr mesh, double gamma, bool particle=false) : ExactSolutionScalar<double>(mesh), gamma(gamma), particle(particle)  {};
    ~CustomInitialCondition_rho_v_x(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
@@ -39,6 +40,7 @@ public:
  virtual Ord ord(double x, double y)  const ;
   virtual MeshFunction<double>* clone() const;
 	double gamma;
+bool particle;
 };
 
 
@@ -46,7 +48,7 @@ public:
 class CustomInitialCondition_e : public ExactSolutionScalar<double>
 {
 public:
-  CustomInitialCondition_e(MeshSharedPtr mesh, double gamma) : ExactSolutionScalar<double>(mesh), gamma(gamma) {};
+  CustomInitialCondition_e(MeshSharedPtr mesh, double gamma, bool particle=false) : ExactSolutionScalar<double>(mesh), gamma(gamma),particle(particle) {};
    ~CustomInitialCondition_e(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
@@ -56,12 +58,13 @@ public:
  virtual Ord ord(double x, double y)  const ;
   virtual MeshFunction<double>* clone() const;
 	double gamma;
+bool particle;
 };
 //--------Boundary Condition---------
 class BoundaryCondition_rho : public ExactSolutionScalar<double>
 {
 public:
-  BoundaryCondition_rho(MeshSharedPtr mesh,double time, double gamma) : ExactSolutionScalar<double>(mesh), gamma(gamma), time(time)  {};
+  BoundaryCondition_rho(MeshSharedPtr mesh,double gamma, bool particle=false) : ExactSolutionScalar<double>(mesh), gamma(gamma),particle(particle) {};
    ~BoundaryCondition_rho(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
@@ -70,14 +73,14 @@ public:
 
  virtual Ord ord(double x, double y)  const ;
   virtual MeshFunction<double>* clone() const;
-	void set_time(double t){time = t;}
+
 	double gamma;
-	double time;
+bool particle;
 };
 class BoundaryCondition_rho_e : public ExactSolutionScalar<double>
 {
 public:
-  BoundaryCondition_rho_e(MeshSharedPtr mesh,double time, double gamma) : ExactSolutionScalar<double>(mesh), gamma(gamma), time(time)  {};
+  BoundaryCondition_rho_e(MeshSharedPtr mesh,double gamma, bool particle=false) : ExactSolutionScalar<double>(mesh), gamma(gamma),particle(particle)  {};
    ~BoundaryCondition_rho_e(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
@@ -86,14 +89,14 @@ public:
 
  virtual Ord ord(double x, double y)  const ;
   virtual MeshFunction<double>* clone() const;
-	void set_time(double t){time = t;}
+
 	double gamma;
-	double time;
+	bool particle;
 };
 class BoundaryCondition_rho_v_x : public ExactSolutionScalar<double>
 {
 public:
-  BoundaryCondition_rho_v_x(MeshSharedPtr mesh,double time, double gamma) : ExactSolutionScalar<double>(mesh), gamma(gamma), time(time)  {};
+  BoundaryCondition_rho_v_x(MeshSharedPtr mesh,double gamma, bool particle=false) : ExactSolutionScalar<double>(mesh), gamma(gamma),particle(particle) {};
    ~BoundaryCondition_rho_v_x(){};
 
   virtual void derivatives (double x, double y, double& dx, double& dy) const ;
@@ -102,9 +105,10 @@ public:
 
  virtual Ord ord(double x, double y)  const ;
   virtual MeshFunction<double>* clone() const;
-	void set_time(double t){time = t;}
+	
 	double gamma;
-	double time;
+bool particle;
+	
 };
 
 
