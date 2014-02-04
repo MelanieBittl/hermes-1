@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain_all.mesh", basemesh);
 Element* e = NULL;Node* vn=NULL;
 
 
@@ -399,8 +399,7 @@ matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(
 		//vec_rhs.add_vector(&vec_source); 
 
 
-	//-------------------------solution of (M-theta(K+P+B+S)) (u(n+1)-u(n) = Sn +Ku(n) +Bn+Pn------------ 
-		
+	//-------------------------solution of (M-theta(K+P+B+S)) (u(n+1)-u(n) = Sn +Ku(n) +Bn+Pn------------ 		
 			UMFPackLinearMatrixSolver<double> * solver = new UMFPackLinearMatrixSolver<double> (&matrix,&vec_rhs);	
 			try{
 			 solver->solve();
@@ -409,48 +408,46 @@ matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(
 			}	
 	
 		for(int i=0; i<ndof;i++)		
-					coeff_vec[i] += solver->get_sln_vector()[i];
-							
+					coeff_vec[i] += solver->get_sln_vector()[i];							
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
-
 
 	
 
 			// Visualize the solution.
- Hermes::Mixins::Loggable::Static::info("Visualize"); 	
-                        MeshFunctionSharedPtr<double> pressure_g(new PressureFilter(prev_slns_g, GAMMA));
-                        sprintf(title, "Pressure gas: ts=%i",ts);
-                        pressure_view_g.set_title(title);
-                        pressure_g->reinit();
-                        pressure_view_g.show(pressure_g);
+			Hermes::Mixins::Loggable::Static::info("Visualize"); 	
+            MeshFunctionSharedPtr<double> pressure_g(new PressureFilter(prev_slns_g, GAMMA));
+            sprintf(title, "Pressure gas: ts=%i",ts);
+            pressure_view_g.set_title(title);
+            pressure_g->reinit();
+            pressure_view_g.show(pressure_g);
 
-                        MeshFunctionSharedPtr<double> mach_g(new MachNumberFilter(prev_slns_g, GAMMA));
-                        sprintf(title, "Mach gas: ts=%i",ts);
-                        mach_view_g.set_title(title);
-                        mach_g->reinit();
-                        mach_view_g.show(mach_g);
+            MeshFunctionSharedPtr<double> mach_g(new MachNumberFilter(prev_slns_g, GAMMA));
+            sprintf(title, "Mach gas: ts=%i",ts);
+            mach_view_g.set_title(title);
+            mach_g->reinit();
+            mach_view_g.show(mach_g);
 
 
-                        sprintf(title, "density_particle_gas: ts=%i",ts);
-                        s1_g.set_title(title);
-                        s1_g.show(prev_rho_g);
+            sprintf(title, "density_particle_gas: ts=%i",ts);
+            s1_g.set_title(title);
+            s1_g.show(prev_rho_g);
 
-						sprintf(title, "density_particle_particle: ts=%i",ts);
-                        s1_p.set_title(title);
-                        s1_p.show(prev_rho_p);
+			sprintf(title, "density_particle_particle: ts=%i",ts);
+            s1_p.set_title(title);
+            s1_p.show(prev_rho_p);
 
-sprintf(title, "vel_x_particle: ts=%i",ts);
-                        s2_p.set_title(title);
-                        s2_p.show(prev_rho_v_x_p);
+			sprintf(title, "vel_x_particle: ts=%i",ts);
+            s2_p.set_title(title);
+            s2_p.show(prev_rho_v_x_p);
 
-sprintf(title, "vel_y_particle: ts=%i",ts);
-                        s3_p.set_title(title);
-                        s3_p.show(prev_rho_v_y_p);
+			sprintf(title, "vel_y_particle: ts=%i",ts);
+            s3_p.set_title(title);
+            s3_p.show(prev_rho_v_y_p);
 
-sprintf(title, "energy_particle: ts=%i",ts);
-                        s4_p.set_title(title);
-                        s4_p.show(prev_rho_e_p);
+			sprintf(title, "energy_particle: ts=%i",ts);
+            s4_p.set_title(title);
+            s4_p.show(prev_rho_e_p);
 
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
@@ -481,18 +478,17 @@ Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time);
 /*
 		MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, GAMMA));
 		MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, GAMMA));
- MeshFunctionSharedPtr<double> radius(new RadiusVelocityFilter(prev_slns));
-
+ 
+Linearizer lin;	
 				pressure->reinit();
 				mach->reinit();
 			  char filename[40];
 			  sprintf(filename, "p-%i.vtk", ts );       
-			lin_p.save_solution_vtk(pressure, filename, "pressure", true);
+			lin.save_solution_vtk(pressure, filename, "pressure", true);
 sprintf(filename, "m-%i.vtk", ts );      
-			lin_m.save_solution_vtk(mach, filename, "mach", true);
-
+			lin.save_solution_vtk(mach, filename, "mach", true);
 sprintf(filename, "rho-%i.vtk", ts );  
-			lin_rho.save_solution_vtk(prev_slns[0], filename, "density_particle", true);
+			lin.save_solution_vtk(prev_slns[0], filename, "density_particle", true);
 
 */
 

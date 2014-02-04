@@ -10,8 +10,8 @@
 
  double CustomInitialCondition_rho::value(double x, double y) const 
 	{    			
-double pressure = 8.;
-double  rho= pressure*gamma;
+
+double  rho= 2.0;
 		return rho;
 
 };
@@ -33,9 +33,15 @@ double  rho= pressure*gamma;
  double CustomInitialCondition_rho_v_x::value(double x, double y) const 
 	{     
 
-double pressure = 8.;
-double  rho= pressure*gamma;
-double v_x = 0.;
+
+double  rho=2.0;
+
+double v_x = 0.0;
+if(x>1)
+{
+if(y>0.1) v_x = 0.;
+else if(y<-0.15) v_x = 0.;
+}
 return (rho*v_x);	
 };
 
@@ -49,21 +55,16 @@ return (rho*v_x);
 
 
 //----------energy----------
-
-
- void CustomInitialCondition_e::derivatives(double x, double y, double& dx, double& dy) const {      
-	
-		dx =0.;
-		dy = 0.0;
-
+ void CustomInitialCondition_e::derivatives(double x, double y, double& dx, double& dy) const { 	
+		dx =0.;	dy = 0.0;
 };
 
  double CustomInitialCondition_e::value(double x, double y) const 
 {  
 
 
-double pressure = 8; 
-double  rho= pressure*gamma;
+double pressure = std::pow(10,2);
+double  rho= 2.0;
 
 double v_x = 0.;
 double rho_v_x = rho*v_x;
@@ -96,14 +97,9 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
 
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
-double pressure = std::pow(10,1.);  
-double  rho= pressure*gamma;
 
+double  rho= 2.0;
 
-if(x>1){
- pressure = 8.;
- rho= pressure*gamma;
-}
 
 return rho;
 
@@ -126,15 +122,15 @@ return rho;
 };
 
  double BoundaryCondition_rho_v_x::value(double x, double y) const 
-	{    			
-double pressure = std::pow(10,1.);  
-double  rho= pressure*gamma;
+	{    
+if(x>1.) return 0;			
+double pressure = std::pow(10,2);
+double  rho= 2.0;
+double max = 1.5*std::sqrt(gamma*pressure/rho);
 
-double v_x = -Hermes::sqr(2.*y)*0.8+0.8;
+double v_x =max; //-Hermes::sqr(2.*y)*(max-0.1);
+
 double rho_v_x = rho*v_x;
-
-if(x>1.) return 0;
-
 return rho_v_x;
 
 };
@@ -160,15 +156,18 @@ return rho_v_x;
 	{    			
 
 
-double pressure = std::pow(10,1.);  
-double  rho= pressure*gamma;
+double pressure = std::pow(10,2);
+double  rho= 2.0;
 
-double v_x =  -Hermes::sqr(2.*y)*0.8+0.8;
+double max = 1.5*std::sqrt(gamma*pressure/rho);
+
+double v_x =max;// -Hermes::sqr(2.*y)*(max-0.1);
+
 double rho_v_x = rho*v_x;
 
 if(x>1){
- pressure = 8.;
- rho= pressure*gamma;
+// pressure = 8.;
+ //rho= pressure*gamma;
 	return QuantityCalculator::calc_energy(rho , 0. , 0.0, pressure, this->gamma);
 }
 

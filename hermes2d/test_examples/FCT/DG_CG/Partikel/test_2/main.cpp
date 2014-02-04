@@ -54,15 +54,39 @@ int main(int argc, char* argv[])
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
   mloader.load("domain_all.mesh", basemesh);
+
+  // Perform initial mesh refinements (optional).
+ /* for (int i=0; i < INIT_REF_NUM; i++)
+	{ 
+			basemesh->refine_all_elements();
+
+		}*/
 Element* e = NULL;Node* vn=NULL;
-
-
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++)
 	{ 
 			basemesh->refine_all_elements();
-
+		//y-Koord. der Knoten auf cos-Kurve verschieben
+		 
+			for_all_vertex_nodes(vn, basemesh)
+			{	
+				if(vn->bnd) 
+					if((vn->x>0.)&&(vn->x<1.))		
+					{		if(vn->y>0.)
+							{
+								
+								vn->y = (Hermes::cos(vn->x*PI)+1.28/0.72)/(2.*1.28/0.72+2.) ;	
+							}else if(vn->y<0.){
+								vn->y =-( (Hermes::cos(vn->x*PI)+1.3/0.7)/(2.*1.3/0.7+2.) );
+							}
+					}
+			}
 		}
+
+
+
+
+
 
  	 mesh->copy(basemesh);
 
@@ -229,14 +253,14 @@ EulerSource wf_source(density_particle,prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_
 
 
 
-            /*            s1_g.show(prev_rho_g);                       
+                      /* s1_g.show(prev_rho_g);                       
                         s2_g.show(prev_rho_v_x_g);
-                        s3_g.show(prev_rho_v_y_g);
-                        s4_g.show(prev_rho_e_g);
-                        s1_p.show(prev_rho_p);
+                        //s3_g.show(prev_rho_v_y_g);
+                       // s4_g.show(prev_rho_e_g);
+                       // s1_p.show(prev_rho_p);*/
 
 
-View::wait(HERMES_WAIT_KEYPRESS);*/
+//View::wait(HERMES_WAIT_KEYPRESS);
 
 
 
@@ -308,7 +332,7 @@ matrix2.add_sparse_matrix(diff);
 		vec_rhs.add_vector(coeff_vec_2); 		
 		vec_rhs.add_vector(&vec_bdry); 
 		//vec_rhs.add_vector(&vec_conv); 
-		if(mach>=0.1) vec_rhs.add_vector(&vec_source); 
+		if(mach>=0.9) vec_rhs.add_vector(&vec_source); 
 
 residual = 0;
 for(int i = 1; i<ndof; i++)
@@ -336,7 +360,7 @@ antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrix2, &vec_bdry,u_L, flux_
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
-if(mach<0.1)
+if(mach<0.9)
 {	double rho		= prev_rho_g.get_solution()->get_ref_value(test_element, 1,0, 0, 0);  
 	double rho_v_x	= prev_rho_v_x_g.get_solution()->get_ref_value(test_element, 1,0, 0, 0); 
 	double rho_v_y	= prev_rho_v_y_g.get_solution()->get_ref_value(test_element, 1,0, 0, 0); 
@@ -345,7 +369,7 @@ if(mach<0.1)
 }
 
 			// Visualize the solution.
- 		/*Hermes::Mixins::Loggable::Static::info("Visualize"); 	
+ /*		Hermes::Mixins::Loggable::Static::info("Visualize"); 	
                         sprintf(title, "Pressure gas: ts=%i",ts);
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
@@ -356,20 +380,20 @@ if(mach<0.1)
                         mach_g->reinit();
                         mach_view_g.show(mach_g);
 
-                        sprintf(title, "density_particle_gas: ts=%i",ts);
+                        sprintf(title, "density_gas: ts=%i",ts);
                         s1_g.set_title(title);
                         s1_g.show(prev_rho_g);
-  						sprintf(title, "v_x_particle_gas: ts=%i",ts);
+  						sprintf(title, "v_x_gas: ts=%i",ts);
                         s2_g.set_title(title);
                         s2_g.show(prev_rho_v_x_g);
-  						sprintf(title, "v_y_particle_gas: ts=%i",ts);
+  						sprintf(title, "v_ye_gas: ts=%i",ts);
                         s3_g.set_title(title);
                         s3_g.show(prev_rho_v_y_g);
-						sprintf(title, "density_particle_particle: ts=%i",ts);
+						sprintf(title, "density_particle: ts=%i",ts);
                         s1_p.set_title(title);
-                        s1_p.show(prev_rho_p);*/
+                        s1_p.show(prev_rho_p);
 
-
+*/
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -392,14 +416,14 @@ if(mach<0.1)
 				mach_g->reinit();
 			  char filename[40];
 			  sprintf(filename, "p-%i.vtk", ts );       
-			lin.save_solution_vtk(pressure_g, filename, "pressure", true);
+			lin.save_solution_vtk(pressure_g, filename, "pressure", false);
 sprintf(filename, "m-%i.vtk", ts );      
-			lin.save_solution_vtk(mach_g, filename, "mach", true);
+			lin.save_solution_vtk(mach_g, filename, "mach", false);
 
 sprintf(filename, "rho_g-%i.vtk", ts );  
-			lin.save_solution_vtk(prev_slns[0], filename, "density_gas", true);
+			lin.save_solution_vtk(prev_slns[0], filename, "density_gas", false);
 sprintf(filename, "rho_p-%i.vtk", ts );  
-			lin.save_solution_vtk(prev_slns[4], filename, "density_particle", true);
+			lin.save_solution_vtk(prev_slns[4], filename, "density_particle", false);
 
 }
 
@@ -417,10 +441,10 @@ Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time);
 				pressure_g->reinit();
 				mach_g->reinit();
  
-			lin.save_solution_vtk(pressure_g, "pressure_end.vtk", "pressure", true);  
-			lin.save_solution_vtk(mach_g, "mach_end.vtk", "mach", true); 
-			lin.save_solution_vtk(prev_slns[0], "rho_g_end.vtk", "density_gas", true);  
-			lin.save_solution_vtk(prev_slns[4], "rho_p_end.vtk", "density_particle", true);
+			lin.save_solution_vtk(pressure_g, "pressure_end.vtk", "pressure", false);  
+			lin.save_solution_vtk(mach_g, "mach_end.vtk", "mach", false); 
+			lin.save_solution_vtk(prev_slns[0], "rho_g_end.vtk", "density_gas", false);  
+			lin.save_solution_vtk(prev_slns[4], "rho_p_end.vtk", "density_particle", false);
 
 
 

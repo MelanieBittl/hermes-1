@@ -166,7 +166,6 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 
 
 //_---------------SourceTerm Part-------------------------------------------------------------------------------------------
-
 	EulerSource::EulerSource(double particle_density, double d, double c_vg,double c_vp, double c_pg, double Pr, double mu, MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations): WeakForm<double>(num_of_equations),particle_density(particle_density),
     prev_density_g(prev_density_g), prev_density_vel_x_g(prev_density_vel_x_g), prev_density_vel_y_g(prev_density_vel_y_g), prev_energy_g(prev_energy_g),
 prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev_density_vel_y_p(prev_density_vel_y_p), prev_energy_p(prev_energy_p),
@@ -271,7 +270,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 
 
 			 rho_g = ext[0]->val[i];  
-			rho_v_x_g = ext[1]->val[i]; 
+			 rho_v_x_g = ext[1]->val[i]; 
 			 rho_v_y_g = ext[2]->val[i]; 
 			 rho_e_g = ext[3]->val[i];
 			 rho_p = ext[4]->val[i];  

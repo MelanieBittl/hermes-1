@@ -364,11 +364,11 @@ this->prev_density_p,5);
   for (int i = 0;i < n;i++) 
   {	
 		bdry =0;
-		if(e->x[i]== 0) bdry = 3;
+		if(e->x[i]== 0) bdry = 2;
 		if(e->x[i]== 2){ 
-		bdry =4;
-		double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
-		if(mach>0.99) bdry = 1;
+		bdry =1;
+		//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
+		//if(mach>0.99) bdry = 1;
 		}
 
 
@@ -514,11 +514,11 @@ int bdry;
   for (int i = 0;i < n;i++) 
 	{
 		 bdry =0;
-		if(e->x[i]== 0) bdry = 3;
+		if(e->x[i]== 0) bdry = 2;
 		if(e->x[i]== 2){ 
-		bdry =4;
-		double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
-		if(mach>0.99) bdry = 1;
+		bdry =1;
+		//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
+		//if(mach>0.99) bdry = 1;
 		}
 
 	//----------particle---------------------
@@ -576,7 +576,7 @@ int bdry;
 				if(bdry!=1)		
 					result -= wt[i]*v->val[i]* 0.5 * 
 										Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, gamma, entry_i);
-		}else{//solid wall ->no mirror
+		}else{//solid wall
 				if(entry_i==1)
 					result += wt[i]*v->val[i]*e->nx[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, gamma);
 				else if(entry_i==2)
