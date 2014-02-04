@@ -16,9 +16,9 @@ using namespace Hermes::Solvers;
 #include "mass_lumping.cpp"
 #include "artificial_diffusion.cpp"
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
-const double time_step = 1e-5;
+const double time_step = 0.01;
 const double T_FINAL = 50000000000;                       // Time interval length. 
 
 const double theta = 1.;
@@ -30,16 +30,50 @@ const double theta = 1.;
 const double GAMMA = 1.4; 
 
 // Penalty Parameter.
-const double SIGMA = std::pow(10,8.); 
+double SIGMA = 10000000.;
 
-//Particle density
-const double density = 4000.; 
+//Particle density_particle
+const double density_particle = 4000.; 
+
+const double diameter = 2e-5;		
+const double c_vg = 743.;
+const double c_vp = 1380.;
+const double c_pg = 1040;
+const double Pr = 0.75;		
+const double mu = 2.76*1e-5;
+
+
     
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
 // Set visual output for every nth step.
 const unsigned int EVERY_NTH_STEP = 1;
+
+/*
+void assemble_vector_s(SpaceSharedPtr<double> space, int dof, int dof_g, int dof_komp, double coeff_vec)
+{
+	Element* e =NULL;
+	AsmList<double> al;
+	double x, y; 
+	
+	for_all_active_elements(e, space->get_mesh()){	
+		space->get_element_assembly_list(e, al);
+	  	for (unsigned int iv = 0; iv < e->get_nvert(); iv++){   		
+		  int index =  space->get_shapeset()->get_vertex_index(iv,HERMES_MODE_QUAD);
+			Node* vn = e->vn[iv];
+			if (space->get_element_order(e->id) == 0) break;
+			if (!vn->is_constrained_vertex()){  //unconstrained ->kein haengender Knoten!!!
+				for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
+					if((al->get_idx()[j]==index)&&(al->get_dof()[j]!=-1.0)){ 
+									x = vn->x; y = vn->y;
+					}
+				}
+			 }
+		}
+		
+	}
+}*/
 
 int main(int argc, char* argv[])
 {
@@ -102,14 +136,14 @@ SpaceSharedPtr<double> space_e_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, sere
 
   // Initialize solutions, set initial conditions.
  MeshFunctionSharedPtr<double> init_rho_g(new ConstantSolution<double>(mesh,  6.));	
-  MeshFunctionSharedPtr<double> init_rho_v_x_g(new  BoundaryCondition_rho_v_x(mesh, GAMMA) );	
+  MeshFunctionSharedPtr<double> init_rho_v_x_g(new  CustomInitialCondition_rho_v_x(mesh, GAMMA) );	
   MeshFunctionSharedPtr<double> init_rho_v_y_g(new  ConstantSolution<double>(mesh,  0.));	
-  MeshFunctionSharedPtr<double> init_rho_e_g(new BoundaryCondition_rho_e(mesh, GAMMA));
+  MeshFunctionSharedPtr<double> init_rho_e_g(new CustomInitialCondition_e(mesh, GAMMA));
 
  MeshFunctionSharedPtr<double> init_rho_p(new ConstantSolution<double>(mesh, 3.4));	
-  MeshFunctionSharedPtr<double> init_rho_v_x_p(new  BoundaryCondition_rho_v_x(mesh, GAMMA,true));	
+  MeshFunctionSharedPtr<double> init_rho_v_x_p(new  CustomInitialCondition_rho_v_x(mesh, GAMMA,true));	
   MeshFunctionSharedPtr<double> init_rho_v_y_p(new  ConstantSolution<double>(mesh,  0.));	
-  MeshFunctionSharedPtr<double> init_rho_e_p(new BoundaryCondition_rho_e(mesh, GAMMA,true));
+  MeshFunctionSharedPtr<double> init_rho_e_p(new CustomInitialCondition_e(mesh, GAMMA,true));
 
 
   MeshFunctionSharedPtr<double> bdry_rho_g(new ConstantSolution<double>(mesh,  6.));	
@@ -195,7 +229,7 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(GAMMA);
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(GAMMA);
 
 
-/*
+
 	EulerInterface wf_DG_init(GAMMA,mesh,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p,num_flux,euler_fluxes,riemann_invariants);
 	EulerInterface wf_DG(GAMMA,mesh, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p,num_flux,euler_fluxes,riemann_invariants);
 
@@ -203,7 +237,7 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(GAMMA);
   DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
   DiscreteProblem<double> dp_DG(&wf_DG, spaces);
 
-*/
+
 
 	EulerK wf_convection_init(GAMMA,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
 	EulerK wf_convection(GAMMA, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
@@ -212,11 +246,11 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(GAMMA);
 	EulerBoundary wf_bdry_init(GAMMA, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
 	EulerBoundary wf_bdry(GAMMA, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
 
-  EulerPenalty wf_penalty_init(SIGMA,density,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
-EulerPenalty wf_penalty(SIGMA, density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
+  EulerPenalty wf_penalty_init(SIGMA,density_particle,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
+EulerPenalty wf_penalty(SIGMA, density_particle, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
 
-  EulerSource wf_source_init(density, init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
-EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
+  EulerSource wf_source_init(density_particle,diameter,c_vg,c_vp,c_pg, Pr,mu, init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
+EulerSource wf_source(density_particle,diameter,c_vg,c_vp,c_pg, Pr,mu, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
 
 
   // Initialize the FE problem.
@@ -237,7 +271,8 @@ EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_
 
 
   // Set up the solver, matrix, and rhs according to the solver selection. 
-	CSCMatrix<double> matrix;  
+	CSCMatrix<double> matrix;
+		CSCMatrix<double> matrix2;    
 	CSCMatrix<double>  mass_matrix;   
 	CSCMatrix<double>  source_matrix;  
 	CSCMatrix<double>  conv_matrix; 
@@ -245,7 +280,7 @@ EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_
 	CSCMatrix<double>  bdry_matrix;  
 	CSCMatrix<double> dg_matrix; 
 
-
+CSCMatrix<double> proj_matrix;
 
     OGProjection<double> ogProjection;
 		SimpleVector<double>  vec_dg(ndof);
@@ -255,8 +290,9 @@ EulerSource wf_source(density, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_
 		SimpleVector<double>  vec_source(ndof);
 		SimpleVector<double>  vec_penalty(ndof);
 
-		double coeff_vec[ndof];	
-		double coeff_vec_2[ndof];
+		double* coeff_vec= new double[ndof];	
+		double* coeff_vec_2 = new double[ndof];
+		double* source_vec = new double[ndof];
 
 
 
@@ -285,70 +321,93 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	char title[100];	
 double norm = 1000;
 double norm_rel = 1000;
- Hermes::Mixins::Loggable::Static::info("Assembling mass"); 	
 		Space<double>::assign_dofs(spaces);
 		  dp_mass.assemble(&mass_matrix);
+proj_matrix.create(mass_matrix.get_size(),mass_matrix.get_nnz(), mass_matrix.get_Ap(), mass_matrix.get_Ai(),mass_matrix.get_Ax());
 mass_matrix.multiply_with_Scalar(1./time_step);
 CSCMatrix<double> * lumped_matrix;
-//lumped_matrix = massLumping(&mass_matrix);
+lumped_matrix = massLumping(&mass_matrix);
 //Timestep loop
 do
-{	 
+{	
+
+
+ 
 	  
  Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i", ts, current_time, ndof); 		
- 	 if(ts!=1){
+ 	// if(ts!=1){
 			dp_conv.assemble(&conv_matrix, &vec_conv);
 			dp_bdry.assemble(&bdry_matrix, &vec_bdry);
 			dp_penalty.assemble(&penalty_matrix, &vec_penalty);
 			dp_source.assemble(&source_matrix, &vec_source);
 				
-		  	//dp_DG.assemble(&dg_matrix,&vec_dg);	
-		}else{
+		  //	dp_DG.assemble(&dg_matrix,&vec_dg);	
+		/*}else{
 			dp_conv_init.assemble(&conv_matrix, &vec_conv);
 			dp_bdry_init.assemble(&bdry_matrix, &vec_bdry);
 			dp_penalty_init.assemble(&penalty_matrix, &vec_penalty);
 			dp_source_init.assemble(&source_matrix, &vec_source);
 			
 		 	//dp_DG_init.assemble(&dg_matrix,&vec_dg);	
-		}
+		}*/
 
-		
+CSCMatrix<double>* diff = NULL;	
+
+/*
+			UMFPackLinearMatrixSolver<double> * proj_solver = new UMFPackLinearMatrixSolver<double> (&proj_matrix,&vec_source);	
+			try{
+			 proj_solver->solve();
+			}catch(Hermes::Exceptions::Exception e){
+				e.print_msg();
+			}
+		for(int i=0; i<ndof;i++)		
+					source_vec[i] = proj_solver->get_sln_vector()[i];	
+lumped_matrix->multiply_with_vector(source_vec, coeff_vec_2);*/
+	
 
 //matrix.create(dg_matrix.get_size(),dg_matrix.get_nnz(), dg_matrix.get_Ap(), dg_matrix.get_Ai(),dg_matrix.get_Ax());
 //matrix.add_sparse_matrix(&source_matrix);
-//CSCMatrix<double>* diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
+ diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
 
-		matrix.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.get_Ap(), source_matrix.get_Ai(),source_matrix.get_Ax());
-//matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
+		//matrix.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.get_Ap(), source_matrix.get_Ai(),source_matrix.get_Ax());
+matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
 //matrix.add_sparse_matrix(&dg_matrix);
 		matrix.add_sparse_matrix(&bdry_matrix);
-		matrix.add_sparse_matrix(&conv_matrix);
-//matrix.add_sparse_matrix(diff);
+		//matrix.add_sparse_matrix(&conv_matrix);
+	matrix.add_sparse_matrix(diff);
 		matrix.add_sparse_matrix(&penalty_matrix);
 		matrix.multiply_with_Scalar(-theta); 
-//matrix.add_sparse_matrix(lumped_matrix);  
-		matrix.add_sparse_matrix(&mass_matrix); 			
+		matrix.add_sparse_matrix(lumped_matrix);  
+		//matrix.add_sparse_matrix(&mass_matrix); 
 
+/*
+//matrix2.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.get_Ap(), source_matrix.get_Ai(),source_matrix.get_Ax());	
+matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(), bdry_matrix.get_Ai(),bdry_matrix.get_Ax());			
+		//matrix2.add_sparse_matrix(&bdry_matrix);
+		matrix2.add_sparse_matrix(&penalty_matrix);
+		matrix2.multiply_with_Scalar(-theta); 
+		matrix2.add_sparse_matrix(&mass_matrix); */
+		
 	//-------------rhs: ------------		
-	//	matrix.multiply_with_vector(coeff_vec, coeff_vec_2);
+		//matrix2.multiply_with_vector(coeff_vec, coeff_vec_2);
 		vec_rhs.zero(); 
-		//vec_rhs.add_vector(coeff_vec_2); 
+		vec_rhs.add_vector(coeff_vec_2); 
 		//vec_rhs.add_vector(&vec_dg); 
 		vec_rhs.add_vector(&vec_bdry); 
 		vec_rhs.add_vector(&vec_conv); 
 		vec_rhs.add_vector(&vec_penalty); 
-		vec_rhs.add_vector(&vec_source); 
+		//vec_rhs.add_vector(&vec_source); 
 
 
 	//-------------------------solution of (M-theta(K+P+B+S)) (u(n+1)-u(n) = Sn +Ku(n) +Bn+Pn------------ 
- Hermes::Mixins::Loggable::Static::info("Solving"); 		
+		
 			UMFPackLinearMatrixSolver<double> * solver = new UMFPackLinearMatrixSolver<double> (&matrix,&vec_rhs);	
 			try{
 			 solver->solve();
 			}catch(Hermes::Exceptions::Exception e){
 				e.print_msg();
 			}	
- Hermes::Mixins::Loggable::Static::info("Solved"); 		
+	
 		for(int i=0; i<ndof;i++)		
 					coeff_vec[i] += solver->get_sln_vector()[i];
 							
@@ -373,11 +432,11 @@ do
                         mach_view_g.show(mach_g);
 
 
-                        sprintf(title, "Density_gas: ts=%i",ts);
+                        sprintf(title, "density_particle_gas: ts=%i",ts);
                         s1_g.set_title(title);
                         s1_g.show(prev_rho_g);
 
-						sprintf(title, "Density_particle: ts=%i",ts);
+						sprintf(title, "density_particle_particle: ts=%i",ts);
                         s1_p.set_title(title);
                         s1_p.show(prev_rho_p);
 
@@ -407,7 +466,7 @@ sprintf(title, "energy_particle: ts=%i",ts);
 
 		delete solver;
 		matrix.free();
-		//delete diff;
+		if(diff!=NULL) delete diff;
  
 
 
@@ -433,14 +492,15 @@ sprintf(filename, "m-%i.vtk", ts );
 			lin_m.save_solution_vtk(mach, filename, "mach", true);
 
 sprintf(filename, "rho-%i.vtk", ts );  
-			lin_rho.save_solution_vtk(prev_slns[0], filename, "density", true);
+			lin_rho.save_solution_vtk(prev_slns[0], filename, "density_particle", true);
 
 */
 
 
 
 
-
+delete [] coeff_vec;
+delete [] coeff_vec_2;
 
 
   // Wait for the view to be closed.

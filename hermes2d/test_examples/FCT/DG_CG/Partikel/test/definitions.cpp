@@ -4,11 +4,8 @@
   EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
 	{
 
-		for(int k =0; k<num_of_equations;k++)
-		{
-			
-			add_matrix_form(new DefaultMatrixFormVol<double>(k,k)); 
-		} 
+		for(int k =0; k<num_of_equations;k++)			
+			add_matrix_form(new DefaultMatrixFormVol<double>(k,k)); 	 
 
 	}
 
@@ -170,9 +167,10 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 
 //_---------------SourceTerm Part-------------------------------------------------------------------------------------------
 
-	EulerSource::EulerSource(double particle_density, MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations): WeakForm<double>(num_of_equations),particle_density(particle_density),
+	EulerSource::EulerSource(double particle_density, double d, double c_vg,double c_vp, double c_pg, double Pr, double mu, MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations): WeakForm<double>(num_of_equations),particle_density(particle_density),
     prev_density_g(prev_density_g), prev_density_vel_x_g(prev_density_vel_x_g), prev_density_vel_y_g(prev_density_vel_y_g), prev_energy_g(prev_energy_g),
-prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev_density_vel_y_p(prev_density_vel_y_p), prev_energy_p(prev_energy_p)
+prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev_density_vel_y_p(prev_density_vel_y_p), prev_energy_p(prev_energy_p),
+ d(d), c_vg(c_vg),c_vp(c_vp), c_pg(c_pg), Pr(Pr), mu(mu)
 	{
 //gas/particle phase
 	for(int k =0; k<8;k++)
@@ -195,7 +193,7 @@ prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev
 	WeakForm<double>* EulerSource::clone() const
     {
     EulerSource* wf;
-    wf = new EulerSource(this->particle_density, this->prev_density_g, this->prev_density_vel_x_g, this->prev_density_vel_y_g, this->prev_energy_g,
+    wf = new EulerSource(this->particle_density,d, c_vg,c_vp,c_pg,Pr,mu, this->prev_density_g, this->prev_density_vel_x_g, this->prev_density_vel_y_g, this->prev_energy_g,
 this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, this->prev_energy_p,8);
 
     wf->ext.clear();
@@ -224,12 +222,12 @@ if((entry_i==0)||(entry_i==4)) return 0;
       double result = 0.;
 
 		double material_density = (static_cast<EulerSource*>(wf))->particle_density;
-		double d = 1e-5;		
-		double c_vg = 743.;
-		double c_vp = 1380.;
-		double c_pg = 1040;
-		double Pr = 0.75;		
-		double mu = 2.76*1e-5;
+		double d = (static_cast<EulerSource*>(wf))->d;		
+		double c_vg = (static_cast<EulerSource*>(wf))->c_vg;
+		double c_vp = (static_cast<EulerSource*>(wf))->c_vp;
+		double c_pg = (static_cast<EulerSource*>(wf))->c_pg;
+		double Pr =(static_cast<EulerSource*>(wf))->Pr;		
+		double mu = (static_cast<EulerSource*>(wf))->mu;
 		double kap = c_pg*mu/Pr;
 
 
@@ -246,7 +244,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 			double v_x_g = rho_v_x_g/rho_g;
 			double v_y_g = rho_v_x_g/rho_g;
 
-			double rho_p = ext[4]->val[i]/alpha_p;  
+			double rho_p = material_density;  
 			double rho_v_x_p = ext[5]->val[i]/alpha_p; 
 			double rho_v_y_p = ext[6]->val[i]/alpha_p; 
 			double rho_e_p = ext[7]->val[i]/alpha_p;
@@ -266,10 +264,21 @@ if((entry_i==0)||(entry_i==4)) return 0;
 		double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
 
 		double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
-		double T_p = 1./c_vp*(rho_e_p/rho_p-0.5*(v_x_p*v_x_p+v_y_p*v_y_p));
+		double T_p  = 1./c_vp*(rho_e_p/rho_p-0.5*(v_x_p*v_x_p+v_y_p*v_y_p));
 
 		double Q_drag = 0.75*v_diff_abs*C_D/(d*alpha_g*material_density);
-		double Q_tem = Nu*6.*kap/(d*d*rho_p);
+		double Q_tem = Nu*6.*kap/(d*d*material_density);
+
+
+			 rho_g = ext[0]->val[i];  
+			rho_v_x_g = ext[1]->val[i]; 
+			 rho_v_y_g = ext[2]->val[i]; 
+			 rho_e_g = ext[3]->val[i];
+			 rho_p = ext[4]->val[i];  
+			 rho_v_x_p = ext[5]->val[i]; 
+			 rho_v_y_p = ext[6]->val[i]; 
+			 rho_e_p = ext[7]->val[i];
+
 
 			if(entry_i==1)
 			{
@@ -295,13 +304,13 @@ if((entry_i==0)||(entry_i==4)) return 0;
 			}else if(entry_i==3)
 			{	if(entry_j==0)
 				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/rho_p);
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_tem *(rho_v_x_p/c_vg)*(-rho_e_g/rho_g + (v_x_g*v_x_g+v_y_g*v_y_g))/rho_g;
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_tem *(rho_v_x_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
 				}else if(entry_j==1)
 				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_x_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-v_x_g)/rho_g;
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
 				}else if(entry_j==2)
 				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_y_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-v_y_g)/rho_g;
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
 				}else if(entry_j==3)
 				{   result -= wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_v_x_p/c_vg);
 				}else if(entry_j==4)
@@ -336,13 +345,13 @@ if((entry_i==0)||(entry_i==4)) return 0;
 			}else if(entry_i==7)
 			{	if(entry_j==0)
 				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/rho_p);
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_e_g/rho_g + (v_x_g*v_x_g+v_y_g*v_y_g))/rho_g;
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
 				}else if(entry_j==1)
 				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_x_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-v_x_g)/rho_g;
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
 				}else if(entry_j==2)
 				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_y_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-v_y_g)/rho_g;
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
 				}else if(entry_j==3)
 				{   result += wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_v_x_p/c_vg);
 				}else if(entry_j==4)
@@ -356,9 +365,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(v_y_p/c_vp);
 				}else if(entry_j==7)
 					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(-1./c_vp);
-			}
-			
-				
+			}			
 
 		}
 
@@ -387,12 +394,12 @@ if((entry_i==0)||(entry_i==4)) return 0;
 
 	if((entry_i==0)||(entry_i==4)) return 0;
 double material_density = (static_cast<EulerSource*>(wf))->particle_density;
-		double d = 1e-5;		
-		double c_vg = 743.;
-		double c_vp = 1380.;
-		double c_pg = 1040;
-		double Pr = 0.75;		
-		double mu = 2.76*1e-5;
+		double d = (static_cast<EulerSource*>(wf))->d;		
+		double c_vg = (static_cast<EulerSource*>(wf))->c_vg;
+		double c_vp = (static_cast<EulerSource*>(wf))->c_vp;
+		double c_pg = (static_cast<EulerSource*>(wf))->c_pg;
+		double Pr =(static_cast<EulerSource*>(wf))->Pr;		
+		double mu = (static_cast<EulerSource*>(wf))->mu;
 		double kap = c_pg*mu/Pr;
 
       double result = 0.;
@@ -416,8 +423,6 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 
 			double v_x_p = rho_v_x_p/rho_p;
 			double v_y_p = rho_v_x_p/rho_p;
-
-
 		
 
 		double v1_diff = (v_x_g - v_x_p);
@@ -891,6 +896,11 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
   double result = 0.;
   for (int i = 0;i < n;i++) 
   {		
+		
+if((e->x[i]== 0) ||(e->x[i]== 1)) continue;
+if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.; 
+if((entry_j==0) ||(entry_j==3)||(entry_j==4) ||(entry_j==7)) return 0.;
+  
 		if(particle){
 			double vn = ext[5]->val[i]/ext[4]->val[i]*e->nx[i] + ext[6]->val[i]/ext[4]->val[i]*e->ny[i];
 				double factor = ((2.*vn*vn+eps)/(std::sqrt(vn*vn+eps)));
@@ -971,24 +981,27 @@ double material_density = (static_cast<EulerPenalty*>(wf))->particle_density;
   double result = 0.;
   for (int i = 0;i < n;i++) 
 	{
+if((e->x[i]== 0) ||(e->x[i]== 1)) continue; 
+if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.; 
 		double alpha_p  =ext[4]->val[i]/material_density ;
 			double alpha_g = 1.-alpha_p;
 
 		if(particle)
 		{
-			double vn = (ext[5]->val[i]*e->nx[i] + ext[6]->val[i]*e->ny[i])/alpha_p;
+			double vn = (ext[5]->val[i]*e->nx[i] + ext[6]->val[i]*e->ny[i])/ext[4]->val[i];
+			double rho =  ext[4]->val[i]/alpha_p;
 				if(entry_i==5)
-					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn);
+					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn)*rho*rho;
 				else if(entry_i==6)
-					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn);
+					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn)*rho*rho;
 
 		}else{
-			double vn = (ext[1]->val[i]*e->nx[i] + ext[2]->val[i]*e->ny[i])/alpha_g;
-		
+			double vn = (ext[1]->val[i]*e->nx[i] + ext[2]->val[i]*e->ny[i])/ext[0]->val[i];
+			double rho =  ext[0]->val[i]/alpha_g;
 				if(entry_i==1)
-					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn);
+					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn)*rho*rho;
 				else if(entry_i==2)
-					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn);
+					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn)*rho*rho;
 		}			
 	 }
 

@@ -10,8 +10,9 @@
 
  double CustomInitialCondition_rho::value(double x, double y) const 
 	{    			
-
-		return 6.;
+double pressure = 8.;
+double  rho= pressure*gamma;
+		return rho;
 
 };
 
@@ -31,11 +32,10 @@
 
  double CustomInitialCondition_rho_v_x::value(double x, double y) const 
 	{     
-double rho = 6;
-double pressure = std::pow(10,1.);
-if(particle){ rho = 3.4;pressure = 0.;}
 
-double v_x = std::sqrt(gamma*pressure/rho)*2.;
+double pressure = 8.;
+double  rho= pressure*gamma;
+double v_x = 0.;
 return (rho*v_x);	
 };
 
@@ -62,11 +62,10 @@ return (rho*v_x);
 {  
 
 
-double pressure = std::pow(10,1.);  
-double  rho= 6.;
+double pressure = 8; 
+double  rho= pressure*gamma;
 
-if(particle){ rho = 3.4; pressure = 0;}
-double v_x = std::sqrt(gamma*pressure/rho)*2.;
+double v_x = 0.;
 double rho_v_x = rho*v_x;
 
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->gamma);
@@ -97,7 +96,17 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
 
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
-return 0;
+double pressure = std::pow(10,1.);  
+double  rho= pressure*gamma;
+
+
+if(x>1){
+ pressure = 8.;
+ rho= pressure*gamma;
+}
+
+return rho;
+
 };
 
  Ord BoundaryCondition_rho::ord(double x, double y)   const {
@@ -118,12 +127,15 @@ return 0;
 
  double BoundaryCondition_rho_v_x::value(double x, double y) const 
 	{    			
-double rho = 6;
-double pressure = std::pow(10,1.);
-if(particle){ rho = 3.4;pressure = 0.;}
+double pressure = std::pow(10,1.);  
+double  rho= pressure*gamma;
 
-double v_x = std::sqrt(gamma*pressure/rho)*2.;
-return (rho*v_x);
+double v_x = -Hermes::sqr(2.*y)*0.8+0.8;
+double rho_v_x = rho*v_x;
+
+if(x>1.) return 0;
+
+return rho_v_x;
 
 };
 
@@ -149,13 +161,21 @@ return (rho*v_x);
 
 
 double pressure = std::pow(10,1.);  
-double  rho= 6.;
+double  rho= pressure*gamma;
 
-if(particle){ rho = 3.4; pressure = 0;}
-double v_x = std::sqrt(gamma*pressure/rho)*2.;
+double v_x =  -Hermes::sqr(2.*y)*0.8+0.8;
 double rho_v_x = rho*v_x;
 
+if(x>1){
+ pressure = 8.;
+ rho= pressure*gamma;
+	return QuantityCalculator::calc_energy(rho , 0. , 0.0, pressure, this->gamma);
+}
+
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->gamma);
+
+
+	
 };
 
  Ord BoundaryCondition_rho_e::ord(double x, double y)   const {

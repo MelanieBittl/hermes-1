@@ -16,7 +16,7 @@ using namespace Hermes::Hermes2D::WeakFormsH1;
 class EulerEquationsWeakForm_Mass : public WeakForm<double>
 {
 public:
-  EulerEquationsWeakForm_Mass(int num_of_equations = 8);
+  EulerEquationsWeakForm_Mass(int num_of_equations = 5);
 
     WeakForm<double>* clone() const;
 
@@ -30,7 +30,7 @@ class EulerK : public WeakForm<double>
 public:
 
   EulerK(double gamma,
-MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations = 8);
+MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, int num_of_equations = 5);
 
 	~EulerK();
 
@@ -49,9 +49,7 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
   MeshFunctionSharedPtr<double> prev_energy_g;
 
   MeshFunctionSharedPtr<double> prev_density_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_x_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_y_p;
-  MeshFunctionSharedPtr<double> prev_energy_p;
+
 
 
 protected:
@@ -109,7 +107,7 @@ class EulerSource : public WeakForm<double>
 {
 public:
 
-  EulerSource(double particle_density, double d, double c_vg,double c_vp, double c_pg, double Pr, double mu, MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations = 8);
+  EulerSource(double particle_density,MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, int num_of_equations = 5);
 
 	~EulerSource();
 
@@ -117,12 +115,6 @@ public:
 
 	double particle_density;
 
-		double d;		
-		double c_vg;
-		double c_vp;
-		double c_pg;
-		double Pr;		
-		double mu;
 
 
   MeshFunctionSharedPtr<double> prev_density_g;
@@ -131,9 +123,7 @@ public:
   MeshFunctionSharedPtr<double> prev_energy_g;
 
   MeshFunctionSharedPtr<double> prev_density_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_x_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_y_p;
-  MeshFunctionSharedPtr<double> prev_energy_p;
+
 
 
 protected:
@@ -190,8 +180,8 @@ class EulerBoundary : public WeakForm<double>
 {
 public:
 
-  EulerBoundary(double gamma,MeshFunctionSharedPtr<double>  rho_ext_g, MeshFunctionSharedPtr<double>  v1_ext_g, MeshFunctionSharedPtr<double>  v2_ext_g, MeshFunctionSharedPtr<double>  energy_ext_g,MeshFunctionSharedPtr<double>  rho_ext_p, MeshFunctionSharedPtr<double>  v1_ext_p, MeshFunctionSharedPtr<double>  v2_ext_p, MeshFunctionSharedPtr<double>  energy_ext_p, 
-MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations = 8);
+  EulerBoundary(double gamma,MeshFunctionSharedPtr<double>  rho_ext_g, MeshFunctionSharedPtr<double>  v1_ext_g, MeshFunctionSharedPtr<double>  v2_ext_g, MeshFunctionSharedPtr<double>  energy_ext_g,MeshFunctionSharedPtr<double>  rho_ext_p,
+MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, int num_of_equations = 5);
 
 	~EulerBoundary();
 
@@ -209,9 +199,7 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
   MeshFunctionSharedPtr<double> prev_energy_g;
 
   MeshFunctionSharedPtr<double> prev_density_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_x_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_y_p;
-  MeshFunctionSharedPtr<double> prev_energy_p;
+
 
   MeshFunctionSharedPtr<double> rho_ext_g;
   MeshFunctionSharedPtr<double> v1_ext_g;
@@ -219,9 +207,7 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
   MeshFunctionSharedPtr<double> energy_ext_g;
 
   MeshFunctionSharedPtr<double> rho_ext_p;
-  MeshFunctionSharedPtr<double> v1_ext_p;
-  MeshFunctionSharedPtr<double> v2_ext_p;
-  MeshFunctionSharedPtr<double> energy_ext_p;
+
 
 protected:
 
@@ -276,13 +262,14 @@ protected:
 
 };
 
+
 //---------------Penalty Weakform----------
 
 class EulerPenalty : public WeakForm<double>
 {
 public:
 
-  EulerPenalty(double sigma,double particle_density,MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p,double eps = 1e-8, int num_of_equations = 8);
+  EulerPenalty(double sigma,double particle_density,MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p,double eps = 1e-7, int num_of_equations = 5);
 
 	~EulerPenalty(){};
 
@@ -299,9 +286,7 @@ double particle_density;
   MeshFunctionSharedPtr<double> prev_energy_g;
 
   MeshFunctionSharedPtr<double> prev_density_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_x_p;
-  MeshFunctionSharedPtr<double> prev_density_vel_y_p;
-  MeshFunctionSharedPtr<double> prev_energy_p;
+
 
 
 
