@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain_all.mesh", basemesh);
+  mloader.load("domain2.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
  /* for (int i=0; i < INIT_REF_NUM; i++)
@@ -90,7 +90,7 @@ Element* e = NULL;Node* vn=NULL;
 
  	 mesh->copy(basemesh);
 
-Element* test_element = RefMap::element_on_physical_coordinates(true, mesh, 1, 0);
+Element* test_element = RefMap::element_on_physical_coordinates(true, mesh, 1.2, 0);
 
 /*
    MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
@@ -369,7 +369,7 @@ if(mach<0.9)
 }
 
 			// Visualize the solution.
- /*		Hermes::Mixins::Loggable::Static::info("Visualize"); 	
+ 	/*	Hermes::Mixins::Loggable::Static::info("Visualize"); 	
                         sprintf(title, "Pressure gas: ts=%i",ts);
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
@@ -391,9 +391,9 @@ if(mach<0.9)
                         s3_g.show(prev_rho_v_y_g);
 						sprintf(title, "density_particle: ts=%i",ts);
                         s1_p.set_title(title);
-                        s1_p.show(prev_rho_p);
+                        s1_p.show(prev_rho_p);*/
 
-*/
+
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -410,7 +410,7 @@ if(mach<0.9)
 		matrix.free();
 		if(diff!=NULL) delete diff;
 
-	if(ts%100 ==1)
+	if(ts%1000 ==1)
 {
 				pressure_g->reinit();
 				mach_g->reinit();

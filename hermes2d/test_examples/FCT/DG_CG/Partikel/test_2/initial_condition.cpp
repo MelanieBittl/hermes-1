@@ -11,7 +11,7 @@
  double CustomInitialCondition_rho::value(double x, double y) const 
 	{    			
 
-double  rho= 2.0;
+double  rho= 1.0;
 		return rho;
 
 };
@@ -34,7 +34,7 @@ double  rho= 2.0;
 	{     
 
 
-double  rho=2.0;
+double  rho=1.0;
 
 double v_x = 0.0;
 if(x>1)
@@ -64,7 +64,7 @@ return (rho*v_x);
 
 
 double pressure = std::pow(10,2);
-double  rho= 2.0;
+double  rho= 1.0;
 
 double v_x = 0.;
 double rho_v_x = rho*v_x;

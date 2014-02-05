@@ -213,15 +213,23 @@ prev_density_p(prev_density_p)
 		 {
 
       double result = 0.;
+/*if(entry_i!=4) return 0;
 
-		double material_density = (static_cast<EulerSource*>(wf))->particle_density;
+		double material_density = (static_cast<EulerSource*>(wf))->particle_density;  
+if(entry_j==4)    
+		for (int i = 0;i < n;i++)
+		{
+			if((e->y[i]>= -0.14)&&(e->y[i]<= 0.15)&&(e->x[i]>1.2)&&(e->x[i]<1.3)) 
+			{
+				// double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
+				//if(mach>0.11){
+						double rho = ext[4]->val[i];
+		
+							result += wt[i] *u->val* v->val[i];
+				//}
+			}
 
-
-      
-		for (int i = 0;i < n;i++){
-			
-
-		}
+		}*/
 
       return (result);
     }
@@ -253,13 +261,13 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 if(entry_i==4){
 	for (int i = 0;i < n;i++)
 		{
-			if((e->y[i]>= -0.14)&&(e->y[i]<= 0.15)&&(e->x[i]>1.)&&(e->x[i]<1.1)) 
+			if((e->y[i]>= -0.14)&&(e->y[i]<= 0.15)&&(e->x[i]>1.2)&&(e->x[i]<1.3)) 
 			{
 				// double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 				//if(mach>0.11){
 						double rho = ext[4]->val[i];
 		
-							result += wt[i] * v->val[i]*(material_density);
+							result += wt[i] * v->val[i]*(material_density*0.1);
 				//}
 			}
 
