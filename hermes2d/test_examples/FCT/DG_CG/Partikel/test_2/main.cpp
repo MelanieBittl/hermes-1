@@ -19,10 +19,10 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
-const double time_step = 0.01;
+const double time_step = 1e-3;
 const double T_FINAL = 100;                       // Time interval length. 
 
-const double theta = 0.5;
+const double theta = 1.;
 
 // Equation parameters.  
  
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain_all.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
  /* for (int i=0; i < INIT_REF_NUM; i++)
@@ -78,6 +78,7 @@ Element* e = NULL;Node* vn=NULL;
 								vn->y = (Hermes::cos(vn->x*PI)+1.28/0.72)/(2.*1.28/0.72+2.) ;	
 							}else if(vn->y<0.){
 								vn->y =-( (Hermes::cos(vn->x*PI)+1.3/0.7)/(2.*1.3/0.7+2.) );
+								//vn->y = -(Hermes::cos(vn->x*PI)+1.28/0.72)/(2.*1.28/0.72+2.) ;	
 							}
 					}
 			}
@@ -194,13 +195,14 @@ MeshFunctionSharedPtr<double> mach_init_g(new  MachNumberFilter(init_slns_g, GAM
 
 	EulerBoundary wf_bdry_init(GAMMA, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p, init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p);
 	EulerBoundary wf_bdry(GAMMA, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p);
+EulerBoundary wf_bdry_low(GAMMA, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p, low_rho_g, low_rho_v_x_g, low_rho_v_y_g, low_rho_e_g, low_rho_p);
 
  /* EulerPenalty wf_penalty_init(SIGMA,density_particle,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p);
 EulerPenalty wf_penalty(SIGMA, density_particle, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p);
 */
   EulerSource wf_source_init(density_particle, init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p);
 EulerSource wf_source(density_particle,prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p);
-
+EulerSource wf_source_low(density_particle,low_rho_g, low_rho_v_x_g, low_rho_v_y_g, low_rho_e_g,low_rho_p);
 
   // Initialize the FE problem.
   DiscreteProblem<double> dp_mass(&wf_mass,spaces);
@@ -217,6 +219,9 @@ EulerSource wf_source(density_particle,prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_
   DiscreteProblem<double> dp_source_init(&wf_source_init,spaces); 
   DiscreteProblem<double> dp_source(&wf_source, spaces); 
 
+DiscreteProblem<double> dp_source_low(&wf_source_low, spaces); 
+DiscreteProblem<double> dp_bdry_low(&wf_bdry_low, spaces); 
+
 
 
   // Set up the solver, matrix, and rhs according to the solver selection. 
@@ -227,7 +232,7 @@ EulerSource wf_source(density_particle,prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_
 	CSCMatrix<double>  conv_matrix; 
 	CSCMatrix<double>  penalty_matrix;
 	CSCMatrix<double>  bdry_matrix;  
-
+CSCMatrix<double> matrixL; 
 
     OGProjection<double> ogProjection;
 	
@@ -236,6 +241,7 @@ EulerSource wf_source(density_particle,prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_
 		SimpleVector<double>  vec_conv(ndof);
 		SimpleVector<double>  vec_source(ndof);
 		SimpleVector<double>  vec_penalty(ndof);
+		vec_source.zero(); 
 
 		double* coeff_vec= new double[ndof];	
 		double* coeff_vec_2 = new double[ndof];
@@ -253,20 +259,39 @@ EulerSource wf_source(density_particle,prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_
 
 
 
-                      /* s1_g.show(prev_rho_g);                       
-                        s2_g.show(prev_rho_v_x_g);
-                        //s3_g.show(prev_rho_v_y_g);
-                       // s4_g.show(prev_rho_e_g);
-                       // s1_p.show(prev_rho_p);*/
-
-
-//View::wait(HERMES_WAIT_KEYPRESS);
-
-
 
 		MeshFunctionSharedPtr<double> pressure_g(new PressureFilter(prev_slns, GAMMA));
 		MeshFunctionSharedPtr<double> mach_g(new  MachNumberFilter(prev_slns, GAMMA));
-	
+		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+		MeshFunctionSharedPtr<double> vel_y(new VelocityFilter_y(prev_slns));
+char title[100];
+
+             /*           sprintf(title, "Pressure gas");
+                        pressure_view_g.set_title(title);
+                        pressure_g->reinit();
+                        pressure_view_g.show(pressure_g);
+                        
+                        sprintf(title, "Mach gas:");
+                        mach_view_g.set_title(title);
+                        mach_g->reinit();
+                        mach_view_g.show(mach_g);
+
+                        sprintf(title, "density_gas");
+                        s1_g.set_title(title);
+                        s1_g.show(prev_rho_g);
+  						sprintf(title, "v_x_gas");
+                        s2_g.set_title(title);
+						vel_x->reinit();
+                        s2_g.show(vel_x);
+  						sprintf(title, "v_y_gas");
+                        s3_g.set_title(title);
+						vel_y->reinit();
+                        s3_g.show(vel_y);
+						sprintf(title, "density_particle");
+                        s1_p.set_title(title);
+                        s1_p.show(prev_rho_p);*/
+
+	//View::wait(HERMES_WAIT_KEYPRESS);
 Linearizer lin;	
 
 
@@ -274,7 +299,7 @@ Linearizer lin;
 // Time stepping loop:
 	double current_time = 0.0; 
 	int ts = 1;
-	char title[100];	
+		
 double norm = 1000;
 double norm_rel = 1000;
 		Space<double>::assign_dofs(spaces);
@@ -289,42 +314,43 @@ do
 {	 
 	  
  Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, residual = %e", ts, current_time, ndof, residual); 		
- 	 if(ts!=1){
+ 	// if(ts!=1){
 			dp_conv.assemble(&conv_matrix, &vec_conv);
 			dp_bdry.assemble(&bdry_matrix, &vec_bdry);
 			//dp_source.assemble(&source_matrix, &vec_source);
-				dp_source.assemble(&vec_source);
+				if(mach>=0.9) dp_source.assemble(&vec_source);
 		
-		}else{
+		/*}else{
 			dp_conv_init.assemble(&conv_matrix, &vec_conv);
 			dp_bdry_init.assemble(&bdry_matrix, &vec_bdry);
-				dp_source.assemble(&vec_source);
+				if(mach>=0.9) dp_source.assemble(&vec_source);
 			//dp_source_init.assemble(&source_matrix, &vec_source);
 	
-		}
+		}*/
 
 CSCMatrix<double>* diff = NULL;	
  diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
 
 		//matrix.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.get_Ap(), source_matrix.get_Ai(),source_matrix.get_Ax());
-matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
-//matrix.add_sparse_matrix(&dg_matrix);
-		matrix.add_sparse_matrix(&bdry_matrix);
 		//matrix.add_sparse_matrix(&conv_matrix);
-	matrix.add_sparse_matrix(diff);
 
+matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
+		matrix.add_sparse_matrix(&bdry_matrix);
+	matrix.add_sparse_matrix(diff);
 		matrix.multiply_with_Scalar(-theta); 
-		matrix.add_sparse_matrix(lumped_matrix);  
+		matrix.add_sparse_matrix(lumped_matrix);
+ 
 		//matrix.add_sparse_matrix(&mass_matrix); 
 
+matrixL.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
+matrixL.add_sparse_matrix(diff);
 
-
-//matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(), bdry_matrix.get_Ai(),bdry_matrix.get_Ax());	
-matrix2.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());	
-matrix2.add_sparse_matrix(diff);	
+matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(), bdry_matrix.get_Ai(),bdry_matrix.get_Ax());	
+//matrix2.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());	
+//matrix2.add_sparse_matrix(diff);	
 		//matrix2.add_sparse_matrix(&bdry_matrix);		
-		//matrix2.multiply_with_Scalar(-theta); 
-		//matrix2.add_sparse_matrix(&mass_matrix); 
+		matrix2.multiply_with_Scalar(-theta); 
+		matrix2.add_sparse_matrix(lumped_matrix); 
 		
 	//-------------rhs: ------------		
 		matrix2.multiply_with_vector(coeff_vec, coeff_vec_2);
@@ -348,11 +374,13 @@ for(int i = 1; i<ndof; i++)
 			}	
 
 for(int i=0; i<ndof;i++)
-	u_L[i] = solver->get_sln_vector()[i]+coeff_vec[i];
+	u_L[i] = solver->get_sln_vector()[i];
 
+Solution<double>::vector_to_solutions(u_L, spaces, low_slns);
+			dp_bdry_low.assemble(&vec_bdry);			
+	if(mach>=0.9) dp_source_low.assemble(&vec_source);
 
-
-antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrix2, &vec_bdry,u_L, flux_vec, P_plus,P_minus, Q_plus, Q_minus,  R_plus, R_minus,dof_rho,time_step,GAMMA );
+antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,&vec_source, u_L, flux_vec, P_plus,P_minus, Q_plus, Q_minus,  R_plus, R_minus,dof_rho,time_step,GAMMA );
 	
 		for(int i=0; i<ndof;i++)		
 					coeff_vec[i] = u_L[i] + flux_vec[i]*time_step/lumped_matrix->get(i,i);
@@ -369,7 +397,7 @@ if(mach<0.9)
 }
 
 			// Visualize the solution.
- 	/*	Hermes::Mixins::Loggable::Static::info("Visualize"); 	
+ 		/*Hermes::Mixins::Loggable::Static::info("Visualize"); 	
                         sprintf(title, "Pressure gas: ts=%i",ts);
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
@@ -385,10 +413,12 @@ if(mach<0.9)
                         s1_g.show(prev_rho_g);
   						sprintf(title, "v_x_gas: ts=%i",ts);
                         s2_g.set_title(title);
-                        s2_g.show(prev_rho_v_x_g);
+						vel_x->reinit();
+                        s2_g.show(vel_x);
   						sprintf(title, "v_ye_gas: ts=%i",ts);
                         s3_g.set_title(title);
-                        s3_g.show(prev_rho_v_y_g);
+						vel_y->reinit();
+                        s3_g.show(vel_y);
 						sprintf(title, "density_particle: ts=%i",ts);
                         s1_p.set_title(title);
                         s1_p.show(prev_rho_p);*/
@@ -408,6 +438,8 @@ if(mach<0.9)
 
 		delete solver;
 		matrix.free();
+		matrix2.free();
+		matrixL.free();
 		if(diff!=NULL) delete diff;
 
 	if(ts%1000 ==1)

@@ -14,10 +14,10 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const double time_step = 1e-3;
+const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
-const double theta = 0.5;
+const double theta = 1.;
 
 // Equation parameters.  
  

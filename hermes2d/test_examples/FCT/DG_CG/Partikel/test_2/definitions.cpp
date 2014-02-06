@@ -261,7 +261,7 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 if(entry_i==4){
 	for (int i = 0;i < n;i++)
 		{
-			if((e->y[i]>= -0.14)&&(e->y[i]<= 0.15)&&(e->x[i]>1.2)&&(e->x[i]<1.3)) 
+			if((e->y[i]> -0.01)&&(e->y[i]< 0.01)&&(e->x[i]==1.2)) 
 			{
 				// double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 				//if(mach>0.11){
@@ -366,17 +366,39 @@ this->prev_density_p,5);
 	double* dudu_j= new double[4];
 	double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
 	double rho, rho_v_x, rho_v_y, rho_energy;
-	
+	double nx,ny,tx, ty;
 	double constant = 1.;
   	double result = 0.;
   for (int i = 0;i < n;i++) 
   {	
-		bdry =0;
-		if(e->x[i]== 0) bdry = 2;
+
+			nx = e->nx[i];
+			ny = e->ny[i];
+			tx = e->tx[i];
+			ty = e->ty[i];
+
+
+			if(e->x[i]== 1.2)
+			{
+					nx = -1.; ny = 0.;
+					ty = nx;
+					tx = -ny;
+
+
+			}
+
+		bdry = 0;
+		if(e->x[i]== 0.)
+		{ 	//bdry = 4;
+			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
+			//if(mach>0.99) 
+			bdry = 2;
+		}
 		if(e->x[i]== 2){ 
-		bdry =1;
-		//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
-		//if(mach>0.99) bdry = 1;
+			//bdry =3;
+			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
+			//if(mach>0.99) 
+			bdry = 1;
 		}
 
 
@@ -398,7 +420,7 @@ this->prev_density_p,5);
 				return 0.;
 			}			
 
-		result += wt[i] * u->val[i] *v->val[i]*( v_x_g * e->nx[i] + v_y_g * e->ny[i]);
+		result += wt[i] * u->val[i] *v->val[i]*( v_x_g * nx + v_y_g * ny);
 
 
 
@@ -415,23 +437,23 @@ this->prev_density_p,5);
 				rho_energy_ext =ext[7]->val[i];
 
 	 		if(bdry!=0){ 
-				(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state(bdry,rho, rho_v_x, rho_v_y, rho_energy, e->nx[i],e->ny[i],e->tx[i],e->ty[i], rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, ghost_state);
+				(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state(bdry,rho, rho_v_x, rho_v_y, rho_energy, nx,ny,tx,ty, rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, ghost_state);
 
 				if(bdry!=1){
-						Boundary_helpers::calculate_A_n(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i],e->ny[i] , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], gamma, entry_i,A_n); //ite-Zeile A_n
+						Boundary_helpers::calculate_A_n(rho, rho_v_x, rho_v_y, rho_energy, nx,ny , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], gamma, entry_i,A_n); //ite-Zeile A_n
 
 					if(bdry!=2) 
 					{
-							(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_du_du(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i],e->ny[i] ,e->tx[i], e->ty[i], ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
+							(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_du_du(rho, rho_v_x, rho_v_y, rho_energy, nx,ny ,tx, ty, ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
 					}
 				}
 
 				
 		    result += wt[i] * u->val[i] *v->val[i]* constant*
 		    ( (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(rho, rho_v_x, rho_v_y, rho_energy,0,entry_i,entry_j) 
-		      * e->nx[i] +
+		      * nx +
 		     (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(rho, rho_v_x, rho_v_y, rho_energy,1,entry_i,entry_j)  
-		      * e->ny[i]);
+		      * ny);
 						 	
 
 				if (bdry==2)
@@ -442,9 +464,9 @@ this->prev_density_p,5);
 					{
 						result += wt[i]*v->val[i] *u->val[i]*0.5*(
 						((static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],0,entry_i,k) 
-										  * e->nx[i]+
+										  * nx+
 						(static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],1,entry_i,k) 
-										  * e->ny[i] -A_n[k])* dudu_j[k]);
+										  * ny -A_n[k])* dudu_j[k]);
 					} 
 				}
 			
@@ -452,27 +474,27 @@ this->prev_density_p,5);
 					if(entry_i==1)
 					{
 							if(entry_j==0){
-								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*0.5*e->nx[i]*
+								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*0.5*nx*
 							(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);	
 	
 							}else if(entry_j==1){
-								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[1]->val[i]/ext[0]->val[i]*e->nx[i];
+								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[1]->val[i]/ext[0]->val[i]*nx;
 							}else if(entry_j==2){
-								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[2]->val[i]/ext[0]->val[i]*e->nx[i];
+								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[2]->val[i]/ext[0]->val[i]*nx;
 							}else if(entry_j==3){
-								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*e->nx[i];
+								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*nx;
 							}
 					}else if(entry_i==2)
 					{
 							if(entry_j==0){
-								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*0.5*e->ny[i]*
+								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*0.5*ny*
 							(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);			
 							}else if(entry_j==1){
-								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[1]->val[i]/ext[0]->val[i]*e->ny[i];
+								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[1]->val[i]/ext[0]->val[i]*ny;
 							}else if(entry_j==2){
-								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
+								result -= wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ext[2]->val[i]/ext[0]->val[i]*ny;
 							}else if(entry_j==3){
-								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*e->ny[i];
+								result += wt[i]*v->val[i] *u->val[i]*(gamma-1.)*ny;
 							}
 
 					}
@@ -517,17 +539,37 @@ this->prev_density_p,5);
 		double* ghost_state = new double[4];
 		double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
 		double rho, rho_v_x, rho_v_y, rho_energy;
+double nx,ny,tx, ty;
 int bdry; 
   double result = 0.;
   for (int i = 0;i < n;i++) 
 	{
 		 bdry =0;
-		if(e->x[i]== 0) bdry = 2;
-		if(e->x[i]== 2){ 
-		bdry =1;
-		//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
-		//if(mach>0.99) bdry = 1;
+		if(e->x[i]== 0.)
+		{ 	//bdry = 4;
+			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
+			//if(mach>0.99) 
+			bdry = 2;
 		}
+		if(e->x[i]== 2){ 
+			//bdry =3;
+			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
+			//if(mach>0.99) 
+			bdry = 1;
+		}
+nx = e->nx[i];
+ny = e->ny[i];
+tx = e->tx[i];
+ty = e->ty[i];
+
+
+if(e->x[i]== 1.2)
+{
+nx = -1.; ny = 0.;
+ty = nx;
+tx = -ny;
+
+}
 
 	//----------particle---------------------
 	if(entry_i==4)
@@ -545,9 +587,9 @@ int bdry;
 
 			if((bdry ==3)||(bdry ==2)) //inlet
 			{
-					result += wt[i] *v->val[i]*( v_x_ext * e->nx[i] + v_y_ext * e->ny[i])*rho_ext;	
+					result += wt[i] *v->val[i]*( v_x_ext * nx + v_y_ext * ny)*rho_ext;	
 			}else 
-				result += wt[i] *v->val[i]*( v_x_g * e->nx[i] + v_y_g * e->ny[i])*rho;			
+				result += wt[i] *v->val[i]*( v_x_g * nx + v_y_g * ny)*rho;			
 
 	}else{//------------gas-------------
 			rho = ext[0]->val[i];  
@@ -562,7 +604,7 @@ int bdry;
 				rho_energy_ext = ext[7]->val[i];
 
 		if(bdry!=0){ 
-			(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state);
+			(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state);
 
 		rho_new=ghost_state[0]; 
 		rho_v_x_new=ghost_state[1]; 
@@ -570,11 +612,11 @@ int bdry;
 		rho_energy_new=ghost_state[3];	
 				for(int k =0; k<4;k++)
 				{
-				  result += wt[i] *e->nx[i]*v->val[i]*0.5* (ghost_state[k]*
+				  result += wt[i] *nx*v->val[i]*0.5* (ghost_state[k]*
 				   (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,0,entry_i,k) 
 						+	ext[k]->val[i]
 				  * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(rho, rho_v_x, rho_v_y, rho_energy,0,entry_i,k)) ;
-				  result += wt[i]* e->ny[i]*v->val[i]*0.5*( ghost_state[k]*
+				  result += wt[i]* ny*v->val[i]*0.5*( ghost_state[k]*
 				   (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,1,entry_i,k) 
 							+ext[k]->val[i]
 				  * (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_g(rho, rho_v_x, rho_v_y, rho_energy,1,entry_i,k)) ;
@@ -583,12 +625,12 @@ int bdry;
 
 				if(bdry!=1)		
 					result -= wt[i]*v->val[i]* 0.5 * 
-										Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, gamma, entry_i);
+										Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, nx, ny,  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, gamma, entry_i);
 		}else{//solid wall
 				if(entry_i==1)
-					result += wt[i]*v->val[i]*e->nx[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, gamma);
+					result += wt[i]*v->val[i]*nx*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, gamma);
 				else if(entry_i==2)
-					result += wt[i]*v->val[i]*e->ny[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, gamma);
+					result += wt[i]*v->val[i]*ny*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, gamma);
 		}
 	  }
 			
