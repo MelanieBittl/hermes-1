@@ -4,6 +4,7 @@
 #include "initial_condition.h"
 #include "interface.h"
 #include "euler_flux.h"
+#include "lumped_projection.h"
 
 
 
@@ -91,7 +92,7 @@ Element* e = NULL;Node* vn=NULL;
 
  	 mesh->copy(basemesh);
 
-Element* test_element = RefMap::element_on_physical_coordinates(true, mesh, 1.2, 0);
+Element* test_element = RefMap::element_on_physical_coordinates(true, mesh, 1., 0);
 
 /*
    MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
@@ -235,12 +236,14 @@ DiscreteProblem<double> dp_bdry_low(&wf_bdry_low, spaces);
 CSCMatrix<double> matrixL; 
 
     OGProjection<double> ogProjection;
+Lumped_Projection lumpedProjection;
 	
 		SimpleVector<double>  vec_rhs(ndof);
 		SimpleVector<double>  vec_bdry(ndof);
 		SimpleVector<double>  vec_conv(ndof);
 		SimpleVector<double>  vec_source(ndof);
 		SimpleVector<double>  vec_penalty(ndof);
+SimpleVector<double>  vec_res(ndof);
 		vec_source.zero(); 
 
 		double* coeff_vec= new double[ndof];	
@@ -254,8 +257,11 @@ CSCMatrix<double> matrixL;
 
 
 //Projection of the initial condition
-  ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
+ // ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
+lumpedProjection.project_lumped(spaces, init_slns, coeff_vec);
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
+
+
 
 
 
@@ -264,9 +270,19 @@ CSCMatrix<double> matrixL;
 		MeshFunctionSharedPtr<double> mach_g(new  MachNumberFilter(prev_slns, GAMMA));
 		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
 		MeshFunctionSharedPtr<double> vel_y(new VelocityFilter_y(prev_slns));
+Linearizer lin;	
+
+				pressure_g->reinit();
+				mach_g->reinit();		
+			     
+			lin.save_solution_vtk(pressure_g, "init_p.vtk", "pressure", false);   
+ 
+			lin.save_solution_vtk(prev_slns[0], "init_rho_g.vtk", "density_gas", false);
+
+
 char title[100];
 
-             /*           sprintf(title, "Pressure gas");
+      /*                 sprintf(title, "Pressure gas");
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
                         pressure_view_g.show(pressure_g);
@@ -292,7 +308,7 @@ char title[100];
                         s1_p.show(prev_rho_p);*/
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
-Linearizer lin;	
+
 
 
 
@@ -318,7 +334,7 @@ do
 			dp_conv.assemble(&conv_matrix, &vec_conv);
 			dp_bdry.assemble(&bdry_matrix, &vec_bdry);
 			//dp_source.assemble(&source_matrix, &vec_source);
-				if(mach>=0.9) dp_source.assemble(&vec_source);
+				if(mach>=0.01) dp_source.assemble(&vec_source);
 		
 		/*}else{
 			dp_conv_init.assemble(&conv_matrix, &vec_conv);
@@ -331,23 +347,22 @@ do
 CSCMatrix<double>* diff = NULL;	
  diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
 
-		//matrix.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.get_Ap(), source_matrix.get_Ai(),source_matrix.get_Ax());
-		//matrix.add_sparse_matrix(&conv_matrix);
+matrixL.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
+matrixL.add_sparse_matrix(diff);
 
-matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
-		matrix.add_sparse_matrix(&bdry_matrix);
-	matrix.add_sparse_matrix(diff);
+
+
+matrix.create(matrixL.get_size(),matrixL.get_nnz(), matrixL.get_Ap(), matrixL.get_Ai(),matrixL.get_Ax());
+		matrix.add_sparse_matrix(&bdry_matrix);	
 		matrix.multiply_with_Scalar(-theta); 
 		matrix.add_sparse_matrix(lumped_matrix);
  
 		//matrix.add_sparse_matrix(&mass_matrix); 
 
-matrixL.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
-matrixL.add_sparse_matrix(diff);
+
 
 matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(), bdry_matrix.get_Ai(),bdry_matrix.get_Ax());	
-//matrix2.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());	
-//matrix2.add_sparse_matrix(diff);	
+//matrix2.create(matrixL.get_size(),matrixL.get_nnz(), matrixL.get_Ap(), matrixL.get_Ai(),matrixL.get_Ax());
 		//matrix2.add_sparse_matrix(&bdry_matrix);		
 		matrix2.multiply_with_Scalar(-theta); 
 		matrix2.add_sparse_matrix(lumped_matrix); 
@@ -358,11 +373,13 @@ matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(
 		vec_rhs.add_vector(coeff_vec_2); 		
 		vec_rhs.add_vector(&vec_bdry); 
 		//vec_rhs.add_vector(&vec_conv); 
-		if(mach>=0.9) vec_rhs.add_vector(&vec_source); 
+		if(mach>=0.09) vec_rhs.add_vector(&vec_source); 
 
+
+vec_res.zero(); vec_res.add_vector(&vec_bdry); vec_res.add_vector(&vec_conv); 
 residual = 0;
 for(int i = 1; i<ndof; i++)
-	residual +=vec_rhs.get(i)*vec_rhs.get(i);
+	residual +=vec_res.get(i)*vec_res.get(i);
 
 	//-------------------------solution of (M-theta(K+P+B+S)) (u(n+1)-u(n) = Sn +Ku(n) +Bn+Pn------------ 
 		// Hermes::Mixins::Loggable::Static::info("Solving"); 	
@@ -378,7 +395,7 @@ for(int i=0; i<ndof;i++)
 
 Solution<double>::vector_to_solutions(u_L, spaces, low_slns);
 			dp_bdry_low.assemble(&vec_bdry);			
-	if(mach>=0.9) dp_source_low.assemble(&vec_source);
+	if(mach>=0.09) dp_source_low.assemble(&vec_source);
 
 antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,&vec_source, u_L, flux_vec, P_plus,P_minus, Q_plus, Q_minus,  R_plus, R_minus,dof_rho,time_step,GAMMA );
 	
@@ -388,7 +405,7 @@ antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,&vec_sourc
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
-if(mach<0.9)
+if(mach<0.09)
 {	double rho		= prev_rho_g.get_solution()->get_ref_value(test_element, 1,0, 0, 0);  
 	double rho_v_x	= prev_rho_v_x_g.get_solution()->get_ref_value(test_element, 1,0, 0, 0); 
 	double rho_v_y	= prev_rho_v_y_g.get_solution()->get_ref_value(test_element, 1,0, 0, 0); 

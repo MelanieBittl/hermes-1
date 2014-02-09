@@ -176,8 +176,13 @@ void RiemannInvariants::get_ghost_state(int bdry,double rho, double rho_v_x, dou
 					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext, double* ghost_state)
 {
 
-		double w_1,w_2,w_3,w_4;	
-	 if(bdry==1){ //supersonic outlet
+		double w_1,w_2,w_3,w_4;
+	if( bdry==0){ //wall
+		ghost_state[0] = rho;
+		ghost_state[3] = rho_energy;
+		ghost_state[1] = rho_v_x - 2*n_x*( rho_v_x*n_x+ rho_v_y*n_y); 	
+		ghost_state[2] = rho_v_y- 2*n_y*( rho_v_x*n_x+ rho_v_y*n_y); 
+	}else if(bdry==1){ //supersonic outlet
 		ghost_state[0] =  rho;
 		ghost_state[1] = rho_v_x;
 		ghost_state[2]=		rho_v_y;
@@ -306,7 +311,31 @@ double w_1,w_2,w_3,w_4;
 
 				dv_du= 2.*w_3*dw3_du+0.5*(w_1+w_4)*dw4_du;
 				dp_du = (gamma-1.)*0.5/gamma*rho_ghost*c_ext*dw4_du+1./gamma*c_ext*c_ext*drho_du;		
-				dudu[3] =  (1./(1.-gamma)*dp_du+ 0.5*rho_ghost*dv_du + (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)/(2.)*drho_du );			
+				dudu[3] =  (1./(1.-gamma)*dp_du+ 0.5*rho_ghost*dv_du + (v_x_ghost*v_x_ghost+v_y_ghost*v_y_ghost)/(2.)*drho_du );	
+	}else if(bdry ==0){ //solid wall
+				if(entry_j==0){
+						dudu[0] = 1.;
+						dudu[1] = 0.;
+						dudu[2] = 0.;
+						dudu[3] = 0.;
+				}else if(entry_j==1){
+						dudu[0] = 0.;
+						dudu[1] = (n_y*n_y-n_x*n_x);
+						dudu[2] = (-2*n_x*n_y);
+						dudu[3] = 0.;
+				}else if(entry_j==2){
+						dudu[0] = 0.;
+						dudu[1] = (-2*n_x*n_y);
+						dudu[2] = (n_x*n_x-n_y*n_y);
+						dudu[3] = 0.;
+				}else if(entry_j==3){
+						dudu[0] = 0.;
+						dudu[1] = 0.;
+						dudu[2] = 0.;
+						dudu[3] = 1.;
+				}else  throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no entry_j!");
+
+		
 	
 	}else   throw Hermes::Exceptions::Exception("RiemannInvariants::get_du_du: no subsonic stream bdry = %i!", bdry);
 

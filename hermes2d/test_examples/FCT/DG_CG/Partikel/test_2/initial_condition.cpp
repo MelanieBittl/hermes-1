@@ -11,9 +11,12 @@
  double CustomInitialCondition_rho::value(double x, double y) const 
 	{    			
 
-double  rho= 3.0-x;
+/*double  rho= 2.5;
 if(x<0.5) rho = 3.0;
-else rho = 3.0 -(x-0.5);
+else if(x<1) rho = 3.0 -(x-0.5);*/
+double rho = 1.;
+if(x>1.) rho = 0.125;
+
 		return rho;
 
 };
@@ -35,16 +38,19 @@ else rho = 3.0 -(x-0.5);
  double CustomInitialCondition_rho_v_x::value(double x, double y) const 
 	{     
 
-double  rho= 3.0-x;
+/*double  rho=2.5;
 if(x<0.5) rho = 3.0;
-else rho = 3.0 -(x-0.5);
+else if(x<1) rho = 3.0 -(x-0.5);
 
 
-double pressure = 3.-x;
+double pressure = 2.5;
 if(x<0.5) pressure = 3.0;
-else pressure = 3.0 -(x-0.5);
+else if (x<1) pressure = 3.0 -(x-0.5);*/
 
 double v_x =0.; //std::sqrt(gamma*pressure/3.);
+
+double rho = 1.;
+if(x>1.) rho = 0.125;
 
 return (rho*v_x);	
 };
@@ -65,16 +71,22 @@ return (rho*v_x);
 
  double CustomInitialCondition_e::value(double x, double y) const 
 {  
-
-double  rho= 3.0-x;
+/*
+double  rho= 2.5;
 if(x<0.5) rho = 3.0;
-else rho = 3.0 -(x-0.5);
+else if(x<1)  rho = 3.0 -(x-0.5);
 
-double pressure = 3.-x;
+double pressure = 2.5;
 if(x<0.5) pressure = 3.0;
-else pressure = 3.0 -(x-0.5);
+else if(x<1) pressure = 3.0 -(x-0.5);*/
 
 double v_x= 0.; //=std::sqrt(gamma*pressure/3.);
+
+double rho = 1.;
+if(x>1.) rho = 0.125;
+
+double pressure = 1.;
+if(x>1.) pressure = 0.1;
 
 double rho_v_x = rho*v_x;
 
@@ -107,9 +119,16 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
 
-double  rho= 3.0;
+/*double  rho= 3.0;
 
-if(x>1) rho= 1.5;
+if(x>1) rho= 2.5;*/
+
+
+double rho = 1.;
+if(x>1.) rho = 0.125;
+
+double pressure = 1.;
+if(x>1.) pressure = 0.1;
 
 return rho;
 
@@ -134,13 +153,25 @@ return rho;
  double BoundaryCondition_rho_v_x::value(double x, double y) const 
 	{    
 		
+/*
 double  rho= 3.0;
 double pressure = 3.;
 double max = 1.5*std::sqrt(gamma*pressure/rho);
-double v_x = max;//-Hermes::sqr(2.*y)*(max-0.5)+max;
+double v_x =max;//-Hermes::sqr(2.*y)*(max-0.5)+max;
 
+if(x>1){ rho= 2.5; pressure= 2.5;
+v_x = 0;//std::sqrt(gamma*pressure/3.);
+}*/
 
-if(x>1){ rho= 1.5; pressure= 1.5;
+double rho = 1.;
+if(x>1.) rho = 0.125;
+
+double pressure = 1.;
+if(x>1.) pressure = 0.1;
+
+double v_x = 0.;
+
+if(x>1){ //rho= 2.5; pressure= 2.5;
 v_x = 0;//std::sqrt(gamma*pressure/1.5);
 }
 double rho_v_x = rho*v_x;
@@ -169,17 +200,31 @@ return rho_v_x;
  double BoundaryCondition_rho_e::value(double x, double y) const 
 	{    			
 
-
+/*
 double  rho= 3.0;
 double pressure = 3.;
 double max = 1.5*std::sqrt(gamma*pressure/rho);
 double v_x =max;//-Hermes::sqr(2.*y)*(max-0.5)+max;
 
-if(x>1){ rho= 1.5; pressure= 1.5;
+if(x>1){ rho= 2.5; pressure= 2.5;
 v_x = 0;//std::sqrt(gamma*pressure/3.);
-}
+}*/
 
+
+
+double rho = 1.;
+if(x>1.) rho = 0.125;
+
+double pressure = 1.;
+if(x>1.) pressure = 0.1;
+
+double v_x = 0.;
+
+if(x>1){ //rho= 2.5; pressure= 2.5;
+v_x = 0;//std::sqrt(gamma*pressure/1.5);
+}
 double rho_v_x = rho*v_x;
+
 
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->gamma);
 
