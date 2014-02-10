@@ -4,7 +4,6 @@
 #include "initial_condition.h"
 #include "interface.h"
 #include "euler_flux.h"
-#include "lumped_projection.h"
 
 
 
@@ -19,9 +18,9 @@ using namespace Hermes::Solvers;
 #include "fct.cpp"
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
-const int P_INIT =1;       						// Initial polynomial degree.
-const double time_step = 1e-3;
-const double T_FINAL = 100;                       // Time interval length. 
+const int P_INIT =2;       						// Initial polynomial degree.
+const double time_step = 1e-2;
+const double T_FINAL = 20;                       // Time interval length. 
 
 const double theta = 1.;
 
@@ -101,14 +100,12 @@ Element* test_element = RefMap::element_on_physical_coordinates(true, mesh, 1., 
 
 
 bool serendipity = true;
+SpaceSharedPtr<double> space_rho_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
+SpaceSharedPtr<double> space_rho_v_x_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
+SpaceSharedPtr<double> space_rho_v_y_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
+SpaceSharedPtr<double> space_e_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
-		SpaceSharedPtr<double> space_rho_g(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x_g(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y_g(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e_g(new H1Space<double>(mesh, P_INIT));
-
-
-		SpaceSharedPtr<double> space_rho_p(new H1Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
 
 int dof_rho = space_rho_g->get_num_dofs();
@@ -225,6 +222,25 @@ DiscreteProblem<double> dp_bdry_low(&wf_bdry_low, spaces);
 
 
 
+//------------
+
+	EulerFluxes* euler_fluxes = new EulerFluxes(GAMMA);
+
+NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(GAMMA);
+
+	RiemannInvariants* riemann_invariants = new RiemannInvariants(GAMMA);
+
+
+
+	EulerInterface wf_DG_init(GAMMA,mesh,init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, num_flux,euler_fluxes,riemann_invariants);
+	EulerInterface wf_DG(GAMMA,mesh, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p,num_flux,euler_fluxes,riemann_invariants);
+
+
+  DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
+  DiscreteProblem<double> dp_DG(&wf_DG, spaces);
+
+
+
   // Set up the solver, matrix, and rhs according to the solver selection. 
 	CSCMatrix<double> matrix;
 		CSCMatrix<double> matrix2;    
@@ -232,36 +248,28 @@ DiscreteProblem<double> dp_bdry_low(&wf_bdry_low, spaces);
 	CSCMatrix<double>  source_matrix;  
 	CSCMatrix<double>  conv_matrix; 
 	CSCMatrix<double>  penalty_matrix;
-	CSCMatrix<double>  bdry_matrix;  
-CSCMatrix<double> matrixL; 
+	CSCMatrix<double>  bdry_matrix; 
+	CSCMatrix<double> dg_matrix; 
+
 
     OGProjection<double> ogProjection;
-Lumped_Projection lumpedProjection;
-	
+			SimpleVector<double>  vec_dg(ndof);
 		SimpleVector<double>  vec_rhs(ndof);
 		SimpleVector<double>  vec_bdry(ndof);
 		SimpleVector<double>  vec_conv(ndof);
 		SimpleVector<double>  vec_source(ndof);
 		SimpleVector<double>  vec_penalty(ndof);
-SimpleVector<double>  vec_res(ndof);
 		vec_source.zero(); 
 
 		double* coeff_vec= new double[ndof];	
 		double* coeff_vec_2 = new double[ndof];
-		double* u_L= new double[ndof];;
-		double* flux_vec = new double[ndof];
-			double* P_plus = new double[ndof]; double* P_minus = new double[ndof];
-			double* Q_plus = new double[ndof]; double* Q_minus = new double[ndof];
-			double* R_plus = new double[ndof]; double* R_minus = new double[ndof];	
+
 
 
 
 //Projection of the initial condition
- // ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
-lumpedProjection.project_lumped(spaces, init_slns, coeff_vec);
+  ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
-
-
 
 
 
@@ -270,19 +278,9 @@ lumpedProjection.project_lumped(spaces, init_slns, coeff_vec);
 		MeshFunctionSharedPtr<double> mach_g(new  MachNumberFilter(prev_slns, GAMMA));
 		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
 		MeshFunctionSharedPtr<double> vel_y(new VelocityFilter_y(prev_slns));
-Linearizer lin;	
-
-				pressure_g->reinit();
-				mach_g->reinit();		
-			     
-			lin.save_solution_vtk(pressure_g, "init_p.vtk", "pressure", false);   
- 
-			lin.save_solution_vtk(prev_slns[0], "init_rho_g.vtk", "density_gas", false);
-
-
 char title[100];
 
-      /*                 sprintf(title, "Pressure gas");
+             /*           sprintf(title, "Pressure gas");
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
                         pressure_view_g.show(pressure_g);
@@ -308,7 +306,7 @@ char title[100];
                         s1_p.show(prev_rho_p);*/
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
-
+Linearizer lin;	
 
 
 
@@ -322,7 +320,7 @@ double norm_rel = 1000;
 		  dp_mass.assemble(&mass_matrix);
 mass_matrix.multiply_with_Scalar(1./time_step);
 CSCMatrix<double> * lumped_matrix;
-lumped_matrix = massLumping(&mass_matrix);
+
 
 double mach = 0.; double residual = 10000;
 //Timestep loop
@@ -333,8 +331,8 @@ do
  	// if(ts!=1){
 			dp_conv.assemble(&conv_matrix, &vec_conv);
 			dp_bdry.assemble(&bdry_matrix, &vec_bdry);
-			//dp_source.assemble(&source_matrix, &vec_source);
-				if(mach>=0.01) dp_source.assemble(&vec_source);
+			dp_DG.assemble(&dg_matrix);	
+				if(mach>=0.09) dp_source.assemble(&vec_source);
 		
 		/*}else{
 			dp_conv_init.assemble(&conv_matrix, &vec_conv);
@@ -344,42 +342,34 @@ do
 	
 		}*/
 
-CSCMatrix<double>* diff = NULL;	
- diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
 
-matrixL.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
-matrixL.add_sparse_matrix(diff);
-
-
-
-matrix.create(matrixL.get_size(),matrixL.get_nnz(), matrixL.get_Ap(), matrixL.get_Ai(),matrixL.get_Ax());
-		matrix.add_sparse_matrix(&bdry_matrix);	
-		matrix.multiply_with_Scalar(-theta); 
-		matrix.add_sparse_matrix(lumped_matrix);
- 
-		//matrix.add_sparse_matrix(&mass_matrix); 
+		//matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax())
+matrix.create(dg_matrix.get_size(),dg_matrix.get_nnz(), dg_matrix.get_Ap(), dg_matrix.get_Ai(),dg_matrix.get_Ax());
+matrix.add_sparse_matrix(&conv_matrix);
+		matrix.add_sparse_matrix(&bdry_matrix);
+		matrix.multiply_with_Scalar(-theta);  
+		matrix.add_sparse_matrix(&mass_matrix); 
 
 
 
 matrix2.create(bdry_matrix.get_size(),bdry_matrix.get_nnz(), bdry_matrix.get_Ap(), bdry_matrix.get_Ai(),bdry_matrix.get_Ax());	
-//matrix2.create(matrixL.get_size(),matrixL.get_nnz(), matrixL.get_Ap(), matrixL.get_Ai(),matrixL.get_Ax());
+//matrix2.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());	
 		//matrix2.add_sparse_matrix(&bdry_matrix);		
 		matrix2.multiply_with_Scalar(-theta); 
-		matrix2.add_sparse_matrix(lumped_matrix); 
+		matrix2.add_sparse_matrix(&mass_matrix); 
 		
 	//-------------rhs: ------------		
 		matrix2.multiply_with_vector(coeff_vec, coeff_vec_2);
 		vec_rhs.zero(); 
 		vec_rhs.add_vector(coeff_vec_2); 		
 		vec_rhs.add_vector(&vec_bdry); 
+		//vec_rhs.add_vector(&vec_dg);
 		//vec_rhs.add_vector(&vec_conv); 
 		if(mach>=0.09) vec_rhs.add_vector(&vec_source); 
 
-
-vec_res.zero(); vec_res.add_vector(&vec_bdry); vec_res.add_vector(&vec_conv); 
 residual = 0;
 for(int i = 1; i<ndof; i++)
-	residual +=vec_res.get(i)*vec_res.get(i);
+	residual +=vec_rhs.get(i)*vec_rhs.get(i);
 
 	//-------------------------solution of (M-theta(K+P+B+S)) (u(n+1)-u(n) = Sn +Ku(n) +Bn+Pn------------ 
 		// Hermes::Mixins::Loggable::Static::info("Solving"); 	
@@ -391,17 +381,7 @@ for(int i = 1; i<ndof; i++)
 			}	
 
 for(int i=0; i<ndof;i++)
-	u_L[i] = solver->get_sln_vector()[i];
-
-Solution<double>::vector_to_solutions(u_L, spaces, low_slns);
-			dp_bdry_low.assemble(&vec_bdry);			
-	if(mach>=0.09) dp_source_low.assemble(&vec_source);
-
-antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,&vec_source, u_L, flux_vec, P_plus,P_minus, Q_plus, Q_minus,  R_plus, R_minus,dof_rho,time_step,GAMMA );
-	
-		for(int i=0; i<ndof;i++)		
-					coeff_vec[i] = u_L[i] + flux_vec[i]*time_step/lumped_matrix->get(i,i);
-							
+	coeff_vec[i] = solver->get_sln_vector()[i];
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
@@ -414,7 +394,7 @@ if(mach<0.09)
 }
 
 			// Visualize the solution.
- 		Hermes::Mixins::Loggable::Static::info("Visualize"); 	
+ 		/*Hermes::Mixins::Loggable::Static::info("Visualize"); 	
                         sprintf(title, "Pressure gas: ts=%i",ts);
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
@@ -438,7 +418,7 @@ if(mach<0.09)
                         s3_g.show(vel_y);
 						sprintf(title, "density_particle: ts=%i",ts);
                         s1_p.set_title(title);
-                        s1_p.show(prev_rho_p);
+                        s1_p.show(prev_rho_p);*/
 
 
 
@@ -456,8 +436,8 @@ if(mach<0.09)
 		delete solver;
 		matrix.free();
 		matrix2.free();
-		matrixL.free();
-		if(diff!=NULL) delete diff;
+
+
 
 	if(ts%1000 ==1)
 {
@@ -499,14 +479,7 @@ Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time);
 
 
 			  // Clean up.
- 			delete [] P_plus;
-			delete [] P_minus;
-			delete [] Q_plus;
-			delete [] Q_minus;
-			delete [] R_plus;
-			delete [] R_minus;
 
-delete [] flux_vec;
 delete [] coeff_vec;
 delete [] coeff_vec_2;
 

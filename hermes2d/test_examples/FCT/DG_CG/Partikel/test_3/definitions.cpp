@@ -355,19 +355,6 @@ this->prev_density_p,5);
     return wf;
     }
 
-double steigung(double x, double y)
-{
-if(y>0)
- return -(Hermes::sin(x*PI)*PI)/(2.*1.28/0.72+2.); 
-else
- return (Hermes::sin(x*PI)*PI)/(2.*1.28/0.72+2.);
-}
-
-double normalized(double x, double y)
-{
-
-	return Hermes::sqrt(x*x+y*y);
-}
 
 //-------Boudary Bilinearforms---------
    double EulerBoundary::EulerBoundaryBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
@@ -379,7 +366,6 @@ double normalized(double x, double y)
 	double* dudu_j= new double[4];
 	double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
 	double rho, rho_v_x, rho_v_y, rho_energy;
-double nx_ghost, ny_ghost, tx_ghost, ty_ghost;
 	double nx,ny,tx, ty;
 	double constant = 1.;
   	double result = 0.;
@@ -390,49 +376,29 @@ double nx_ghost, ny_ghost, tx_ghost, ty_ghost;
 			ny = e->ny[i];
 			tx = e->tx[i];
 			ty = e->ty[i];
-if(e->x[i]== 1.)
-{
-nx = -1.; ny = 0.;
-ty = nx;
-tx = -ny;
 
-}
-nx_ghost = nx;
-ny_ghost = ny;
-tx_ghost = tx;
-ty_ghost = ty;
 
-/*
-if((e->x[i]<1.))
-{
-		double m = steigung(e->x[i],e->y[i]);
-		double norm = normalized(1,m);
+			if(e->x[i]== 1.)
+			{
+					nx = -1.; ny = 0.;
+					ty = nx;
+					tx = -ny;
 
-		 if(e->y[i] >0)
-		{
-			tx_ghost = -1./norm;
-			ty_ghost = -m/norm;
-		}else 
-		{
-			tx_ghost = 1./norm;
-			ty_ghost = m/norm;
-		}
-	nx_ghost = ty_ghost; ny_ghost = -tx_ghost;
 
-}*/
+			}
 
 		bdry = 0;
 		if(e->x[i]== 0.)
 		{ 	//bdry = 4;
 			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 			//if(mach>0.99) 
-				bdry = 2;
+			bdry = 2;
 		}
 		if(e->x[i]== 2){ 
 			//bdry =3;
 			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 			//if(mach>0.99) 
-				bdry = 1;
+			bdry = 1;
 		}
 
 
@@ -471,7 +437,7 @@ if((e->x[i]<1.))
 				rho_energy_ext =ext[7]->val[i];
 
 	 		if(bdry!=0){ 
-				(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state(bdry,rho, rho_v_x, rho_v_y, rho_energy, nx_ghost,ny_ghost,tx_ghost,ty_ghost, rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, ghost_state);
+				(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state(bdry,rho, rho_v_x, rho_v_y, rho_energy, nx,ny,tx,ty, rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, ghost_state);
 
 				if(bdry!=1){
 						Boundary_helpers::calculate_A_n(rho, rho_v_x, rho_v_y, rho_energy, nx,ny , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], gamma, entry_i,A_n); //ite-Zeile A_n
@@ -574,30 +540,29 @@ if((e->x[i]<1.))
 		double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
 		double rho, rho_v_x, rho_v_y, rho_energy;
 double nx,ny,tx, ty;
-double nx_ghost, ny_ghost, tx_ghost, ty_ghost;
 int bdry; 
   double result = 0.;
   for (int i = 0;i < n;i++) 
 	{
-		bdry = 0;
+		 bdry =0;
 		if(e->x[i]== 0.)
 		{ 	//bdry = 4;
 			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 			//if(mach>0.99) 
-				bdry = 2;
+			bdry = 2;
 		}
 		if(e->x[i]== 2){ 
 			//bdry =3;
 			//double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 			//if(mach>0.99) 
-				bdry = 1;
+			bdry = 1;
 		}
+nx = e->nx[i];
+ny = e->ny[i];
+tx = e->tx[i];
+ty = e->ty[i];
 
 
-			nx = e->nx[i];
-			ny = e->ny[i];
-			tx = e->tx[i];
-			ty = e->ty[i];
 if(e->x[i]== 1.)
 {
 nx = -1.; ny = 0.;
@@ -605,32 +570,6 @@ ty = nx;
 tx = -ny;
 
 }
-nx_ghost = nx;
-ny_ghost = ny;
-tx_ghost = tx;
-ty_ghost = ty;
-
-
-/*
-if((e->x[i]<1.))
-{
-double m = steigung(e->x[i],e->y[i]);
-double norm = normalized(1,m);
-
- if(e->y[i] >0)
-{
-	tx_ghost = -1./norm;
-	ty_ghost = -m/norm;
-}else 
-{
-	tx_ghost = 1./norm;
-	ty_ghost = m/norm;
-}
-	nx_ghost = ty_ghost; ny_ghost = -tx_ghost;
-
-}*/
-
-
 
 	//----------particle---------------------
 	if(entry_i==4)
@@ -665,7 +604,7 @@ double norm = normalized(1,m);
 				rho_energy_ext = ext[7]->val[i];
 
 		if(bdry!=0){ 
-			(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx_ghost,ny_ghost,tx_ghost,ty_ghost, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state);
+			(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny,tx,ty, ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], ghost_state);
 
 		rho_new=ghost_state[0]; 
 		rho_v_x_new=ghost_state[1]; 
