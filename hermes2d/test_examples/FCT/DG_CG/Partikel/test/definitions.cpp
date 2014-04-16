@@ -85,9 +85,8 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 		{
 			  for (int i = 0;i < n;i++) 
 			  {
-
 				result += wt[i] * u->val[i] *
-				( (static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],0,(entry_i-4),(entry_j-4)) 
+				((static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],0,(entry_i-4),(entry_j-4)) 
 				  * v->dx[i]+        
 				 (static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],1,(entry_i-4),(entry_j-4)) 
 				  * v->dy[i]);		
@@ -95,9 +94,8 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 		}else{
 			  for (int i = 0;i < n;i++) 
 			  {
-
 				result += wt[i] * u->val[i] *
-				( (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
+				((static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
 				  * v->dx[i]+        
 				 (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j) 
 				  * v->dy[i]);
@@ -139,7 +137,6 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 					   (static_cast<EulerK*>(wf))->euler_fluxes->A_p(ext[4]->val[i], ext[5]->val[i], ext[6]->val[i], ext[7]->val[i],1,(entry_i-4),k));	  
 
 			}else{
-
 					  result += wt[i] * ext[k]->val[i]*( v->dx[i]*
 					   (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,k) 
 					  + v->dy[i]*
@@ -176,9 +173,7 @@ prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev
 	{	for(int i = 0; i<8;i++)			
 			add_matrix_form(new EulerSource::EulerSourceBilinearForm(i,k));	
 	 add_vector_form(new EulerSource::EulerSourceLinearForm(k));
-	}
-
-    
+	}    
     this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g,
 				prev_density_p, prev_density_vel_x_p, prev_density_vel_y_p, prev_energy_p));
 
@@ -228,8 +223,6 @@ if((entry_i==0)||(entry_i==4)) return 0;
 		double Pr =(static_cast<EulerSource*>(wf))->Pr;		
 		double mu = (static_cast<EulerSource*>(wf))->mu;
 		double kap = c_pg*mu/Pr;
-
-
       
 		for (int i = 0;i < n;i++){
 			double alpha_p  =ext[4]->val[i]/material_density ;
@@ -241,7 +234,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 			double rho_e_g = ext[3]->val[i]/alpha_g;
 
 			double v_x_g = rho_v_x_g/rho_g;
-			double v_y_g = rho_v_x_g/rho_g;
+			double v_y_g = rho_v_y_g/rho_g;
 
 			double rho_p = material_density;  
 			double rho_v_x_p = ext[5]->val[i]/alpha_p; 
@@ -249,7 +242,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 			double rho_e_p = ext[7]->val[i]/alpha_p;
 
 			double v_x_p = rho_v_x_p/rho_p;
-			double v_y_p = rho_v_x_p/rho_p;
+			double v_y_p = rho_v_y_p/rho_p;
 
 		double v1_diff = (v_x_g - v_x_p);
 		double v2_diff = (v_y_g - v_y_p);
@@ -413,7 +406,7 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 			double rho_e_g = ext[3]->val[i]/alpha_g;
 
 			double v_x_g = rho_v_x_g/rho_g;
-			double v_y_g = rho_v_x_g/rho_g;
+			double v_y_g = rho_v_y_g/rho_g;
 
 			double rho_p = ext[4]->val[i]/alpha_p;  
 			double rho_v_x_p = ext[5]->val[i]/alpha_p; 
@@ -421,7 +414,7 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 			double rho_e_p = ext[7]->val[i]/alpha_p;
 
 			double v_x_p = rho_v_x_p/rho_p;
-			double v_y_p = rho_v_x_p/rho_p;
+			double v_y_p = rho_v_y_p/rho_p;
 		
 
 		double v1_diff = (v_x_g - v_x_p);
@@ -530,26 +523,26 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
 	
 	WeakForm<double>* EulerBoundary::clone() const
     {
-    EulerBoundary* wf;
-    wf = new EulerBoundary(this->gamma,this->rho_ext_g, this->v1_ext_g, this->v2_ext_g, this->energy_ext_g,
-		this->rho_ext_p, this->v1_ext_p, this->v2_ext_p, this->energy_ext_p,
- this->prev_density_g, this->prev_density_vel_x_g, this->prev_density_vel_y_g, this->prev_energy_g,
-this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, this->prev_energy_p,8);
+		EulerBoundary* wf;
+		wf = new EulerBoundary(this->gamma,this->rho_ext_g, this->v1_ext_g, this->v2_ext_g, this->energy_ext_g,
+			this->rho_ext_p, this->v1_ext_p, this->v2_ext_p, this->energy_ext_p,
+	 this->prev_density_g, this->prev_density_vel_x_g, this->prev_density_vel_y_g, this->prev_energy_g,
+	this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, this->prev_energy_p,8);
 
-    wf->ext.clear();
+		wf->ext.clear();
 
-    for(unsigned int i = 0; i < this->ext.size(); i++)
-    {
-      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
-      if(solution && solution->get_type() == HERMES_SLN)
-      {
-        wf->ext.push_back(new Solution<double>());
-        wf->ext.back()->copy(this->ext[i]);
-      }
-      else
-        wf->ext.push_back(this->ext[i]->clone());
-    }
-    return wf;
+		for(unsigned int i = 0; i < this->ext.size(); i++)
+		{
+		  Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
+		  if(solution && solution->get_type() == HERMES_SLN)
+		  {
+		    wf->ext.push_back(new Solution<double>());
+		    wf->ext.back()->copy(this->ext[i]);
+		  }
+		  else
+		    wf->ext.push_back(this->ext[i]->clone());
+		}
+		return wf;
     }
 
 
@@ -568,10 +561,9 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
   double result = 0.;
   for (int i = 0;i < n;i++) 
   {		
-
 		 bdry =0;
 	if(e->x[i]== 0) bdry = 2;
-	if(e->x[i]== 1) bdry = 1;
+	else if(e->x[i]== 2) bdry = 1;
 
 	if(bdry==1) constant =1.;
 	else constant = 0.5;
@@ -584,7 +576,6 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 			rho_v_x = ext[9]->val[i]; 
 			rho_v_y = ext[10]->val[i]; 
 			rho_energy = ext[11]->val[i];
-
     
 				rho_ext = ext[12]->val[i];
 				rho_v_x_ext = ext[13]->val[i];
@@ -607,14 +598,11 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 		     (static_cast<EulerBoundary*>(wf))->euler_fluxes->A_p(rho, rho_v_x, rho_v_y, rho_energy,1,(entry_i-4),(entry_j-4))  
 		      * e->ny[i]);
 
-
-
 	}else{//-------------gas phase-------------------
 			rho = ext[0]->val[i];  
 			rho_v_x = ext[1]->val[i]; 
 			rho_v_y = ext[2]->val[i]; 
 			rho_energy = ext[3]->val[i];
-
     
 				rho_ext = ext[4]->val[i];
 				rho_v_x_ext = ext[5]->val[i];
@@ -729,7 +717,8 @@ int bdry;
 	{
 		 bdry =0;
 if(e->x[i]== 0) bdry = 2;
-if(e->x[i]== 1) bdry = 1;
+else if(e->x[i]== 2) bdry = 1;
+
 
 	//----------particle---------------------
 	if(particle)
@@ -893,12 +882,13 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
       Geom<double> *e, Func<double>  **ext) const
 {
   double result = 0.;
-  for (int i = 0;i < n;i++) 
-  {		
-		
-if((e->x[i]== 0) ||(e->x[i]== 1)) continue;
 if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.; 
 if((entry_j==0) ||(entry_j==3)||(entry_j==4) ||(entry_j==7)) return 0.;
+
+  for (int i = 0;i < n;i++) 
+  {		
+
+if((e->x[i]== 0) ||(e->x[i]== 2)) continue; 
   
 		if(particle){
 			double vn = ext[5]->val[i]/ext[4]->val[i]*e->nx[i] + ext[6]->val[i]/ext[4]->val[i]*e->ny[i];
@@ -918,14 +908,10 @@ if((entry_j==0) ||(entry_j==3)||(entry_j==4) ||(entry_j==7)) return 0.;
 						}else if(entry_j==6){
 							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(e->ny[i]);
 						}
-
 				}
-
-
 		}else{
 		double vn = ext[1]->val[i]/ext[0]->val[i]*e->nx[i] + ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
 		double factor = ((2.*vn*vn+eps)/(std::sqrt(vn*vn+eps)));
-
 
 				if(entry_i==1)
 				{
@@ -976,12 +962,15 @@ if((entry_j==0) ||(entry_j==3)||(entry_j==4) ||(entry_j==7)) return 0.;
     double EulerPenalty::PenaltyLinearForm::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
       Geom<double> *e, Func<double>  **ext) const
  {
+if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.;
+
 double material_density = (static_cast<EulerPenalty*>(wf))->particle_density;
   double result = 0.;
   for (int i = 0;i < n;i++) 
 	{
-if((e->x[i]== 0) ||(e->x[i]== 1)) continue; 
-if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.; 
+
+if((e->x[i]== 0) ||(e->x[i]== 2)) continue; 
+ 
 		double alpha_p  =ext[4]->val[i]/material_density ;
 			double alpha_g = 1.-alpha_p;
 

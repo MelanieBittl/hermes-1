@@ -59,6 +59,36 @@ protected:
   double gamma;
 };
 
+class AlphaFilter : public Hermes::Hermes2D::SimpleFilter<double>
+{
+public:
+  AlphaFilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, double rho_p) : SimpleFilter<double>(solutions), rho_p(rho_p) {};
+  ~AlphaFilter() 
+  {
+  };
+
+  MeshFunction<double>* clone() const
+  {
+    Hermes::vector<MeshFunctionSharedPtr<double> > slns;
+    for(int i = 0; i < this->num; i++)
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        slns.push_back(new Solution<double>());
+        slns.back()->copy(this->sln[i]);
+      }
+      else
+        slns.push_back(this->sln[i]->clone()); 
+    }
+    AlphaFilter* filter = new AlphaFilter(slns, this->rho_p);
+    return filter;
+  }
+protected:
+  virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
+double rho_p;
+};
+
 
 
 class VelocityFilter_x : public Hermes::Hermes2D::SimpleFilter<double>

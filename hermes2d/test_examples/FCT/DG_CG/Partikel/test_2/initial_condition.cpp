@@ -119,10 +119,6 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
 
-/*double  rho= 3.0;
-
-if(x>1) rho= 2.5;*/
-
 
 double rho = 1.;
 if(x>1.) rho = 0.125;

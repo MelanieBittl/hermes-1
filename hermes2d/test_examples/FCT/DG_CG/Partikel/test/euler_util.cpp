@@ -72,6 +72,11 @@ void EntropyFilter::filter_fn(int n, Hermes::vector<double*> values, double* res
       / Hermes::pow((values.at(0)[i] / rho_ext), gamma));
 }
 
+void AlphaFilter::filter_fn(int n, Hermes::vector<double*> values, double* result)
+{ 
+  for (int i = 0; i < n; i++)
+    result[i] = values.at(0)[i]/rho_p;
+}
 
 //-----------------------------------------------------
 //-------------------RiemannInvariants-----------------------

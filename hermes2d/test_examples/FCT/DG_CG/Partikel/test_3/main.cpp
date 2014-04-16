@@ -394,7 +394,7 @@ if(mach<0.09)
 }
 
 			// Visualize the solution.
- 		/*Hermes::Mixins::Loggable::Static::info("Visualize"); 	
+ 		Hermes::Mixins::Loggable::Static::info("Visualize"); 	
                         sprintf(title, "Pressure gas: ts=%i",ts);
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
@@ -418,7 +418,7 @@ if(mach<0.09)
                         s3_g.show(vel_y);
 						sprintf(title, "density_particle: ts=%i",ts);
                         s1_p.set_title(title);
-                        s1_p.show(prev_rho_p);*/
+                        s1_p.show(prev_rho_p);
 
 
 
