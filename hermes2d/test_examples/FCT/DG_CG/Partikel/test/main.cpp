@@ -18,7 +18,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
-const double time_step = 0.000001;
+const double time_step = 0.5;
 const double T_FINAL = 50000;                       // Time interval length. 
 
 const double theta = 1.;
@@ -42,7 +42,6 @@ const double c_pg = 1040;
 const double Pr = 0.75;		
 const double mu = 2.76*1e-5;
 
-
     
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
@@ -58,7 +57,8 @@ void assemble_vector_s(SpaceSharedPtr<double> space,Hermes::vector<MeshFunctionS
 	double x, y; int dof; double F_D_1, F_D_2, Q_T;
 matrix->zero();
 double kap = c_pg*mu/Pr;
-bool visited[dof_gas]; for(int i= 0; i<dof_gas; i++) visited[i] = false; 
+bool visited[dof_gas]; 
+for(int i= 0; i<dof_gas; i++) visited[i] = false; 
 
 for(int i= 0; i<dof_total; i++) s[i] = 0.; 
 	
@@ -143,18 +143,18 @@ double lumped = lumped_matrix->get(ind_i, ind_i);
 //4.Zeile
 						ind_i += dof_rho; ind_j = dof; ind_i_p = ind_i+dof_gas;
 						matrix->add(ind_i,ind_j, Q_drag*((alpha_rho_v_x_p*alpha_rho_v_x_p+alpha_rho_v_y_p*alpha_rho_v_y_p)/alpha_rho_p)*lumped 
-								-Q_tem *(alpha_rho_v_x_p/c_vg)*(-alpha_rho_e_g/(alpha_rho_g*alpha_rho_g) + (alpha_rho_v_x_g*alpha_rho_v_x_g+alpha_rho_v_y_g*alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g*alpha_rho_g))*lumped);
+								-Q_tem *(alpha_rho_p/c_vg)*(-alpha_rho_e_g/(alpha_rho_g*alpha_rho_g) + (alpha_rho_v_x_g*alpha_rho_v_x_g+alpha_rho_v_y_g*alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g*alpha_rho_g))*lumped);
 						matrix->add(ind_i_p,ind_j, -Q_drag*((alpha_rho_v_x_p*alpha_rho_v_x_p+alpha_rho_v_y_p*alpha_rho_v_y_p)/alpha_rho_p)*lumped
-						+ Q_tem *(alpha_rho_v_x_p/c_vg)*(-alpha_rho_e_g/(alpha_rho_g*alpha_rho_g) + (alpha_rho_v_x_g*alpha_rho_v_x_g+alpha_rho_v_y_g*alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g*alpha_rho_g))*lumped);
+						+ Q_tem *(alpha_rho_p/c_vg)*(-alpha_rho_e_g/(alpha_rho_g*alpha_rho_g) + (alpha_rho_v_x_g*alpha_rho_v_x_g+alpha_rho_v_y_g*alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g*alpha_rho_g))*lumped);
  													 ind_j += dof_rho;
-						matrix->add(ind_i,ind_j, -Q_drag*alpha_rho_v_x_p*lumped -Q_tem*(alpha_rho_v_x_p/c_vg)*(-alpha_rho_v_x_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
-						matrix->add(ind_i_p,ind_j, Q_drag*alpha_rho_v_x_p*lumped+ Q_tem*(alpha_rho_v_x_p/c_vg)*(-alpha_rho_v_x_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
+						matrix->add(ind_i,ind_j, -Q_drag*alpha_rho_v_x_p*lumped -Q_tem*(alpha_rho_p/c_vg)*(-alpha_rho_v_x_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
+						matrix->add(ind_i_p,ind_j, Q_drag*alpha_rho_v_x_p*lumped+ Q_tem*(alpha_rho_p/c_vg)*(-alpha_rho_v_x_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
 													 ind_j += dof_rho;
-						matrix->add(ind_i,ind_j, -Q_drag*alpha_rho_v_y_p*lumped-Q_tem*(alpha_rho_v_x_p/c_vg)*(-alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
-						matrix->add(ind_i_p,ind_j, Q_drag*alpha_rho_v_y_p*lumped+ Q_tem*(alpha_rho_v_x_p/c_vg)*(-alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
+						matrix->add(ind_i,ind_j, -Q_drag*alpha_rho_v_y_p*lumped-Q_tem*(alpha_rho_p/c_vg)*(-alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
+						matrix->add(ind_i_p,ind_j, Q_drag*alpha_rho_v_y_p*lumped+ Q_tem*(alpha_rho_p/c_vg)*(-alpha_rho_v_y_g)/(alpha_rho_g*alpha_rho_g)*lumped); 
 													 ind_j += dof_rho;
-						matrix->add(ind_i,ind_j, -Q_tem/alpha_rho_g*(alpha_rho_v_x_p/c_vg)*lumped);
-						matrix->add(ind_i_p,ind_j, Q_tem/alpha_rho_g*(alpha_rho_v_x_p/c_vg)*lumped);
+						matrix->add(ind_i,ind_j, -Q_tem/alpha_rho_g*(alpha_rho_p/c_vg)*lumped);
+						matrix->add(ind_i_p,ind_j, Q_tem/alpha_rho_g*(alpha_rho_p/c_vg)*lumped);
 
 													 ind_j += dof_rho;
 						matrix->add(ind_i,ind_j, -Q_drag*(alpha_rho_g*(alpha_rho_v_x_p*alpha_rho_v_x_p+alpha_rho_v_y_p*alpha_rho_v_y_p)/(alpha_rho_p*alpha_rho_p))*lumped
@@ -168,8 +168,8 @@ double lumped = lumped_matrix->get(ind_i, ind_i);
 						matrix->add(ind_i,ind_j, -Q_drag*(alpha_rho_v_y_g*alpha_rho_p-2.*alpha_rho_g*alpha_rho_v_y_p)/alpha_rho_p*lumped -Q_tem*(v_y_p/c_vp)*lumped);  
 						matrix->add(ind_i_p,ind_j, Q_drag*(alpha_rho_v_y_g*alpha_rho_p-2.*alpha_rho_g*alpha_rho_v_y_p)/alpha_rho_p*lumped+ Q_tem*(v_y_p/c_vp)*lumped);
 													 ind_j += dof_rho;
-						matrix->add(ind_i,ind_j, -Q_tem*(-1./c_vp)*lumped); 
-						matrix->add(ind_i_p,ind_j, Q_tem*(-1./c_vp)*lumped); 
+						matrix->add(ind_i,ind_j, Q_tem/c_vp*lumped); 
+						matrix->add(ind_i_p,ind_j, -Q_tem/c_vp*lumped); 
 					}
 				
 					}
@@ -226,18 +226,33 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain_all.mesh", basemesh);
+  mloader.load("square.mesh", basemesh);
 Element* e = NULL;Node* vn=NULL;
-
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++)
 	{ 
 			basemesh->refine_all_elements();
-
+		//y-Koord. der Knoten auf cos-Kurve verschieben
+			 
+		/*	for_all_vertex_nodes(vn, basemesh)
+			{	
+				if(vn->bnd) 
+					if((vn->x>0.)&&(vn->x<4.))		
+					{		if(vn->y>0.)
+							{
+								
+								vn->y = (Hermes::cos(PI*vn->x/2.)+3.)/4.;
+							}else if(vn->y<0.)
+									
+							vn->y = -(Hermes::cos(PI*vn->x/2.)+3.)/4.;
+					}
+			}*/
 		}
 
  	 mesh->copy(basemesh);
+
+
 
 
 /*
@@ -246,8 +261,8 @@ Element* e = NULL;Node* vn=NULL;
    View::wait();*/
 
 
-bool serendipity = true;
-/*
+bool serendipity = false;
+
 		SpaceSharedPtr<double> space_rho_g(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x_g(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y_g(new H1Space<double>(mesh, P_INIT));	
@@ -258,8 +273,8 @@ bool serendipity = true;
 		SpaceSharedPtr<double> space_rho_v_x_p(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y_p(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e_p(new H1Space<double>(mesh, P_INIT));
-*/
 
+/*
 SpaceSharedPtr<double> space_rho_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y_g(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
@@ -269,7 +284,7 @@ SpaceSharedPtr<double> space_rho_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, se
 SpaceSharedPtr<double> space_rho_v_x_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e_p(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
-
+*/
 
 int dof_rho = space_rho_g->get_num_dofs();
 
@@ -343,7 +358,7 @@ ScalarView s4_p("rho_e_p", new WinGeom(900, 700, 400, 300));
 
   ScalarView pressure_view_p("Pressure_p", new WinGeom(700, 300, 400, 300));
   ScalarView mach_view_p("mach_p", new WinGeom(700, 750, 400, 300));
-  ScalarView alpha_view_p("alpha_p", new WinGeom(700, 750, 400, 300));
+  ScalarView alpha_view_p("alpha_p", new WinGeom(700, 0, 400, 300));
 
 
 
@@ -436,6 +451,7 @@ CSCMatrix<double> proj_matrix;
 		SimpleVector<double>  vec_conv(ndof);
 		SimpleVector<double>  vec_source(ndof);
 		SimpleVector<double>  vec_penalty(ndof);
+SimpleVector<double> * vec_res = new SimpleVector<double> (ndof);
 
 		double* coeff_vec= new double[ndof];	
 		double* coeff_vec_2 = new double[ndof];
@@ -517,14 +533,16 @@ CSCMatrix<double>* diff = NULL;
 					source_vec[i] = proj_solver->get_sln_vector()[i];*/
 assemble_vector_s(space_rho_g,prev_slns, ndof, dof_rho*4., dof_rho, coeff_vec_2, &source_matrix,lumped_matrix_proj);
 lumped_matrix_proj->multiply_with_vector(coeff_vec_2, source_vec);
-
-
-
+//source_matrix.multiply_with_vector(coeff_vec_2, source_vec);
 
 
 //matrix.create(dg_matrix.get_size(),dg_matrix.get_nnz(), dg_matrix.get_Ap(), dg_matrix.get_Ai(),dg_matrix.get_Ax());
 //matrix.add_sparse_matrix(&source_matrix);
  diff =  artificialDiffusion(GAMMA,coeff_vec,spaces,&conv_matrix);
+
+
+//penalty_matrix.multiply_with_Scalar(1./SIGMA);
+//vec_penalty.multiply_with_Scalar(1./SIGMA);
 
 		matrix.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.get_Ap(), source_matrix.get_Ai(),source_matrix.get_Ax());
 //matrix.create(conv_matrix.get_size(),conv_matrix.get_nnz(), conv_matrix.get_Ap(), conv_matrix.get_Ai(),conv_matrix.get_Ax());
@@ -545,7 +563,7 @@ matrix2.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.g
 		matrix2.multiply_with_Scalar(-theta); 
 		matrix2.add_sparse_matrix(lumped_matrix);  
 		//matrix2.add_sparse_matrix(&mass_matrix); 
-		
+
 	//-------------rhs: ------------		
 		matrix2.multiply_with_vector(coeff_vec, coeff_vec_2);
 		//diff->multiply_with_vector(coeff_vec, coeff_vec_2);
@@ -557,6 +575,25 @@ matrix2.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.g
 		vec_rhs.add_vector(&vec_penalty); 
 		vec_rhs.add_vector(source_vec); 
 //vec_rhs.add_vector(&vec_source); 
+
+double residual = 0;
+vec_res->zero();
+
+		vec_res->add_vector(&vec_bdry); 
+		vec_res->add_vector(&vec_conv); 
+		vec_res->add_vector(&vec_penalty); 
+		vec_res->add_vector(source_vec); 
+for(int i = 1; i<ndof; i++)
+	residual +=vec_res->get(i)*vec_res->get(i);
+
+int bound = 0;
+for(int i = 0;	i<10; i++)
+{
+	if(residual < 1./std::pow(10,i)) bound = i;
+	else break;
+}
+Hermes::Mixins::Loggable::Static::info("res = %f < 10^(-%i)", residual, bound); 	  
+ 	
 
 
 	//-------------------------solution of (M-theta(K+P+B+S)) (u(n+1)-u(n) = Sn +Ku(n) +Bn+Pn------------ 		
@@ -572,7 +609,7 @@ matrix2.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.g
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
-	
+	//lumped_matrix->multiply_with_Scalar(1./10.);
 
 			// Visualize the solution.
 			Hermes::Mixins::Loggable::Static::info("Visualize"); 	
@@ -642,6 +679,7 @@ matrix2.create(source_matrix.get_size(),source_matrix.get_nnz(), source_matrix.g
 
 		delete solver;
 		matrix.free();
+		matrix2.free();
 		if(diff!=NULL) delete diff;
  
 

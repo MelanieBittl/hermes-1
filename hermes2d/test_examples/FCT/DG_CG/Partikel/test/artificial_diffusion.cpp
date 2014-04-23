@@ -29,7 +29,7 @@ protected:
     {
 	  Scalar result = Scalar(0);
 	  for (int i = 0; i < n; i++)
-			result += wt[i] * u->val[i]*v->dx[i];
+			result += wt[i] * v->val[i]*u->dx[i]; // u v vertuaschen ?
 		
 	  return result;
 
@@ -78,7 +78,7 @@ protected:
     {
 	  Scalar result = Scalar(0);
 	  for (int i = 0; i < n; i++)
-			result += wt[i] * u->val[i]*v->dy[i];;
+			result += wt[i] * v->val[i]*u->dy[i]; // u v vertuaschen ?
 		
 	  return result;
 
@@ -216,6 +216,7 @@ int dof_vel_x =dof_rho; int dof_vel_y =dof_rho; int dof_energy =dof_rho;
 		double* coeff_e_p = new double[dof_rho];
 
 
+
 for(int i =0;i<dof_rho; i++){
 		coeff_rho_g[i]=coeff[i]; coeff_rho_p[i]=coeff[i+ndof_g];
 }
@@ -270,8 +271,11 @@ for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof_g;i++){
 					if(i>dof_rho) printf("i groesser als dof_rho! seltsam!!!!");
 
 //Gasphase
+			double rho_g_i = coeff_rho_g[i];
+			double rho_g_j = coeff_rho_g[j];
+
 					c_ij_x = Ax_1[indx];
-					c_ij_y = Ax_2[indx];
+					c_ij_y = c_matrix_2->get(i,j);//Ax_2[indx];
 					c_ji_x = c_matrix_1->get(j,i);
 					c_ji_y = c_matrix_2->get(j,i); 
 				c_i = Hermes::sqrt(gamma*QuantityCalculator::calc_pressure(coeff_rho_g[i], coeff_vel_x_g[i], coeff_vel_y_g[i], coeff_e_g[i], gamma)/coeff_rho_g[i]);
@@ -280,12 +284,10 @@ for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof_g;i++){
 //Book
 					e_ij = 0.5*Hermes::sqrt((c_ji_x-c_ij_x)*(c_ji_x-c_ij_x)+(c_ji_y-c_ij_y)*(c_ji_y-c_ij_y));
 					e_ji = 0.5*Hermes::sqrt((c_ij_x-c_ji_x)*(c_ij_x-c_ji_x)+(c_ij_y-c_ji_y)*(c_ij_y-c_ji_y));
-					d_ij = fabs( (c_ji_x-c_ij_x)*coeff_vel_x_g[j]/(2.*coeff_rho_g[j])+ (c_ji_y-c_ij_y)*coeff_vel_y_g[j]/(2.*coeff_rho_g[j]))+ e_ij*c_j;
-					d_ji = fabs( (c_ij_x-c_ji_x)*coeff_vel_x_g[i]/(2.*coeff_rho_g[i])+ (c_ij_y-c_ji_y)*coeff_vel_y_g[i]/(2.*coeff_rho_g[i]))+ e_ji*c_i;
+					d_ij = fabs( (c_ji_x-c_ij_x)*coeff_vel_x_g[j]/(2.*rho_g_j)+ (c_ji_y-c_ij_y)*coeff_vel_y_g[j]/(2.*rho_g_j))+ e_ij*c_j;
+					d_ji = fabs( (c_ij_x-c_ji_x)*coeff_vel_x_g[i]/(2.*rho_g_i)+ (c_ij_y-c_ji_y)*coeff_vel_y_g[i]/(2.*rho_g_i))+ e_ji*c_i;
 
 					d_ij_g = std::max(d_ij,d_ji);
-
-
 
 					for(int k = 0;k<4;k++){
 							int next = k*dof_rho;
@@ -300,7 +302,8 @@ for(int i = (dof_rho+dof_vel_x+dof_vel_y); i<ndof_g;i++){
 
 				k_ij = std::fabs(c_ij_x *coeff_vel_x_p[j]/coeff_rho_p[j] + c_ij_y *coeff_vel_y_p[j]/coeff_rho_p[j]);
 				k_ji = std::fabs(c_ji_x *coeff_vel_x_p[i]/coeff_rho_p[i] + c_ji_y *coeff_vel_y_p[i]/coeff_rho_p[i]);
-				d_ij_p = std::max(d_ij,d_ji);
+
+				d_ij_p = std::max(k_ij,k_ji);
 					for(int k = 0;k<4;k++){
 							int next = k*dof_rho+ndof_g;
 						if((i+next>size)||(j+next>size)) printf("particle phase diffusion exceeds range");						
@@ -322,6 +325,10 @@ delete c_matrix_2;
 	delete [] coeff_vel_x_g;
 	delete [] coeff_vel_y_g;
 	delete [] coeff_e_g; 
+	delete [] coeff_rho_p;
+	delete [] coeff_vel_x_p;
+	delete [] coeff_vel_y_p;
+	delete [] coeff_e_p; 
 
 	return diffusion;
 

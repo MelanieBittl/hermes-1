@@ -11,9 +11,9 @@
  double CustomInitialCondition_rho::value(double x, double y) const 
 	{ 
 		
-double rho = 1.; 
+double rho = 6.; 
 
-if(particle){rho = 0.1;
+if(particle){rho = 1;
 }
 return rho;
 
@@ -34,15 +34,14 @@ return rho;
 
  double CustomInitialCondition_rho_v_x::value(double x, double y) const 
 	{     
-double rho = 1.; 
+double rho = 6.; 
 
-double pressure = std::pow(10,1);
-double mach = 0.01;
-
+double pressure = 1e+6;
+double mach = 0.2;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
 if(particle){
- rho = 0.1; 
-	v_x = 0;
+ rho = 1; 
+	//v_x = 0;
 }
 
 return (rho*v_x);	
@@ -70,18 +69,19 @@ return (rho*v_x);
  double CustomInitialCondition_e::value(double x, double y) const 
 {  
 
-double rho = 1.; 
+double rho = 6.; 
 
-double pressure = std::pow(10,1);
-double mach = 0.01;
+double pressure = 1e+6;
+double mach = 0.2;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
-if(particle){ v_x = 0; pressure = 0;
- rho = 0.1; 
+if(particle){ pressure = 0;
+ rho = 1; 
 }
 
 double rho_v_x = rho*v_x;
 
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->gamma);
+
 
 };
 
@@ -110,8 +110,9 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
 		
-double rho = 1.;
-if(particle){rho = 10.; if(x>1) rho = 0.1;}
+double rho = 6.; 
+
+if(particle){ rho = 1;}
 return rho;
 };
 
@@ -133,15 +134,12 @@ return rho;
 
  double BoundaryCondition_rho_v_x::value(double x, double y) const 
 	{    			
-double rho = 1.;
+double rho = 6.; 
 
-double pressure = std::pow(10,1);
-
-double mach = 0.25-y*y;
-if(x>1) mach = 0.01;
-
+double pressure = 1e+6;
+double mach = 0.2;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
-if(particle){rho = 10.; if(x>1){ rho = 0.1;v_x = 0;}}
+if(particle){rho = 1.;}
 
 return (rho*v_x);	
 
@@ -161,20 +159,18 @@ return (rho*v_x);
 { 
 		dx =0.;
 		dy = 0;	
-
 };
 
  double BoundaryCondition_rho_e::value(double x, double y) const 
 	{    			
 
-double rho = 1.;
+double rho = 6.; 
 
-double pressure = std::pow(10,1);
-double mach = -y*y +0.25;
-if(x>1) mach = 0.01;
-
+double pressure = 1e+6;
+double mach = 0.2;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
-if(particle){rho = 10.; if(x>1){ rho = 0.1;v_x = 0;pressure = 0;}}
+
+if(particle){rho = 1.;pressure = 0;}
 double rho_v_x = rho*v_x;
 
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->gamma);

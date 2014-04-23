@@ -1,19 +1,21 @@
 #include "definitions.h"
 
+const double x_min = 0;
+const double x_max = 2;
+const int   bdry_in = 2;
+const int bdry_out = 1;
 
-  EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
+ EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
 	{
-
 		for(int k =0; k<num_of_equations;k++)			
 			add_matrix_form(new DefaultMatrixFormVol<double>(k,k)); 	 
 
 	}
-
-
-	    WeakForm<double>* EulerEquationsWeakForm_Mass::clone() const
+	    
+WeakForm<double>* EulerEquationsWeakForm_Mass::clone() const
     {
-    EulerEquationsWeakForm_Mass* wf;
-    wf = new EulerEquationsWeakForm_Mass(8);
+		EulerEquationsWeakForm_Mass* wf;
+		wf = new EulerEquationsWeakForm_Mass(8);
 
     return wf;
     }
@@ -98,8 +100,7 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 				((static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],0,entry_i,entry_j) 
 				  * v->dx[i]+        
 				 (static_cast<EulerK*>(wf))->euler_fluxes->A_g(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i],1,entry_i,entry_j) 
-				  * v->dy[i]);
-		
+				  * v->dy[i]);		
 			  }
 		}
       return result;
@@ -296,15 +297,15 @@ if((entry_i==0)||(entry_i==4)) return 0;
 			}else if(entry_i==3)
 			{	if(entry_j==0)
 				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/rho_p);
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_tem *(rho_v_x_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_tem *(rho_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
 				}else if(entry_j==1)
 				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_x_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
 				}else if(entry_j==2)
 				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_y_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
 				}else if(entry_j==3)
-				{   result -= wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_v_x_p/c_vg);
+				{   result -= wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_p/c_vg);
 				}else if(entry_j==4)
 				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_g*(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/(rho_p*rho_p));
 					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(T_g-T_p+rho_e_p/rho_p-(v_x_p*v_x_p+v_y_p*v_y_p)/c_vp);
@@ -337,15 +338,15 @@ if((entry_i==0)||(entry_i==4)) return 0;
 			}else if(entry_i==7)
 			{	if(entry_j==0)
 				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/rho_p);
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
 				}else if(entry_j==1)
 				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_x_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
 				}else if(entry_j==2)
 				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_y_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_v_x_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
 				}else if(entry_j==3)
-				{   result += wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_v_x_p/c_vg);
+				{   result += wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_p/c_vg);
 				}else if(entry_j==4)
 				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_g*(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/(rho_p*rho_p));
 					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(T_g-T_p+rho_e_p/rho_p-(v_x_p*v_x_p+v_y_p*v_y_p)/c_vp);
@@ -562,9 +563,10 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
   for (int i = 0;i < n;i++) 
   {		
 		 bdry =0;
-	if(e->x[i]== 0) bdry = 2;
-	else if(e->x[i]== 2) bdry = 1;
+	if(e->x[i]== x_min) bdry = bdry_in;
+	else if(e->x[i]== x_max) bdry = bdry_out;
 
+//if(bdry!= 0.) continue;
 	if(bdry==1) constant =1.;
 	else constant = 0.5;
 
@@ -716,8 +718,8 @@ int bdry;
   for (int i = 0;i < n;i++) 
 	{
 		 bdry =0;
-if(e->x[i]== 0) bdry = 2;
-else if(e->x[i]== 2) bdry = 1;
+if(e->x[i]== x_min) bdry  = bdry_in;
+else if(e->x[i]== x_max) bdry  = bdry_out;
 
 
 	//----------particle---------------------
@@ -803,8 +805,7 @@ if(bdry==0) continue;
 				else if(entry_i==2)
 					result += wt[i]*v->val[i]*e->ny[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, gamma);
 		}
-	  }
-			
+	  }			
 			
 	 }
 	delete [] ghost_state;
@@ -833,8 +834,7 @@ prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev
 		for(int k =0; k<4;k++)
 		{
 			for(int i = 0; i<4;i++)
-				add_matrix_form_surf(new EulerPenalty::PenaltyBilinearForm(sigma,eps,i,k));
-			
+				add_matrix_form_surf(new EulerPenalty::PenaltyBilinearForm(sigma,eps,i,k));			
 			add_vector_form_surf(new EulerPenalty::PenaltyLinearForm(sigma, k));
 		}
 
@@ -842,8 +842,7 @@ prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev
 		for(int k =4; k<8;k++)
 		{
 			for(int i = 4; i<8;i++)
-				add_matrix_form_surf(new EulerPenalty::PenaltyBilinearForm(sigma,eps,i,k,true));
-			
+				add_matrix_form_surf(new EulerPenalty::PenaltyBilinearForm(sigma,eps,i,k,true));			
 			add_vector_form_surf(new EulerPenalty::PenaltyLinearForm(sigma, k,true));
 		}
 
@@ -888,7 +887,7 @@ if((entry_j==0) ||(entry_j==3)||(entry_j==4) ||(entry_j==7)) return 0.;
   for (int i = 0;i < n;i++) 
   {		
 
-if((e->x[i]== 0) ||(e->x[i]== 2)) continue; 
+if((e->x[i]== x_min) ||(e->x[i]== x_max)) continue; 
   
 		if(particle){
 			double vn = ext[5]->val[i]/ext[4]->val[i]*e->nx[i] + ext[6]->val[i]/ext[4]->val[i]*e->ny[i];
@@ -969,7 +968,7 @@ double material_density = (static_cast<EulerPenalty*>(wf))->particle_density;
   for (int i = 0;i < n;i++) 
 	{
 
-if((e->x[i]== 0) ||(e->x[i]== 2)) continue; 
+if((e->x[i]== x_min) ||(e->x[i]== x_max)) continue; 
  
 		double alpha_p  =ext[4]->val[i]/material_density ;
 			double alpha_g = 1.-alpha_p;

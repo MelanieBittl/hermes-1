@@ -82,7 +82,7 @@ void AlphaFilter::filter_fn(int n, Hermes::vector<double*> values, double* resul
 //-------------------RiemannInvariants-----------------------
 //-----------------------------------------------------
 double RiemannInvariants::get_w1(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y){
-	return (rho_v_x*n_x/rho + rho_v_y*n_y/rho - 2*QuantityCalculator::calc_sound_speed(rho, rho_v_x,rho_v_y, rho_energy, gamma)/(gamma-1));
+	return (rho_v_x*n_x/rho + rho_v_y*n_y/rho - 2.*QuantityCalculator::calc_sound_speed(rho, rho_v_x,rho_v_y, rho_energy, gamma)/(gamma-1.));
 }
 
 double RiemannInvariants::get_w2(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y){
@@ -170,7 +170,12 @@ void RiemannInvariants::get_ghost_state(int bdry,double rho, double rho_v_x, dou
 {
 
 		double w_1,w_2,w_3,w_4;	
-	 if(bdry==1){ //supersonic outlet
+	if( bdry==0){
+		ghost_state[0] = rho;
+		ghost_state[3] = rho_energy;
+		ghost_state[1] = rho_v_x - 2*n_x*( rho_v_x*n_x+ rho_v_y*n_y); 	
+		ghost_state[2] = rho_v_y- 2*n_y*( rho_v_x*n_x+ rho_v_y*n_y); 
+	}else if(bdry==1){ //supersonic outlet
 		ghost_state[0] =  rho;
 		ghost_state[1] = rho_v_x;
 		ghost_state[2]=		rho_v_y;
