@@ -1,9 +1,9 @@
 #include "definitions.h"
 
-const double x_min = 0;
-const double x_max = 2;
-const int   bdry_in = 2;
-const int bdry_out = 1;
+const double x_min = -2;
+const double x_max = 8;
+const int   bdry_in = 3;
+const int bdry_out = 4;
 
  EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
 	{
@@ -216,8 +216,8 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 if((entry_i==0)||(entry_i==4)) return 0;
       double result = 0.;
 
-		double material_density = (static_cast<EulerSource*>(wf))->particle_density;
-		double d = (static_cast<EulerSource*>(wf))->d;		
+		double density_particle= (static_cast<EulerSource*>(wf))->particle_density;
+		double diameter = (static_cast<EulerSource*>(wf))->d;		
 		double c_vg = (static_cast<EulerSource*>(wf))->c_vg;
 		double c_vp = (static_cast<EulerSource*>(wf))->c_vp;
 		double c_pg = (static_cast<EulerSource*>(wf))->c_pg;
@@ -226,136 +226,135 @@ if((entry_i==0)||(entry_i==4)) return 0;
 		double kap = c_pg*mu/Pr;
       
 		for (int i = 0;i < n;i++){
-			double alpha_p  =ext[4]->val[i]/material_density ;
+			double alpha_p  =ext[4]->val[i]/density_particle ;
 			double alpha_g = 1.-alpha_p;
-
-			double rho_g = ext[0]->val[i]/alpha_g;  
-			double rho_v_x_g = ext[1]->val[i]/alpha_g; 
-			double rho_v_y_g = ext[2]->val[i]/alpha_g; 
-			double rho_e_g = ext[3]->val[i]/alpha_g;
-
-			double v_x_g = rho_v_x_g/rho_g;
-			double v_y_g = rho_v_y_g/rho_g;
-
-			double rho_p = material_density;  
-			double rho_v_x_p = ext[5]->val[i]/alpha_p; 
-			double rho_v_y_p = ext[6]->val[i]/alpha_p; 
-			double rho_e_p = ext[7]->val[i]/alpha_p;
-
-			double v_x_p = rho_v_x_p/rho_p;
-			double v_y_p = rho_v_y_p/rho_p;
-
-		double v1_diff = (v_x_g - v_x_p);
-		double v2_diff = (v_y_g - v_y_p);
-		double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
-
-		double Re = rho_g*d*v_diff_abs/mu;
-		double C_D = 0.44;
-		if(Re<1000) C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
-
+			
+				double u_g_1 = ext[0]->val[i];
+						double u_g_2 = ext[1]->val[i];
+						double u_g_3 = ext[2]->val[i];
+						double u_g_4 = ext[3]->val[i];
+						
+						double u_p_1 = ext[4]->val[i];
+						double u_p_2 = ext[5]->val[i];
+						double u_p_3 = ext[6]->val[i];
+						double u_p_4 = ext[7]->val[i];
 		
-		double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
+						double rho_g = u_g_1/alpha_g;  
+						double rho_v_x_g = u_g_2/alpha_g; 
+						double rho_v_y_g = u_g_3/alpha_g; 
+						double rho_e_g = u_g_4/alpha_g;
+						double v_x_g = rho_v_x_g/rho_g;
+						double v_y_g = rho_v_y_g/rho_g;
 
-		double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
-		double T_p  = 1./c_vp*(rho_e_p/rho_p-0.5*(v_x_p*v_x_p+v_y_p*v_y_p));
+						double rho_p = density_particle;  
+						double rho_v_x_p = u_p_2/alpha_p; 
+						double rho_v_y_p = u_p_3/alpha_p; 
+						double rho_e_p = u_p_4/alpha_p;
+						double v_x_p = rho_v_x_p/rho_p;
+						double v_y_p = rho_v_y_p/rho_p;
 
-		double Q_drag = 0.75*v_diff_abs*C_D/(d*alpha_g*material_density);
-		double Q_tem = Nu*6.*kap/(d*d*material_density);
+						double v1_diff = (v_x_g - v_x_p);
+						double v2_diff = (v_y_g - v_y_p);
+						double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
 
+						double Re = rho_g*diameter*v_diff_abs/mu;
+						if(Re==1) printf("Reynolds gleich 0!!!!!");
+						double C_D = 0.44;
+						if(Re<1000)
+								C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
+						double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
 
-			 rho_g = ext[0]->val[i];  
-			 rho_v_x_g = ext[1]->val[i]; 
-			 rho_v_y_g = ext[2]->val[i]; 
-			 rho_e_g = ext[3]->val[i];
-			 rho_p = ext[4]->val[i];  
-			 rho_v_x_p = ext[5]->val[i]; 
-			 rho_v_y_p = ext[6]->val[i]; 
-			 rho_e_p = ext[7]->val[i];
+						double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
+						double T_p = 1./c_vp*(rho_e_p/rho_p-0.5*(v_x_p*v_x_p+v_y_p*v_y_p));
+						
+						double Q_drag = 0.75*v_diff_abs*C_D/(diameter*alpha_g*density_particle);
+						double Q_tem = Nu*6.*kap/(diameter*diameter*density_particle);
 
 
 			if(entry_i==1)
 			{
 				if(entry_j==0)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_v_x_p);
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_p_2);
 				else if(entry_j==1)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_p;
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_1;
 				else if(entry_j==4)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_x_g);
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*u_g_2;
 				else if(entry_j==5)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_g);
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_g_1);
 
 			}else if(entry_i==2)
 			{	if(entry_j==0)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_v_y_p);
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_p_3);
 				else if(entry_j==2)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_p;
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_1;
 				else if(entry_j==4)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_y_g);
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_3);
 				else if(entry_j==6)
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_g);
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_g_1);
 
 			}else if(entry_i==3)
 			{	if(entry_j==0)
-				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/rho_p);
-					result  -= wt[i] * u->val[i] *v->val[i] *Q_tem *(rho_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
+				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(-(u_p_2*u_p_2+u_p_3*u_p_3))/u_p_1;
+					result  -= wt[i] * u->val[i] *v->val[i] *Q_tem *(u_p_1/c_vg)*(-u_g_4/(u_g_1*u_g_1)+ (u_g_2*u_g_2+u_g_3*u_g_3)/(u_g_1*u_g_1*u_g_1));
 				}else if(entry_j==1)
-				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_x_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
+				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_2;
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(u_p_1/c_vg)*(-u_g_2)/(u_g_1*u_g_1);
 				}else if(entry_j==2)
-				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_y_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
+				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_3;
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(u_p_1/c_vg)*(-u_g_3)/(u_g_1*u_g_1);
 				}else if(entry_j==3)
-				{   result -= wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_p/c_vg);
+				{   result -= wt[i] * u->val[i] *v->val[i]*Q_tem/u_g_1*(u_p_1/c_vg);
 				}else if(entry_j==4)
-				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_g*(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/(rho_p*rho_p));
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(T_g-T_p+rho_e_p/rho_p-(v_x_p*v_x_p+v_y_p*v_y_p)/c_vp);
+				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_1*(u_p_2*u_p_2+u_p_3*u_p_3)/(u_p_1*u_p_1));
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(T_g-T_p+u_p_4/(c_vp*u_p_1)-(u_p_2*u_p_2+u_p_3*u_p_3)/(c_vp*u_p_1*u_p_1));
 				}else if(entry_j==5)
-				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_x_g*rho_p-2.*rho_g*rho_v_x_p)/rho_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(v_x_p/c_vp);
+				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_2*u_p_1-2.*u_g_1*u_p_2)/u_p_1;
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*u_p_2/(c_vp*u_p_1);
 				}else if(entry_j==6)
-				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_y_g*rho_p-2.*rho_g*rho_v_y_p)/rho_p;
-					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(v_y_p/c_vp);
+				{	result  -= wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_3*u_p_1-2.*u_g_1*u_p_3)/u_p_1;
+					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*u_p_3/(c_vp*u_p_1);
 				}else if(entry_j==7)
 					result  -= wt[i] * u->val[i] *v->val[i]*Q_tem*(-1./c_vp);
 			}else if(entry_i==5)
-			{	if(entry_j==0)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_v_x_p);
+			{
+				if(entry_j==0)
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_p_2);
 				else if(entry_j==1)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_p;
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_1;
 				else if(entry_j==4)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_x_g);
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*u_g_2;
 				else if(entry_j==5)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_g);
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_g_1);
 			}else if(entry_i==6)
 			{	if(entry_j==0)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_v_y_p);
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_p_3);
 				else if(entry_j==2)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_p;
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_1;
 				else if(entry_j==4)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_y_g);
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_3);
 				else if(entry_j==6)
-					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-rho_g);
+					result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-u_g_1);
 			}else if(entry_i==7)
 			{	if(entry_j==0)
-				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/rho_p);
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_e_g/(rho_g*rho_g) + (rho_v_x_g*rho_v_x_g+rho_v_y_g*rho_v_y_g)/(rho_g*rho_g*rho_g));
+				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(-(u_p_2*u_p_2+u_p_3*u_p_3))/u_p_1;
+					result  += wt[i] * u->val[i] *v->val[i] *Q_tem *(u_p_1/c_vg)*(-u_g_4/(u_g_1*u_g_1)+ (u_g_2*u_g_2+u_g_3*u_g_3)/(u_g_1*u_g_1*u_g_1));
 				}else if(entry_j==1)
-				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_x_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_x_g)/(rho_g*rho_g);
+				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_2;
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(u_p_1/c_vg)*(-u_g_2)/(u_g_1*u_g_1);
 				}else if(entry_j==2)
-				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*rho_v_y_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(rho_p/c_vg)*(-rho_v_y_g)/(rho_g*rho_g);
+				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*u_p_3;
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(u_p_1/c_vg)*(-u_g_3)/(u_g_1*u_g_1);
 				}else if(entry_j==3)
-				{   result += wt[i] * u->val[i] *v->val[i]*Q_tem/rho_g*(rho_p/c_vg);
+				{   result += wt[i] * u->val[i] *v->val[i]*Q_tem/u_g_1*(u_p_1/c_vg);
 				}else if(entry_j==4)
-				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_g*(rho_v_x_p*rho_v_x_p+rho_v_y_p*rho_v_y_p)/(rho_p*rho_p));
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(T_g-T_p+rho_e_p/rho_p-(v_x_p*v_x_p+v_y_p*v_y_p)/c_vp);
+				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_1*(u_p_2*u_p_2+u_p_3*u_p_3)/(u_p_1*u_p_1));
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(T_g-T_p+u_p_4/(c_vp*u_p_1)-(u_p_2*u_p_2+u_p_3*u_p_3)/(c_vp*u_p_1*u_p_1));
 				}else if(entry_j==5)
-				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_x_g*rho_p-2.*rho_g*rho_v_x_p)/rho_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(v_x_p/c_vp);
+				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_2*u_p_1-2.*u_g_1*u_p_2)/u_p_1;
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*u_p_2/(c_vp*u_p_1);
 				}else if(entry_j==6)
-				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(rho_v_y_g*rho_p-2.*rho_g*rho_v_y_p)/rho_p;
-					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(v_y_p/c_vp);
+				{	result  += wt[i] * u->val[i] *v->val[i] *Q_drag*(u_g_3*u_p_1-2.*u_g_1*u_p_3)/u_p_1;
+					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*u_p_3/(c_vp*u_p_1);
 				}else if(entry_j==7)
 					result  += wt[i] * u->val[i] *v->val[i]*Q_tem*(-1./c_vp);
 			}			
@@ -386,79 +385,83 @@ if((entry_i==0)||(entry_i==4)) return 0;
 {
 
 	if((entry_i==0)||(entry_i==4)) return 0;
-double material_density = (static_cast<EulerSource*>(wf))->particle_density;
-		double d = (static_cast<EulerSource*>(wf))->d;		
+double density_particle = (static_cast<EulerSource*>(wf))->particle_density;
+		double diameter = (static_cast<EulerSource*>(wf))->d;		
 		double c_vg = (static_cast<EulerSource*>(wf))->c_vg;
 		double c_vp = (static_cast<EulerSource*>(wf))->c_vp;
 		double c_pg = (static_cast<EulerSource*>(wf))->c_pg;
 		double Pr =(static_cast<EulerSource*>(wf))->Pr;		
 		double mu = (static_cast<EulerSource*>(wf))->mu;
 		double kap = c_pg*mu/Pr;
-
+double F_D_1, F_D_2, Q_T;
       double result = 0.;
 	for (int i = 0;i < n;i++){
-		double alpha_p  =ext[4]->val[i]/material_density ;
+		double alpha_p  =ext[4]->val[i]/density_particle ;
 		double alpha_g = 1.-alpha_p;
 
-
-			double rho_g = ext[0]->val[i]/alpha_g;  
-			double rho_v_x_g = ext[1]->val[i]/alpha_g; 
-			double rho_v_y_g = ext[2]->val[i]/alpha_g; 
-			double rho_e_g = ext[3]->val[i]/alpha_g;
-
-			double v_x_g = rho_v_x_g/rho_g;
-			double v_y_g = rho_v_y_g/rho_g;
-
-			double rho_p = ext[4]->val[i]/alpha_p;  
-			double rho_v_x_p = ext[5]->val[i]/alpha_p; 
-			double rho_v_y_p = ext[6]->val[i]/alpha_p; 
-			double rho_e_p = ext[7]->val[i]/alpha_p;
-
-			double v_x_p = rho_v_x_p/rho_p;
-			double v_y_p = rho_v_y_p/rho_p;
+						double u_g_1 = ext[0]->val[i];
+						double u_g_2 = ext[1]->val[i];
+						double u_g_3 = ext[2]->val[i];
+						double u_g_4 = ext[3]->val[i];
+						
+						double u_p_1 = ext[4]->val[i];
+						double u_p_2 = ext[5]->val[i];
+						double u_p_3 = ext[6]->val[i];
+						double u_p_4 = ext[7]->val[i];
 		
+						double rho_g = u_g_1/alpha_g;  
+						double rho_v_x_g = u_g_2/alpha_g; 
+						double rho_v_y_g = u_g_3/alpha_g; 
+						double rho_e_g = u_g_4/alpha_g;
+						double v_x_g = rho_v_x_g/rho_g;
+						double v_y_g = rho_v_y_g/rho_g;
 
-		double v1_diff = (v_x_g - v_x_p);
-		double v2_diff = (v_y_g - v_y_p);
-		double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
+						double rho_p = density_particle;  
+						double rho_v_x_p = u_p_2/alpha_p; 
+						double rho_v_y_p = u_p_3/alpha_p; 
+						double rho_e_p = u_p_4/alpha_p;
+						double v_x_p = rho_v_x_p/rho_p;
+						double v_y_p = rho_v_y_p/rho_p;
 
+						double v1_diff = (v_x_g - v_x_p);
+						double v2_diff = (v_y_g - v_y_p);
+						double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
 
-		double Re = rho_g*d*v_diff_abs/mu;
-		double C_D = 0.44;
-		if(Re<1000) C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
+						double Re = rho_g*diameter*v_diff_abs/mu;
+						if(Re==1) printf("Reynolds gleich 0!!!!!");
+						double C_D = 0.44;
+						if(Re<1000)
+								C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
+						double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
 
-		
-		double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
+						double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
+						double T_p = 1./c_vp*(rho_e_p/rho_p-0.5*(v_x_p*v_x_p+v_y_p*v_y_p));
+						
+						double Q_drag = 0.75*v_diff_abs*C_D/(diameter*alpha_g*density_particle);
+						double Q_tem = Nu*6.*kap/(diameter*diameter*density_particle);
+						
+						F_D_1 = Q_drag* (u_g_2*u_p_1-u_p_2*u_g_1);
+						F_D_2 = Q_drag*(u_g_3*u_p_1-u_p_3*u_g_1); 
+						Q_T = Q_tem*u_p_1*(T_g-T_p); 
+						
 
-		double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
-		double T_p = 1./c_vp*(rho_e_p/rho_p-0.5*(v_x_p*v_x_p+v_y_p*v_y_p));
 
 //gas phase
 			if(entry_i==1)  //vx			  
-					 result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*0.75;
+					 result -= wt[i]*v->val[i]*F_D_1;
 			else if(entry_i==2)//vy
-					result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*0.75;
-			else if(entry_i ==3)	//e
-			{
-				result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*v_x_p*0.75;
-				result -= wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*v_y_p*0.75;
-				result -= wt[i]*v->val[i]*Nu*6.*kap/(d*d)*alpha_p*(T_g-T_p);
-
-			}
+					result -= wt[i]*v->val[i]*F_D_2;
+			else if(entry_i ==3)	//e			
+				result -= wt[i]*v->val[i]*((F_D_1*v_x_p+F_D_2*v_y_p)+Q_T);	
 
 //particle phase
 
 			else if(entry_i==5)//vx			  
-					  result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*0.75;
+					  result += wt[i]*v->val[i]*F_D_1;
 			else if(entry_i==6)//vy
-					result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*0.75;
-			else if(entry_i ==7)	//ve
-			{
-				result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v1_diff* v_diff_abs*v_x_p*0.75;
-				result += wt[i]*v->val[i]*rho_g*alpha_p*C_D/d*v2_diff* v_diff_abs*v_y_p*0.75;
-				result += wt[i]*v->val[i]*Nu*6.*kap/(d*d)*alpha_p*(T_g-T_p);
-			}
-			  
+					result += wt[i]*v->val[i]*F_D_2;
+			else if(entry_i ==7)	//e			
+				result += wt[i]*v->val[i]*((F_D_1*v_x_p+F_D_2*v_y_p)+Q_T);
 
 		
 
@@ -826,6 +829,8 @@ if(bdry==0) continue;
     }
 
 
+    
+
 //--------------------------Penalty Term------------------------
 	EulerPenalty::EulerPenalty(double sigma,double particle_density,MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p,double eps,int num_of_equations): WeakForm<double>(num_of_equations), sigma(sigma), eps(eps), prev_density_g(prev_density_g), prev_density_vel_x_g(prev_density_vel_x_g), prev_density_vel_y_g(prev_density_vel_y_g), prev_energy_g(prev_energy_g), particle_density(particle_density),
 prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev_density_vel_y_p(prev_density_vel_y_p), prev_energy_p(prev_energy_p)
@@ -883,48 +888,52 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
   double result = 0.;
 if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.; 
 if((entry_j==0) ||(entry_j==3)||(entry_j==4) ||(entry_j==7)) return 0.;
+double nx, ny;
 
   for (int i = 0;i < n;i++) 
   {		
-
+			nx = e->nx[i];
+			ny = e->ny[i];
 if((e->x[i]== x_min) ||(e->x[i]== x_max)) continue; 
   
 		if(particle){
-			double vn = ext[5]->val[i]/ext[4]->val[i]*e->nx[i] + ext[6]->val[i]/ext[4]->val[i]*e->ny[i];
+			
+
+			double vn = (ext[5]->val[i]*nx + ext[6]->val[i]*ny)/ext[4]->val[i];
 				double factor = ((2.*vn*vn+eps)/(std::sqrt(vn*vn+eps)));
 
 				if(entry_i==5)
 				{
 						if(entry_j==5){
-							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(e->nx[i]);
+							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(nx)*factor;
 						}else if(entry_j==6){
-							result += wt[i]*v->val[i] *u->val[i]*e->ny[i]*e->nx[i];
+							result += wt[i]*v->val[i] *u->val[i]*ny*nx*factor;
 						}
 				}else if(entry_i==6)
 				{
 					 if(entry_j==5){
-							result += wt[i]*v->val[i] *u->val[i]*e->ny[i]*e->nx[i];
+							result += wt[i]*v->val[i] *u->val[i]*ny*nx*factor;
 						}else if(entry_j==6){
-							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(e->ny[i]);
+							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(ny)*factor;
 						}
 				}
 		}else{
-		double vn = ext[1]->val[i]/ext[0]->val[i]*e->nx[i] + ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
+		double vn = (ext[1]->val[i]*nx+ ext[2]->val[i]*ny)/ext[0]->val[i];
 		double factor = ((2.*vn*vn+eps)/(std::sqrt(vn*vn+eps)));
 
 				if(entry_i==1)
 				{
 						if(entry_j==1){
-							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(e->nx[i]);
+							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(nx)*factor;
 						}else if(entry_j==2){
-							result += wt[i]*v->val[i] *u->val[i]*e->ny[i]*e->nx[i];
+							result += wt[i]*v->val[i] *u->val[i]*ny*nx*factor;
 						}
 				}else if(entry_i==2)
 				{
 					 if(entry_j==1){
-							result += wt[i]*v->val[i] *u->val[i]*e->ny[i]*e->nx[i];
+							result += wt[i]*v->val[i] *u->val[i]*ny*nx*factor;
 						}else if(entry_j==2){
-							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(e->ny[i]);
+							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(ny)*factor;
 						}
 				}
 		}
@@ -970,25 +979,24 @@ double material_density = (static_cast<EulerPenalty*>(wf))->particle_density;
 
 if((e->x[i]== x_min) ||(e->x[i]== x_max)) continue; 
  
-		double alpha_p  =ext[4]->val[i]/material_density ;
-			double alpha_g = 1.-alpha_p;
+		//double alpha_p  =ext[4]->val[i]/material_density ;
+			//double alpha_g = 1.-alpha_p;
 
 		if(particle)
 		{
-			double vn = (ext[5]->val[i]*e->nx[i] + ext[6]->val[i]*e->ny[i])/ext[4]->val[i];
-			double rho =  ext[4]->val[i]/alpha_p;
+			double vn = (ext[5]->val[i]*e->nx[i] + ext[6]->val[i]*e->ny[i]); ///ext[4]->val[i];
+			
 				if(entry_i==5)
-					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn)*rho*rho;
+					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn);//*ext[4]->val[i]*ext[4]->val[i];
 				else if(entry_i==6)
-					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn)*rho*rho;
+					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn);//*ext[4]->val[i]*ext[4]->val[i];
 
 		}else{
-			double vn = (ext[1]->val[i]*e->nx[i] + ext[2]->val[i]*e->ny[i])/ext[0]->val[i];
-			double rho =  ext[0]->val[i]/alpha_g;
+			double vn = (ext[1]->val[i]*e->nx[i] + ext[2]->val[i]*e->ny[i]);///ext[0]->val[i];			
 				if(entry_i==1)
-					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn)*rho*rho;
+					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn);//*ext[0]->val[i]*ext[0]->val[i];
 				else if(entry_i==2)
-					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn)*rho*rho;
+					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn);//*ext[0]->val[i]*ext[0]->val[i];
 		}			
 	 }
 
@@ -1007,17 +1015,3 @@ if((e->x[i]== x_min) ||(e->x[i]== x_max)) continue;
     {
 					return new EulerPenalty::PenaltyLinearForm(this->sigma, this->entry_i, this->particle);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

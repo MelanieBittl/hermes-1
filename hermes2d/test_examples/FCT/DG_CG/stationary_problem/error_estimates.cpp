@@ -117,16 +117,16 @@ Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::
 fclose (pFile);  
 
 // Output solution in VTK format.
-/*	Linearizer lin;
+/*Linearizer lin;
 	bool mode_3D = true;
 
 MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
 //fview.show(filter);
-lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
+//lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
 //lin.save_solution_vtk(u_prev_time, "init.vtk", "solution", mode_3D);
 lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
-
 */
+
 
 
 }

@@ -77,9 +77,19 @@ double gamma;
 NumericalFlux* num_flux;
 	int entry_j; 
 	int entry_i;
+	
+
 
 
   };
+  
+  	  double calculate_a_dot_v(double x, double y, double vx, double vy) const;
+
+  Ord calculate_a_dot_v(Ord x, Ord y, Ord vx, Ord vy) const;
+
+  double upwind_flux(double u_cent, double u_neib, double a_dot_n) const;
+
+  Ord upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const;
 
 
 };

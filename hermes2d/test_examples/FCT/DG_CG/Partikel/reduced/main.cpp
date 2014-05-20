@@ -13,10 +13,11 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
+/*
 #include "mass_lumping.cpp"
 #include "artificial_diffusion.cpp"
 #include "fct.cpp"
-
+*/
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 1e-2;

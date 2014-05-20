@@ -1,4 +1,4 @@
-project(particle_3)
+project(particle_reduced)
 
 add_executable(${PROJECT_NAME} main.cpp definitions.cpp euler_util.cpp initial_condition.cpp interface.cpp numerical_flux.cpp euler_flux.cpp)
 

@@ -1,6 +1,6 @@
 add_subdirectory("solid_body")
 add_subdirectory("FCT_BB")
-add_subdirectory("solid_body_2")
+#add_subdirectory("solid_body_2")
 add_subdirectory("slope_limiter")
 add_subdirectory("solid_body_ref")
 add_subdirectory("stationary_problem")

@@ -114,7 +114,7 @@ Solution<double>::vector_to_solution(coeff_vec, space_h1, u_test);*/
 			Solution<double>::vector_to_solution(vec_new, space, u_new);
 			for(int i=0; i<ndof; i++) coeff_vec_2[i] = vec_new[i];
 
-		//sview.show(u_new);
+		sview.show(u_new);
 /*
 dg_surface_matrix->multiply_with_vector(coeff_vec, coeff_vec_3); 
 

@@ -51,12 +51,48 @@ public:
     MachNumberFilter* filter = new MachNumberFilter(slns, this->gamma);
           
     return filter;
-  }
+  }  
+  
 
 protected:
   virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
 
   double gamma;
+};
+
+
+class TempFilter : public Hermes::Hermes2D::SimpleFilter<double>
+{
+public: 
+  TempFilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, double cv) : SimpleFilter<double>(solutions), cv(cv) {};
+  ~TempFilter() 
+  {
+  };
+
+   MeshFunction<double>*  clone() const
+  {
+    Hermes::vector<MeshFunctionSharedPtr<double> > slns;
+    for(int i = 0; i < this->num; i++)
+    {
+      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->sln[i].get());
+      if(solution && solution->get_type() == HERMES_SLN)
+      {
+        slns.push_back(new Solution<double>());
+        slns.back()->copy(this->sln[i]);
+      }
+      else
+        slns.push_back(this->sln[i]->clone()); 
+    }
+   TempFilter* filter = new TempFilter(slns, this->cv);
+          
+    return filter;
+  }  
+  
+
+protected:
+  virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
+
+  double cv;
 };
 
 class AlphaFilter : public Hermes::Hermes2D::SimpleFilter<double>

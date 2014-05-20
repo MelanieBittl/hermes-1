@@ -81,10 +81,20 @@ double EulerInterface::EulerEquationsVectorFormFlux::value(int n, double *wt, Di
 			w_R[1] = ext[5]->val_neighbor[point_i];
 			w_R[2] = ext[6]->val_neighbor[point_i];
     		w_R[3] = ext[7]->val_neighbor[point_i];	
+			
+
+		/*	
+			double v_x =  w_L[1]/w_L[0];
+			double v_y =  w_L[2]/w_L[0];
+		    double a_dot_n = static_cast<EulerInterface*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);	
+		
+				result += wt[point_i]*v->val[point_i]*static_cast<EulerInterface*>(wf)->upwind_flux(w_L[entry_i], w_R[entry_i], a_dot_n);*/
 
 	double jump_u = w_L[(entry_i-4)] - w_R[(entry_i-4)];
-	double s_right = std::fabs(((nx * w_R[1]) + (ny * w_R[2])) / w_R[0]);//+ QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->gamma);
-	double s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]);// + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->gamma);
+	
+	
+	double s_right = std::fabs(((nx * w_R[1]) + (ny * w_R[2])) / w_R[0]);
+	double s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]);
 
 			result += wt[point_i]*v->val[point_i]*jump_u*std::max(s_left, s_right)*0.5;
 
@@ -101,6 +111,7 @@ double EulerInterface::EulerEquationsVectorFormFlux::value(int n, double *wt, Di
 				  * ny)) ;
 
 			}
+	
 		}
 
 
@@ -130,7 +141,7 @@ double EulerInterface::EulerEquationsBilinearFormFlux::value(int n, double *wt, 
 if((entry_i<4)&&(entry_j>=4)) return 0;
 if((entry_i>=4)&&(entry_j<4)) return 0;
         double result = 0.;
-      double w_L[4], w_R[4],w_mid[4], w_mean[4];
+      double w_L[4], w_R[4];
 	double * A_n = new double[4];
 double nx, ny, tx, ty, s_left, s_right; bool particle = false;
 
@@ -166,81 +177,74 @@ double nx, ny, tx, ty, s_left, s_right; bool particle = false;
 		    w_R[1] = ext[5]->val_neighbor[point_i];
 		    w_R[2] = ext[6]->val_neighbor[point_i];
 		    w_R[3] = ext[7]->val_neighbor[point_i];
+			 
+			
 		}
-
-		w_mid[0] = 0.5*(w_L[0]+w_R[0]);
-		w_mid[1] = 0.5*(w_L[1]+w_R[1]);
-		w_mid[2] = 0.5*(w_L[2]+w_R[2]);
-		w_mid[3] = 0.5*(w_L[3]+w_R[3]);
-
-
-	if(dynamic_cast<LaxFriedrichsNumericalFlux* >(this->num_flux) != NULL)
-	{
-		if(particle)
+/*
+	if(particle)
 		{
-			s_right = std::fabs(((nx * w_R[1]) + (ny * w_R[2])) / w_R[0]) ;
-			s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]) ;
-		}else{
-			s_right = std::fabs(((nx * w_R[1]) + (ny * w_R[2])) / w_R[0]) + QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->gamma);
-			s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]) + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->gamma);
+					double v_x =  w_L[1]/w_L[0];
+	double v_y =  w_L[2]/w_L[0];
+    double a_dot_n = static_cast<EulerInterface*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
+    double jump_v = (v->fn_central == NULL ? -v->val_neighbor[i] : v->val[i]);
+    if(u->fn_central == NULL)
+      result += wt[i] * static_cast<EulerInterface*>(wf)->upwind_flux(0, u->val_neighbor[i], a_dot_n) * jump_v;
+    else
+      result += wt[i] * static_cast<EulerInterface*>(wf)->upwind_flux(u->val[i], 0, a_dot_n) * jump_v;
+			
+		}else{*/
+
+			if(dynamic_cast<LaxFriedrichsNumericalFlux* >(this->num_flux) != NULL)
+			{
+				
+					s_right = std::fabs(((nx * w_R[1]) + (ny * w_R[2])) / w_R[0]) ;
+					s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]) ;
+				if(!particle)
+				{	s_right += QuantityCalculator::calc_sound_speed(w_R[0], w_R[1], w_R[2], w_R[3], this->gamma);
+					s_left += QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->gamma);
+				}
+
+				if(entry_i==entry_j) result += wt[point_i]*jump_v*jump_u*std::max(s_left, s_right)*0.5;
+
+				if(u->fn_central != NULL){
+					if(particle)
+					{
+					result += wt[point_i]*jump_v * mid_u * 
+						( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_L[0], w_L[1], w_L[2], w_L[3],0,(entry_i-4),(entry_j-4)) 
+						* nx+        
+						(static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_L[0], w_L[1], w_L[2], w_L[3],1,(entry_i-4),(entry_j-4)) 
+						* ny);
+
+					}else{
+					result += wt[point_i]*jump_v * mid_u * 
+						( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_L[0], w_L[1], w_L[2], w_L[3],0,entry_i,entry_j) 
+						* nx+        
+						(static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_L[0], w_L[1], w_L[2], w_L[3],1,entry_i,entry_j) 
+						* ny);
+					}
+
+				}else{
+
+					if(particle)
+					{
+						result += wt[point_i]*jump_v * mid_u * 
+						( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_R[0], w_R[1], w_R[2], w_R[3],0,(entry_i-4),(entry_j-4)) 
+						* nx+        
+						(static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_R[0], w_R[1], w_R[2], w_R[3],1,(entry_i-4),(entry_j-4)) 
+						* ny	);
+
+					}else{
+						result += wt[point_i]*jump_v * mid_u * 
+						( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_R[0], w_R[1], w_R[2], w_R[3],0,entry_i,entry_j) 
+						* nx+        
+						(static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_R[0], w_R[1], w_R[2], w_R[3],1,entry_i,entry_j) 
+						* ny	);
+					}
+				}
+			}
+	//}
 		}
 
-		if(entry_i==entry_j) result += wt[point_i]*jump_v*jump_u*std::max(s_left, s_right)*0.5;
-
-
-		if(u->fn_central != NULL){
-			if(particle)
-			{
-			result += wt[point_i]*jump_v * mid_u * 
-				( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_L[0], w_L[1], w_L[2], w_L[3],0,(entry_i-4),(entry_j-4)) 
-				  * nx+        
-				 (static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_L[0], w_L[1], w_L[2], w_L[3],1,(entry_i-4),(entry_j-4)) 
-				  * ny);
-
-			}else{
-			result += wt[point_i]*jump_v * mid_u * 
-				( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_L[0], w_L[1], w_L[2], w_L[3],0,entry_i,entry_j) 
-				  * nx+        
-				 (static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_L[0], w_L[1], w_L[2], w_L[3],1,entry_i,entry_j) 
-				  * ny);
-			}
-
-		}else{
-
-			if(particle)
-			{
-			result += wt[point_i]*jump_v * mid_u * 
-				( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_R[0], w_R[1], w_R[2], w_R[3],0,(entry_i-4),(entry_j-4)) 
-				  * nx+        
-				 (static_cast<EulerInterface*>(wf))->euler_fluxes->A_p(w_R[0], w_R[1], w_R[2], w_R[3],1,(entry_i-4),(entry_j-4)) 
-				  * ny	);
-
-			}else{
-			result += wt[point_i]*jump_v * mid_u * 
-				( (static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_R[0], w_R[1], w_R[2], w_R[3],0,entry_i,entry_j) 
-				  * nx+        
-				 (static_cast<EulerInterface*>(wf))->euler_fluxes->A_g(w_R[0], w_R[1], w_R[2], w_R[3],1,entry_i,entry_j) 
-				  * ny	);
-			}
-		}
-
-	}
-/*else if(dynamic_cast<VijayasundaramNumericalFlux* >(this->num_flux) != NULL)
-	{		 
-		if(u->fn_central != NULL)	
-			Boundary_helpers::calculate_P_plus(w_L[0], w_L[1], w_L[2], w_L[3], nx,ny , w_R[0], w_R[1], w_R[2], w_R[3], gamma, entry_i,A_n);
-		else
-			Boundary_helpers::calculate_P_minus(w_L[0], w_L[1], w_L[2], w_L[3], nx,ny , w_R[0], w_R[1], w_R[2], w_R[3], gamma, entry_i,A_n);
-
-		result += wt[point_i]*jump_v*mid_u*2.* A_n[entry_j];
-			  
-	}else if(dynamic_cast<ApproxRoeNumericalFlux* >(this->num_flux) != NULL) {
-
-		Boundary_helpers::calculate_A_n(w_L[0], w_L[1], w_L[2], w_L[3], nx,ny , w_R[0], w_R[1], w_R[2], w_R[3], gamma, entry_i,A_n);
-		result += wt[point_i]*jump_v*jump_u*0.5* A_n[entry_j];
-
-	}*/
-	}
 delete [] A_n;
 return -result;
 }
@@ -255,6 +259,30 @@ MatrixFormDG<double>* EulerInterface::EulerEquationsBilinearFormFlux::clone() co
 {
   return new EulerInterface::EulerEquationsBilinearFormFlux(entry_i,entry_j, this->gamma, this->num_flux);
 }
+
+
+///----------------helper functions--------------
+double EulerInterface::calculate_a_dot_v(double x, double y, double vx, double vy) const
+{
+ 
+ return  x*vx + y*vy;
+}
+
+Ord EulerInterface::calculate_a_dot_v(Ord x, Ord y, Ord vx, Ord vy) const
+{
+  return Ord(10);
+}
+
+double EulerInterface::upwind_flux(double u_cent, double u_neib, double a_dot_n) const
+{
+  return a_dot_n * (a_dot_n >= 0 ? u_cent : u_neib);
+}
+
+Ord EulerInterface::upwind_flux(Ord u_cent, Ord u_neib, Ord a_dot_n) const
+{
+  return a_dot_n * (u_cent + u_neib);
+}
+
 
 
 

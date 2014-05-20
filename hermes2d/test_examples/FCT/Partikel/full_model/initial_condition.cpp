@@ -11,9 +11,9 @@
  double CustomInitialCondition_rho::value(double x, double y) const 
 	{ 
 		
-double rho = 6.; 
+double rho = 1.; 
 
-if(particle){rho = 1;
+if(particle){ rho=0.1;
 }
 return rho;
 
@@ -34,14 +34,11 @@ return rho;
 
  double CustomInitialCondition_rho_v_x::value(double x, double y) const 
 	{     
-double rho = 6.; 
-
-double pressure = 1e+6;
-double mach = 0.2;
+double rho = 1.; 
+double pressure = 1.;
+double mach = 0.1;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
-if(particle){
- rho = 1; 
-	//v_x = 0;
+if(particle){ rho=0.1; v_x *=0.9;
 }
 
 return (rho*v_x);	
@@ -69,13 +66,11 @@ return (rho*v_x);
  double CustomInitialCondition_e::value(double x, double y) const 
 {  
 
-double rho = 6.; 
-
-double pressure = 1e+6;
-double mach = 0.2;
+double rho = 1.; 
+double pressure = 1.; 
+double mach =0.1;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
-if(particle){ pressure = 0;
- rho = 1; 
+if(particle){ pressure = 0; rho=0.1; v_x *=0.9;
 }
 
 double rho_v_x = rho*v_x;
@@ -112,7 +107,7 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
 		
 double rho = 6.; 
 
-if(particle){ rho = 1;}
+if(particle){ if(x>1) rho = 1.9-x*0.9; else rho=1;}
 return rho;
 };
 
@@ -136,10 +131,10 @@ return rho;
 	{    			
 double rho = 6.; 
 
-double pressure = 1e+6;
-double mach = 0.2;
+double pressure = 1;
+double mach = 0;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
-if(particle){rho = 1.;}
+if(particle){rho =1;v_x +=0.1;}
 
 return (rho*v_x);	
 
@@ -166,11 +161,11 @@ return (rho*v_x);
 
 double rho = 6.; 
 
-double pressure = 1e+6;
-double mach = 0.2;
+double pressure = 1;
+double mach = 0;
 double v_x = std::sqrt(gamma*pressure/rho)*mach;
 
-if(particle){rho = 1.;pressure = 0;}
+if(particle){rho = 1;pressure = 0;v_x +=0.1;}
 double rho_v_x = rho*v_x;
 
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,0.0, pressure, this->gamma);

@@ -1,4 +1,4 @@
-project(partikel_2)
+project(partikel_2_FCT)
 
 add_executable(${PROJECT_NAME} main.cpp definitions.cpp euler_util.cpp initial_condition.cpp interface.cpp numerical_flux.cpp euler_flux.cpp lumped_projection.cpp)
 

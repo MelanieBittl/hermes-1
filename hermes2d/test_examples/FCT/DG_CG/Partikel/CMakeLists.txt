@@ -1,3 +1,2 @@
-add_subdirectory("test")
-add_subdirectory("test_2")
-add_subdirectory("test_3")
+add_subdirectory("full")
+add_subdirectory("reduced")

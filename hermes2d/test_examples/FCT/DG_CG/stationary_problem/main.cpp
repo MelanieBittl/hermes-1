@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 
@@ -19,10 +19,10 @@ const std::string BDY_OUT = "outlet";
 
 
 bool all = true;
-bool DG = true;
+bool DG = false;
 bool SD = false;
 
-bool serendipity = false;
+bool serendipity = true;
 
 #include "error_estimates.cpp"
 
@@ -64,9 +64,9 @@ for_all_vertex_nodes(vn, mesh)
   // Create an space with default shapeset.
 //CustomDirichletCondition bc_essential(Hermes::vector<std::string>("inlet1","inlet2"));
  // EssentialBCs<double>  bcs(&bc_essential);
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
+  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
-  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));
+  SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));
 
 
 /*
