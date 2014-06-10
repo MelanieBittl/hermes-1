@@ -1,12 +1,12 @@
 #include "definitions.h"
 
-const double x_min = -2;
-const double x_max = 8;
+const double x_min = 0;
+const double x_max = 7;
+
+
 const int   bdry_in = 2;
 const int bdry_out = 1;
-const double x_venturi_min = 1.5;
-const double y_venturi = -2;
-const double x_venturi_max = 2.;
+
 
  EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
 	{
@@ -261,10 +261,11 @@ if((entry_i==0)||(entry_i==4)) return 0;
 						double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
 
 						double Re = rho_g*diameter*v_diff_abs/mu;
-						if(Re==1) printf("Reynolds gleich 0!!!!!");
+					
 						double C_D = 0.44;
 						if(Re<1000)
 								C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
+						if(Re==0) C_D = 0;
 						double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
 
 						double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
@@ -431,10 +432,11 @@ double F_D_1, F_D_2, Q_T;
 						double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
 
 						double Re = rho_g*diameter*v_diff_abs/mu;
-						if(Re==1) printf("Reynolds gleich 0!!!!!");
+						
 						double C_D = 0.44;
 						if(Re<1000)
 								C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
+						if(Re==0) C_D = 0;
 						double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
 
 						double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
@@ -569,10 +571,10 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
   for (int i = 0;i < n;i++) 
   {		
 		 bdry =0;
-	if(e->x[i]== x_min) bdry = bdry_in;
+	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) bdry = bdry_in;
+	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) bdry = bdry_in;
 	else if(e->x[i]== x_max) bdry = bdry_out;
-	
-	if((e->y[i]== y_venturi)&&(e->x[i]<=x_venturi_min)&&(e->x[i]>=x_venturi_max)) bdry = bdry_in;
+
 
 //if(bdry!= 0.) continue;
 	if(bdry==1) constant =1.;
@@ -726,9 +728,9 @@ int bdry;
   for (int i = 0;i < n;i++) 
 	{
 		 bdry =0;
-if(e->x[i]== x_min) bdry  = bdry_in;
-else if(e->x[i]== x_max) bdry  = bdry_out;
-	if((e->y[i]== y_venturi)&&(e->x[i]<=x_venturi_min)&&(e->x[i]>=x_venturi_max)) bdry = bdry_in;
+	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) bdry = bdry_in;
+	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) bdry = bdry_in;
+	else if(e->x[i]== x_max) bdry = bdry_out;
 
 
 	//----------particle---------------------
@@ -900,8 +902,9 @@ double nx, ny;
   {		
 			nx = e->nx[i];
 			ny = e->ny[i];
-if((e->x[i]== x_min) ||(e->x[i]== x_max)) continue; 
- 	if((e->y[i]== y_venturi)&&(e->x[i]<=x_venturi_min)&&(e->x[i]>=x_venturi_max)) continue;
+	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) continue;
+	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) continue;
+	else if(e->x[i]== x_max)continue;
 		if(particle){
 			
 
@@ -983,8 +986,9 @@ double material_density = (static_cast<EulerPenalty*>(wf))->particle_density;
   for (int i = 0;i < n;i++) 
 	{
 
-if((e->x[i]== x_min) ||(e->x[i]== x_max)) continue; 
- 	if((e->y[i]== y_venturi)&&(e->x[i]<=x_venturi_min)&&(e->x[i]>=x_venturi_max)) continue;
+	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) continue;
+	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) continue;
+	else if(e->x[i]== x_max)continue;
  
 		//double alpha_p  =ext[4]->val[i]/material_density ;
 			//double alpha_g = 1.-alpha_p;

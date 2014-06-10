@@ -42,7 +42,6 @@ public:
 	double gamma;
 bool particle;
 };
-
 class CustomInitialCondition_rho_v_y : public ExactSolutionScalar<double>
 {
 public:
@@ -58,6 +57,7 @@ public:
 	double gamma;
 bool particle;
 };
+
 
 class CustomInitialCondition_e : public ExactSolutionScalar<double>
 {
@@ -124,7 +124,6 @@ public:
 bool particle;
 	
 };
-
 class BoundaryCondition_rho_v_y : public ExactSolutionScalar<double>
 {
 public:

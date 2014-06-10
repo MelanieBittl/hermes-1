@@ -112,11 +112,11 @@ for(int i= 0; i<dof_total; i++) s[i] = 0.;
 						double v2_diff = (v_y_g - v_y_p);
 						double v_diff_abs = std::sqrt(v1_diff*v1_diff+ v2_diff*v2_diff);
 
-						double Re = rho_g*diameter*v_diff_abs/mu;
-						if(Re==1) printf("Reynolds gleich 0!!!!!");
+						double Re = rho_g*diameter*v_diff_abs/mu;						
 						double C_D = 0.44;
-						if(Re<1000)
-								C_D=24./Re*(1.+0.15*std::pow(Re,0.687));
+						if((Re<1000)&&(Re>0))
+								C_D=24./Re;//*(1.+0.15*std::pow(Re,0.687));
+						else if(Re==0) C_D =0.;
 						double Nu = 2.+0.65*std::sqrt(Re)*std::pow(Pr,1./3.);
 
 						double T_g = 1./c_vg*(rho_e_g/rho_g-0.5*(v_x_g*v_x_g+v_y_g*v_y_g));
@@ -294,65 +294,27 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain_venturi.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 Element* e = NULL;Node* vn=NULL;
-  // Perform initial mesh refinements (optional).
-/*  for (int i=0; i < INIT_REF_NUM; i++) ///domain_all
-	{ 
-			basemesh->refine_all_elements();
-		//y-Koord. der Knoten auf cos-Kurve verschieben
-		 
-			for_all_vertex_nodes(vn, basemesh)
-			{	
-				if(vn->bnd) 
-					if((vn->x>0.)&&(vn->x<1.))		
-					{		if(vn->y>0.)
-							{
-								
-								vn->y = (Hermes::cos(vn->x*PI)+1.28/0.72)/(2.*1.28/0.72+2.) ;	
-							}else if(vn->y<0.){
-								vn->y =-( (Hermes::cos(vn->x*PI)+1.3/0.7)/(2.*1.3/0.7+2.) );								
-							}
-					}
-			}
-		}
-		
-		*/
+
 		
   // Perform initial mesh refinements (optional).
  for (int i=0; i < INIT_REF_NUM; i++)
 	{ 
 			basemesh->refine_all_elements();
-		//y-Koord. der Knoten auf cos-Kurve verschieben
-			 /* 
-			for_all_vertex_nodes(vn, basemesh)
-			{	
-				if(vn->bnd) 
-					if((vn->x>0.)&&(vn->x<4.))		
-					{		if(vn->y>0.)
-							{
-								
-								vn->y = (Hermes::cos(PI*vn->x/2.)+3.)/4.;
-							}else if(vn->y<0.)
-									
-							vn->y = -(Hermes::cos(PI*vn->x/2.)+3.)/4.;
-					}
-			}*/
+
 		}
 		
 
  	 mesh->copy(basemesh);
 
 
-
-/*
-
    MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
  meshview.show(mesh);
   
    View::wait();
 
-*/
+
 
 
 	SpaceSharedPtr<double> space_rho_g(new H1Space<double>(mesh, P_INIT));	
