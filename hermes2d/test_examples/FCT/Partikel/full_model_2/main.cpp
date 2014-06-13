@@ -19,21 +19,20 @@ using namespace Hermes::Solvers;
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
 const double time_step = 1e-3;
-const double T_FINAL = 50000;                       // Time interval length. 
+const double T_FINAL = 0.4;                       // Time interval length. 
 
 const double theta = 1.;
-
-// Equation parameters.  
  
-     
-// GAMMA.
-const double GAMMA = 1.4; 
+ bool view_3D = false;   
 
 // Penalty Parameter.
 double SIGMA = std::pow(10,3);
 
 //Particle density_particle
 const double density_particle = 4000.; 
+
+const double GAMMA = 1.4; 
+const double R = 287;
 
 const double diameter = 2e-5;		
 const double c_vg = 743.;
@@ -284,9 +283,6 @@ for(int i= 0; i<dof_total; i++) s[i] = 0.;
 }
 
 
-
-
-
 int main(int argc, char* argv[])
 {
 
@@ -294,7 +290,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain_all_inlets.mesh", basemesh);
 Element* e = NULL;Node* vn=NULL;
 
 		
@@ -308,12 +304,12 @@ Element* e = NULL;Node* vn=NULL;
 
  	 mesh->copy(basemesh);
 
-
+/*
    MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
  meshview.show(mesh);
   
    View::wait();
-
+*/
 
 
 
@@ -437,10 +433,6 @@ s3_p.show(init_rho_v_y_p);
 s4_p.show(init_rho_e_p);
 */
 
-MeshFunctionSharedPtr<double> pressure_init_g(new PressureFilter(init_slns_g, GAMMA));
-				pressure_view_g.show(pressure_init_g);
-MeshFunctionSharedPtr<double> mach_init_g(new  MachNumberFilter(init_slns_g, GAMMA));
-				mach_view_g.show(mach_init_g);
 
 
 
@@ -535,19 +527,23 @@ SimpleVector<double> * vec_res = new SimpleVector<double> (ndof);
 lumpedProjection.project_lumped(spaces, init_slns, coeff_vec);
 		Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 
+		
+		///----For vtk-Output-------------
+Linearizer lin;	
+		MeshFunctionSharedPtr<double> pressure_g(new PressureFilter(prev_slns_g, GAMMA));
+		MeshFunctionSharedPtr<double> mach_g(new  MachNumberFilter(prev_slns_g, GAMMA));
+		MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns_g));
+		MeshFunctionSharedPtr<double> vel_y(new VelocityFilter_y(prev_slns_g));
+		MeshFunctionSharedPtr<double> temp_g(new TempFilter(prev_slns_g,R, GAMMA));		
 
+		MeshFunctionSharedPtr<double> mach_p(new  MachNumberFilter(prev_slns_p, GAMMA));
+		MeshFunctionSharedPtr<double> vel_x_p(new VelocityFilter_x(prev_slns_p));
+		MeshFunctionSharedPtr<double> vel_y_p(new VelocityFilter_y(prev_slns_p));
+	
+		MeshFunctionSharedPtr<double> alpha_p(new AlphaFilter(prev_slns_p, density_particle));
 
-                      s1_g.show(prev_rho_g);                       
-                        s2_g.show(prev_rho_v_x_g);
-                        s3_g.show(prev_rho_v_y_g);
-                        s4_g.show(prev_rho_e_g);
-                        s1_p.show(prev_rho_p);
-                        s2_p.show(prev_rho_v_x_p);
-                        s3_p.show(prev_rho_v_y_p);
-                        s4_p.show(prev_rho_e_p);
-
-
-//View::wait(HERMES_WAIT_KEYPRESS);
+char filename[40];
+//---------------------------------------
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -698,32 +694,27 @@ antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,source_vec
 	
 			// Visualize the solution.
 			Hermes::Mixins::Loggable::Static::info("Visualize"); 	
-            MeshFunctionSharedPtr<double> pressure_g(new PressureFilter(prev_slns_g, GAMMA));
+
             sprintf(title, "Pressure gas: ts=%i",ts);
             pressure_view_g.set_title(title);
             pressure_g->reinit();
             pressure_view_g.show(pressure_g);
 
-            MeshFunctionSharedPtr<double> mach_g(new MachNumberFilter(prev_slns_g, GAMMA));
             sprintf(title, "Mach gas: ts=%i",ts);
             mach_view_g.set_title(title);
             mach_g->reinit();
             mach_view_g.show(mach_g);
 
 
-            MeshFunctionSharedPtr<double> alpha_p(new AlphaFilter(prev_slns_p, density_particle));
+          
             sprintf(title, "alpha particle: ts=%i",ts);
             alpha_view_p.set_title(title);
             alpha_p->reinit();
             alpha_view_p.show(alpha_p);
 				
-				MeshFunctionSharedPtr<double> temp_p(new TempFilter(prev_slns_p, c_vp));
-            sprintf(title, "Temp particle: ts=%i",ts);
-            temp_view_p.set_title(title);
-            temp_p->reinit();
-            temp_view_p.show(temp_p);
-				
-				MeshFunctionSharedPtr<double> temp_g(new TempFilter(prev_slns_g, c_vg));
+
+			
+
             sprintf(title, "Temp gas: ts=%i",ts);
             temp_view_g.set_title(title);
             temp_g->reinit();
@@ -779,6 +770,47 @@ antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,source_vec
 		matrix.free();
 		matrix2.free();
 		if(diff!=NULL) delete diff;
+		
+		
+		
+			if(ts%100 ==1)
+{
+		pressure_g->reinit();
+		mach_g->reinit();
+		vel_x->reinit();
+		vel_y->reinit();
+		temp_g->reinit();
+				mach_p->reinit();
+				
+vel_x_p->reinit();
+vel_y_p->reinit();	
+alpha_p->reinit();
+		
+		sprintf(filename, "p-%i.vtk", ts );       
+		lin.save_solution_vtk(pressure_g, filename, "pressure_gas", view_3D);
+		sprintf(filename, "m_g-%i.vtk", ts );      
+		lin.save_solution_vtk(mach_g, filename, "mach_gas", view_3D);
+				sprintf(filename, "m_p-%i.vtk", ts );      
+		lin.save_solution_vtk(mach_p, filename, "mach_particle", view_3D);
+		sprintf(filename, "vel_x-%i.vtk", ts );  
+		lin.save_solution_vtk(vel_x, filename, "vel_x_gas", view_3D);
+		sprintf(filename, "vel_y-%i.vtk", ts );  
+		lin.save_solution_vtk(vel_y, filename, "vel_y_gas", view_3D);
+		sprintf(filename, "rho_g-%i.vtk", ts );  
+		lin.save_solution_vtk(prev_slns[0], filename, "density_gas", view_3D);
+		sprintf(filename, "rho_p-%i.vtk", ts );  
+		lin.save_solution_vtk(prev_slns[4], filename, "density_particle", view_3D);
+		sprintf(filename, "temp-%i.vtk", ts - 1);
+		lin.save_solution_vtk(temp_g, filename, "temp_gas", view_3D);
+		
+				sprintf(filename, "vel_x_p-%i.vtk", ts );  
+		lin.save_solution_vtk(vel_x_p, filename, "vel_x_particle", view_3D);
+		sprintf(filename, "vel_y_p-%i.vtk", ts );  
+		lin.save_solution_vtk(vel_y_p, filename, "vel_y_particle", view_3D);
+				sprintf(filename, "alpha_p-%i.vtk", ts );  
+		lin.save_solution_vtk(alpha_p, filename, "alpha_particle", view_3D);	
+
+}
  
 
 

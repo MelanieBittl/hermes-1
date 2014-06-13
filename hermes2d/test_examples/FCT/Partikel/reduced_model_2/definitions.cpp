@@ -2,9 +2,16 @@
 const int   bdry_in = 2;
 const int bdry_out = 1;
 const double x_min = 0;
-const double x_max = 29.14;
-const double y_min = 10.3875; //13.45;
-const double y_max = 17.3125; //14.25;
+const double x_max = 40;
+const double y_min = 12.35; 
+const double y_max = 15.35; 
+
+const double x_min_inlet = 16.7952;
+const double x_max_inlet = 18.1472;
+const double y_min_in_1 = 5.208;
+const double y_max_in_1 = 6.568;
+const double y_min_in_2 = 21.132;
+const double y_max_in_2 = 22.492;
 
   EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
 	{
@@ -266,7 +273,7 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 if(entry_i==4){
 	for (int i = 0;i < n;i++)
 		{
-			if((e->y[i]>= 13)&&(e->y[i]<= 14)&&((e->x[i]>=14)&&(e->x[i]<=15))) 
+			if((e->y[i]>= y_min+0.5)&&(e->y[i]<= y_max-0.5)&&((e->x[i]>=3)&&(e->x[i]<=3.1))) 
 			{
 				// double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 				//if(mach>0.11){
@@ -391,11 +398,17 @@ ty_ghost = ty;
 
 
 		bdry = 0;
-
-
-	if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;
-	else if(e->x[i]== x_max) bdry = bdry_out;
-
+		
+	if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
+	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))bdry = bdry_in;
+			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))bdry = bdry_in;			
+	}		
+	else if(e->x[i]== x_max){ bdry = bdry_out;}
+	else if(e->x[i]== x_min){
+			if(rho_v_x>0) bdry = bdry_in;
+			else	bdry = bdry_out;
+	}
 
 		if(bdry==1) constant =1.;
 		else constant = 0.5;
@@ -542,8 +555,17 @@ int bdry;
 	{
 		 bdry =0;
 
-		if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;
-	else if(e->x[i]== x_max) bdry = bdry_out;
+		
+	if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
+	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))bdry = bdry_in;
+			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))bdry = bdry_in;			
+	}		
+	else if(e->x[i]== x_max){ bdry = bdry_out;}
+	else if(e->x[i]== x_min){
+			if(rho_v_x>0) bdry = bdry_in;
+			else	bdry = bdry_out;
+	}
 
 
 			nx = e->nx[i];
@@ -641,177 +663,6 @@ ty_ghost = ty;
     {
 					return new EulerBoundary::EulerBoundaryLinearform(this->gamma, this->entry_i, this->particle);
     }
-
-
-//--------------------------Penalty Term------------------------
-	EulerPenalty::EulerPenalty(double sigma,double particle_density,MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, double eps,int num_of_equations): WeakForm<double>(num_of_equations), sigma(sigma), eps(eps), prev_density_g(prev_density_g), prev_density_vel_x_g(prev_density_vel_x_g), prev_density_vel_y_g(prev_density_vel_y_g), prev_energy_g(prev_energy_g), particle_density(particle_density),
-prev_density_p(prev_density_p)
-	{
-//gas phase
-		for(int k =0; k<4;k++)
-		{
-			for(int i = 0; i<4;i++)
-				add_matrix_form_surf(new EulerPenalty::PenaltyBilinearForm(sigma,eps,i,k));
-			
-			add_vector_form_surf(new EulerPenalty::PenaltyLinearForm(sigma, k));
-		}
-
-//particle phase
-		for(int k =4; k<5;k++)
-		{
-			for(int i = 4; i<5;i++)
-				add_matrix_form_surf(new EulerPenalty::PenaltyBilinearForm(sigma,eps,i,k,true));
-			
-			add_vector_form_surf(new EulerPenalty::PenaltyLinearForm(sigma, k,true));
-		}
-
-    this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g,
-				prev_density_p));
-
-	};
-
-
-	
-	WeakForm<double>* EulerPenalty::clone() const
-    {
-    EulerPenalty* wf;
-    wf = new EulerPenalty(this->sigma,this->particle_density,this->prev_density_g, this->prev_density_vel_x_g, this->prev_density_vel_y_g, this->prev_energy_g,
-this->prev_density_p,this->eps,8);
-
-    wf->ext.clear();
-
-    for(unsigned int i = 0; i < this->ext.size(); i++)
-    {
-      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
-      if(solution && solution->get_type() == HERMES_SLN)
-      {
-        wf->ext.push_back(new Solution<double>());
-        wf->ext.back()->copy(this->ext[i]);
-      }
-      else
-        wf->ext.push_back(this->ext[i]->clone());
-    }
-    return wf;
-    }
-
-
-//-------Penalty Bilinearforms---------
-   double EulerPenalty::PenaltyBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
-{
-  double result = 0.;
-  if((entry_i==0) ||(entry_i==3)||(entry_i==4)) return 0.; 
-if((entry_j==0) ||(entry_j==3)||(entry_j==4) ) return 0.;
-  for (int i = 0;i < n;i++) 
-  {		
-		
-		if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min))continue;
-	else if(e->x[i]== x_max)continue;
-
-  
-		if(particle){
-
-
-		}else{
-		double vn = ext[1]->val[i]/ext[0]->val[i]*e->nx[i] + ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
-		double factor = ((2.*vn*vn+eps)/(std::sqrt(vn*vn+eps)));
-
-
-				if(entry_i==1)
-				{
-						if(entry_j==1){
-							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(e->nx[i]);
-						}else if(entry_j==2){
-							result += wt[i]*v->val[i] *u->val[i]*e->ny[i]*e->nx[i];
-						}
-				}else if(entry_i==2)
-				{
-					 if(entry_j==1){
-							result += wt[i]*v->val[i] *u->val[i]*e->ny[i]*e->nx[i];
-						}else if(entry_j==2){
-							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(e->ny[i]);
-						}
-				}
-		}
-			
-    }
-
-
-      return sigma*(-result);
-  }  
-
-
-
-
-    Ord EulerPenalty::PenaltyBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(10);
-    }
-
-    MatrixFormSurf<double>* EulerPenalty::PenaltyBilinearForm::clone() const
-    {
-					return new EulerPenalty::PenaltyBilinearForm(sigma,eps,this->entry_i, this->entry_j, this->particle);
-    }
-
-
-
-
-
-//------------------------------------------------------------------
-//----------------------------Linearform Penalty---------------------------------
-//----------------------------------------------
-
-
-    double EulerPenalty::PenaltyLinearForm::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
- {
-double material_density = (static_cast<EulerPenalty*>(wf))->particle_density;
-  double result = 0.;
-if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.;
-
-  for (int i = 0;i < n;i++) 
-  {		
-		
-
-		if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) continue;
-	else if(e->x[i]== x_max)continue;
-	
-		double alpha_p  =ext[4]->val[i]/material_density ;
-			double alpha_g = 1.-alpha_p;
-
-		if(particle)
-		{
-
-
-		}else{
-			double vn = (ext[1]->val[i]*e->nx[i] + ext[2]->val[i]*e->ny[i])/ext[0]->val[i];
-			double rho =  ext[0]->val[i]/alpha_g;
-				if(entry_i==1)
-					result += wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn)*rho*rho;
-				else if(entry_i==2)
-					result += wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn)*rho*rho;
-		}			
-	 }
-
-     return sigma*(-result);
-  }      
-
-
-
-    Ord EulerPenalty::PenaltyLinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
-      Func<Ord>  **ext) const 
-    {
-      return Ord(10);
-    }
-
-    VectorFormSurf<double>* EulerPenalty::PenaltyLinearForm::clone() const
-    {
-					return new EulerPenalty::PenaltyLinearForm(this->sigma, this->entry_i, this->particle);
-    }
-
-
-
 
 
 

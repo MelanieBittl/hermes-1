@@ -1,7 +1,7 @@
 #include "initial_condition.h"
-const double y_1 = 10.3875; //13.45;
-const double y_2 = 17.3125; //14.25;
-
+const double y_1 = 12.35; 
+const double y_2 = 15.35; 
+const double multiplier = 20;
 //------------------- Initial condition ----------------
 
  void CustomInitialCondition_rho::derivatives(double x, double y, double& dx, double& dy) const {      
@@ -16,7 +16,7 @@ const double y_2 = 17.3125; //14.25;
 
 double rho = 1.1881;
 
-if((y >y_1)&&(y<y_2)) rho =1.778;
+//if((y >y_1)&&(y<y_2)) rho =1.778;
 
 		return rho;
 
@@ -41,14 +41,9 @@ if((y >y_1)&&(y<y_2)) rho =1.778;
 
 
 double v_x =0.;
-
-
-
 double rho = 1.1881;
-if((y >y_1)&&(y<y_2)){ rho =1.778;v_x = 442.12;}
+//if((y >y_1)&&(y<y_2)){ rho =1.778;v_x = 442.12;}
 double pressure = 100000.;
-
-
 
 return (rho*v_x);	
 };
@@ -70,10 +65,9 @@ return (rho*v_x);
  double CustomInitialCondition_rho_v_y::value(double x, double y) const 
 	{     
 
-
 double v_y =0.;
 double rho = 1.1881;
-if((y >y_1)&&(y<y_2)) rho =1.778;
+//if((y >y_1)&&(y<y_2)) rho =1.778;
 double pressure = 100000.;
 return (rho*v_y);	
 };
@@ -100,7 +94,7 @@ return (rho*v_y);
 double v_x= 0.; 
 
 double rho = 1.1881;
-if((y >y_1)&&(y<y_2)){ rho =1.778;v_x = 442.12;}
+//if((y >y_1)&&(y<y_2)){ rho =1.778;v_x = 442.12;}
 double pressure = 100000.;
 double rho_v_x = rho*v_x;
 
@@ -133,12 +127,12 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
 
  double BoundaryCondition_rho::value(double x, double y) const 
 	{    			
-
-
-double rho = 1.778;
+double v_x= 0.; 
+double rho = 1.1881;
 double pressure = 100000.;
+if((y >y_1)&&(y<y_2)){ rho =1.778;v_x = 442.12;}
 
-
+if(x>16.7){ rho =1.778;}
 
 
 return rho;
@@ -165,11 +159,11 @@ return rho;
 	{    
 		
 
-double rho = 1.778;
+double v_x= 0.; 
+double rho = 1.1881;
 double pressure = 100000.;
-
-double v_x = 442.12;
-
+if((y >=y_1)&&(y<=y_2)){ rho =1.778;v_x = 442.12;}
+if(x>16.7){ rho =1.778;v_x = 16.8*multiplier; }
 return (rho*v_x);	
 
 };
@@ -192,12 +186,14 @@ return (rho*v_x);
  double BoundaryCondition_rho_v_y::value(double x, double y) const 
 	{    
 		
-double rho = 1.778;
+double v_y= 0.; 
+double v_x=0.;
+double rho = 1.1881;
 double pressure = 100000.;
-
-double v_x = 442.12;
-
-return 0;
+if((y >=y_1)&&(y<=y_2)){ rho =1.778;v_x = 442.12;}
+if(x>16.7){ rho =1.778;v_y = 21.1*multiplier;
+if(y>20) v_y*=-1;}
+return rho*v_y;
 
 };
 
@@ -222,13 +218,15 @@ return 0;
  double BoundaryCondition_rho_e::value(double x, double y) const 
 	{    			
 
-double rho = 1.778;
+double v_x= 0.;  double v_y =0.;
+double rho = 1.1881;
 double pressure = 100000.;
-
-double v_x = 442.12;
+if((y >=y_1)&&(y<=y_2)){ rho =1.778;v_x = 442.12;}
+if(x>16.7){ rho =1.778;v_y = 21.1*multiplier;v_x = 16.8*multiplier;
+if(y>20) v_y*=-1;};
 
 double rho_v_x = rho*v_x;
-double rho_v_y = rho*0.;
+double rho_v_y = rho*v_y;
 
 
 	return QuantityCalculator::calc_energy(rho, rho_v_x ,rho_v_y, pressure, this->gamma);

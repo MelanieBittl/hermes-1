@@ -64,7 +64,7 @@ protected:
 class TempFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public: 
-  TempFilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, double cv) : SimpleFilter<double>(solutions), cv(cv) {};
+  TempFilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions, double R, double gamma) : SimpleFilter<double>(solutions), R(R),gamma(gamma) {};
   ~TempFilter() 
   {
   };
@@ -83,16 +83,14 @@ public:
       else
         slns.push_back(this->sln[i]->clone()); 
     }
-   TempFilter* filter = new TempFilter(slns, this->cv);
+   TempFilter* filter = new TempFilter(slns, this->R, this->gamma);
           
     return filter;
-  }  
-  
-
-protected:
+  } 
+  protected:
   virtual void filter_fn(int n, Hermes::vector<double*> values, double* result);
 
-  double cv;
+  double R, gamma;
 };
 
 class AlphaFilter : public Hermes::Hermes2D::SimpleFilter<double>

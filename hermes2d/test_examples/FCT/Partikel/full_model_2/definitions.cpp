@@ -1,11 +1,18 @@
 #include "definitions.h"
 
-const double x_min = 0;
-const double x_max = 7;
-
-
 const int   bdry_in = 2;
 const int bdry_out = 1;
+const double x_min = 0;
+const double x_max = 40;
+const double y_min = 12.35; 
+const double y_max = 15.35; 
+
+const double x_min_inlet = 16.7952;
+const double x_max_inlet = 18.1472;
+const double y_min_in_1 = 5.208;
+const double y_max_in_1 = 6.568;
+const double y_min_in_2 = 21.132;
+const double y_max_in_2 = 22.492;
 
 
  EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
@@ -571,11 +578,16 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
   for (int i = 0;i < n;i++) 
   {		
 		 bdry =0;
-	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) bdry = bdry_in;
-	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) bdry = bdry_in;
-	else if(e->x[i]== x_max) bdry = bdry_out;
-
-
+	if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
+	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))bdry = bdry_in;
+			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))bdry = bdry_in;			
+	}		
+	else if(e->x[i]== x_max){ bdry = bdry_out;}
+	else if(e->x[i]== x_min){
+			if(rho_v_x>0) bdry = bdry_in;
+			else	bdry = bdry_out;
+	}
 //if(bdry!= 0.) continue;
 	if(bdry==1) constant =1.;
 	else constant = 0.5;
@@ -728,9 +740,16 @@ int bdry;
   for (int i = 0;i < n;i++) 
 	{
 		 bdry =0;
-	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) bdry = bdry_in;
-	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) bdry = bdry_in;
-	else if(e->x[i]== x_max) bdry = bdry_out;
+	if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
+	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))bdry = bdry_in;
+			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))bdry = bdry_in;			
+	}		
+	else if(e->x[i]== x_max){ bdry = bdry_out;}
+	else if(e->x[i]== x_min){
+			if(rho_v_x>0) bdry = bdry_in;
+			else	bdry = bdry_out;
+	}
 
 
 	//----------particle---------------------
@@ -902,9 +921,12 @@ double nx, ny;
   {		
 			nx = e->nx[i];
 			ny = e->ny[i];
-	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) continue;
-	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) continue;
-	else if(e->x[i]== x_max)continue;
+	if(e->x[i]== x_min)continue;		
+	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))continue;	
+			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))continue;			
+	}		
+	else if(e->x[i]== x_max)continue;	
 		if(particle){
 			
 
@@ -986,9 +1008,12 @@ double material_density = (static_cast<EulerPenalty*>(wf))->particle_density;
   for (int i = 0;i < n;i++) 
 	{
 
-	if((e->x[i]== 3.5)&&(e->y[i]<5)&&(e->y[i]>2)) continue;
-	else if((e->x[i]>=2.5)&&(e->x[i]<=3.)&&(e->y[i]<5.5)&&(e->y[i]>1)) continue;
-	else if(e->x[i]== x_max)continue;
+	if(e->x[i]== x_min)continue;		
+	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))continue;	
+			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))continue;			
+	}		
+	else if(e->x[i]== x_max)continue;	
  
 		//double alpha_p  =ext[4]->val[i]/material_density ;
 			//double alpha_g = 1.-alpha_p;

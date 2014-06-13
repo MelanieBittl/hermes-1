@@ -17,7 +17,7 @@ using namespace Hermes::Solvers;
 #include "mass_lumping.cpp"
 #include "artificial_diffusion.cpp"
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =2;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 0.05;
 const double T_FINAL = 50000;                       // Time interval length. 
@@ -278,7 +278,8 @@ Element* e = NULL;Node* vn=NULL;
 					}
 			}
 		}
-		
+	
+
 
  	 mesh->copy(basemesh);
 

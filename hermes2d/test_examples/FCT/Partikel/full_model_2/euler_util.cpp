@@ -43,12 +43,12 @@ void MachNumberFilter::filter_fn(int n, Hermes::vector<double*> values, double* 
 void TempFilter::filter_fn(int n, Hermes::vector<double*> values, double* result) 
 {
   for (int i = 0; i < n; i++)
-    result[i] = 1./cv*(values.at(3)[i]/values.at(0)[i]-0.5*(values.at(1)[i]*values.at(1)[i]  + values.at(2)[i] *values.at(2)[i])/(values.at(0)[i]*values.at(0)[i]));
+    result[i] = QuantityCalculator::calc_pressure(values.at(0)[i], values.at(1)[i], values.at(2)[i], values.at(3)[i], gamma)/(values.at(0)[i]*R);
 }
 void PressureFilter::filter_fn(int n, Hermes::vector<double*> values, double* result)
 {
   for (int i = 0; i < n; i++)
-    result[i] = (gamma - 1.) * (values.at(3)[i] - (values.at(1)[i]*values.at(1)[i] + values.at(2)[i]*values.at(2)[i])/(2*values.at(0)[i]));
+    result[i] = 1./100000*(gamma - 1.) * (values.at(3)[i] - (values.at(1)[i]*values.at(1)[i] + values.at(2)[i]*values.at(2)[i])/(2*values.at(0)[i]));
 }
 
 void VelocityFilter_x::filter_fn(int n, Hermes::vector<double*> values, double* result)
