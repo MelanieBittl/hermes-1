@@ -6,7 +6,7 @@ const double EPS = 1.;
 const double penalty_parameter = 1.;
 
 enum DG_TYPE {Baumann_Oden,	IP,	NIPG, CG, NONE};
-DG_TYPE type = NIPG;
+DG_TYPE type = Baumann_Oden;
 
 
 
@@ -232,9 +232,11 @@ VectorFormSurf<double>* CustomWeakForm::CustomVectorFormSurface::clone() const
 double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
 {  
 	double result = 0;		
+	 Func<double>* exact = ext[0];	
    for (int i = 0; i < n; i++)
-		{ 	 double x= e->x[i]; double y = e->y[i];
-			result += wt[i]*(2.*(2.-x*x-y*y))*v->val[i];
+		{ 	 //double x= e->x[i]; double y = e->y[i];
+			//result += wt[i]*(2.*(2.-x*x-y*y))*v->val[i];
+		result += wt[i]*(0.5*PI*PI*exact->val[i])*v->val[i];
 		}
  return result;
 }
@@ -343,8 +345,10 @@ double CustomNormFormDG_2::value(int n, double *wt, DiscontinuousFunc<double> *u
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
 
 			
-		dx =(y*y-1.)*2.*x;
-		dy =(x*x-1.)*2.*y;
+		//dx =(y*y-1.)*2.*x;
+		//dy =(x*x-1.)*2.*y;
+		dx = 0.5*PI*Hermes::cos(0.5*PI*x)*Hermes::sin(0.5*PI*y);
+		dy = 0.5*PI*Hermes::cos(0.5*PI*y)*Hermes::sin(0.5*PI*x);
 
 
 };
@@ -353,7 +357,8 @@ double CustomNormFormDG_2::value(int n, double *wt, DiscontinuousFunc<double> *u
        
   double result = 0.0;
 
-result = (x*x-1.)*(y*y-1.);
+  result = Hermes::sin(0.5*PI*x)*Hermes::sin(0.5*PI*y);
+//result = (x*x-1.)*(y*y-1.);
 	
 return result;
 

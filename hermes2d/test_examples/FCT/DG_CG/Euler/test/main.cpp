@@ -13,13 +13,13 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
-const double time_step = 1e-2;
+const double time_step = 25e-4;
 const double T_FINAL = 0.5;                       // Time interval length. 
 
 const double theta = 1.;
-
+const bool DG = true;
 // Equation parameters.  
  
      
@@ -86,10 +86,7 @@ SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, 
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
-	/*SpaceSharedPtr<double> space_rho(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));
+	/*
 
 		SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
@@ -158,7 +155,7 @@ ScalarView radius_view("radius_velocity", new WinGeom(0, 700, 600, 300));
 radius_view.set_min_max_range(0,0.1);
 Linearizer lin_p, lin_m, lin_rho, lin_r;
 
-		MeshFunctionSharedPtr<double> pressure_init(new PressureFilter(init_slns, KAPPA));
+	/*	MeshFunctionSharedPtr<double> pressure_init(new PressureFilter(init_slns, KAPPA));
 
 
 				pressure_init->reinit();
@@ -166,7 +163,7 @@ Linearizer lin_p, lin_m, lin_rho, lin_r;
 			lin_p.save_solution_vtk(pressure_init, "p_init.vtk", "pressure", true);
 
 
-			lin_rho.save_solution_vtk(init_slns[0], "rho_init.vtk", "density", true);
+			lin_rho.save_solution_vtk(init_slns[0], "rho_init.vtk", "density", true);*/
 
 
 
@@ -185,12 +182,9 @@ MeshFunctionSharedPtr<double> mach_init(new  MachNumberFilter(init_slns, KAPPA))
 
 	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
  
-	//NumericalFlux* num_flux = new HLLNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
+
 NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new StegerWarmingNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new OsherSolomonNumericalFlux(KAPPA);
+
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
 
@@ -240,11 +234,6 @@ CSCMatrix<double> * K_matrix = new CSCMatrix<double>;
   ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
 
-/*
-MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
-		s1.show(prev_rho);
-		mach_view.show(mach_2);*/
-//View::wait(HERMES_WAIT_KEYPRESS);
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -267,30 +256,27 @@ do
  	 if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
 			dp_bdry.assemble(dS_matrix, vec_bdry);
-			//dp_DG.assemble(vec_dg);	
-		  	dp_DG.assemble(dg_matrix,vec_dg);	
+		  	if(DG) dp_DG.assemble(dg_matrix,vec_dg);	
 		}else{
 			dp_init.assemble(K_matrix, vec_conv);
-			dp_bdry_init.assemble(dS_matrix, vec_bdry);
-			//	dp_DG.assemble(vec_dg);	
-		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
+			dp_bdry_init.assemble(dS_matrix, vec_bdry);		
+		 	if(DG)dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}
 
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
-
+if(DG){
 matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
 matrix->add_sparse_matrix(K_matrix);
-
-		//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+}else{
+		matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+}
 		matrix->add_sparse_matrix(dS_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 		matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
 
 
-	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-	//	matrix->multiply_with_vector(coeff_vec, coeff_vec_2);
+	//-------------rhs: M/tau+ (1-theta)(L) u^n------------	
 		vec_rhs->zero(); 
-		//vec_rhs->add_vector(coeff_vec_2); 
 		vec_rhs->add_vector(vec_dg); 
 		vec_rhs->add_vector(vec_bdry); 
 		vec_rhs->add_vector(vec_conv); 
@@ -317,7 +303,7 @@ matrix->add_sparse_matrix(K_matrix);
 	
 
 			// Visualize the solution.
-               MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+             /*  MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
                 MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));
                         sprintf(title, "vx: ts=%i",ts);        
                         s2.set_title(title);
@@ -347,12 +333,12 @@ radius_view.show(radius);
                         sprintf(title, "Density: ts=%i",ts);
                         s1.set_title(title);
                         s1.show(prev_rho);
-						s4.show(prev_e);
+						s4.show(prev_e);*/
 				//s5.show(diff_slns[0]);
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
-if(current_time == 0.3){
+if(ts%100==1){
 
 
 		MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
@@ -362,9 +348,7 @@ if(current_time == 0.3){
 				pressure->reinit();
 				mach->reinit();
 			  char filename[40];
-			  sprintf(filename, "p-%i.vtk", ts );
-
-        
+			  sprintf(filename, "p-%i.vtk", ts );        
 			lin_p.save_solution_vtk(pressure, filename, "pressure", true);
 sprintf(filename, "m-%i.vtk", ts );   
 			lin_m.save_solution_vtk(mach, filename, "mach", true);
@@ -374,9 +358,6 @@ sprintf(filename, "r-%i.vtk", ts );
 			lin_r.save_solution_vtk(radius, filename, "radius", true);
 
 }
-
-
-
 	  // Update global time.
   current_time += time_step;
 
@@ -389,7 +370,6 @@ sprintf(filename, "r-%i.vtk", ts );
 
 //double abs = get_l2_norm(coeff_vec, ndof);
 //norm_rel= norm/abs;
-
 
 }while (current_time < T_FINAL);
 //while ((current_time < T_FINAL)||(norm <1e-12)||(norm_rel<1e-08));
@@ -406,22 +386,17 @@ Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time);
 				pressure->reinit();
 				mach->reinit();
 			  char filename[40];
-			  sprintf(filename, "p-%i.vtk", ts );       
+			  sprintf(filename, "p_end.vtk", ts );       
 			lin_p.save_solution_vtk(pressure, filename, "pressure", true);
-sprintf(filename, "m-%i.vtk", ts );      
+sprintf(filename, "m_end.vtk", ts );      
 			lin_m.save_solution_vtk(mach, filename, "mach", true);
 
-sprintf(filename, "rho-%i.vtk", ts );  
+sprintf(filename, "rho_end.vtk", ts );  
 			lin_rho.save_solution_vtk(prev_slns[0], filename, "density", true);
 
-sprintf(filename, "r-%i.vtk", ts );
+sprintf(filename, "r_end.vtk", ts );
 			lin_r.save_solution_vtk(radius, filename, "radius", true);
 
-
-
-/*
-Orderizer ord_space;
-ord_space.save_orders_vtk(spaces[0], "space.vtk");*/
 
 
 

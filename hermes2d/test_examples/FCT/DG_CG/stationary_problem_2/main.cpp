@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =6;                   // Number of initial refinements.
+const int INIT_REF_NUM =7;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 
 
@@ -20,7 +20,7 @@ const std::string BDY = "bdry";
 
 
 bool all = true;
-bool DG = true;
+bool DG =true;
 
 
 
@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("unit.mesh", mesh);
+  mloader.load("unit2.mesh", mesh);
 
   // Perform initial mesh refinement.
   for (int i=0; i<INIT_REF_NUM; i++)
@@ -46,6 +46,10 @@ m1view.show(mesh);*/
   // Previous time level solution (initialized by the initial condition).
   MeshFunctionSharedPtr<double>  u_new(new Solution<double>);
   MeshFunctionSharedPtr<double> u_prev_time(new CustomInitialCondition(mesh));
+  
+  
+  	Linearizer lin;	
+lin.save_solution_vtk(u_prev_time, "init2D.vtk", "solution", false);
 
 
 //EssentialBCNonConst bc_essential(BDY, u_prev_time);
@@ -53,10 +57,10 @@ m1view.show(mesh);*/
 
 
   // Create an space with default shapeset.
-SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh, P_INIT));
+//SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh, P_INIT));
   //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
- //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
- // SpaceSharedPtr<double> space(new H1Space<double>(mesh,P_INIT));
+ SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
+  //SpaceSharedPtr<double> space(new H1Space<double>(mesh,P_INIT));
 
 /* BaseView<double> bview("Baseview", new WinGeom(450, 0, 440, 350));
   bview.show(space);
@@ -69,9 +73,11 @@ View::wait(HERMES_WAIT_KEYPRESS);
   // Initialize views.
 	ScalarView sview("solution_1", new WinGeom(500, 500, 500, 400));
 	ScalarView lview("initial condition", new WinGeom(500, 0, 500, 400));
-	//lview.show(u_prev_time);
+	
+	
+	lview.show(u_prev_time);
 //sview.set_min_max_range(0,1);
-//View::wait(HERMES_WAIT_KEYPRESS);
+View::wait(HERMES_WAIT_KEYPRESS);
 	
 	int ndof = space->get_num_dofs();
 
@@ -114,7 +120,7 @@ Solution<double>::vector_to_solution(coeff_vec, space_h1, u_test);*/
 			Solution<double>::vector_to_solution(vec_new, space, u_new);
 			for(int i=0; i<ndof; i++) coeff_vec_2[i] = vec_new[i];
 
-		sview.show(u_new);
+		//sview.show(u_new);
 /*
 dg_surface_matrix->multiply_with_vector(coeff_vec, coeff_vec_3); 
 

@@ -1,7 +1,8 @@
-add_subdirectory(shock_tube)
-add_subdirectory(shock_tube_adap)
-add_subdirectory(radially_symmetric)
-add_subdirectory(radially_symmetric_2)
-add_subdirectory(expansion_wave)
+add_subdirectory("shock_tube")
+add_subdirectory("shock_tube_adap")
+add_subdirectory("expansion_wave")
+add_subdirectory("radially_symmetric")
+add_subdirectory("SFB_nozzle")
+
 
 

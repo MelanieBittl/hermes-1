@@ -62,15 +62,15 @@ for_all_active_elements(e, space->get_mesh())
 Hermes::Mixins::Loggable::Static::info("l2=%.3e, h1 = %.3e,ndof = %d",Hermes::sqrt(err_l2_2), Hermes::sqrt(err_H1_2), ndof);
 
 FILE * pFile;
-pFile = fopen ("error.txt","w");
-    fprintf (pFile, "l2=%.4e,  h1 = %.4e,total = %.4e, ndof = %d,  diam =%.4e",Hermes::sqrt(err_l2_2), Hermes::sqrt(err_H1_2), total_diff, ndof, diam_max);
+pFile = fopen ("error.txt","a");
+    fprintf (pFile, "l2=%.4e,  h1 = %.4e,total = %.4e, ndof = %d,  diam =%.4e \n",Hermes::sqrt(err_l2_2), Hermes::sqrt(err_H1_2), total_diff, ndof, diam_max);
 fclose (pFile);  
 
-/*
+
 // Output solution in VTK format.
 	Linearizer lin;
 	bool mode_3D = true;
-
+/*
 MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
 //fview.show(filter);
 lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);

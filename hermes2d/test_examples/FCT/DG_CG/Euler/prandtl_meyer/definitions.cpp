@@ -193,9 +193,9 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 
 				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
+				else if(e->y[i]==1.){	solid = true; bdry =0;}
 				else if(e->x[i]==-1.) bdry =2.;
-				else if(e->x[i]==1.){ bdry=1;}
-				//else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}				
+				else if(e->x[i]==1.){ bdry=1;}							
 				else throw Hermes::Exceptions::Exception("boundary");
 
 
@@ -324,7 +324,7 @@ else if(e->y[i]==1.){	solid = true; bdry =0;}
 				if((e->y[i]<=0.)&&(e->x[i]<1.)&&(e->x[i]>-1.))	{	solid = true; bdry =0;}
 				else if(e->x[i]==-1.) bdry =2.;
 				else if(e->x[i]==1.){ bdry=1;}
-				//else if((e->y[i]==1.)||(e->x[i]==1.)){ bdry=1;}
+				else if(e->y[i]==1.){	solid = true; bdry =0;}
 				else throw Hermes::Exceptions::Exception("boundary");
 
 			

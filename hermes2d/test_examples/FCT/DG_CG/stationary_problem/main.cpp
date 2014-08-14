@@ -19,7 +19,7 @@ const std::string BDY_OUT = "outlet";
 
 
 bool all = true;
-bool DG = false;
+bool DG = true;
 bool SD = false;
 
 bool serendipity = true;
@@ -40,9 +40,7 @@ int main(int argc, char* argv[])
 /*MeshView m1view("Meshview1", new WinGeom(450, 450, 440, 350));
 m1view.show(mesh);*/
 
-
 //perturbed mesh
-
 /*Node* vn; Element* e; double h; 
 for_all_active_elements(e, mesh) 
 {
@@ -64,9 +62,9 @@ for_all_vertex_nodes(vn, mesh)
   // Create an space with default shapeset.
 //CustomDirichletCondition bc_essential(Hermes::vector<std::string>("inlet1","inlet2"));
  // EssentialBCs<double>  bcs(&bc_essential);
-  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
  //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
-  SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));
+  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));
 
 
 /*
@@ -90,7 +88,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	ScalarView sview("solution_1", new WinGeom(500, 500, 500, 400));
 	ScalarView s2view("solution_2", new WinGeom(0, 500, 500, 400));
 
-	ScalarView fview("filter", new WinGeom(500, 500, 500, 400));
+	
 	ScalarView lview("initial condition", new WinGeom(500, 0, 500, 400));
 	//lview.show(u_prev_time);
 //fview.set_min_max_range(0,0.001);
@@ -116,7 +114,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 	CSCMatrix<double>* dg_surface_matrix = new CSCMatrix<double> ; 
 	SimpleVector<double> * surf_rhs = new SimpleVector<double> (ndof); 
 	DiscreteProblem<double> * dp_surf = new DiscreteProblem<double> (&wf_surf,space);	
-	dp_surf->set_linear(true,false);
+	//dp_surf->set_linear(true,false);
 	dp_surf->assemble(dg_surface_matrix,surf_rhs);
  UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>( dg_surface_matrix, surf_rhs);    
   try
@@ -162,12 +160,41 @@ CustomWeakForm wf(u_prev_time,mesh,true, false);
 */
 
 calc_error_total(u_new, u_prev_time,space);
+/*
+Linearizer lin;
+	bool mode_3D = true;
+	Element* test_element = RefMap::element_on_physical_coordinates(true, mesh, 0.5, 0.5);
+	Element* test_element_2 = RefMap::element_on_physical_coordinates(true, mesh, 0.1, 0.2);
+for(int i=0; i<ndof; i++) coeff_vec_2[i]= 0;
+		Element* e =NULL;  
+AsmList<double>* al = new AsmList<double>;
 
 
+//for_all_active_elements(e, space->get_mesh()){
+	e= test_element;
+			space->get_element_assembly_list(e, al);			
+	  	for (unsigned int iv = 0; iv < e->get_nvert(); iv++){ 		
+		int index_e = space->get_shapeset()->get_edge_index(iv, 0, 2, HERMES_MODE_TRIANGLE);				
+				Node* en = e->en[iv];				
+				if(en->bnd!=1){
+					for(unsigned int j = 0; j < al->get_cnt(); j ++){			 
+						if((al->get_idx()[j]==index_e)){ 									
+									//if(coeff_vec_2[al->get_dof()[j]]== 0)	
+											coeff_vec_2[al->get_dof()[j]]	= -0.1;
+									
+									break;
+						}
+					}
+				}	
+			}
 
-
-
-
+	//}
+	//double k =1;
+	//for(int i=0; i<ndof; i++) if(coeff_vec_2[i]!=0){  coeff_vec_2[i]= k; k = -1; }
+	 Hermes::Hermes2D::Solution<double>::vector_to_solution(coeff_vec_2, space, u_new);
+	sview.show(u_new);
+	lin.save_solution_vtk(u_new, "test.vtk", "solution", mode_3D);*/
+	
   // Wait for the view to be closed.
   View::wait();
   return 0;

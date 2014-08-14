@@ -19,7 +19,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
-const double time_step = 0.1;
+const double time_step = 1;
 const double T_FINAL =10000000;                       // Time interval length. 
 
 const double theta = 1.;

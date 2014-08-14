@@ -27,7 +27,7 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 	for(int i=0; i<ndof;i++){
 						lumped= lumped_matrix->get_Ax()[i]*time_step;
 						dt_u_L[i] += (vec_bdry->get(i) + vec_source->get(i));
-						dt_u_L[i] *=1./lumped;	
+						dt_u_L[i] /= lumped;	
  						P_plus[i]=0.0;P_minus[i]=0.0;Q_plus[i]=0.;Q_minus[i]=0.; flux_scalar[i]=0.;
 		}
 
@@ -101,7 +101,7 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 							int i = Ai_mass[indx];	
 							if(((mass=Ax_mass[indx]*time_step)!=0.)&&(j>i)){
 								diff = diffusion->get(i,j);				
-									f = mass*(dt_u_L[i]- dt_u_L[j]) + diff*(u_L[i]- u_L[j]);	
+								f = mass*(dt_u_L[i]- dt_u_L[j]) + diff*(u_L[i]- u_L[j]);	
 										if( (f*(u_L[j]- u_L[i])) > 0.0) f = 0.0; //prelimiting step										
 										if(f>0.0)	{ 
 											P_plus[i]+=f;
@@ -113,7 +113,8 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 										lumped= lumped_matrix->get_Ax()[i];
 										f = lumped*(u_L[j]-u_L[i]); 
 										if(f>Q_plus[i]) Q_plus[i] = f;				
-										if(f<Q_minus[i]) Q_minus[i] = f;			
+										if(f<Q_minus[i]) Q_minus[i] = f;		
+										lumped= lumped_matrix->get_Ax()[j];
 										f= lumped*(u_L[i]-u_L[j]);
 										if(f>Q_plus[j]) Q_plus[j] = f;	
 										if(f<Q_minus[j]) Q_minus[j] = f;
@@ -201,7 +202,7 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 			if(alpha_p>alpha_rho) alpha = alpha_rho;
 				else alpha = alpha_p;
 
-
+//alpha =1.;
 				flux_scalar[i] += alpha*f_rho_ij;
 				flux_scalar[i+dof_rho ] += alpha*f_rho_v_x;			
 				flux_scalar[i+dof_v_y_start ] += alpha*f_rho_v_y;	
@@ -222,20 +223,19 @@ int dof_v_y_start = dof_rho + dof_v_x ;
 				for(int indx = Ap_mass[j]; indx<Ap_mass[j+1];indx++){	
 							int i = Ai_mass[indx];	
 							if(((mass=Ax_mass[indx]*time_step)!=0.)&&(j>i)){
-														diff = diffusion->get(i,j);
-								//f = (mass/time_step+ diff/2.)*(u_high[i]- u_high[j])
-													//	-(mass/time_step - diff/2.) *(u_old[i]- u_old[j]);
-									f = mass*(dt_u_L[i]- dt_u_L[j]) + diff*(u_L[i]- u_L[j]);	
-										if( (f*(u_L[j]- u_L[i])) > 0.0) f = 0.0; //prelimiting step
-										
+														diff = diffusion->get(i,j);					
+									
+							f = mass*(dt_u_L[i]- dt_u_L[j]) + diff*(u_L[i]- u_L[j]);	
+										if( (f*(u_L[j]- u_L[i])) > 0.0) f = 0.0; //prelimiting step										
 										if(f>0.){					
 											if(R_plus[i]>R_minus[j]) alpha = R_minus[j];
 											else 	alpha = R_plus[i];
 										}else if(f<0.){
 											if(R_minus[i]>R_plus[j]) alpha = R_plus[j];
 											else 	alpha = R_minus[i]; 
-										}									
-											flux_scalar[i] += alpha*f;
+										}	
+									//alpha=0.;
+										  flux_scalar[i] += alpha*f;
 											flux_scalar[j] -= alpha*f;	
 									
 										

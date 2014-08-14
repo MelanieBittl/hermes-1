@@ -2,16 +2,17 @@
 const int   bdry_in = 2;
 const int bdry_out = 1;
 const double x_min = 0;
-const double x_max = 40;
+const double x_max = 150;
 const double y_min = 12.35; 
 const double y_max = 15.35; 
 
-const double x_min_inlet = 16.7952;
-const double x_max_inlet = 18.1472;
-const double y_min_in_1 = 5.208;
-const double y_max_in_1 = 6.568;
-const double y_min_in_2 = 21.132;
-const double y_max_in_2 = 22.492;
+const double x_min_inlet = 18.324;//16.664;//16.7952;
+const double x_max_inlet = 21.028;//19.2335;//18.871; //18.1472; 
+const double y_min_in_1 = -0.51;//-0.16; //3.576;//5.208; //
+const double y_max_in_1 = 2.23;//3.92; //6.568;
+const double y_min_in_2 = 25.47;//23.78; //21.132;
+const double y_max_in_2 = 28.19;//27.86;//24.124;//22.492; 
+const bool inlets =true;
 
   EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)
 	{
@@ -273,11 +274,12 @@ double material_density = (static_cast<EulerSource*>(wf))->particle_density;
 if(entry_i==4){
 	for (int i = 0;i < n;i++)
 		{
-			if((e->y[i]>= y_min+0.5)&&(e->y[i]<= y_max-0.5)&&((e->x[i]>=3)&&(e->x[i]<=3.1))) 
+			//if((e->y[i]>= y_min+0.5)&&(e->y[i]<= y_max-0.5)&&((e->x[i]>=16)&&(e->x[i]<=16.1))) 
+			if((e->y[i]>= y_min)&&(e->y[i]<= y_max)&&((e->x[i]>=16)&&(e->x[i]<=16.5))) 
 			{
 				// double mach = QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i], ext[3]->val[i], 1.4);
 				//if(mach>0.11){
-						double rho = ext[4]->val[i];
+						//double rho = ext[4]->val[i];
 		
 							result += wt[i] * v->val[i]*(material_density*0.1);
 				//}
@@ -396,14 +398,14 @@ tx_ghost = tx;
 ty_ghost = ty;
 
 
-
+rho_v_x =   ext[1]->val[i]; 
 		bdry = 0;
 		
-	if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
-	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+	if((e->x[i]<= x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
+	else if((inlets==true)&&(e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
 			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))bdry = bdry_in;
 			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))bdry = bdry_in;			
-	}		
+	}	
 	else if(e->x[i]== x_max){ bdry = bdry_out;}
 	else if(e->x[i]== x_min){
 			if(rho_v_x>0) bdry = bdry_in;
@@ -555,12 +557,12 @@ int bdry;
 	{
 		 bdry =0;
 
-		
-	if((e->x[i]== x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
-	else if((e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
+	rho_v_x =   ext[1]->val[i]; 	
+	if((e->x[i]<= x_min)&&(e->y[i]<=y_max)&&(e->y[i]>=y_min)) bdry = bdry_in;	
+	else if((inlets==true)&&(e->x[i]>=x_min_inlet)&&(e->x[i]<=x_max_inlet)){
 			if((e->y[i]>=y_min_in_1)&&(e->y[i]<=y_max_in_1))bdry = bdry_in;
 			else if((e->y[i]>=y_min_in_2)&&(e->y[i]<=y_max_in_2))bdry = bdry_in;			
-	}		
+	}
 	else if(e->x[i]== x_max){ bdry = bdry_out;}
 	else if(e->x[i]== x_min){
 			if(rho_v_x>0) bdry = bdry_in;

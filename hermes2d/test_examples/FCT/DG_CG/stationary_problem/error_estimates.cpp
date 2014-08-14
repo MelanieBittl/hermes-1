@@ -46,10 +46,10 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 		double* y_coord = rm->get_phys_y(order);
 			for( int j = 0; j < np; ++j )
 			{
-				//double v_x = 0.5;
-				//double v_y = 1.;
- 				double v_x = y_coord[j]; 
-				double v_y = 1.-x_coord[j];
+				double v_x = 0.5;
+				double v_y = 1.;
+ 				//double v_x = y_coord[j]; 
+				//double v_y = 1.-x_coord[j];
 				err_elem += pt[j][2]*jac*Hermes::sqr(v_x*(u->dx[j]-v->dx[j])+v_y*(u->dy[j]-v->dy[j]));
 				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
 //err_elem += pt[j][2]*jac*Hermes::sqr(u->val[j]-v->val[j]);
@@ -102,8 +102,8 @@ for_all_active_elements(e, space->get_mesh())
 	break;
 }
 
-double test = calc_error_l2(u_new, u_prev_time,space);
-Hermes::Mixins::Loggable::Static::info("test=%.3e", test);
+//double test = calc_error_l2(u_new, u_prev_time,space);
+//Hermes::Mixins::Loggable::Static::info("test=%.3e", test);
 
 double total = Hermes::sqrt(err_l2_2+0.5*err_surf_2+0.5*err_DG_2+err_sd_2);
 
@@ -111,18 +111,26 @@ Hermes::Mixins::Loggable::Static::info("l2=%.3e, surf = %.3e, dg = %.3e, sd = %.
 Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total , ndof);
 
 FILE * pFile;
-pFile = fopen ("error.txt","w");
-    fprintf (pFile, "l2=%.4e, surf = %.4e, dg = %.4e, sd = %.4e, total= %.4e, ndof = %d, diam_min =%.4e, diam_max =%.4e",
+pFile = fopen ("error.txt","a");
+    fprintf (pFile, "l2=%.4e, surf = %.4e, dg = %.4e, sd = %.4e, total= %.4e, ndof = %d, diam_min =%.4e, diam_max =%.4e \n",
 Hermes::sqrt(err_l2_2), Hermes::sqrt(err_surf_2),Hermes::sqrt(err_DG_2),Hermes::sqrt(err_sd_2), total , ndof,diam_min, diam_max);
 fclose (pFile);  
 
+FILE * pFile_2;
+pFile_2 = fopen ("error_s.txt","a");
+    fprintf (pFile_2, "l2=%.4e, total= %.4e, ndof = %d, diam_ =%.4e \n",
+Hermes::sqrt(err_l2_2), total , ndof,diam_max);
+fclose (pFile_2); 
+
 // Output solution in VTK format.
-/*Linearizer lin;
+/*
+Linearizer lin;
 	bool mode_3D = true;
 
 MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
+//ScalarView fview("filter", new WinGeom(500, 500, 500, 400));
 //fview.show(filter);
-//lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
+lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
 //lin.save_solution_vtk(u_prev_time, "init.vtk", "solution", mode_3D);
 lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
 */

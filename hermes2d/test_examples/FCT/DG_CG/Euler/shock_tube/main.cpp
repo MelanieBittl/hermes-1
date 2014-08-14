@@ -19,7 +19,7 @@ using namespace Hermes::Solvers;
 
 
 const int INIT_REF_NUM =4;                   // Number of initial refinements.
-const int P_INIT = 1;       						// Initial polynomial degree.
+const int P_INIT = 2;       						// Initial polynomial degree.
 const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain2.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -174,7 +174,7 @@ Space<double>::assign_dofs(spaces);
 		HPAdapt adapting(spaces, &error_calculator);
 		bool new_adap = adapting.reduce_order(&discont_elem);
 
-		//m1view.show(spaces[0]);
+		m1view.show(spaces[0]);
 		//m2view.show(spaces[1]);m3view.show(spaces[2]);m4view.show(spaces[3]);
 
 	 delete [] coeff_vec_init;
@@ -340,13 +340,14 @@ AsmList<double>*  al_l2 = new AsmList<double>;
 		}
 Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);*/
 
-			pressure->reinit();
+		/*	pressure->reinit();
 			vel_x->reinit();
 			vel_y->reinit();
 			s1.show(prev_rho);     
 			s2.show(vel_x);
 			s3.show(vel_y);
-  		pressure_view.show(pressure);
+  		pressure_view.show(pressure);*/
+			//m1view.show(spaces[0]);
 //View::wait(HERMES_WAIT_KEYPRESS);
 Linearizer lin_p, lin_v_x, lin_v_y, lin_rho;
 

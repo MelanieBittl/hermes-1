@@ -27,7 +27,7 @@ const double T_FINAL = 30000000.;                       // Time interval length.
 const double theta = 1.;
 
 // Equation parameters.  
- 
+ const bool DG = false;
      
 // Kappa.
 const double KAPPA = 1.4; 
@@ -67,12 +67,13 @@ for_all_active_elements(e, basemesh)
 			if(delta_x>delta_max) delta_max = delta_x;
 		}
 }
-printf("CFL = %f \n", time_step/delta_max*2.5);
+double CFL = (time_step/delta_max*2.5)+1;
+printf("CFL = %f \n", CFL);
 
 
 bool serendipity = true;
 
-
+/*
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
@@ -81,12 +82,12 @@ SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serend
 SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
-/*
+		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
+*/
 SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));*/
+		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
 
 	int dof_rho = space_rho->get_num_dofs();
 	int dof_v_x = space_rho_v_x->get_num_dofs();
@@ -167,10 +168,11 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 	EulerK wf_convection(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass;
 
-	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, false);
-	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, false);
-
-
+	//EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, false);
+	//EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, false);
+  
+  	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, true);
+	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, true);
 
 
 
@@ -226,6 +228,18 @@ double residual = 10.;
 		  dp_mass.assemble(mass_matrix);
 mass_matrix->multiply_with_Scalar(1./time_step);
 
+FILE * pFile;
+pFile = fopen ("residual.txt","a");
+    fprintf (pFile,"DOFS:%i, CFL=%f \n",ndof,CFL);
+fclose (pFile);
+//---------- for residual-calculation=------------		
+double residual_norm = 10.;
+ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
+ errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
+ MeshFunctionSharedPtr<double> sln_zero(new ZeroSolution<double>(space_rho->get_mesh()));
+ Hermes::vector<MeshFunctionSharedPtr<double> > zero_slns(sln_zero, sln_zero, sln_zero, sln_zero);
+ //------------------
+
 //bool* p1 =get_vertex_dofs(spaces);
 //CSCMatrix<double> * lumped_matrix = massLumping(p1,mass_matrix);
 
@@ -240,20 +254,23 @@ Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res
 
 			dp.assemble(K_matrix, vec_conv);
 			dp_bdry.assemble(dS_matrix, vec_bdry);
-			dp_DG.assemble(dg_matrix,vec_dg);	
+			if(DG) dp_DG.assemble(dg_matrix,vec_dg);	
 		}else{
 			dp_init.assemble(K_matrix, vec_conv);
 			dp_bdry_init.assemble(dS_matrix, vec_bdry);
-		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
+		 	if(DG) dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}
 
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
 
+		if(DG) 
+		{
 matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
 matrix->add_sparse_matrix(K_matrix);
+		}else{
 
-
-//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		}
 
 
 
@@ -278,36 +295,29 @@ lumped_matrix->multiply_with_Scalar(1./10.);
 matrix->add_sparse_matrix(lumped_matrix); 
 */
 
-if(residual<1e-2)
+if((residual_norm<1e-2))
 mass_matrix->multiply_with_Scalar(1./10.);
 
 matrix->add_sparse_matrix(mass_matrix); 
-/*
-//matrix_2->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
-matrix_2->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
-matrix_2->zero();
-matrix_2->add_sparse_matrix(dS_matrix);
-matrix_2->multiply_with_Scalar(-theta);
-matrix_2->add_sparse_matrix(lumped_matrix); 
-//matrix_2->add_sparse_matrix(mass_matrix); 
 
-*/
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-	//	matrix_2->multiply_with_vector(coeff_vec, coeff_vec_2);
-//diff->multiply_with_vector(coeff_vec, coeff_vec_2);
-//mass_matrix->multiply_with_vector(coeff_vec, coeff_vec_2);
 		vec_rhs->zero(); 
-	//	vec_rhs->add_vector(coeff_vec_2); 
-		vec_rhs->add_vector(vec_dg); 
+		if(DG)  vec_rhs->add_vector(vec_dg); 
 		vec_rhs->add_vector(vec_bdry); 
 		vec_rhs->add_vector(vec_conv); 
 
 vec_res->zero();
-vec_res->add_vector(vec_dg); 
-		vec_res->add_vector(vec_bdry); 
-		vec_res->add_vector(vec_conv); 
+vec_res->add_vector(vec_rhs); 
 
+//---For residual calculation
+for(int i=0; i<ndof;i++)		
+					coeff_vec_2[i] =vec_res->get(i);
+Solution<double>::vector_to_solutions(coeff_vec_2, spaces, diff_slns);	
+errorCalculator_l2.calculate_errors(diff_slns, zero_slns);
+double err_l2_2 = errorCalculator_l2.get_total_error_squared();
+residual_norm  = Hermes::sqrt(err_l2_2);
+//-----------------------------------------------
 residual = 0;
 for(int i = 1; i<ndof; i++)
 	residual +=vec_res->get(i)*vec_res->get(i);
@@ -344,7 +354,7 @@ for(int i=0; i<ndof;i++)
                         vel_x->reinit();
                         vel_y->reinit();
                         s2.show(vel_x);
-                        s3.show(vel_y);*/
+                        s3.show(vel_y);
                        MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
                         sprintf(title, "Pressure: ts=%i",ts);
                         pressure_view.set_title(title);
@@ -360,7 +370,7 @@ for(int i=0; i<ndof;i++)
                         sprintf(title, "Density: ts=%i",ts);
                         s1.set_title(title);
                         s1.show(prev_rho);
-				s5.show(diff_slns[0]);
+				s5.show(diff_slns[0]);*/
 
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
@@ -369,36 +379,7 @@ for(int i=0; i<ndof;i++)
 
   // Increase time step counter
   ts++;
-/*
-if(ts==4)
-{ for(int i = 0; i<4; i++) spaces[i]->set_uniform_order(2);
-Space<double>::assign_dofs(spaces);
-ndof = Space<double>::get_num_dofs(spaces);
-			delete[] coeff_vec_2;
-			delete [] coeff_vec;
-			delete vec_rhs;
-			delete vec_dg;
-			delete vec_bdry;
-			delete vec_conv;
 
-		 vec_dg = new SimpleVector<double> (ndof);
-		 vec_rhs = new SimpleVector<double> (ndof);
-		 vec_bdry = new SimpleVector<double> (ndof);
-		 vec_conv = new SimpleVector<double> (ndof);
-		 coeff_vec = new double[ndof];	
-		 coeff_vec_2 = new double[ndof];
-
-  ogProjection.project_global(spaces,prev_slns, coeff_vec, norms_l2 );
-		Space<double>::assign_dofs(spaces);
-			dp_mass.set_spaces(spaces);
-			dp.set_spaces(spaces);
-			dp_bdry.set_spaces(spaces);
-			dp_DG.set_spaces(spaces);
-		  dp_mass.assemble(mass_matrix);
-
-//mass_matrix->multiply_with_Scalar(1./1e-2);
-
-}*/
 
 		delete solver;
 		matrix->free();
@@ -417,15 +398,22 @@ for(int i = 0;	i<10; i++)
 }
 Hermes::Mixins::Loggable::Static::info("res = %e < 10^(-%i)", residual, bound); 	  
  	
-FILE * pFile;
+
+pFile = fopen ("residual_norm.txt","a");
+   // fprintf (pFile,"%i: res = %e < 10^(-%i),residual_norm=%e,  norm =%e, norm_rel = %e \n",ts, residual, bound,residual_norm, norm, norm_rel);
+	     fprintf (pFile,"%i: %e\n",ts,residual_norm);
+fclose (pFile);
+
 pFile = fopen ("residual.txt","a");
-    fprintf (pFile,"res = %e < 10^(-%i), norm =%f, norm_rel = %f \n", residual, bound, norm, norm_rel);
+    fprintf (pFile,"%i: res = %e < 10^(-%i),residual_norm=%e, \n",ts, residual, bound,residual_norm);
 fclose (pFile);
 
 
 
 }//while ((current_time < T_FINAL)||(  norm <1e-12)||(norm_rel<1e-08));
-while ((current_time < T_FINAL)&&(residual>1e-10));
+//while ((ts < 1000)&&(residual_norm>1e-10));
+while (ts < 50);
+
 
 if(residual<=1e-8) printf("Residual small enough");
 
@@ -434,32 +422,19 @@ Hermes::Mixins::Loggable::Static::info("end_time %3.5f",current_time);
 
 		MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
 		MeshFunctionSharedPtr<double> mach(new  MachNumberFilter(prev_slns, KAPPA));
+Linearizer lin;
 
 				pressure->reinit();
 				mach->reinit();
 
-        Linearizer lin_p;
-			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", true);
-        Linearizer lin_m;
-			lin_m.save_solution_vtk(mach, "m_end.vtk", "mach", true);
-        Linearizer lin_rho;
-			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
-
-
-
-	/*		  char filename[40];
-			  sprintf(filename, "p-%i.vtk", ts );
-
-        Linearizer lin_p;
-			lin_p.save_solution_vtk(pressure, filename, "pressure", true);
-sprintf(filename, "m-%i.vtk", ts );
-
-        Linearizer lin_m;
-			lin_m.save_solution_vtk(mach, filename, "mach", true);
-
-sprintf(filename, "rho-%i.vtk", ts );
-        Linearizer lin_rho;
-			lin_rho.save_solution_vtk(prev_slns[0], filename, "density", true);*/
+       
+			lin.save_solution_vtk(pressure, "p_end2d.vtk", "pressure", false);    
+			lin.save_solution_vtk(mach, "m_end2d.vtk", "mach", false);
+			lin.save_solution_vtk(prev_slns[0], "rho_end2d.vtk", "density", false);
+			
+		lin.save_solution_vtk(pressure, "p_end3d.vtk", "pressure", true);    
+			lin.save_solution_vtk(mach, "m_end3d.vtk", "mach", true);
+			lin.save_solution_vtk(prev_slns[0], "rho_end3d.vtk", "density", true);
 
 
 		//Cleanup

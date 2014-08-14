@@ -209,7 +209,7 @@ pFile = fopen ("error.txt","w");
 Hermes::sqrt(err_l2_2), Hermes::sqrt(err_h1_2),Hermes::sqrt(total_diff),Hermes::sqrt(total_conv), total, ndof,diam_max);
 fclose (pFile);  
 
-/*
+
 // Output solution in VTK format.
 	Linearizer lin;
 	bool mode_3D = true;
@@ -219,7 +219,7 @@ MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFuncti
 lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
 lin.save_solution_vtk(u_prev_time, "exact.vtk", "solution", mode_3D);
 lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
-*/
+
 
 
 }
