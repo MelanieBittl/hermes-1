@@ -27,7 +27,7 @@ const double T_FINAL = 30000000.;                       // Time interval length.
 const double theta = 1.;
 
 // Equation parameters.  
- const bool DG = false;
+ const bool DG = true;
      
 // Kappa.
 const double KAPPA = 1.4; 
@@ -73,7 +73,7 @@ printf("CFL = %f \n", CFL);
 
 bool serendipity = true;
 
-/*
+
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
@@ -83,12 +83,12 @@ SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
-*/
+/*
 SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
-
+*/
 	int dof_rho = space_rho->get_num_dofs();
 	int dof_v_x = space_rho_v_x->get_num_dofs();
 	int dof_v_y = space_rho_v_y->get_num_dofs();
@@ -295,7 +295,7 @@ lumped_matrix->multiply_with_Scalar(1./10.);
 matrix->add_sparse_matrix(lumped_matrix); 
 */
 
-if((residual_norm<1e-2))
+if((residual_norm<1e-3))
 mass_matrix->multiply_with_Scalar(1./10.);
 
 matrix->add_sparse_matrix(mass_matrix); 
@@ -393,10 +393,10 @@ norm_rel= norm/abs;
 int bound = 0;
 for(int i = 0;	i<10; i++)
 {
-	if(residual < 1./std::pow(10,i)) bound = i;
+	if(residual_norm < 1./std::pow(10,i)) bound = i;
 	else break;
 }
-Hermes::Mixins::Loggable::Static::info("res = %e < 10^(-%i)", residual, bound); 	  
+Hermes::Mixins::Loggable::Static::info("res_norm = %e < 10^(-%i)", residual_norm, bound); 	  
  	
 
 pFile = fopen ("residual_norm.txt","a");

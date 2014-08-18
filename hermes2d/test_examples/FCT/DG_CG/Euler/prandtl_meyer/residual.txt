@@ -1,3 +1,26 @@
 DOFS:19012, CFL=1.400000 
 DOFS:19012, CFL=1.400000 
 2 2.468796e+00  
+DOFS:19012, CFL=5.000000 
+2: res = 2.468796e+00 < 10^(-2),residual_norm=4.752306e-03, 
+3: res = 1.094264e-01 < 10^(-2),residual_norm=1.956533e-03, 
+4: res = 2.334180e-03 < 10^(-3),residual_norm=3.580652e-04, 
+5: res = 1.590060e-04 < 10^(-4),residual_norm=1.279234e-05, 
+DOFS:19012, CFL=401.000000 
+2: res = 2.468796e+00 < 10^(-2),residual_norm=4.752306e-03, 
+3: res = 2.594760e-03 < 10^(-4),residual_norm=5.197796e-05, 
+4: res = 4.358862e-04 < 10^(-5),residual_norm=1.895585e-06, 
+DOFS:19012, CFL=401.000000 
+2: res = 2.468796e+00 < 10^(-2),residual_norm=4.752306e-03, 
+3: res = 2.594760e-03 < 10^(-4),residual_norm=5.197796e-05, 
+4: res = 4.274267e-04 < 10^(-4),residual_norm=1.862558e-05, 
+5: res = 7.262119e-05 < 10^(-5),residual_norm=7.031721e-06, 
+DOFS:19012, CFL=1.400000 
+2: res = 2.468796e+00 < 10^(-2),residual_norm=4.752306e-03, 
+3: res = 8.102421e-01 < 10^(-2),residual_norm=4.216259e-03, 
+4: res = 5.376183e-01 < 10^(-2),residual_norm=3.840268e-03, 
+5: res = 4.075442e-01 < 10^(-2),residual_norm=3.494686e-03, 
+6: res = 3.300701e-01 < 10^(-2),residual_norm=3.228980e-03, 
+7: res = 2.789918e-01 < 10^(-2),residual_norm=3.034312e-03, 
+8: res = 2.425073e-01 < 10^(-2),residual_norm=2.888648e-03, 
+9: res = 2.148261e-01 < 10^(-2),residual_norm=2.775535e-03, 

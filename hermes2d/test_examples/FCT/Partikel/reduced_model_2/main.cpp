@@ -21,7 +21,7 @@ using namespace Hermes::Solvers;
 const int INIT_REF_NUM =1;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
 const double time_step = 1e-4;
-const double T_FINAL = 4.;                       // Time interval length. 
+const double T_FINAL = 3.65;                       // Time interval length. 
 
 const double theta = 1.;
 
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
  //mloader.load("domain_all.mesh", basemesh);
-  mloader.load("mesh_new90.mesh", basemesh);
+  mloader.load("mesh_new60.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
 Element* e = NULL;Node* vn=NULL;

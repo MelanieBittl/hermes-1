@@ -6,12 +6,12 @@ const double x_max = 150;
 const double y_min = 12.35; 
 const double y_max = 15.35; 
 
-const double x_min_inlet = 18.324;//16.664;//16.7952;
-const double x_max_inlet = 21.028;//19.2335;//18.871; //18.1472; 
-const double y_min_in_1 = -0.51;//-0.16; //3.576;//5.208; //
-const double y_max_in_1 = 2.23;//3.92; //6.568;
-const double y_min_in_2 = 25.47;//23.78; //21.132;
-const double y_max_in_2 = 28.19;//27.86;//24.124;//22.492; 
+const double x_min_inlet = 16.664;//18.324;////16.7952;
+const double x_max_inlet = 19.2335;//18.871; //21.028;//////18.1472; 
+const double y_min_in_1 = -0.16;//3.576;//-0.51;// //3.576;//5.208; //
+const double y_max_in_1 = 3.92;//6.568;//2.23;// //
+const double y_min_in_2 = 23.78; //21.132;//25.47;////
+const double y_max_in_2 = 27.86;//24.124;//28.19;/////22.492; 
 const bool inlets =true;
 
   EulerEquationsWeakForm_Mass::EulerEquationsWeakForm_Mass(int num_of_equations): WeakForm<double>(num_of_equations), num_of_equations(num_of_equations)

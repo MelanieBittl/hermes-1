@@ -1,8 +1,8 @@
 #include "initial_condition.h"
 const double y_1 = 12.35; 
 const double y_2 = 15.35; 
-const double v_x_inlet= 0;//3.32*20;  //18.43*20.;
-const double v_y_inlet = 200;//6.62*20; //8.0*20.;
+const double v_x_inlet= 3.32*20; //18.43*20.;//0; //
+const double v_y_inlet = 6.62*20;//8.0*20.;//200;// //
 const double pressure_coef = 1;
 
 //------------------- Initial condition ----------------
@@ -135,7 +135,7 @@ double rho = 1.1881;
 double pressure = 100000.*pressure_coef;
 if((y >y_1)&&(y<y_2)){ rho =1.778;v_x = 442.12;}
 
-if(x>16.7){ rho =1.778;}
+if(x>16.7){ rho =1.778;pressure*=2;}
 
 
 return rho;
@@ -166,7 +166,7 @@ double v_x= 0.;
 double rho = 1.1881;
 double pressure = 100000.*pressure_coef;
 if((y >=y_1)&&(y<=y_2)){ rho =1.778;v_x = 442.12;}
-if(x>16.7){ rho =1.778;v_x = v_x_inlet; }
+if(x>16.7){ rho =1.778;v_x = v_x_inlet;pressure*=2;} 
 return (rho*v_x);	
 
 };
@@ -194,7 +194,7 @@ double v_x=0.;
 double rho = 1.1881;
 double pressure = 100000.*pressure_coef;
 if((y >=y_1)&&(y<=y_2)){ rho =1.778;v_x = 442.12;}
-if(x>16.7){ rho =1.778;v_y = v_y_inlet;
+if(x>16.7){ rho =1.778;v_y = v_y_inlet;pressure*=2;
 if(y>20) v_y*=-1;}
 return rho*v_y;
 
@@ -225,7 +225,7 @@ double v_x= 0.;  double v_y =0.;
 double rho = 1.1881;
 double pressure = 100000.*pressure_coef;
 if((y >=y_1)&&(y<=y_2)){ rho =1.778;v_x = 442.12;}
-if(x>16.7){ rho =1.778;v_y = v_y_inlet;v_x = v_x_inlet;
+if(x>16.7){ rho =1.778;v_y = v_y_inlet;v_x = v_x_inlet;pressure*=2;
 if(y>20) v_y*=-1;};
 
 double rho_v_x = rho*v_x;
