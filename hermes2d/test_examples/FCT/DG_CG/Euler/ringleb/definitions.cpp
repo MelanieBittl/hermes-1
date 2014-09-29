@@ -457,7 +457,7 @@ double nx, ny, tx, ty;
 //if((bdry==4)&&(QuantityCalculator::calc_mach(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i],kappa)>1) ) 
 			bdry = 1;
 
-	if(bdry== 0){ solid = true; }
+	if(bdry== 0){solid = true; }
 	else solid = false;
 
 //if(solid==false) continue;
@@ -686,32 +686,6 @@ ny=ny_ghost;
 			result -= wt[i]*v->val[i]* 0.5 * 
 								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, nx, ny,  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
 
-
-
-		/*		for(int k =0; k<4;k++)
-				{
-							  result += wt[i] *nx*v->val[i]*0.5* (new_variables[k]*
-							   (static_cast<EulerS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,0,entry_i,k) 
-									+	ext[k]->val[i]
-							  * (static_cast<EulerS*>(wf))->euler_fluxes->A(rho, rho_v_x, rho_v_y, rho_energy,0,entry_i,k)) ;
-							  result += wt[i]* ny*v->val[i]*0.5*( new_variables[k]*
-							   (static_cast<EulerS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,1,entry_i,k) 
-										+ext[k]->val[i]
-							  * (static_cast<EulerS*>(wf))->euler_fluxes->A(rho, rho_v_x, rho_v_y, rho_energy,1,entry_i,k)) ;
-
-				}
-
-	double s_right = std::fabs(((nx * rho_v_x_new) + (ny * rho_v_y_new)) /rho_new) + QuantityCalculator::calc_sound_speed(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, this->kappa);
-	double s_left = std::fabs(((nx * rho_v_x) + (ny * rho_v_y)) / rho) + QuantityCalculator::calc_sound_speed(rho, rho_v_x, rho_v_y, rho_energy, this->kappa);
-
-double jump_u;
-if(entry_i==0) jump_u = rho -rho_new;
-else if(entry_i==1) jump_u = rho_v_x -rho_v_x_new;
-else if(entry_i==2) jump_u = rho_v_y -rho_v_y_new;
-else if(entry_i==3) jump_u = rho_energy -rho_energy_new;
-
-
-result += wt[i]*v->val[i]*std::max(s_left, s_right)*0.5*jump_u;*/
 
 				}else{//solid wall ->no mirror
 						if(entry_i==1)

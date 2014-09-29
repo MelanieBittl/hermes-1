@@ -122,8 +122,18 @@ pFile_2 = fopen ("error_s.txt","a");
 Hermes::sqrt(err_l2_2), total , ndof,diam_max);
 fclose (pFile_2); 
 
+
+pFile_2 = fopen ("error_l2.txt","a");
+    fprintf (pFile_2, "	%.4e \n", Hermes::sqrt(err_l2_2));
+fclose (pFile_2); 
+
+pFile_2 = fopen ("error_total.txt","a");
+    fprintf (pFile_2, "	%.4e \n", total);
+fclose (pFile_2); 
+
+
 // Output solution in VTK format.
-/*
+
 Linearizer lin;
 	bool mode_3D = true;
 
@@ -133,7 +143,7 @@ MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFuncti
 lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
 //lin.save_solution_vtk(u_prev_time, "init.vtk", "solution", mode_3D);
 lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
-*/
+
 
 
 

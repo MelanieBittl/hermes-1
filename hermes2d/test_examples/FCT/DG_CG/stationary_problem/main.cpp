@@ -62,8 +62,8 @@ for_all_vertex_nodes(vn, mesh)
   // Create an space with default shapeset.
 //CustomDirichletCondition bc_essential(Hermes::vector<std::string>("inlet1","inlet2"));
  // EssentialBCs<double>  bcs(&bc_essential);
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
- //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
+  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
+ SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
   //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));
 
 
@@ -129,7 +129,7 @@ View::wait(HERMES_WAIT_KEYPRESS);*/
 			Solution<double>::vector_to_solution(vec_new, space, u_new);
 			for(int i=0; i<ndof; i++) coeff_vec_2[i] = vec_new[i];
 
-		sview.show(u_new);
+		//sview.show(u_new);
 
 /*
 FILE * matFile;

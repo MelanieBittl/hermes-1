@@ -23,7 +23,7 @@ const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 
 const double theta_DG =0.5;
 
 const bool all = true;
-const bool DG = false;
+const bool DG = true;
 bool serendipity = true;
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
@@ -54,9 +54,9 @@ mloader.load("unit.mesh", basemesh);
   
   // Create an space with default shapeset.  
  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
-  //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, serendipity));	
   //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
- SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
+ //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();
   

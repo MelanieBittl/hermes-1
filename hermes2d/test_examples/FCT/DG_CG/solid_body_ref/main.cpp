@@ -35,10 +35,12 @@ const int P_MAX = 2; 										//Maximal polynomial degree.
                       
 const double time_step = 1e-3;                           // Time step.
 const double T_FINAL = 2*PI;                       // Time interval length.
-//const double T_FINAL = 2e-3;  
+
+const bool serendipity = true;
  
 const double EPS_smooth = 1e-8;   		//constant for the smoothness indicator (a<b => a+eps<=b)
 const double theta = 0.5;   			 // theta-scheme for time (theta =0 -> explizit, theta=1 -> implizit)
+
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -49,9 +51,9 @@ const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time ste
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
-const double THRESHOLD = 0.3;                      // This is a quantitative parameter of the adapt(...) function and
+const double THRESHOLD = 0.2;                      // This is a quantitative parameter of the adapt(...) function and
                                                   // it has different meanings for various adaptive strategies (see below).
-const CandList CAND_LIST = H2D_HP_ANISO;          // Predefined list of element refinement candidates. Possible values are
+const CandList CAND_LIST = H2D_H_ANISO;          // Predefined list of element refinement candidates. Possible values are
                                                   // H2D_P_ISO, H2D_P_ANISO, H2D_H_ISO, H2D_H_ANISO, H2D_HP_ISO,
                                                   // H2D_HP_ANISO_H, H2D_HP_ANISO_P, H2D_HP_ANISO.
 const double CONV_EXP = 1.0;                      // Default value is 1.0. This parameter influences the selection of
@@ -61,13 +63,13 @@ const double ERR_STOP = 1.0;                      // Stopping criterion for adap
 const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
 
-const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
+const int ADAPSTEP_MAX = 3;												// max. numbers of adaptivity steps
 
 
 //Visualization
 const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION =true;              // Set to "true" to enable VTK output.
-const int VTK_FREQ = 7000;													//Every VTK_FREQth time step the solution is saved as VTK output.
+const int VTK_FREQ = 70000000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
 // Boundary markers.
 const std::string BDY_IN = "inlet";
@@ -81,6 +83,7 @@ int main(int argc, char* argv[])
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
   mloader.load("domain.mesh", basemesh);
+ //mloader.load("tri.mesh", basemesh);
  /*  MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
  meshview.show(basemesh);
    View::wait();*/
@@ -90,7 +93,7 @@ int main(int argc, char* argv[])
  	 mesh->copy(basemesh);
   
   // Create an H1 space with default shapeset.
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT,true));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT,serendipity));	
 
  // Initialize solution of lower & higher order
    // MeshFunctionSharedPtr<double>u_prev_time(new PrevSolution);
@@ -117,9 +120,7 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 			  	OrderView mview("mesh", new WinGeom(0, 0, 500, 400));
 			  	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 
-  // Create a refinement selector.
-  H1ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
-       selector.set_error_weights(1.0,1.0,1.0); 
+
 
 	//Initialize
 	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ;   //M_c/tau
@@ -131,10 +132,15 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 	double* ref_sln_double =NULL;
 	int ref_ndof, ndof; double err_est_rel_total;
 	
-  DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
+	  // Create a refinement selector.
+  H1ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
+       selector.set_error_weights(1.0,1.0,1.0); 
+	
+  DefaultErrorCalculator<double, HERMES_H1_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
   
   Adapt<double> adaptivity(space, &error_calculator);
-  AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
+  //AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
+  AdaptStoppingCriterionSingleElement<double> stoppingCriterion(THRESHOLD);
   adaptivity.set_strategy(&stoppingCriterion);
 
 	OGProjection<double> ogProjection;	
@@ -213,12 +219,12 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 			int* smooth_elem_ref;	
 							
 			//smoothness-check for projected data		
-      Hermes::Mixins::Loggable::Static::info("Projecting...");
+//      Hermes::Mixins::Loggable::Static::info("Projecting...");
 			if(ts==1)
 				ogProjection.project_global(space,initial_condition, coeff_vec_smooth, HERMES_L2_NORM);		
 			else
 				ogProjection.project_global(space,u_prev_time, coeff_vec_smooth, HERMES_L2_NORM);	
-     Hermes::Mixins::Loggable::Static::info("Calling get_smooth_elems()...");		
+  //   Hermes::Mixins::Loggable::Static::info("Calling get_smooth_elems()...");		
 			smooth_elem_ref =regEst.get_smooth_elems(space,coeff_vec_smooth);
 
       // Construct reference mesh and setup reference space->
@@ -230,7 +236,7 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 
       HPAdapt* adapting = new HPAdapt(ref_space);	
 							// increase p in smooth regions, h refine in non-smooth regions 
-      Hermes::Mixins::Loggable::Static::info("Calling adapt_smooth()...");
+    //  Hermes::Mixins::Loggable::Static::info("Calling adapt_smooth()...");
 			if(adapting->adapt_smooth(smooth_elem_ref, P_MAX)==false) 
 				throw Exceptions::Exception("reference space couldn't be constructed");							
 									      

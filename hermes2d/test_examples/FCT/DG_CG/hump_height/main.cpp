@@ -16,15 +16,15 @@ const int INIT_REF_NUM =6;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
 const double time_step =25e-5;                           // Time step.
-const double T_FINAL = 0.5;                         // Time interval length. 
-
+const double T_FINAL = 2.;                         // Time interval length. 
+//const double T_FINAL = 0.5;
 
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
 const double theta_DG =0.5;
 
 const bool all = true;
-const bool DG = false;
-
+const bool DG = true;
+const bool ser = true;
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -47,9 +47,9 @@ mloader.load("unit.mesh", basemesh);
  	 mesh->copy(basemesh);
   
   // Create an space with default shapeset.  
- //SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT));	
+ SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT,ser));	
   //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
- SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
+ //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
   int ndof = space->get_num_dofs();
 
@@ -93,6 +93,11 @@ double current_time = 0.;
 	wf_rhs.set_current_time(current_time);
 	dynamic_cast<CustomInitialCondition*>(u_exact.get())->set_time(current_time);
 	dp_rhs->assemble(rhs);
+if((current_time>=0.5)&&(current_time<(0.5+time_step)))
+{
+calc_error_total(u_new, u_exact,space,false);
+}
+
 	UMFPackLinearMatrixSolver<double>* solver = new UMFPackLinearMatrixSolver<double>(matrix,rhs);    
 	try
 	{
@@ -105,7 +110,7 @@ double current_time = 0.;
      double*	vec_new = solver->get_sln_vector();
      Solution<double>::vector_to_solution(vec_new, space, u_new);
 
-	//sview.show(u_new);
+	sview.show(u_new);
 	//lview.show(u_exact);
 	if(ts==1) wf_rhs.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(u_exact, u_new) );
 	current_time += time_step;

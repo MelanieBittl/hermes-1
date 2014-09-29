@@ -13,9 +13,9 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
-const double time_step = 25e-4;
+const double time_step = 1e-2;
 const double T_FINAL = 0.5;                       // Time interval length. 
 
 const double theta = 1.;
@@ -79,19 +79,18 @@ bool serendipity = true;
 SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));*/
-
+		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
+/*
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
-
-	/*
+*/
 
 		SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
+		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
 
 
 	int dof_rho = space_rho->get_num_dofs();
@@ -277,7 +276,7 @@ matrix->add_sparse_matrix(K_matrix);
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------	
 		vec_rhs->zero(); 
-		vec_rhs->add_vector(vec_dg); 
+		if(DG)vec_rhs->add_vector(vec_dg); 
 		vec_rhs->add_vector(vec_bdry); 
 		vec_rhs->add_vector(vec_conv); 
 

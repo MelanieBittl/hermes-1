@@ -30,13 +30,13 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const int P_MAX = 5; 										//Maximal polynomial degree.
+const int P_MAX = 1; 										//Maximal polynomial degree.
                       
 const double time_step = 1e-3;                           // Time step.
 const double T_FINAL = 2*PI;                       // Time interval length.
-//const double T_FINAL = 2e-3;  
+
  
-const double EPS_smooth = 1e-5;   		//constant for the smoothness indicator (a<b => a+eps<=b)
+
 const double theta = 0.5;   			 // theta-scheme for time (theta =0 -> explizit, theta=1 -> implizit)
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
@@ -48,68 +48,51 @@ const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time ste
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
                                                   // 3... one ref. layer shaved off, poly degrees decreased by one. 
-const double THRESHOLD = 0.7;                      // This is a quantitative parameter of the adapt(...) function and
+const double THRESHOLD = 0.3;                      // This is a quantitative parameter of the adapt(...) function and
                                                   // it has different meanings for various adaptive strategies (see below).
-const int STRATEGY = 1;                           // Adaptive strategy:
-                                                  // STRATEGY = 0 ... refine elements until sqrt(THRESHOLD) times total
-                                                  //   error is processed. If more elements have similar errors, refine
-                                                  //   all to keep the mesh symmetric.
-                                                  // STRATEGY = 1 ... refine all elements whose error is larger
-                                                  //   than THRESHOLD times maximum element error.
-                                                  // STRATEGY = 2 ... refine all elements whose error is larger
-                                                  //   than THRESHOLD.
                                                   // More adaptive strategies can be created in adapt_ortho_h1.cpp.
-const CandList CAND_LIST = H2D_HP_ANISO;          // Predefined list of element refinement candidates. Possible values are
+const CandList CAND_LIST = H2D_H_ISO;          // Predefined list of element refinement candidates. Possible values are
                                                   // H2D_P_ISO, H2D_P_ANISO, H2D_H_ISO, H2D_H_ANISO, H2D_HP_ISO,
                                                   // H2D_HP_ANISO_H, H2D_HP_ANISO_P, H2D_HP_ANISO.
                                                   // See the User Documentation for details.
-const int MESH_REGULARITY = -1;                   // Maximum allowed level of hanging nodes:
-                                                  // MESH_REGULARITY = -1 ... arbitrary level hanging nodes (default),
-                                                  // MESH_REGULARITY = 1 ... at most one-level hanging nodes,
-                                                  // MESH_REGULARITY = 2 ... at most two-level hanging nodes, etc.
-                                                  // Note that regular meshes are not supported, this is due to
-                                                  // their notoriously bad performance.
-const double CONV_EXP = 1.0;                      // Default value is 1.0. This parameter influences the selection of
-                                                  // cancidates in hp-adaptivity. See get_optimal_refinement() for details.
-const double ERR_STOP = 2.0;                      // Stopping criterion for adaptivity (rel. error tolerance between the
+
+const double ERR_STOP = 1.0;                      // Stopping criterion for adaptivity (rel. error tolerance between the
                                                   // fine mesh and coarse mesh solution in percent).
 const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
 
-const int ADAPSTEP_MAX = 1;												// max. numbers of adaptivity steps
+const int ADAPSTEP_MAX = 5;												// max. numbers of adaptivity steps
 
 
 //Visualization
-const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
-const bool VTK_VISUALIZATION = false;              // Set to "true" to enable VTK output.
-const int VTK_FREQ = 1000;													//Every VTK_FREQth time step the solution is saved as VTK output.
+const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool VTK_VISUALIZATION = true;              // Set to "true" to enable VTK output.
+const int VTK_FREQ = 6500;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
 // Boundary markers.
 const std::string BDY_IN = "inlet";
 const std::string BDY_OUT = "no_bdry";
 
-
+#include "error_estimations.cpp"
 
 int main(int argc, char* argv[])
 {  
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("tri.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
  	 mesh->copy(basemesh);
-
-
+  
   // Initialize boundary conditions.
   DefaultEssentialBCConst<double>  bc_essential(BDY_IN, 0.0);
   EssentialBCs<double>  bcs(&bc_essential);
   
   // Create an H1 space with default shapeset.
-//SpaceSharedPtr<double> space(new H1Space<double>(mesh,&bcs, P_INIT));	
+SpaceSharedPtr<double> space(new H1Space<double>(mesh,&bcs, P_INIT));	
 
-SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 
  // Initialize solution of lower & higher order
   MeshFunctionSharedPtr<double>  sln(new Solution<double>);
@@ -137,9 +120,7 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 	Orderizer ord;
 	bool mode_3D = true;
 
-  // Create a refinement selector.
-  H1ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
-       selector.set_error_weights(1.0,1.0,1.0); 
+
 
 	//Initialize
 	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ;   //M_c/tau
@@ -147,10 +128,16 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 	double* u_L = NULL; 
 	double* u_H =NULL;
 	double* ref_sln_double =NULL;
+	
+	  // Create a refinement selector.
+  H1ProjBasedSelector<double> selector(CAND_LIST);
+	//L2ProjBasedSelector<double> selector(CAND_LIST);
+       selector.set_error_weights(1.0,1.0,1.0); 
 
-	  DefaultErrorCalculator<double, HERMES_L2_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
-  AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
-
+	  DefaultErrorCalculator<double, HERMES_H1_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
+  //AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
+AdaptStoppingCriterionSingleElement<double> stoppingCriterion(THRESHOLD);
+  
 	int ref_ndof, ndof; double err_est_rel_total;
 	Adapt<double> adaptivity(space, &error_calculator);
   adaptivity.set_strategy(&stoppingCriterion);
@@ -159,7 +146,7 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 	Low_Order lowOrder(theta);
 	High_Order highOrd(theta);
 	Flux_Correction fluxCorrection(theta);
-	Regularity_Estimator regEst(EPS_smooth);
+
 	
 	DiscreteProblem<double> dp_mass(&massmatrix, space);
 	DiscreteProblem<double> dp_convection(&convection, space); 
@@ -194,39 +181,22 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
     bool done = false; int as = 1;	
 	
     do 
-    	{
-		  		Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i", ts, as);			
-							ndof = space->get_num_dofs(); 
-
-  		
-			ndof = space->get_num_dofs();  	    		
-			double* coeff_vec_smooth = new double[ndof];
-			int* smooth_elem_ref;	
-							
-			//smoothness-check for projected data		
-			if(ts==1)
-				ogProjection.project_global(space,initial_condition, coeff_vec_smooth, HERMES_L2_NORM);		
-			else
-				ogProjection.project_global(space,u_prev_time, coeff_vec_smooth, HERMES_L2_NORM);			
-			smooth_elem_ref =regEst.get_smooth_elems(space,coeff_vec_smooth);
-
+    	{	ndof = space->get_num_dofs(); 
+		  				
+						
+    		
 
       // Construct reference mesh and setup reference space->
 	     		 MeshSharedPtr ref_mesh(new Mesh);
-      ref_mesh->copy(space->get_mesh());
+      ref_mesh->copy(space->get_mesh());ref_mesh->refine_all_elements();
       Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
       SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
-			
-			HPAdapt * adapting = new HPAdapt(ref_space,&error_calculator);	
-							// increase p in smooth regions, h refine in non-smooth regions 
-			if(adapting->adapt_smooth(smooth_elem_ref, P_MAX)==false) 
-				throw Exceptions::Exception("reference space couldn't be constructed");							
-									      
-			delete adapting;
-			delete [] coeff_vec_smooth; 	 
+		
+
 			    
 
 			ref_ndof = ref_space->get_num_dofs();
+			Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i, refdof=%i", ts, as,ref_ndof);	
 			
 			if(HERMES_VISUALIZATION) 
 			{
@@ -263,15 +233,15 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 			//--------- Project the previous timestep solution on the FE space (FCT is applied )----------------			
 			// coeff_vec : FCT -Projection, coeff_vec_2: L2 Projection (ogProjection)	
 			if(ts==1)
-				fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);	
+				fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);	
 			else		
-				fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);			
+				fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);			
 	//------------------------- lower order solution------------					
 			u_L = lowOrder.solve_Low_Order(lumped_matrix, coeff_vec,time_step);								
 	//-------------high order solution (standard galerkin) ------				
 			u_H = highOrd.solve_High_Order(coeff_vec);		
 		//------------------------------Assemble antidiffusive fluxes and limit these-----------------------------------	
-			fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step,&regEst);
+			fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step);
 	//-------------Compute final solution ---------------			
 				ref_sln_double = lowOrder.explicit_Correction(limited_flux);
 			Solution<double> ::vector_to_solution(ref_sln_double, ref_space, ref_sln);	
@@ -328,6 +298,17 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 					ord.save_mesh_vtk(ref_space, filename);       
 					
    	 } 
+   	 
+   	    	if(((current_time+time_step) >= T_FINAL) &&(VTK_VISUALIZATION)&&(done==true))
+   	{
+   	lin.save_solution_vtk(u_prev_time, "end_ref_solution.vtk", "solution", mode_3D);
+		lin.save_solution_vtk(u_prev_time, "end_ref_solution2d.vtk", "solution", false);
+		ord.save_mesh_vtk(ref_space, "end_ref_mesh.vtk");
+		ord.save_orders_vtk(ref_space, "end_ref_order.vtk");
+
+			calc_error_total(u_prev_time, initial_condition,ref_space);
+   	
+   	}
 		
 	      // Clean up.
 			delete lumped_matrix; 
@@ -349,14 +330,6 @@ SpaceSharedPtr<double> space(new SpaceBB<double>(mesh, P_INIT));
 		ts++;
 	}
 	while (current_time < T_FINAL); 
-
-
-  // Visualize the solution.
-  if(VTK_VISUALIZATION) {
-		lin.save_solution_vtk(u_prev_time, "end_solution.vtk", "solution", mode_3D);
-		ord.save_mesh_vtk(space, "end_mesh");
-		ord.save_orders_vtk(space, "end_order.vtk");
-		}
 
 
 

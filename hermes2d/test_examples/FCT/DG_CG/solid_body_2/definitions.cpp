@@ -3,8 +3,8 @@
 const double EPS = 1e-3;
 const double penalty_parameter = 1.;
 
-enum DG_TYPE {Baumann_Oden,	IP,	NIPG, NONE};
-DG_TYPE type =NIPG;
+enum DG_TYPE {Baumann_Oden,IP,NIPG, NONE};
+DG_TYPE type =Baumann_Oden;
 
 
 double calc_abs_v(Element* e)

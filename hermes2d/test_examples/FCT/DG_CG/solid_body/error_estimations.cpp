@@ -60,6 +60,17 @@ double calc_error_max(double* u, double* v, int ndof)
 }
 
 
+double create_vtk(MeshFunctionSharedPtr<double> u_new, int ts)
+{
+	Linearizer lin;
+	
+				  char filename[40];
+			  sprintf(filename, "solution-%i.vtk", ts );
+			  lin.save_solution_vtk(u_new, filename, "solution", true); 
+
+	
+}
+
 double calc_error_test(MeshFunctionSharedPtr<double> u_1, MeshFunctionSharedPtr<double> u_2,SpaceSharedPtr<double> space)
 {
 

@@ -100,19 +100,36 @@ fclose (pFile);
 
 }
 
-void calc_error_proj(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_proj,SpaceSharedPtr<double> space)
+void calc_error_proj(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_prev_time,SpaceSharedPtr<double> space)
 {
 	int ndof = space->get_num_dofs();
 	 
-		ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
-		errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
-		errorCalculator_l2.calculate_errors(u_new, u_proj,false);
+  ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
+  ErrorCalculator<double> errorCalculator_h1(AbsoluteError);
+    ErrorCalculator<double> errorCalculator_h1_semi(AbsoluteError);
 
-	double err_l2_2 = errorCalculator_l2.get_total_error_squared();
-	FILE * pFile;
-	pFile = fopen ("error.txt","a");
-		  fprintf (pFile, "proj:  l2=%.4e, ndof = %d\n",Hermes::sqrt(err_l2_2),ndof);
-	fclose (pFile); 
+  errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
+    errorCalculator_h1.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_H1_NORM));
+  errorCalculator_h1_semi.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_H1_SEMINORM));
+
+  errorCalculator_l2.calculate_errors(u_new, u_prev_time);
+  errorCalculator_h1.calculate_errors(u_new, u_prev_time);
+  errorCalculator_h1_semi.calculate_errors(u_new, u_prev_time);
+
+
+double err_l2_2 = errorCalculator_l2.get_total_error_squared();
+double err_h1_2 = errorCalculator_h1.get_total_error_squared();
+double err_h1_semi_2 = errorCalculator_h1.get_total_error_squared();
+
+
+Hermes::Mixins::Loggable::Static::info("l2=%.4e, ndof = %d", Hermes::sqrt(err_l2_2),ndof);
+
+FILE * pFile;
+pFile = fopen ("error_proj.txt","w");
+    fprintf (pFile, "l2=%.4e, h1=%.4e, h1_semi= %.4e,ndof = %d",
+Hermes::sqrt(err_l2_2), Hermes::sqrt(err_h1_2),Hermes::sqrt(err_h1_semi_2), ndof);
+fclose (pFile); 
+
 }
 
 
@@ -121,46 +138,44 @@ void calc_error_total(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr
 int ndof = space->get_num_dofs();
  
   ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
-//ErrorCalculator<double> errorCalculator_h1(AbsoluteError);
+  ErrorCalculator<double> errorCalculator_h1(AbsoluteError);
+    ErrorCalculator<double> errorCalculator_h1_semi(AbsoluteError);
+
   errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
-  //errorCalculator_h1.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_H1_NORM));
-  errorCalculator_l2.calculate_errors(u_new, u_prev_time,false);
- // errorCalculator_h1.calculate_errors(u_new, u_prev_time,false);
+    errorCalculator_h1.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_H1_NORM));
+  errorCalculator_h1_semi.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_H1_SEMINORM));
+
+  errorCalculator_l2.calculate_errors(u_new, u_prev_time);
+  errorCalculator_h1.calculate_errors(u_new, u_prev_time);
+  errorCalculator_h1_semi.calculate_errors(u_new, u_prev_time);
+
 
 double err_l2_2 = errorCalculator_l2.get_total_error_squared();
-//double err_h1_2 = errorCalculator_h1.get_total_error_squared();
+double err_h1_2 = errorCalculator_h1.get_total_error_squared();
+double err_h1_semi_2 = errorCalculator_h1.get_total_error_squared();
 
 
-Hermes::Mixins::Loggable::Static::info("end:  l2=%.4e, ndof = %d", Hermes::sqrt(err_l2_2),ndof);
+Hermes::Mixins::Loggable::Static::info("l2=%.4e, ndof = %d", Hermes::sqrt(err_l2_2),ndof);
 
 FILE * pFile;
-pFile = fopen ("error.txt","a");
-    fprintf (pFile, "end:  l2=%.4e, ndof = %d\n",Hermes::sqrt(err_l2_2),ndof);
+pFile = fopen ("error.txt","w");
+    fprintf (pFile, "l2=%.4e, h1=%.4e, h1_semi= %.4e,ndof = %d",
+Hermes::sqrt(err_l2_2), Hermes::sqrt(err_h1_2),Hermes::sqrt(err_h1_semi_2), ndof);
 fclose (pFile); 
 
-
-/*double* err_limit = calc_error(space, u_new, u_prev_time);
-
-Hermes::Mixins::Loggable::Static::info("end:  l2=%.4e, limit_1=%.4e, limit_2=%.4e, ndof = %d", Hermes::sqrt(err_l2_2),Hermes::sqrt(err_limit[0]),Hermes::sqrt(err_limit[1]),ndof);
-
-FILE * pFile;
-pFile = fopen ("error.txt","a");
-    fprintf (pFile, "end:  l2=%.4e, limit_1=%.4e, limit_2=%.4e, ndof = %d",Hermes::sqrt(err_l2_2),Hermes::sqrt(err_limit[0]),Hermes::sqrt(err_limit[1]),ndof);
-fclose (pFile);  
-
-delete [] err_limit;*/
 
 
 
 // Output solution in VTK format.
-//	Linearizer lin;
-//	bool mode_3D = true;
+	Linearizer lin;
+	bool mode_3D = true;
 
-//MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
+MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
 //fview.show(filter);
-//lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
+lin.save_solution_vtk(u_new, "sln3d.vtk", "solution", mode_3D);
+lin.save_solution_vtk(u_new, "sln2d.vtk", "solution", false);
 //lin.save_solution_vtk(u_prev_time, "init.vtk", "solution", mode_3D);
-//lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
+lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
 
 }
 

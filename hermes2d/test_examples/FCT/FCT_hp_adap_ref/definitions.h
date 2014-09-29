@@ -70,7 +70,31 @@ public:
 };
 
 
+//----------------Filter-------------
+    class AbsDifffilter : public DiffFilter<double>
+    {
+    public:
+      AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> > solutions,  Hermes::vector<int> items = *(new Hermes::vector<int>)):DiffFilter(solutions,items){};
+      virtual MeshFunction<double>* clone() const
+		{
+		  Hermes::vector<MeshFunctionSharedPtr<double> > slns;
+		  Hermes::vector<int> items;
+		  for(int i = 0; i < this->num; i++)
+		  {
+		    slns.push_back(this->sln[i]->clone());
+		    items.push_back(this->item[i]);
+		  }
+		  AbsDifffilter* filter = new AbsDifffilter(slns, items);		
+		  return filter;
+		}
 
+virtual ~AbsDifffilter(){};
+    protected:
+      virtual void filter_fn(int n, Hermes::vector<double*> values, double* result)
+    	{
+      for (int i = 0; i < n; i++) result[i] = std::abs(values.at(0)[i] - values.at(1)[i]);
+    	}
+    };
 
 
 //------------------- Initial condition ----------------

@@ -24,7 +24,7 @@ const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 1.;
-
+const bool DG = true;
 // Equation parameters.  
  
 // Inlet x-velocity (dimensionless).
@@ -61,20 +61,25 @@ int main(int argc, char* argv[])
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
  	 mesh->copy(basemesh);
 
-
 /*
+SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
+/*		
 SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
+SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
 
-SpaceSharedPtr<double> spacel2_rho(new L2_NEW_Space<double>(mesh, P_INIT));	
+/*SpaceSharedPtr<double> spacel2_rho(new L2_NEW_Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> spacel2_rho_v_x(new L2_NEW_Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> spacel2_rho_v_y(new L2_NEW_Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> spacel2_e(new L2_NEW_Space<double>(mesh, P_INIT));
 Hermes::vector<SpaceSharedPtr<double> > spacesl2(spacel2_rho, spacel2_rho_v_x, spacel2_rho_v_y, spacel2_e);
 Space<double>::assign_dofs(spacesl2);
 int ndofl2 = Space<double>::get_num_dofs(spacesl2);
+*/
 
 
 bool serendipity = true;
@@ -174,7 +179,7 @@ Space<double>::assign_dofs(spaces);
 		HPAdapt adapting(spaces, &error_calculator);
 		bool new_adap = adapting.reduce_order(&discont_elem);
 
-		m1view.show(spaces[0]);
+		//m1view.show(spaces[0]);
 		//m2view.show(spaces[1]);m3view.show(spaces[2]);m4view.show(spaces[3]);
 
 	 delete [] coeff_vec_init;
@@ -237,9 +242,9 @@ delete [] vec_2;
 
 
 
-
+ /*
 double* coeff_vec_l2 = new double[ndofl2];
- /* ogProjection.project_global(spacesl2,init_slns, coeff_vec_l2, norms_l2 );
+ ogProjection.project_global(spacesl2,init_slns, coeff_vec_l2, norms_l2 );
 	Solution<double>::vector_to_solutions(coeff_vec_l2, spacesl2, prev_slns);*/
 
 
@@ -256,8 +261,8 @@ double* coeff_vec_l2 = new double[ndofl2];
 			s3.show(vel_y);
   		pressure_view.show(pressure);
 View::wait(HERMES_WAIT_KEYPRESS);
-*/
 
+*/
 
 
 
@@ -358,39 +363,41 @@ do
  	
  	 if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
-			dp_bdry.assemble(dS_matrix, vec_bdry);
-			//dp_DG.assemble(vec_dg);	
-		  	dp_DG.assemble(dg_matrix,vec_dg);	
+			dp_bdry.assemble(dS_matrix, vec_bdry);				
+		  	if(DG) dp_DG.assemble(dg_matrix,vec_dg);	
 		}else{
 			dp_init.assemble(K_matrix, vec_conv);
 			dp_bdry_init.assemble(dS_matrix, vec_bdry);
-		 	dp_DG_init.assemble(dg_matrix,vec_dg);	
+		 	if(DG) dp_DG_init.assemble(dg_matrix,vec_dg);	
 		}
 
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
 
+		if(DG){
 matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
 matrix->add_sparse_matrix(K_matrix);
-
-		//matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		}else{
+		matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
+		}
 		matrix->add_sparse_matrix(dS_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 		matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
 
+		/*
 matrix_2->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
 matrix_2->zero();
 matrix_2->add_sparse_matrix(dS_matrix);
 matrix_2->multiply_with_Scalar(-theta);
 matrix_2->add_sparse_matrix(mass_matrix); 
-
+*/
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-		matrix_2->multiply_with_vector(coeff_vec, coeff_vec_2);
+		//matrix_2->multiply_with_vector(coeff_vec, coeff_vec_2);
 		vec_rhs->zero(); 
-		vec_rhs->add_vector(coeff_vec_2); 
-		//vec_rhs->add_vector(vec_dg); 
+		//vec_rhs->add_vector(coeff_vec_2); 
+		if(DG) vec_rhs->add_vector(vec_dg); 
 		vec_rhs->add_vector(vec_bdry); 
-		//vec_rhs->add_vector(vec_conv); 
+		vec_rhs->add_vector(vec_conv); 
 
 	//-------------------------solution of lower order------------ (M/t - theta L(U))U^L = (M/t+(1-theta)L(U))U^n
 			UMFPackLinearMatrixSolver<double> * solver = new UMFPackLinearMatrixSolver<double> (matrix,vec_rhs);	
@@ -401,7 +408,7 @@ matrix_2->add_sparse_matrix(mass_matrix);
 			}			
 
 		for(int i=0; i<ndof;i++)		
-					coeff_vec[i] = solver->get_sln_vector()[i];
+					coeff_vec[i] += solver->get_sln_vector()[i];
 							
 		
 
@@ -497,7 +504,7 @@ delete matrix_2;
 
 			delete[] coeff_vec_2;
 			delete [] coeff_vec;
-			delete [] coeff_vec_l2;
+			//delete [] coeff_vec_l2;
 			delete vec_rhs;
 			delete vec_dg;
 			delete vec_bdry;

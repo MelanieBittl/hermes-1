@@ -1,5 +1,4 @@
 #include "reg_estimator.h"
-
 Regularity_Estimator::Regularity_Estimator(double epsilon): epsilon(epsilon), R_h_1(MeshFunctionSharedPtr<double>(new Solution<double>)), 
   R_h_2(MeshFunctionSharedPtr<double>(new Solution<double>)), sln(MeshFunctionSharedPtr<double>(new Solution<double>))
 {
@@ -68,8 +67,6 @@ int* Regularity_Estimator::get_smooth_dofs(SpaceSharedPtr<double> new_space,doub
   return smooth_dof;
 }
 
-
-
 //linear approximation of sln in the neighborhood of element e   (at (x_i,y_i))
 // u_h_hat = u_h (p_c) + R_h(p_c) *(p - p_c)
 // R_h = (R_h_1, R_h_2), p = (x,y)
@@ -78,7 +75,13 @@ double Regularity_Estimator::linear_approx(Element* e, double x_i, double y_i,do
   //center of reference element
   double x_c_ref = 0.;
   double y_c_ref = 0.; 
+ElementMode2D mode = HERMES_MODE_TRIANGLE; 
+if(e->is_quad()) mode = HERMES_MODE_QUAD; 
 
+if(mode == HERMES_MODE_TRIANGLE)
+{
+x_c_ref =-0.5;y_c_ref=-0.5; 
+}
   double u_h_x_c = (dynamic_cast<Solution<double>*>(sln.get()))->get_ref_value(e, x_c_ref, y_c_ref, 0, 0);
   double u_h_hat = u_h_x_c + (dynamic_cast<Solution<double>*>(R_h_1.get()))->get_ref_value(e, x_c_ref, y_c_ref, 0, 0)*(x_i-x_c)+(dynamic_cast<Solution<double>*>(R_h_2.get()))->get_ref_value(e, x_c_ref, y_c_ref, 0, 0)*(y_i-y_c);
 
@@ -93,6 +96,12 @@ double Regularity_Estimator::linear_approx_dx(Element* e, double x_i, double y_i
   double x_c_ref = 0.;
   double y_c_ref = 0.; 
 
+ElementMode2D mode = HERMES_MODE_TRIANGLE; 
+if(e->is_quad()) mode = HERMES_MODE_QUAD; 
+
+if(mode == HERMES_MODE_TRIANGLE)
+{x_c_ref = -0.5; y_c_ref=-0.5;
+}
   double d_u_h_x_c = (dynamic_cast<Solution<double>*>(sln.get()))->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
 
   double u_h_hat = d_u_h_x_c + (dynamic_cast<Solution<double>*>(R_h_1.get()))->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(x_i-x_c)
@@ -100,7 +109,7 @@ double Regularity_Estimator::linear_approx_dx(Element* e, double x_i, double y_i
   return u_h_hat;
 }
 
-//linear approximation of the second component of the gradient in the neighborhood of element e   (at (x_i,y_i))
+
 // u_h_hat_2 = u_h_dy (p_c) + grad(R_h_2)(p_c) *(p - p_c)
 double Regularity_Estimator::linear_approx_dy(Element* e, double x_i, double y_i,double x_c, double y_c,MeshFunctionSharedPtr<double> sln)
 {
@@ -109,6 +118,9 @@ double Regularity_Estimator::linear_approx_dy(Element* e, double x_i, double y_i
   double x_c_ref = 0.;
   double y_c_ref = 0.; 
 
+ElementMode2D mode = HERMES_MODE_TRIANGLE; 
+if(e->is_quad()) mode = HERMES_MODE_QUAD; 
+if(mode ==HERMES_MODE_TRIANGLE){ x_c_ref = -0.5; y_c_ref = -0.5;}
   double d_u_h_x_c = (dynamic_cast<Solution<double>*>(sln.get()))->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2);
 
   double u_h_hat = d_u_h_x_c + (dynamic_cast<Solution<double>*>(R_h_2.get()))->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1)*(x_i-x_c)
@@ -176,14 +188,29 @@ void Regularity_Estimator::smoothness_indicator(CSCMatrix<double> * mass_matrix)
   double x_c_ref = 0.;
   double y_c_ref = 0.; 
   Element* e =NULL; 
-  int* index = new int[H2D_MAX_NUMBER_VERTICES];
-  for(int i =0;i<H2D_MAX_NUMBER_VERTICES;i++)
-    index[i] =  space->get_shapeset()->get_vertex_index(i,HERMES_MODE_QUAD);
+int no_vertices = 4;
+
+  int* index = new int[no_vertices];
+ // for(int i =0;i<no_vertices;i++)
+   // index[i] =  space->get_shapeset()->get_vertex_index(i,mode);
 
   //determine value of the solution/gradient at the center of each element
   // for each dof determine list of elements
   for_all_active_elements(e, space->get_mesh())
   {
+
+
+ ElementMode2D mode = HERMES_MODE_TRIANGLE; 
+	if(e->is_quad()) mode = HERMES_MODE_QUAD; 
+	if(mode == HERMES_MODE_TRIANGLE)
+	{
+		x_c_ref =-0.5;y_c_ref=-0.5; no_vertices =3;
+	}
+  for(int i =0;i<no_vertices;i++)
+    index[i] =  space->get_shapeset()->get_vertex_index(i,mode);
+
+
+
     u_c[e->id]= (dynamic_cast<Solution<double>*>(sln.get()))->get_ref_value(e, x_c_ref, y_c_ref, 0, 0);
     d_u_c_dx[e->id]= (dynamic_cast<Solution<double>*>(sln.get()))->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 1);
     d_u_c_dy[e->id]= (dynamic_cast<Solution<double>*>(sln.get()))->get_ref_value_transformed(e, x_c_ref, y_c_ref, 0, 2);
@@ -267,7 +294,6 @@ void Regularity_Estimator::smoothness_indicator(CSCMatrix<double> * mass_matrix)
 
     if(std::max(smooth_fct_in_elem, std::min(smooth_dx_in_elem,smooth_dy_in_elem))==1)
       smooth_elem_patch[e->id]=1;
-
 
   }
 

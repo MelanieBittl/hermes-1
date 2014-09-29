@@ -23,9 +23,9 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 		double* y_coord = rm->get_phys_y(order);
 			for( int j = 0; j < np; ++j )
 			{
-				double v_x = 1.;double v_y = 1.;
-				//double v_x = 0.5-y_coord[j];
-				//double v_y = x_coord[j]-0.5;	 
+				//double v_x = 1.;double v_y = 1.;
+				double v_x = 0.5-y_coord[j];
+				double v_y = x_coord[j]-0.5;	 
 				abs_v += pt[j][2]*(v_x*v_x+v_y*v_y);
 			}
 	
@@ -33,9 +33,9 @@ Hermes::Hermes2D::ElementMode2D mode = HERMES_MODE_QUAD;
 	return Hermes::sqrt(abs_v);
 }
 
-CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_prev_time,MeshSharedPtr mesh,double time_step, double theta,double theta_DG, bool all, bool DG, bool SD,bool right_hand_side) : WeakForm<double>(1)
+CustomWeakForm::CustomWeakForm(MeshFunctionSharedPtr<double> sln_exact,MeshFunctionSharedPtr<double> sln_prev_time, MeshSharedPtr mesh,double time_step, double theta,double theta_DG, bool all, bool DG, bool SD,bool right_hand_side) : WeakForm<double>(1)
 {
- this->set_ext(sln_prev_time);
+ this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(sln_exact,sln_prev_time) );
 
   if(all) 
 	{ 
@@ -226,7 +226,7 @@ MatrixFormDG<double>* CustomWeakForm::CustomMatrixFormInterface::clone() const
      double CustomWeakForm::CustomVectorFormInterface::value(int n, double *wt, DiscontinuousFunc<double> **u_ext, Func<double> *v,
         Geom<double> *e, DiscontinuousFunc<double> **ext) const
 {
-DiscontinuousFunc<double>* exact = ext[0];		
+DiscontinuousFunc<double>* prev_time = ext[1];		
   double result = double(0);
 	double diam = e->diam;
 
@@ -240,7 +240,7 @@ DiscontinuousFunc<double>* exact = ext[0];
    double a_dot_n = static_cast<CustomWeakForm*>(wf)->calculate_a_dot_v(v_x, v_y, e->nx[i], e->ny[i]);
     double jump_v =  v->val[i];
 
-      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(exact->val[i], exact->val_neighbor[i], a_dot_n) * jump_v;
+      result += wt[i] * static_cast<CustomWeakForm*>(wf)->upwind_flux(prev_time->val[i], prev_time->val_neighbor[i], a_dot_n) * jump_v;
       
   }
   return (-result*(1.-theta));
@@ -307,14 +307,14 @@ VectorFormSurf<double>* CustomWeakForm::CustomVectorFormSurface::clone() const
 double  CustomWeakForm::RHS::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, Geom<double> *e, Func<double> **ext) const
 {  
 	double result = 0;
- 	Func<double>* exact = ext[0];
+ 	Func<double>* prev_time = ext[1];
    for (int i = 0; i < n; i++)
 		{ 
 			//double v_x =  1.; 
 			//double v_y = 1.;
 			double v_x =(0.5- e->y[i]);
 			double v_y = (e->x[i]-0.5) ; 
-			result += wt[i] *exact->val[i]* (v->val[i]/time_step +(1-theta)*( v_x*v->dx[i] + v_y*v->dy[i])) ;
+			result += wt[i] *prev_time->val[i]* (v->val[i]/time_step +(1-theta)*( v_x*v->dx[i] + v_y*v->dy[i])) ;
 		}
  return result;
 }
@@ -489,7 +489,7 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
 	}
-	/*else
+	else
 	{			
 		//cone
 		x_0 = 0.5;
@@ -499,14 +499,14 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
 		{ 	
 			dx = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 			dy = -(1.0/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
-		}*/
+		}
 		else
 		{
 			dx=0.; dy=0.;
 		}	
- /* 
+ 
 	}
-
+/*
 //-----------sinusoidal profile
 dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
 dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
@@ -528,7 +528,7 @@ dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 		 result = (1.0+ std::cos(PI*radius))/4.0;
 		return result;	
 	}
-/*	//slotted cylinder	
+	//slotted cylinder	
 	x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
@@ -544,7 +544,7 @@ dy = 2*PI*Hermes::sin(2*PI*x)*Hermes::cos(2*PI*y);
 	if(radius<= 1.0) 
 	{ 	
 		result = 1.0-radius;
-	}	*/
+	}	
 
 //-----------sinusoidal profile	
 	//	result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);

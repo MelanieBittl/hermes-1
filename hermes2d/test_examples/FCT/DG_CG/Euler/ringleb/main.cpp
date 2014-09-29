@@ -17,8 +17,8 @@ using namespace Hermes::Solvers;
 #include "artificial_diffusion.cpp"
 #include "util.cpp"
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
-const int P_INIT =1;       						// Initial polynomial degree.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 1;
 const double T_FINAL =10000000;                       // Time interval length. 
 
@@ -26,8 +26,8 @@ const double theta = 1.;
 
 // Equation parameters.  
  
-const bool DG = false;
-const bool FCT = true;
+const bool DG = true;
+const bool FCT = false;
 
 const bool Newton_boost = false;
      
@@ -347,9 +347,8 @@ Linearizer lin_p, lin_m, lin_rho;
 
 	EulerFluxes* euler_fluxes = new EulerFluxes(KAPPA);
 
-//NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
+
 NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
 
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
@@ -416,11 +415,20 @@ if(time_step!=1.) mass_matrix->multiply_with_Scalar(1./time_step);
 CSCMatrix<double> * lumped_matrix;
 if(FCT) lumped_matrix = massLumping(mass_matrix);
 
+//---------- for residual-calculation=------------		
+double residual_norm = 10000.;
+ErrorCalculator<double> errorCalculator_l2(AbsoluteError);
+ errorCalculator_l2.add_error_form(new DefaultNormFormVol<double>(0,0,HERMES_L2_NORM));
+ MeshFunctionSharedPtr<double> sln_zero(new ZeroSolution<double>(space_rho->get_mesh()));
+ Hermes::vector<MeshFunctionSharedPtr<double> > zero_slns(sln_zero, sln_zero, sln_zero, sln_zero);
+ //------------------
+
+
 //Timestep loop
 do
 {	 
 
-Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res = %f", ts, current_time, ndof, residual); 	
+Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res_norm = %f", ts, current_time, ndof, residual_norm); 	
  	// if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
 			dp_bdry.assemble(dS_matrix, vec_bdry);
@@ -464,35 +472,27 @@ Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res
 		else	matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
 
 
-//matrix_2->create(diff->get_size(),diff->get_nnz(), diff->get_Ap(), diff->get_Ai(),diff->get_Ax());
-	//	matrix_2->multiply_with_Scalar(-theta);  //-theta L(U)	
 
-/*
-matrix_2->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
-matrix_2->zero();
-matrix_2->add_sparse_matrix(dS_matrix);
-matrix_2->multiply_with_Scalar(-theta);
-//matrix_2->add_sparse_matrix(lumped_matrix); 
-matrix_2->add_sparse_matrix(mass_matrix); 
-
-*/
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-		//matrix_2->multiply_with_vector(coeff_vec, coeff_vec_2);
-//mass_matrix->multiply_with_vector(coeff_vec, coeff_vec_2);
 		vec_rhs->zero(); 
-		//vec_rhs->add_vector(coeff_vec_2); 		
 		vec_rhs->add_vector(vec_bdry); 
 		vec_rhs->add_vector(vec_conv); 
 		if(DG) vec_rhs->add_vector(vec_dg); 
 
 vec_res->zero();
 residual = 0;
-		if(DG) vec_res->add_vector(vec_dg); 
-		vec_res->add_vector(vec_bdry); 
-		vec_res->add_vector(vec_conv); 
+		vec_res->add_vector(vec_rhs); 
 for(int i = 0; i<ndof; i++)
 	residual +=vec_res->get(i)*vec_res->get(i);
+
+//---For residual calculation
+for(int i=0; i<ndof;i++)		
+					coeff_vec_2[i] =vec_res->get(i);
+Solution<double>::vector_to_solutions(coeff_vec_2, spaces, diff_slns);	
+errorCalculator_l2.calculate_errors(diff_slns, zero_slns);
+double err_l2_2 = errorCalculator_l2.get_total_error_squared();
+residual_norm  = Hermes::sqrt(err_l2_2);
 
 
 	//-------------------------solution of lower order------------ (M/t - theta L(U))U^L = (M/t+(1-theta)L(U))U^n
@@ -502,10 +502,7 @@ for(int i = 0; i<ndof; i++)
 			}catch(Hermes::Exceptions::Exception e){
 				e.print_msg();
 			}	
-			/*for(int i=0; i<ndof;i++)		
-					coeff_vec_2[i]= solver->get_sln_vector()[i] - coeff_vec[i];
-			norm = get_l2_norm(coeff_vec_2, ndof);	
-		Solution<double>::vector_to_solutions(coeff_vec_2, spaces, diff_slns);*/	
+
 for(int i=0; i<ndof;i++)		
 					coeff_vec_2[i]= solver->get_sln_vector()[i];
 			norm = get_l2_norm(coeff_vec_2, ndof);	

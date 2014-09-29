@@ -1,5 +1,5 @@
 
-void calc_error_total(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_prev_time,SpaceSharedPtr<double> space)
+void calc_error_total(MeshFunctionSharedPtr<double> u_new, MeshFunctionSharedPtr<double> u_prev_time,SpaceSharedPtr<double> space, bool end = true)
 {
 int ndof = space->get_num_dofs();
  MeshFunctionSharedPtr<double> sln_zero(new ZeroSolution<double>(space->get_mesh()));
@@ -85,10 +85,17 @@ fclose (pFile);
 
 MeshFunctionSharedPtr<double> filter(new AbsDifffilter(Hermes::vector<MeshFunctionSharedPtr<double> >(u_new, u_prev_time)));
 //fview.show(filter);
+if(end)
+{
 lin.save_solution_vtk(u_new, "sln.vtk", "solution", mode_3D);
-lin.save_solution_vtk(u_prev_time, "exact.vtk", "solution", mode_3D);
+//lin.save_solution_vtk(u_prev_time, "exact.vtk", "solution", mode_3D);
 lin.save_solution_vtk(filter, "error.vtk" , "error", false);  
+}else{
 
+lin.save_solution_vtk(u_new, "sln_mid.vtk", "solution", mode_3D);
+lin.save_solution_vtk(u_prev_time, "exact_mid.vtk", "solution", mode_3D);
+lin.save_solution_vtk(filter, "error_mid.vtk" , "error", false);  
+}
 
 
 }

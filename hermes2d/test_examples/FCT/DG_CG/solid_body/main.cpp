@@ -12,12 +12,12 @@ using namespace Hermes::Solvers;
 // 2. Step : f_ij = (M_c)_ij (dt_u_L(i)- dt_u_L(j)) + D_ij (u_L(i)- u_L(j)); f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM = 4;                   // Number of initial refinements.
+const int INIT_REF_NUM = 5;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
                      
-const double time_step = 1e-5;                           // Time step.
-//const double T_FINAL = 2*PI;                         // Time interval length. 
-const double T_FINAL = 1.;  
+const double time_step = 5e-5;                           // Time step.
+const double T_FINAL = 2*PI;                         // Time interval length. 
+//const double T_FINAL = 1.;  
 
 const double theta = 0.5;    // theta-Schema fuer Zeitdiskretisierung (theta =0 -> explizit, theta=1 -> implizit)
 const double theta_DG = 0.5;
@@ -25,6 +25,7 @@ const double theta_DG = 0.5;
 const bool all = true;
 const bool DG = true;
 const bool SD = false;
+const bool ser = false;
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
@@ -59,7 +60,7 @@ mloader.load("unit.mesh", basemesh);
   
   // Create an space with default shapeset.  
    // Shapeset* shape= new  ShapesetBB(P_INIT);
-  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, false));	
+  SpaceSharedPtr<double> space(new L2_SEMI_CG_Space<double>(mesh,P_INIT, ser));	
   //SpaceSharedPtr<double> space(new L2Space<double>(mesh,P_INIT));	
  //SpaceSharedPtr<double> space(new H1Space<double>(mesh, P_INIT));	
 
@@ -115,8 +116,8 @@ vertex_dof_list(space, fct,al );
   View::wait();*/
 
 
-	CustomWeakForm wf(u_prev_time, mesh,time_step, theta,theta_DG, all, DG, SD, false);
-	CustomWeakForm wf_rhs(u_prev_time, mesh,time_step, theta,theta_DG, false, DG, false, true);
+	CustomWeakForm wf(u_prev_time,u_prev_time, mesh,time_step, theta,theta_DG, all, DG, SD, false);
+	CustomWeakForm wf_rhs(u_prev_time,u_prev_time, mesh,time_step, theta,theta_DG, false, DG, false, true);
 
 
 	CSCMatrix<double>* matrix = new CSCMatrix<double> ; 
@@ -134,7 +135,7 @@ matFile = fopen ("test.m","w");
 if(matrix->dump(matFile, "mat_t")) printf("print matrix\n");
 fclose (matFile);  
 */
-
+int k =1;
   do
   {
 	Hermes::Mixins::Loggable::Static::info("time=%f, ndof = %i ", current_time,ndof); 
@@ -154,11 +155,17 @@ fclose (matFile);
      double*	vec_new = solver->get_sln_vector();
       Solution<double>::vector_to_solution(vec_new, space, u_new);
 
-			sview.show(u_new);
- 						if(ts==1) wf_rhs.set_ext(u_new);
-		 	current_time += time_step;
+		//sview.show(u_new);
+ 		current_time += time_step;
 		 	ts++;
 			delete solver;
+			
+		/*	if((current_time>=(PI*k/2.))&&(current_time<(PI*k/2.)+time_step))
+			{	
+				create_vtk(u_new,k); k++;
+			}*/
+			
+ wf_rhs.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(u_prev_time,u_new) );
 	  }
   while (current_time<T_FINAL);
 
@@ -194,7 +201,7 @@ CustomWeakForm wf(u_prev_time, mesh,time_step, theta, all, DG, SD, true);
   while (current_time<T_FINAL);
  */
 
-//calc_error_total(u_new, u_prev_time,space);
+calc_error_total(u_new, u_prev_time,space);
 
 
   // Wait for the view to be closed.

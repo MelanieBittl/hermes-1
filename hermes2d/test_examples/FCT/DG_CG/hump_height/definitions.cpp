@@ -4,7 +4,7 @@ const double EPS = 1e-6;
 const double penalty_parameter = 1.;
 
 enum DG_TYPE {Baumann_Oden,	IP,	NIPG, NONE};
-DG_TYPE type =Baumann_Oden;
+DG_TYPE type = Baumann_Oden;
 
 double calc_abs_v(Element* e)
 {
@@ -79,7 +79,7 @@ WeakForm<double>* CustomWeakForm::clone() const
 {
 	Real v_x =Real(2.);
 	Real v_y =Real(3.);
-		result += wt[i] *( (u->val[i] *(v->val[i]/time_step+v->val[i]- theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]));
+		result += wt[i] *( (u->val[i] *(v->val[i]/time_step+v->val[i]*theta- theta*(v->dx[i]*v_x+ v->dy[i]*v_y)))+ EPS*theta* (u->dx[i]*v->dx[i]+u->dy[i]*v->dy[i]));
 }
   return result;
 

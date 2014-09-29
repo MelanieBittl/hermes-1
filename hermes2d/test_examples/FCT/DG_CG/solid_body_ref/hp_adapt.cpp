@@ -6,6 +6,7 @@ bool refine_elem(SpaceSharedPtr<double> space, Element* e, int ref)
   bool refined = true;
   int order = space->get_element_order(e->id);
   order = H2D_MAKE_QUAD_ORDER(1, 1);  //non_smooth elements -> polynomial degree 1
+if(e->is_triangle()) order =1;
   if (e->active)
   {
     space->get_mesh()->refine_element_id(e->id);				

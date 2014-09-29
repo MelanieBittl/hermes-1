@@ -39,7 +39,7 @@ void Flux_Correction::init(SpaceSharedPtr<double> new_space)
   Q_plus = new double[ndof]; Q_minus = new double[ndof];	
   R_plus = new double[ndof]; R_minus = new double[ndof];
   for(int i=0; i<ndof;i++)
-    fct[i]=false;	
+    fct[i]=true;	//false;
   Element* e =NULL;
   Element* elem_neigh=NULL;
   bool more = false;
@@ -70,19 +70,21 @@ void Flux_Correction::init(SpaceSharedPtr<double> new_space)
             break;
           }
         }
-        if(e->vn[iv]->is_constrained_vertex() ==true)	
+        /*if(e->vn[iv]->is_constrained_vertex() ==true)	
         {		
           p2_neighbor =true; 
           break;
-        }
+        }*/
       }
 
       if(p2_neighbor==false)
       {
         space->get_element_assembly_list(e, al);
+		   ElementMode2D mode = HERMES_MODE_TRIANGLE; 
+if(e->is_quad()) mode = HERMES_MODE_QUAD; 
         for (unsigned int iv = 0; iv < e->get_nvert(); iv++)
         {   		
-          int index = space->get_shapeset()->get_vertex_index(iv,HERMES_MODE_QUAD);
+          int index = space->get_shapeset()->get_vertex_index(iv,mode);
           Node* vn = e->vn[iv];
           if (space->get_element_order(elem_id) == 0) break;
           if (!vn->is_constrained_vertex())

@@ -27,8 +27,10 @@ const double T_FINAL = 30000000.;                       // Time interval length.
 const double theta = 1.;
 
 // Equation parameters.  
- const bool DG = true;
+ const bool DG = false;
      
+const bool serendipity =true;
+
 // Kappa.
 const double KAPPA = 1.4; 
 // Inlet x-velocity (dimensionless).
@@ -48,7 +50,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("quad.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -71,24 +73,23 @@ double CFL = (time_step/delta_max*2.5)+1;
 printf("CFL = %f \n", CFL);
 
 
-bool serendipity = true;
 
-
+/*
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
-/*
+*
 SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
-/*
+*/
 SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
-*/
+
 	int dof_rho = space_rho->get_num_dofs();
 	int dof_v_x = space_rho_v_x->get_num_dofs();
 	int dof_v_y = space_rho_v_y->get_num_dofs();
@@ -412,7 +413,7 @@ fclose (pFile);
 
 }//while ((current_time < T_FINAL)||(  norm <1e-12)||(norm_rel<1e-08));
 //while ((ts < 1000)&&(residual_norm>1e-10));
-while (ts < 50);
+while (ts < 100);
 
 
 if(residual<=1e-8) printf("Residual small enough");

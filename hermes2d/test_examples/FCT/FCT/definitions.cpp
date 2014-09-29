@@ -113,9 +113,9 @@ MatrixFormVol<double>* CustomMatrixFormVolMassmatrix::clone() const
  		Real v_y = (e->x[i]-0.5) ; 
 	//Real v_x = Real(1.); 
  		//Real v_y = Real(1.); 
-    //result += -wt[i] * (v->val[i] *(u->dx[i] * (v_x) + u->dy[i] * (v_y) ));
+    result += -wt[i] * (v->val[i] *(u->dx[i] * (v_x) + u->dy[i] * (v_y) ));
 
-result += wt[i]*u->val[i]*(v->dx[i]*v_x+ v->dy[i]*v_y); //mit surface
+//result += wt[i]*u->val[i]*(v->dx[i]*v_x+ v->dy[i]*v_y); //mit surface
 
 }
   return result;
@@ -526,7 +526,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 
  void CustomInitialCondition::derivatives(double x, double y, double& dx, double& dy) const {
   dx=0.; dy=0.;    
-	double radius = 0.;
+double radius = 0.;
      //hump
 	double x_0 =0.25;
 //double x_0 =0.5;
@@ -536,7 +536,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		dx = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(x-x_0);
 		dy = -std::sin(radius*PI)/4.0*(PI/(0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0))))*2.*(y-y_0);	
 	}
-	/*else{			
+	else{			
 		//cone
 		x_0 = 0.5;
 		y_0 = 0.25;
@@ -548,7 +548,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		else{dx=0.; dy=0.;
 		}	
   
-	//}*/
+	}
 
 //-----------sinusoidal profile
 //dx = 2*PI*Hermes::cos(2*PI*x)*Hermes::sin(2*PI*y);
@@ -562,8 +562,15 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		dx = -0.25*Hermes::sin(arg)*(PI/0.25)*x/radius;
 		dy	= -0.25*Hermes::sin(arg)*(PI/0.25)*y/radius;
 	//dy =0;
-	}else{	dx=0.; dy=0.;		}	*/
+	}else{	dx=0.; dy=0.;		}	
 
+const double EPS = 1e-6;
+	double t = 0.5;
+	double arg = 2./Hermes::sqrt(EPS)*(Hermes::sqr(0.25)-Hermes::sqr(x-0.5)-Hermes::sqr(y-0.5));
+	double c = 16.*Hermes::sin(PI*t);
+	dx = c*y*(1.-y)*((1.-2.*x)*(0.5+Hermes::atan(arg)/PI)+(x-x*x)/PI*1./(1+arg*arg)*(-4*(x-0.5))/Hermes::sqrt(EPS));
+	dy = c*x*(1.-x)*((1.-2.*y)*(0.5+Hermes::atan(arg)/PI)+(y-y*y)/PI*1./(1+arg*arg)*(-4*(y-0.5))/Hermes::sqrt(EPS));
+*/
 };
 
  double CustomInitialCondition::value(double x, double y) const {
@@ -579,7 +586,7 @@ Ord GradientReconstructionMatForm_2 ::ord(int n, double *wt, Func<Ord> *u_ext[],
 		 result = (1.0+ std::cos(PI*radius))/4.0; 			
 		return result;	
 	}
-/*	//slotted cylinder
+	//slotted cylinder
 x_0 = 0.5;
 	y_0 = 0.75;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
@@ -593,7 +600,7 @@ x_0 = 0.5;
 	radius = 1.0/0.15 * std::sqrt( std::pow((x-x_0),2.0) + std::pow((y-y_0),2.0));
 	if(radius<= 1.0) { 	
 		result = 1.0-radius;
-	}	*/
+	}	
 
 //-----------sinusoidal profile	
 	//	result= Hermes::sin(2*PI*x)*Hermes::sin(2*PI*y);
@@ -605,9 +612,15 @@ x_0 = 0.5;
 			double arg = PI*(radius-0.5)/0.25;
 			result = 0.25*(1+Hermes::cos(arg));
 		}//else if((radius>= 0.2)&&(radius<=0.4))		result =1;	
- */
 
-
+const double EPS = 1e-6;
+	double t = 0.5;
+	double result = 0.0;
+	double arg = 2./Hermes::sqrt(EPS)*(Hermes::sqr(0.25)-Hermes::sqr(x-0.5)-Hermes::sqr(y-0.5));
+	result= 16.*Hermes::sin(PI*t)*x*(1-x)*y*(1-y)*(0.5+Hermes::atan(arg)/PI);
+   return result;
+	
+	 */
       return result;
 };
 

@@ -27,8 +27,9 @@ const double theta = 1.;
 
 // Equation parameters.  
  
-const bool DG = true;
+const bool DG = false;
      
+const bool serendipity= false;
 // Kappa.
 const double KAPPA = 1.4; 
     
@@ -51,7 +52,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 Element* e = NULL;Node* vn=NULL;
 
  //for_all_active_elements(e, basemesh)
@@ -99,23 +100,22 @@ printf("CFL = %f \n", CFL);
    View::wait();*/
 
 
-bool serendipity = true;
 
-/*	SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
+SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
-
+/*	
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
-*/	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
+	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
-
+*/
 
 	int dof_rho = space_rho->get_num_dofs();
 	int dof_v_x = space_rho_v_x->get_num_dofs();
@@ -492,8 +492,8 @@ fclose (pFile);
 pFile = fopen ("residual.txt","a");
     fprintf (pFile,"%i: res = %e < 10^(-%i),residual_norm=%e, \n",ts, residual, bound,residual_norm);
 fclose (pFile);
-/*
-if(ts==30){
+
+if(ts==100){
 			pressure->reinit();
 				mach->reinit();
 			  sprintf(filename, "p-%i.vtk", ts );        
@@ -503,13 +503,13 @@ sprintf(filename, "m-%i.vtk", ts );
 sprintf(filename, "rho-%i.vtk", ts );       
 			lin.save_solution_vtk(prev_slns[0], filename, "density", false);
 
-}*/
+}
 
 }
 //while (ts < 20);
 //while ((current_time < T_FINAL)&&(residual>1e-12));
 //while ((ts < 50)&&(residual>1e-10));
-while ((ts <200)&&(residual_norm>1e-8));
+while ((ts <200)&&(residual_norm>1e-10));
 
 //if(residual<=1e-8) printf("Residual small enough");
 
