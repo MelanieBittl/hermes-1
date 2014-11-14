@@ -27,24 +27,25 @@ using namespace Hermes::Solvers;
 //          limiting:    f_i = sum_(j!=i) alpha_ij f_ij
 // 3. Step: explicit correction:  M_L u^(n+1) = M_L u^L + tau * f 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+
+
+const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 										//Maximal polynomial degree.
                       
-const double time_step = 1e-4;                           // Time step.
-const double T_FINAL = 2.5*PI;                       // Time interval length.
+const double time_step = 2e-4;                           // Time step.
+const double T_FINAL = 0.3;                       // Time interval length.
 
 const bool serendipity = true;
-  
  
-const double EPS_smooth = 1e-6;   		//constant for the smoothness indicator (a<b => a+eps<=b)
+const double EPS_smooth = 1e-10;   		//constant for the smoothness indicator (a<b => a+eps<=b)
 const double theta = 0.5;   			 // theta-scheme for time (theta =0 -> explizit, theta=1 -> implizit)
+
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
 
 // Adaptivity
-const double THRESHOLD_UNREF = 0.001; 			// Unrefinement: error of all sons is smaller than THRESHOLD_UNREF times maximum element error
 const int UNREF_FREQ = 1;                         // Every UNREF_FREQth time step the mesh is derefined.
 const int UNREF_METHOD = 1;                       // 1... mesh reset to basemesh and poly degrees to P_INIT.   
                                                   // 2... one ref. layer shaved off, poly degrees reset to P_INIT.
@@ -58,16 +59,16 @@ const double CONV_EXP = 1.0;                      // Default value is 1.0. This 
                                                   // cancidates in hp-adaptivity. See get_optimal_refinement() for details.
 const double ERR_STOP = 1.0;                      // Stopping criterion for adaptivity (rel. error tolerance between the
                                                   // fine mesh and coarse mesh solution in percent).
-const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
+const int NDOF_STOP = 600000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
 
-const int ADAPSTEP_MAX = 3;												// max. numbers of adaptivity steps
+const int ADAPSTEP_MAX = 2;												// max. numbers of adaptivity steps
 
 
 //Visualization
 const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION =true;              // Set to "true" to enable VTK output.
-const int VTK_FREQ = 7000;													//Every VTK_FREQth time step the solution is saved as VTK output.
+const int VTK_FREQ = 70000000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
 // Boundary markers.
 const std::string BDY_IN = "inlet";
@@ -80,8 +81,8 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-mloader.load("domain.mesh", basemesh);
-  //mloader.load("unit.mesh", basemesh);
+  //mloader.load("domain.mesh", basemesh);
+ mloader.load("tri.mesh", basemesh);
  /*  MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
  meshview.show(basemesh);
    View::wait();*/
@@ -98,16 +99,16 @@ mloader.load("domain.mesh", basemesh);
 MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);  
   MeshFunctionSharedPtr<double> low_sln(new Solution<double>),ref_sln(new Solution<double>),high_sln(new Solution<double>),sln(new Solution<double>);
 
-    double current_time = PI;
   // Previous time level solution (initialized by the initial condition).
-  MeshFunctionSharedPtr<double>initial_condition(new CustomInitialCondition(mesh,current_time));
-
-dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current_time);
+  MeshFunctionSharedPtr<double>initial_condition(new CustomInitialCondition(mesh,false));
+  MeshFunctionSharedPtr<double>exact_solution(new CustomInitialCondition(mesh, true));
+   // MeshFunctionSharedPtr<double> zero_condition(new ZeroSolution<double>(mesh));
 	
   // Initialize the weak formulation.
 	CustomWeakFormMassmatrix  massmatrix(time_step);
 	CustomWeakFormConvection  convection;
-	CustomWeakForm wf_surf;
+	CustomWeakForm wf_surf(initial_condition);
+	CustomWeakForm wf_dg(initial_condition,true,false);
 
 
   // Output solution in VTK format.
@@ -122,12 +123,11 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 			  	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 
 
-
-
 	//Initialize
 	CSCMatrix<double> * mass_matrix = new CSCMatrix<double> ;   //M_c/tau
 	CSCMatrix<double> * conv_matrix = new CSCMatrix<double> ;   //K
-	CSCMatrix<double>* surface_matrix = new CSCMatrix<double> ; //inner and outer edge integrals
+	CSCMatrix<double>* surface_matrix = new CSCMatrix<double> ; // outer edge integrals
+	CSCMatrix<double>* dg_matrix = new CSCMatrix<double> ; 
 	
 	double* u_L = NULL; 
 	double* u_H =NULL;
@@ -135,13 +135,13 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 	int ref_ndof, ndof; double err_est_rel_total;
 	
 	  // Create a refinement selector.
-  L2ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
+  H1ProjBasedSelector<double> selector(CAND_LIST,H2DRS_DEFAULT_ORDER);
        selector.set_error_weights(1.0,1.0,1.0); 
 	
   DefaultErrorCalculator<double, HERMES_H1_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);
   
   Adapt<double> adaptivity(space, &error_calculator);
- // AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
+  //AdaptStoppingCriterionCumulative<double> stoppingCriterion(THRESHOLD);
   AdaptStoppingCriterionSingleElement<double> stoppingCriterion(THRESHOLD);
   adaptivity.set_strategy(&stoppingCriterion);
 
@@ -155,8 +155,10 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 	DiscreteProblem<double> dp_mass(&massmatrix, space);
 	DiscreteProblem<double> dp_convection(&convection, space); 
 	DiscreteProblem<double>  dp_surf(&wf_surf, space);
+	DiscreteProblem<double>  dp_dg(&wf_dg, space);
 
 // Time stepping loop:
+	double current_time = 0.0; 
 	int ts = 1;
 	//Hermes::Hermes2D::Hermes2DApi.set_integral_param_value(Hermes::Hermes2D::numThreads,1);
 
@@ -187,64 +189,40 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 	
     do 
     	{			ndof = space->get_num_dofs();  
-		  Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i, dof = %i,", ts, as, ndof);				
+		  		Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i, dof = %i,", ts, as, ndof);				
 							
-	
-//Unrefinement step
-		/*if(as==1)
-			{
-				double* coeff_vec_smooth = new double[ndof];	
-				if(ts==1)		
-					ogProjection.project_global(space,initial_condition, coeff_vec_smooth,  HERMES_L2_NORM);	
-				else		
-					ogProjection.project_global(space,&u_prev_time, coeff_vec_smooth,  HERMES_L2_NORM);										  
-				Solution<double>::vector_to_solution(coeff_vec_smooth, space, &low_sln);
-				// Calculate element errors and total error estimate.
-				if(ts==1)
-					err_est_rel_total = adaptivity.calc_err_est(&low_sln, initial_condition) * 100; 
-				else 
-					err_est_rel_total = adaptivity.calc_err_est(&low_sln, &u_prev_time) * 100;  
-				adaptivity.unrefine(THRESHOLD_UNREF);		
-				delete [] coeff_vec_smooth; 
-				  // Visualize the solution.
-  				if(HERMES_VISUALIZATION)
-  				{
-						sprintf(title, "unrefined Mesh: Time %3.2f,timestep %i", current_time,ts);
-						mview.set_title(title); 
-						mview.show(space);
-					}
-  		}	*/
-  		
-				    		
+ 	
+	/*			    		
 		double* coeff_vec_smooth = new double[ndof];
 			int* smooth_elem_ref;	
 							
 			//smoothness-check for projected data		
-      Hermes::Mixins::Loggable::Static::info("Projecting...");
+//      Hermes::Mixins::Loggable::Static::info("Projecting...");
 			if(ts==1)
+			{	
 				ogProjection.project_global(space,initial_condition, coeff_vec_smooth, HERMES_L2_NORM);		
-			else
+			}else
 				ogProjection.project_global(space,u_prev_time, coeff_vec_smooth, HERMES_L2_NORM);	
-     Hermes::Mixins::Loggable::Static::info("Calling get_smooth_elems()...");		
+   Hermes::Mixins::Loggable::Static::info("Calling get_smooth_elems()...");		
 			smooth_elem_ref =regEst.get_smooth_elems(space,coeff_vec_smooth);
-
+*/
       // Construct reference mesh and setup reference space->
-      Hermes::Mixins::Loggable::Static::info("Refspace construction...");
 	     		 MeshSharedPtr ref_mesh(new Mesh);
-      ref_mesh->copy(space->get_mesh()); //ref_mesh->refine_all_elements();
+      ref_mesh->copy(space->get_mesh()); 
+		ref_mesh->refine_all_elements();  ///for h-adapt only
       Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
       SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
 
-
-      HPAdapt* adapting = new HPAdapt(ref_space);	
+/*
+    HPAdapt* adapting = new HPAdapt(ref_space);	
 							// increase p in smooth regions, h refine in non-smooth regions 
-      Hermes::Mixins::Loggable::Static::info("Calling adapt_smooth()...");
+    //  Hermes::Mixins::Loggable::Static::info("Calling adapt_smooth()...");
 			if(adapting->adapt_smooth(smooth_elem_ref, P_MAX)==false) 
 				throw Exceptions::Exception("reference space couldn't be constructed");							
 									      
 			delete adapting;
 			delete [] coeff_vec_smooth; 	
-			    
+	*/		    
 
 			ref_ndof = ref_space->get_num_dofs();
 			
@@ -253,38 +231,37 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 				sprintf(title, "Ref_Mesh: Time %3.2f,timestep %i,as=%i,", current_time,ts,as);
 				ref_mview.set_title(title);
 				ref_mview.show(ref_space);
-
-			 /* sprintf(filename, "ref_space_order-%i.vtk", ts);
-				ord.save_orders_vtk(ref_space, filename);
-					sprintf(filename, "ref_mesh-%i.vtk", ts );
-					ord.save_mesh_vtk(ref_space, filename);*/
 				//View::wait();
 			}
 
 
-	
+ Hermes::Mixins::Loggable::Static::info("Ref space assigning:%i",ref_ndof);	
       dp_mass.set_space(ref_space);
       dp_convection.set_space(ref_space);
  			dp_surf.set_space(ref_space);
+			dp_dg.set_space(ref_space);
 
 			fluxCorrection.init(ref_space);	
 
 			double* coeff_vec = new double[ref_ndof];
 			double* coeff_vec_2 = new double[ref_ndof];
 			double* limited_flux = new double[ref_ndof];	
-		
+				SimpleVector<double> * surf_rhs = new SimpleVector<double> (ref_ndof); 
+				
 
 			dp_mass.assemble(mass_matrix); 										//M_c/tau
 			dp_convection.assemble(conv_matrix);		//K
-			dp_surf.assemble(surface_matrix);   //Boundary Integral and DG-edge-boundary-part				
+			dp_surf.assemble(surface_matrix,surf_rhs);   //Boundary Integral  
+			dp_dg.assemble(dg_matrix); //DG-edge-boundary-part	
 		
 		//----------------------MassLumping  & Artificial Diffusion --------------------------------------------------------------------	
+			 // Hermes::Mixins::Loggable::Static::info("Mass lumping and art. diffusion assembling...");	
 			CSCMatrix<double>* lumped_matrix = fluxCorrection.massLumping(mass_matrix); // M_L/tau
 			CSCMatrix<double>* diffusion = fluxCorrection.artificialDiffusion(conv_matrix);	
 						
 			//-----------------Assembling of matrices ---------------------------------------------------------------------	
-			lowOrder.assemble_Low_Order(conv_matrix,diffusion,lumped_matrix,surface_matrix);	
-			highOrd.assemble_High_Order(conv_matrix,mass_matrix,surface_matrix);
+			lowOrder.assemble_Low_Order(conv_matrix,diffusion,lumped_matrix,surface_matrix,dg_matrix);	
+			highOrd.assemble_High_Order(conv_matrix,mass_matrix,surface_matrix,dg_matrix);
 	
 			mass_matrix->multiply_with_Scalar(time_step);  // massmatrix = M_C
 			lumped_matrix->multiply_with_Scalar(time_step);  // M_L
@@ -292,18 +269,16 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 			//--------- Project the previous timestep solution on the FE space (FCT is applied )----------------			
 			// coeff_vec : FCT -Projection, coeff_vec_2: L2 Projection (ogProjection)	
 			if(ts==1)
-				//fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);	
-				fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);	
-			else	
-				//fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);	
-				fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);			
+				//fluxCorrection.project_FCT(zero_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);	
+				fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);//, &regEst);	
+			else		
+				fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);//, &regEst);			
 	//------------------------- lower order solution------------					
-			u_L = lowOrder.solve_Low_Order(lumped_matrix, coeff_vec,time_step);								
+			u_L = lowOrder.solve_Low_Order(lumped_matrix, coeff_vec,surf_rhs,time_step);								
 	//-------------high order solution (standard galerkin) ------				
-			u_H = highOrd.solve_High_Order(coeff_vec);		
+			u_H = highOrd.solve_High_Order(coeff_vec,surf_rhs);		
 		//------------------------------Assemble antidiffusive fluxes and limit these-----------------------------------	
-			fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step,&regEst);
-			//fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step);
+			fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step);//,&regEst);
 	//-------------Compute final solution ---------------			
 				ref_sln_double = lowOrder.explicit_Correction(limited_flux);
 			Solution<double>::vector_to_solution(ref_sln_double, ref_space, ref_sln);	
@@ -350,22 +325,24 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 		 {
 
 			// Output solution in VTK format.			  
-			  sprintf(filename, "solution-%i.vtk", ts );
+		/*	  sprintf(filename, "solution-%i.vtk", ts );
 			  lin.save_solution_vtk(u_prev_time, filename, "solution", mode_3D);  
 			  sprintf(filename, "ref_space_order-%i.vtk", ts);
 				ord.save_orders_vtk(ref_space, filename);
 					sprintf(filename, "ref_mesh-%i.vtk", ts );
-					ord.save_mesh_vtk(ref_space, filename);       
+					ord.save_mesh_vtk(ref_space, filename);       */
 					
    	 } 
    	 
    	if(((current_time+time_step) >= T_FINAL) &&(VTK_VISUALIZATION)&&(done==true))
    	{
-   	lin.save_solution_vtk(u_prev_time, "end_ref_solution.vtk", "solution", mode_3D);
+			
+			calc_error_l2_only(u_prev_time, exact_solution,ref_space);
+			calc_error_total(u_prev_time, exact_solution,ref_space);
+		lin.save_solution_vtk(u_prev_time, "end_ref_solution2d.vtk", "solution", false);
+   	lin.save_solution_vtk(u_prev_time, "end_ref_solution3d.vtk", "solution", mode_3D);
 		ord.save_mesh_vtk(ref_space, "end_ref_mesh.vtk");
-		ord.save_orders_vtk(ref_space, "end_ref_order.vtk");
-			dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current_time);
-			calc_error_total(u_prev_time, initial_condition,ref_space);
+		ord.save_orders_vtk(ref_space, "end_ref_order.vtk");		
    	
    	}
 		
@@ -375,7 +352,10 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 			delete [] coeff_vec_2;
 			delete [] coeff_vec; 
 			delete [] limited_flux; 
-			  
+			delete surf_rhs;
+
+
+	  
     }
     while (done == false);
 
@@ -385,6 +365,7 @@ dynamic_cast<CustomInitialCondition*>(initial_condition.get())->set_time(current
 		// Increase time step counter
 		ts++;
 
+		
 	}
 	while (current_time < T_FINAL); 
 

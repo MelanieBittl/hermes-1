@@ -13,4 +13,7 @@ add_subdirectory("swirling_flow")
 add_subdirectory("hump_height")
 add_subdirectory("hump_height_ref")
 add_subdirectory("testcase")
+add_subdirectory("rotation_ref")
+add_subdirectory("hp_ref")
+add_subdirectory("hp_proj")
 

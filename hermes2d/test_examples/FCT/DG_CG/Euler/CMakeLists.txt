@@ -1,6 +1,7 @@
 add_subdirectory("shock_tube")
 add_subdirectory("shock_tube_adap")
 add_subdirectory("prandtl_meyer")
+add_subdirectory("prandtl_meyer_adap")
 add_subdirectory("rad_sym")
 add_subdirectory("nozzle_flow")
 add_subdirectory("ringleb")
