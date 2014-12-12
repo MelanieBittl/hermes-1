@@ -1093,7 +1093,7 @@ namespace Hermes
       bc_data_base_components.clear();
     }
 
-    template<typename Scalar>
+ /*   template<typename Scalar>
     void Space<Scalar>::save(const char *filename) const
     {
       this->check();
@@ -1112,7 +1112,7 @@ namespace Hermes
       XMLSpace::space_(out, xmlspace, namespace_info_map, "UTF-8", parsing_flags);
       out.close();
     }
-
+*/
 #ifdef WITH_BSON
     template<typename Scalar>
     void Space<Scalar>::save_bson(const char *filename) const
@@ -1272,7 +1272,7 @@ namespace Hermes
       return space;
     }
 
-    template<typename Scalar>
+ /*   template<typename Scalar>
     SpaceSharedPtr<Scalar> Space<Scalar>::load(const char *filename, MeshSharedPtr mesh, bool validate, EssentialBCs<Scalar>* essential_bcs, Shapeset* shapeset)
     {
       try
@@ -1372,7 +1372,7 @@ namespace Hermes
         throw Hermes::Exceptions::SpaceLoadFailureException(e.what());
       }
     }
-
+*/
 #ifdef WITH_BSON
     template<typename Scalar>
     SpaceSharedPtr<Scalar> Space<Scalar>::load_bson(const char *filename, MeshSharedPtr mesh, EssentialBCs<Scalar>* essential_bcs, Shapeset* shapeset)

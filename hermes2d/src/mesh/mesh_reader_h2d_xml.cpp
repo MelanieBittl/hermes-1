@@ -17,7 +17,7 @@
 #include "api2d.h"
 #include "mesh_reader_h2d_xml.h"
 #include "refmap.h"
-
+/*
 using namespace std;
 
 namespace Hermes
@@ -993,7 +993,7 @@ namespace Hermes
         }
         */
         // Create top-level vertex nodes.
-        for (int vertex_i = 0; vertex_i < vertices_count; vertex_i++)
+/*        for (int vertex_i = 0; vertex_i < vertices_count; vertex_i++)
         {
           Node* node = mesh->nodes.add();
           assert(node->id == vertex_i);
@@ -1263,4 +1263,4 @@ namespace Hermes
         nurbs_xml.knot().push_back(XMLMesh::knot(curve->kv[i]));
     }
   }
-}
+}*/

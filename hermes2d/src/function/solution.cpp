@@ -989,7 +989,7 @@ namespace Hermes
       // Check.
       this->check();
 
-      try
+    /*  try
       {
         // Init XML.
         // With counts, exactness.
@@ -1025,7 +1025,7 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
-      }
+      }*/
     }
 
     template<>
@@ -1034,7 +1034,7 @@ namespace Hermes
       // Check.
       this->check();
 
-      try
+    /*  try
       {
         // Init XML.
         // With counts, exactness.
@@ -1073,7 +1073,7 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
-      }
+      }*/
     }
 
 #ifdef WITH_BSON
@@ -1269,10 +1269,10 @@ namespace Hermes
       }
     }
 
-    template<>
+   template<>
     void Solution<double>::load(const char* filename, SpaceSharedPtr<double> space)
     {
-      free();
+     /*  free();
       this->mesh = space->get_mesh();
       this->space_type = space->get_type();
 
@@ -1321,13 +1321,13 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionLoadFailureException(e.what());
-      }
+      }*/
     }
 
     template<>
     void Solution<std::complex<double> >::load(const char* filename, SpaceSharedPtr<std::complex<double> > space)
     {
-      free();
+    /*  free();
       sln_type = HERMES_SLN;
       this->mesh = space->get_mesh();
       this->space_type = space->get_type();
@@ -1384,7 +1384,7 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionLoadFailureException(e.what());
-      }
+      }*/
     }
 
 #ifdef WITH_BSON

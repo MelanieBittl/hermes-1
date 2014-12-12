@@ -36,15 +36,15 @@ namespace Hermes
       this->exact_multiplicator = 1.0;
     }
 
-    template<typename Scalar>
+   template<typename Scalar>
     void ExactSolution<Scalar>::save(const char* filename) const
     {
-      if (this->sln_type == HERMES_SLN)
+      /* if (this->sln_type == HERMES_SLN)
       {
         Solution<Scalar>::save(filename);
         return;
       }
-
+*/
       throw Exceptions::Exception("Arbitrary exact solution can not be saved to disk. Only constant one can. Project to a space to get a saveable solution.");
     }
 
@@ -140,10 +140,10 @@ namespace Hermes
       return 2;
     }
 
-    template<>
+   template<>
     void ConstantSolution<double>::save(const char* filename) const
     {
-      if (this->sln_type == HERMES_SLN)
+     /*  if (this->sln_type == HERMES_SLN)
       {
         Solution<double>::save(filename);
         return;
@@ -170,13 +170,13 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
-      }
+      }*/
     }
 
     template<>
     void ConstantSolution<std::complex<double> >::save(const char* filename) const
     {
-      if (this->sln_type == HERMES_SLN)
+     /* if (this->sln_type == HERMES_SLN)
       {
         Solution<std::complex<double> >::save(filename);
         return;
@@ -203,7 +203,7 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
-      }
+      }*/
     }
 
 #ifdef WITH_BSON
@@ -343,7 +343,7 @@ namespace Hermes
     template<>
     void ConstantSolutionVector<double>::save(const char* filename) const
     {
-      if (this->sln_type == HERMES_SLN)
+      /*if (this->sln_type == HERMES_SLN)
       {
         Solution<double>::save(filename);
         return;
@@ -370,13 +370,13 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
-      }
+      }*/
     }
 
     template<>
     void ConstantSolutionVector<std::complex<double> >::save(const char* filename) const
     {
-      if (this->sln_type == HERMES_SLN)
+    /*  if (this->sln_type == HERMES_SLN)
       {
         Solution<std::complex<double> >::save(filename);
         return;
@@ -408,7 +408,7 @@ namespace Hermes
       catch (const xml_schema::exception& e)
       {
         throw Hermes::Exceptions::SolutionSaveFailureException(e.what());
-      }
+      }*/
     }
 
     template<typename Scalar>
