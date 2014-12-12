@@ -34,3 +34,4 @@ add_subdirectory("14-error-calculation")
 
 #add_subdirectory("16-adaptivity-matrix-reuse-layer-interior")
 
+add_subdirectory("FCT")
