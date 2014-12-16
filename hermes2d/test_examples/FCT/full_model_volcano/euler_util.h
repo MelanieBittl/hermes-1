@@ -26,31 +26,29 @@ public:
 //----------------------------------------------------------------------------------
 //----------------------Filters.--------------------------------------
 //----------------------------------------------------------------------------------
-/*class MachNumberFilter : public Hermes::Hermes2D::SimpleFilter<double>
+class MachNumberFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public: 
-  MachNumberFilter(std::vector<MeshFunctionSharedPtr<double> > solutions, double gamma, std::vector<int> items = std::vector<int>()) : SimpleFilter<double>(solutions,items), gamma(gamma) {};
-  virtual ~MachNumberFilter() 
+  MachNumberFilter(std::vector<MeshFunctionSharedPtr<double> > solutions, double gamma) : SimpleFilter<double>(solutions), gamma(gamma) {};
+  ~MachNumberFilter() 
   {
   };
 
-  virtual MeshFunction<double>*  clone() const
+  MeshFunction<double>*  clone() const
   {
     std::vector<MeshFunctionSharedPtr<double> > slns;
-	       std::vector<int> items;
     for(int i = 0; i < this->solutions.size(); i++)
     {
         slns.push_back(this->solutions[i]->clone());
-        items.push_back(this->items[i]);
     }
-    MachNumberFilter* filter = new MachNumberFilter(slns, gamma,items);
+    MachNumberFilter* filter = new MachNumberFilter(slns, gamma);
           
     return filter;
   }  
   
 
 protected:
-  virtual void filter_fn(int n, const std::vector<double*>& values, double* result);
+  virtual void filter_fn(int n, const std::vector<const double*>& values, double* result);
 
   double gamma;
 };
@@ -59,29 +57,27 @@ protected:
 class TempFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public: 
-  TempFilter(std::vector<MeshFunctionSharedPtr<double> > solutions, double cv, std::vector<int> items = std::vector<int>()) : SimpleFilter<double>(solutions,items), cv(cv) {};
- virtual ~TempFilter() 
+  TempFilter(std::vector<MeshFunctionSharedPtr<double> > solutions, double cv) : SimpleFilter<double>(solutions), cv(cv) {};
+  ~TempFilter() 
   {
   };
 
- virtual  MeshFunction<double>*  clone() const
+ MeshFunction<double>*  clone() const
   {
     std::vector<MeshFunctionSharedPtr<double> > slns;
-	       std::vector<int> items;
     for(int i = 0; i < this->solutions.size(); i++)
     {
         slns.push_back(this->solutions[i]->clone());
-        items.push_back(this->items[i]);
+    
     }
-    }
-   TempFilter* filter = new TempFilter(slns, this->cv,items);
+   TempFilter* filter = new TempFilter(slns, this->cv);
           
     return filter;
   }  
   
 
 protected:
-  virtual void filter_fn(int n, const std::vector<double*>& values, double* result);
+  virtual void filter_fn(int n, const std::vector<const double*>& values, double* result);
 
   double cv;
 };
@@ -89,27 +85,25 @@ protected:
 class AlphaFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public:
-  AlphaFilter(std::vector<MeshFunctionSharedPtr<double> > solutions,double rho_p, std::vector<int> items = std::vector<int>()) : SimpleFilter<double>(solutions,items), rho_p(rho_p) {};
-  virtual ~AlphaFilter() 
+  AlphaFilter(std::vector<MeshFunctionSharedPtr<double> > solutions,double rho_p) : SimpleFilter<double>(solutions), rho_p(rho_p) {};
+~AlphaFilter() 
   {
   };
 
- virtual MeshFunction<double>* clone() const
+MeshFunction<double>* clone() const
   {
 
     std::vector<MeshFunctionSharedPtr<double> > slns;
-	       std::vector<int> items;
     for(int i = 0; i < this->solutions.size(); i++)
     {
         slns.push_back(this->solutions[i]->clone());
-        items.push_back(this->items[i]);
     }
     
-    AlphaFilter* filter = new AlphaFilter(slns,this->rho_p,items );
+    AlphaFilter* filter = new AlphaFilter(slns,this->rho_p);
     return filter;
   }
 protected:
-  virtual void filter_fn(int n, const std::vector<double*>& values, double* result);
+  virtual void filter_fn(int n, const std::vector<const double*>& values, double* result);
 double rho_p;
 };
 
@@ -118,31 +112,28 @@ double rho_p;
 class PressureFilter : public Hermes::Hermes2D::SimpleFilter<double>
 {
 public: 
-  PressureFilter(std::vector<MeshFunctionSharedPtr<double> > solutions, double gamma, std::vector<int> items = std::vector<int>()) : SimpleFilter<double>(solutions,items), gamma(gamma) {};
- virtual ~PressureFilter() 
+  PressureFilter(std::vector<MeshFunctionSharedPtr<double> > solutions, double gamma) : SimpleFilter<double>(solutions), gamma(gamma) {};
+	~PressureFilter() 
   {
   };
 
- virtual MeshFunction<double>*  clone() const
+	MeshFunction<double>*  clone() const
   {	
-      std::vector<MeshFunctionSharedPtr<Scalar> > slns;
-      std::vector<int> items;
+      std::vector<MeshFunctionSharedPtr<double> > slns;
       for (int i = 0; i < this->solutions.size(); i++)
       {
         slns.push_back(this->solutions[i]->clone());
-        items.push_back(this->items[i]);
       }
-    PressureFilter* filter = new PressureFilter(slns,this->gamma,items);
+    PressureFilter* filter = new PressureFilter(slns,this->gamma);
 
     return filter;
 
   }
 protected:
-  virtual void filter_fn(int n, const std::vector<double*>& values, double* result);
+  virtual void filter_fn(int n, const std::vector<const double*>& values, double* result);
 
   double gamma;
 };
-*/
 
 
 //----------------------------------------------------------------------------------

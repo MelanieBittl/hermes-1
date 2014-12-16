@@ -6,17 +6,12 @@ public:
   ConvectionOperator_x(int num_of_equations = 8):  WeakForm<double>(num_of_equations){
 for(int i = 0; i<8; i++)
     add_matrix_form(new Convection_1(i));
-
-
-
 	};
+	WeakForm<double>* clone() const
+{
+return new ConvectionOperator_x(*this);
+}
 
-	
-		WeakForm<double>* clone() const
-    {
-      const_cast<ConvectionOperator_x*>(this)->warned_nonOverride = false;
-      return new ConvectionOperator_x(*this);
-    }
 protected:
  class Convection_1 : public MatrixFormVol<double>
   {
@@ -25,7 +20,7 @@ protected:
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const 
+      GeomVol<Real> *e, Func<Scalar>  **ext) const 
     {
 	  Scalar result = Scalar(0);
 	  for (int i = 0; i < n; i++)
@@ -36,18 +31,18 @@ protected:
     }
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
+      GeomVol<double> *e, Func<double>  **ext) const 
     {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     }
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return matrix_form<Ord, Ord>(n, wt, u_ext, u, v, e, ext);
     }
 
-    MatrixFormVol<double>* clone() const { return new  Convection_1(this->i); }
+MatrixFormVol<double>* clone() const { return new  Convection_1(this->i); }
   };
 
 };
@@ -59,12 +54,10 @@ public:
 for(int i = 0; i<8; i++)
     add_matrix_form(new Convection_2(i));
 	};
-	
 	WeakForm<double>* clone() const
-    {
-      const_cast<ConvectionOperator_y*>(this)->warned_nonOverride = false;
-      return new ConvectionOperator_y(*this);
-    }
+{
+return new ConvectionOperator_y(*this);
+}
 	
 protected:
  class Convection_2 : public MatrixFormVol<double>
@@ -74,7 +67,7 @@ protected:
 
     template<typename Real, typename Scalar>
     Scalar matrix_form(int n, double *wt, Func<Scalar> *u_ext[], Func<Real> *u, Func<Real> *v, 
-      Geom<Real> *e, Func<Scalar>  **ext) const 
+      GeomVol<Real> *e, Func<Scalar>  **ext) const 
     {
 	  Scalar result = Scalar(0);
 	  for (int i = 0; i < n; i++)
@@ -85,12 +78,12 @@ protected:
     }
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const 
+      GeomVol<double> *e, Func<double>  **ext) const 
     {
       return matrix_form<double, double>(n, wt, u_ext, u, v, e, ext);
     }
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const 
     {
         return Ord(20);
@@ -101,6 +94,7 @@ protected:
   };
 
 };
+
 
 
 void calculate_D(double rho_i, double rho_v_x_i, double rho_v_y_i, double rho_energy_i, double e_1, double e_2, 
@@ -184,17 +178,16 @@ for(int k=0;k<4;k++)
 
 
 //artificial Diffusion
-CSCMatrix<double>* artificialDiffusion(double gamma,double* coeff,Hermes::vector<SpaceSharedPtr<double> >  spaces,CSCMatrix<double>* matrix_K)
+CSCMatrix<double>* artificialDiffusion(double gamma,double* coeff,std::vector<SpaceSharedPtr<double> >  spaces,CSCMatrix<double>* matrix_K)
 {
-
- 	ConvectionOperator_x conv_1;
-	ConvectionOperator_y conv_2;
+WeakFormSharedPtr<double> conv_1(new ConvectionOperator_x);
+WeakFormSharedPtr<double> conv_2(new ConvectionOperator_y);
 
 	CSCMatrix<double>* c_matrix_1 = new CSCMatrix<double> ; 
 	CSCMatrix<double>* c_matrix_2 = new CSCMatrix<double> ; 
 
-  DiscreteProblem<double> dp_1(&conv_1, spaces);
-  DiscreteProblem<double> dp_2(&conv_2, spaces);
+  DiscreteProblem<double> dp_1(conv_1, spaces);
+  DiscreteProblem<double> dp_2(conv_2, spaces);
   dp_1.assemble(c_matrix_1);
 	dp_2.assemble(c_matrix_2);
 

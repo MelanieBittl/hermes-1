@@ -1,6 +1,6 @@
 #include "definitions.h"
 
-double y_top = 20;
+double y_top = 40;
 double x_left = -14;
 double x_right = 17;
 double y_inlet = 1.;
@@ -47,8 +47,8 @@ prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev
 	 add_vector_form(new EulerK::EulerEquationsLinearForm(k,gamma,true));
 	}
     
-    this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g,
-				prev_density_p, prev_density_vel_x_p, prev_density_vel_y_p, prev_energy_p));
+    this->set_ext({prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g,
+				prev_density_p, prev_density_vel_x_p, prev_density_vel_y_p, prev_energy_p});
 
 	};
 
@@ -67,17 +67,16 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 
     wf->ext.clear();
 
-    for(unsigned int i = 0; i < this->ext.size(); i++)
-    {
-      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
-      if(solution && solution->get_type() == HERMES_SLN)
-      {
-        wf->ext.push_back(new Solution<double>());
-        wf->ext.back()->copy(this->ext[i]);
-      }
-      else
-        wf->ext.push_back(this->ext[i]->clone());
-    }
+	for (unsigned int i = 0; i < this->ext.size(); i++)
+	{
+		MeshFunctionSharedPtr<double> ext = this->ext[i]->clone();
+		if (dynamic_cast<Solution<double>*>(this->ext[i].get()))
+		{
+			if ((dynamic_cast<Solution<double>*>(this->ext[i].get()))->get_type() == HERMES_SLN)
+				dynamic_cast<Solution<double>*>(ext.get())->set_type(HERMES_SLN);
+		}
+		wf->ext.push_back(ext);
+	}
     return wf;
     }
 
@@ -85,7 +84,7 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 //---------------------K----------------
 
     double EulerK::EulerEquationsBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomVol<double> *e, Func<double>  **ext) const
 		 {
       double result = 0.;
 		if(particle)
@@ -113,7 +112,7 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
     
 
 
-    Ord EulerK::EulerEquationsBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerK::EulerEquationsBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return Ord(10);
@@ -128,7 +127,7 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 
 //------------K- Linearform
     double EulerK::EulerEquationsLinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomVol<double> *e, Func<double>  **ext) const
 {
       double result = 0.;
 
@@ -154,7 +153,7 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 }
 
 
-    Ord EulerK::EulerEquationsLinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerK::EulerEquationsLinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const
     {
       return Ord(10);
@@ -180,8 +179,8 @@ prev_density_p(prev_density_p), prev_density_vel_x_p(prev_density_vel_x_p), prev
 			add_matrix_form(new EulerSource::EulerSourceBilinearForm(i,k));	
 	 add_vector_form(new EulerSource::EulerSourceLinearForm(k));
 	}    
-    this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g,
-				prev_density_p, prev_density_vel_x_p, prev_density_vel_y_p, prev_energy_p));
+    this->set_ext({prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g,
+				prev_density_p, prev_density_vel_x_p, prev_density_vel_y_p, prev_energy_p});
 
 	};
 
@@ -198,17 +197,16 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 
     wf->ext.clear();
 
-    for(unsigned int i = 0; i < this->ext.size(); i++)
-    {
-      Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
-      if(solution && solution->get_type() == HERMES_SLN)
-      {
-        wf->ext.push_back(new Solution<double>());
-        wf->ext.back()->copy(this->ext[i]);
-      }
-      else
-        wf->ext.push_back(this->ext[i]->clone());
-    }
+	for (unsigned int i = 0; i < this->ext.size(); i++)
+	{
+		MeshFunctionSharedPtr<double> ext = this->ext[i]->clone();
+		if (dynamic_cast<Solution<double>*>(this->ext[i].get()))
+		{
+			if ((dynamic_cast<Solution<double>*>(this->ext[i].get()))->get_type() == HERMES_SLN)
+				dynamic_cast<Solution<double>*>(ext.get())->set_type(HERMES_SLN);
+		}
+		wf->ext.push_back(ext);
+	}
     return wf;
     }
 
@@ -216,7 +214,7 @@ this->prev_density_p, this->prev_density_vel_x_p, this->prev_density_vel_y_p, th
 //------------------Jacobian source----------------
 
     double EulerSource::EulerSourceBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomVol<double> *e, Func<double>  **ext) const
 		 {
 if((entry_i==0)||(entry_i==4)) return 0;
       double result = 0.;
@@ -371,7 +369,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
     
 
 
-    Ord EulerSource::EulerSourceBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerSource::EulerSourceBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return Ord(10);
@@ -386,7 +384,7 @@ if((entry_i==0)||(entry_i==4)) return 0;
 
 //------------source- Linearform
     double EulerSource::EulerSourceLinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomVol<double> *e, Func<double>  **ext) const
 {
 
 	if((entry_i==0)||(entry_i==4)) return 0;
@@ -476,7 +474,7 @@ double F_D_1, F_D_2, Q_T;
 }
 
 
-    Ord EulerSource::EulerSourceLinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerSource::EulerSourceLinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const
     {
       return Ord(10);
@@ -530,7 +528,7 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
 		}
 
     
-    this->set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >(prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g, rho_ext_g, v1_ext_g, v2_ext_g, energy_ext_g, prev_density_p, prev_density_vel_x_p, prev_density_vel_y_p, prev_energy_p, rho_ext_p, v1_ext_p, v2_ext_p, energy_ext_p));
+    this->set_ext({prev_density_g, prev_density_vel_x_g, prev_density_vel_y_g, prev_energy_g, rho_ext_g, v1_ext_g, v2_ext_g, energy_ext_g, prev_density_p, prev_density_vel_x_p, prev_density_vel_y_p, prev_energy_p, rho_ext_p, v1_ext_p, v2_ext_p, energy_ext_p});
 
 	};
 
@@ -552,24 +550,23 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
 
 		wf->ext.clear();
 
-		for(unsigned int i = 0; i < this->ext.size(); i++)
-		{
-		  Solution<double>* solution = dynamic_cast<Solution<double>*>(this->ext[i].get());
-		  if(solution && solution->get_type() == HERMES_SLN)
-		  {
-		    wf->ext.push_back(new Solution<double>());
-		    wf->ext.back()->copy(this->ext[i]);
-		  }
-		  else
-		    wf->ext.push_back(this->ext[i]->clone());
-		}
+	 for (unsigned int i = 0; i < this->ext.size(); i++)
+{
+MeshFunctionSharedPtr<double> ext = this->ext[i]->clone();
+if (dynamic_cast<Solution<double>*>(this->ext[i].get()))
+{
+if ((dynamic_cast<Solution<double>*>(this->ext[i].get()))->get_type() == HERMES_SLN)
+dynamic_cast<Solution<double>*>(ext.get())->set_type(HERMES_SLN);
+}
+wf->ext.push_back(ext);
+}
 		return wf;
     }
 
 
 //-------Boudary Bilinearforms---------
    double EulerBoundary::EulerBoundaryBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomSurf<double> *e, Func<double>  **ext) const
 {
 	int bdry =0;
 	double* ghost_state = new double[4];for(int l=0;l<4;l++) ghost_state[l]=0.;
@@ -602,15 +599,14 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
 				rho_v_x_ext = ext[5]->val[i];
 				rho_v_y_ext = ext[6]->val[i];
 				rho_energy_ext = ext[7]->val[i];
+		//printf("nx =%3.5f", e->nx[i]);
 		
-		
-		if(bdry!=0) 
-			(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_bdry_info_short( rho, rho_v_x, rho_v_y, rho_energy, 
-										e->nx[i],e->ny[i], e->tx[i], e->ty[i],
+	/*	if((bdry!=0)&&(bdry!=2)) 
+			bdry = (static_cast<EulerBoundary*>(wf))->riemann_invariants->get_bdry_info_short( rho, rho_v_x, rho_v_y, rho_energy,	e->nx[i],e->ny[i], e->tx[i], e->ty[i],
 					rho_ext,rho_v_x_ext, rho_v_y_ext, rho_energy_ext,false);
 			
 		if((e->y[i]==y_inlet)&&(e->x[i]>=1.2)&&(e->x[i]<=1.8))	
-			bdry = bdry_vent;
+			bdry = bdry_vent;*/
 		
 
 
@@ -732,7 +728,7 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
 
 
 
-    Ord EulerBoundary::EulerBoundaryBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerBoundary::EulerBoundaryBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return Ord(10);
@@ -753,7 +749,7 @@ MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  pr
 
 
     double EulerBoundary::EulerBoundaryLinearform::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomSurf<double> *e, Func<double>  **ext) const
  {
 		double rho_new=0.; double rho_v_x_new=0.; double rho_v_y_new=0.; double rho_energy_new=0.; 
 		double lambda =0.;
@@ -776,14 +772,14 @@ int bdry;
 			bdry = bdry_vent;
 		
 		
-		
-				if(bdry!=0) 
-			(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_bdry_info_short( rho, rho_v_x, rho_v_y, rho_energy, 
+		/*
+				if((bdry!=0)&&(bdry!=2)) 
+			bdry=(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_bdry_info_short( rho, rho_v_x, rho_v_y, rho_energy, 
 										e->nx[i],e->ny[i], e->tx[i], e->ty[i],
 					rho_ext,rho_v_x_ext, rho_v_y_ext, rho_energy_ext,false);
 			
 		if((e->y[i]==y_inlet)&&(e->x[i]>=1.2)&&(e->x[i]<=1.8))	
-			bdry = bdry_vent;
+			bdry = bdry_vent;*/
 
 	//----------particle---------------------
 	if(particle)
@@ -877,7 +873,7 @@ if(bdry==0) continue;
 
 
 
-    Ord EulerBoundary::EulerBoundaryLinearform::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerBoundary::EulerBoundaryLinearform::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return Ord(10);
@@ -892,7 +888,7 @@ if(bdry==0) continue;
 
 //-------Penalty Bilinearforms---------
    double EulerBoundary::PenaltyBilinearForm::value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomSurf<double> *e, Func<double>  **ext) const
 {
   double result = 0.; double bdry =0;
 if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.; 
@@ -964,7 +960,7 @@ double nx, ny;
 
 
 
-    Ord EulerBoundary::PenaltyBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerBoundary::PenaltyBilinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return Ord(10);
@@ -985,7 +981,7 @@ double nx, ny;
 
 
     double EulerBoundary::PenaltyLinearForm::value(int n, double *wt, Func<double> *u_ext[],  Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const
+      GeomSurf<double> *e, Func<double>  **ext) const
  {
 if((entry_i==0) ||(entry_i==3)||(entry_i==4) ||(entry_i==7)) return 0.;
 double bdry =0;
@@ -1023,7 +1019,7 @@ double material_density = (static_cast<EulerBoundary*>(wf))->particle_density;
 
 
 
-    Ord EulerBoundary::PenaltyLinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord EulerBoundary::PenaltyLinearForm::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const 
     {
       return Ord(10);

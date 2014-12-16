@@ -5,7 +5,6 @@
 #include "euler_flux.h"
 #include "lumped_projection.h"
 
-
 using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -19,10 +18,9 @@ using namespace Hermes::Solvers;
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.
 const double time_step = 1e-4;
-const double T_FINAL = 2.;                       // Time interval length. 
+const double T_FINAL = 50.;                       // Time interval length. 
 
-const double theta = 1.;
-
+const double theta = 0.5;
 // Equation parameters.  
  
      
@@ -57,9 +55,9 @@ const unsigned int EVERY_NTH_STEP = 1;
 
 
 
-void assemble_source(SpaceSharedPtr<double> space,Hermes::vector<MeshFunctionSharedPtr<double> > slns, int dof_total, int dof_gas, int dof_rho, double* s, CSCMatrix<double>* matrix, CSCMatrix<double>* lumped_matrix)
+void assemble_source(SpaceSharedPtr<double> space,std::vector<MeshFunctionSharedPtr<double> > slns, int dof_total, int dof_gas, int dof_rho, double* s, CSCMatrix<double>* matrix, CSCMatrix<double>* lumped_matrix)
 {
-	Element* e =NULL;
+	Element* e =nullptr;
 	AsmList<double> al;
 	double x, y; int dof; double F_D_1, F_D_2, Q_T;
 matrix->zero();
@@ -82,18 +80,38 @@ for(int i= 0; i<dof_total; i++) s[i] = 0.;
 						y = vn->y;
 					if(visited[dof]==false){
 						visited[dof]=true;
-						double alpha_p  =slns[4]->get_pt_value(x,y,false,e)->val[0]/density_particle ;
+						
+						Func<double>* sln0 = slns[0]->get_pt_value(x,y,false,e);
+						Func<double>* sln1 = slns[1]->get_pt_value(x,y,false,e);
+						Func<double>* sln2 = slns[2]->get_pt_value(x,y,false,e);
+						Func<double>* sln3 = slns[3]->get_pt_value(x,y,false,e);
+						Func<double>* sln4 = slns[4]->get_pt_value(x,y,false,e);
+						Func<double>* sln5 = slns[5]->get_pt_value(x,y,false,e);
+						Func<double>* sln6 = slns[6]->get_pt_value(x,y,false,e);
+						Func<double>* sln7 = slns[7]->get_pt_value(x,y,false,e);
+						
+						
+						double alpha_p  =sln4->val[0]/density_particle ;
 						double alpha_g = 1.-alpha_p;
 						
-						double u_g_1 = slns[0]->get_pt_value(x,y,false,e)->val[0];
-						double u_g_2 = slns[1]->get_pt_value(x,y,false,e)->val[0];
-						double u_g_3 = slns[2]->get_pt_value(x,y,false,e)->val[0];
-						double u_g_4 = slns[3]->get_pt_value(x,y,false,e)->val[0];
+						double u_g_1 = sln0->val[0];
+						double u_g_2 = sln1->val[0];
+						double u_g_3 = sln2->val[0];
+						double u_g_4 = sln3->val[0];
 						
-						double u_p_1 = slns[4]->get_pt_value(x,y,false,e)->val[0];
-						double u_p_2 = slns[5]->get_pt_value(x,y,false,e)->val[0];
-						double u_p_3 = slns[6]->get_pt_value(x,y,false,e)->val[0];
-						double u_p_4 = slns[7]->get_pt_value(x,y,false,e)->val[0];
+						double u_p_1 = sln4->val[0];
+						double u_p_2 = sln5->val[0];
+						double u_p_3 = sln6->val[0];
+						double u_p_4 = sln7->val[0];	
+						
+						delete sln0;
+						delete sln1;
+						delete sln2;
+						delete sln3;
+						delete sln4;
+						delete sln5;
+						delete sln6;
+						delete sln7;
 						
 						
 
@@ -196,9 +214,9 @@ for(int i= 0; i<dof_total; i++) s[i] = 0.;
 }
 
 
-void assemble_vector_s(SpaceSharedPtr<double> space,Hermes::vector<MeshFunctionSharedPtr<double> > slns, int dof_total, int dof_gas, int dof_rho, double* s)
+void assemble_vector_s(SpaceSharedPtr<double> space,std::vector<MeshFunctionSharedPtr<double> > slns, int dof_total, int dof_gas, int dof_rho, double* s)
 {
-	Element* e =NULL;
+	Element* e =nullptr;
 	AsmList<double> al;
 	double x, y; int dof; double F_D_1, F_D_2, Q_T;
 
@@ -221,18 +239,39 @@ for(int i= 0; i<dof_total; i++) s[i] = 0.;
 						y = vn->y;
 					if(visited[dof]==false){
 						visited[dof]=true;
-						double alpha_p  =slns[4]->get_pt_value(x,y,false,e)->val[0]/density_particle ;
+						
+						Func<double>* sln0 = slns[0]->get_pt_value(x,y,false,e);
+						Func<double>* sln1 = slns[1]->get_pt_value(x,y,false,e);
+						Func<double>* sln2 = slns[2]->get_pt_value(x,y,false,e);
+						Func<double>* sln3 = slns[3]->get_pt_value(x,y,false,e);
+						Func<double>* sln4 = slns[4]->get_pt_value(x,y,false,e);
+						Func<double>* sln5 = slns[5]->get_pt_value(x,y,false,e);
+						Func<double>* sln6 = slns[6]->get_pt_value(x,y,false,e);
+						Func<double>* sln7 = slns[7]->get_pt_value(x,y,false,e);						
+						
+						
+						double alpha_p  =sln4->val[0]/density_particle ;
 						double alpha_g = 1.-alpha_p;
 						
-						double u_g_1 = slns[0]->get_pt_value(x,y,false,e)->val[0];
-						double u_g_2 = slns[1]->get_pt_value(x,y,false,e)->val[0];
-						double u_g_3 = slns[2]->get_pt_value(x,y,false,e)->val[0];
-						double u_g_4 = slns[3]->get_pt_value(x,y,false,e)->val[0];
+						double u_g_1 = sln0->val[0];
+						double u_g_2 = sln1->val[0];
+						double u_g_3 = sln2->val[0];
+						double u_g_4 = sln3->val[0];
 						
-						double u_p_1 = slns[4]->get_pt_value(x,y,false,e)->val[0];
-						double u_p_2 = slns[5]->get_pt_value(x,y,false,e)->val[0];
-						double u_p_3 = slns[6]->get_pt_value(x,y,false,e)->val[0];
-						double u_p_4 = slns[7]->get_pt_value(x,y,false,e)->val[0];				
+						double u_p_1 = sln4->val[0];
+						double u_p_2 = sln5->val[0];
+						double u_p_3 = sln6->val[0];
+						double u_p_4 = sln7->val[0];	
+						
+						delete sln0;
+						delete sln1;
+						delete sln2;
+						delete sln3;
+						delete sln4;
+						delete sln5;
+						delete sln6;
+						delete sln7;
+				
 						
 
 						double rho_g = u_g_1/alpha_g;  
@@ -298,7 +337,7 @@ int main(int argc, char* argv[])
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
   mloader.load("domain3.mesh", basemesh);
-Element* e = NULL;Node* vn=NULL;
+Element* e = nullptr;Node* vn=nullptr;
 
  //domain3
 basemesh->refine_in_area("C",1,2);		
@@ -312,11 +351,12 @@ basemesh->refine_in_area("D",1,1);
 basemesh->refine_in_area("E");
 
 		}
-basemesh->refine_in_area("D",2);
+basemesh->refine_in_area("D",3);
 basemesh->refine_in_area("E");
+basemesh->refine_in_area("E",1,1);
 //basemesh->refine_in_area("A",2,2);
-basemesh->refine_in_area("B",2,1);	
-basemesh->refine_in_area("C",2,1);	
+basemesh->refine_in_area("B",3,1);	
+basemesh->refine_in_area("C",3,1);	
 
 /*
 //domain
@@ -340,8 +380,8 @@ basemesh->refine_in_area("D",1,1);
  meshview.show(mesh);
   
    View::wait();
-
 */
+
 
 
 	SpaceSharedPtr<double> space_rho_g(new H1Space<double>(mesh, P_INIT));	
@@ -356,7 +396,7 @@ basemesh->refine_in_area("D",1,1);
 
 int dof_rho = space_rho_g->get_num_dofs();
 
-  Hermes::vector<SpaceSharedPtr<double> > spaces(space_rho_g, space_rho_v_x_g, space_rho_v_y_g, space_e_g,space_rho_p, space_rho_v_x_p, space_rho_v_y_p, space_e_p);
+  std::vector<SpaceSharedPtr<double> > spaces({space_rho_g, space_rho_v_x_g, space_rho_v_y_g, space_e_g,space_rho_p, space_rho_v_x_p, space_rho_v_y_p, space_e_p});
 	Space<double>::assign_dofs(spaces);
    int ndof = Space<double>::get_num_dofs(spaces);
   Hermes::Mixins::Loggable::Static::info("ndof: %d \n", ndof);
@@ -405,23 +445,23 @@ int dof_rho = space_rho_g->get_num_dofs();
     MeshFunctionSharedPtr<double> prev_rho_v_y_p(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_e_p(new Solution<double>);
 
-	Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns_g(prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g);
-	Hermes::vector<MeshFunctionSharedPtr<double> > init_slns_g(init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g);
-	Hermes::vector<MeshFunctionSharedPtr<double> > low_slns_g(low_rho_g, low_rho_v_x_g, low_rho_v_y_g, low_rho_e_g);
+	std::vector<MeshFunctionSharedPtr<double> > prev_slns_g({prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g});
+	std::vector<MeshFunctionSharedPtr<double> > init_slns_g({init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g});
+	std::vector<MeshFunctionSharedPtr<double> > low_slns_g({low_rho_g, low_rho_v_x_g, low_rho_v_y_g, low_rho_e_g});
 
-	Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns_p(prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
-	Hermes::vector<MeshFunctionSharedPtr<double> > init_slns_p(init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);		
-				Hermes::vector<MeshFunctionSharedPtr<double> > low_slns_p(low_rho_p, low_rho_v_x_p, low_rho_v_y_p, low_rho_e_p);
-
-
-Hermes::vector<MeshFunctionSharedPtr<double> > prev_slns(prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
-
-Hermes::vector<MeshFunctionSharedPtr<double> > init_slns(init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p);
-
-Hermes::vector<MeshFunctionSharedPtr<double> > low_slns(low_rho_g, low_rho_v_x_g, low_rho_v_y_g, low_rho_e_g,low_rho_p,low_rho_v_x_p,low_rho_v_y_p,low_rho_e_p);
+	std::vector<MeshFunctionSharedPtr<double> > prev_slns_p({prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p});
+	std::vector<MeshFunctionSharedPtr<double> > init_slns_p({init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p});		
+	std::vector<MeshFunctionSharedPtr<double> > low_slns_p({low_rho_p, low_rho_v_x_p, low_rho_v_y_p, low_rho_e_p});
 
 
-	Hermes::vector<NormType> norms_l2(HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM);
+std::vector<MeshFunctionSharedPtr<double> > prev_slns({prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p});
+
+std::vector<MeshFunctionSharedPtr<double> > init_slns({init_rho_g, init_rho_v_x_g, init_rho_v_y_g, init_rho_e_g,init_rho_p, init_rho_v_x_p, init_rho_v_y_p, init_rho_e_p});
+
+std::vector<MeshFunctionSharedPtr<double> > low_slns({low_rho_g, low_rho_v_x_g, low_rho_v_y_g, low_rho_e_g,low_rho_p,low_rho_v_x_p,low_rho_v_y_p,low_rho_e_p});
+
+
+	std::vector<NormType> norms_l2({HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM,HERMES_L2_NORM});
 
 
  //--------- Visualization of pressure & velocity
@@ -454,13 +494,13 @@ s2_p.show(init_rho_v_x_p);
 s3_p.show(init_rho_v_y_p);
 s4_p.show(init_rho_e_p);
 */
-
+/*
 MeshFunctionSharedPtr<double> pressure_init_g(new PressureFilter(init_slns_g, GAMMA));
 			//	pressure_view_g.show(pressure_init_g);
 MeshFunctionSharedPtr<double> mach_init_g(new  MachNumberFilter(init_slns_g, GAMMA));
 			//	mach_view_g.show(mach_init_g);
 
-
+*/
 
 
 
@@ -472,27 +512,27 @@ MeshFunctionSharedPtr<double> mach_init_g(new  MachNumberFilter(init_slns_g, GAM
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(GAMMA);
 
-	EulerK wf_convection(GAMMA, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
-  EulerEquationsWeakForm_Mass wf_mass;
+ WeakFormSharedPtr<double> wf_convection(new EulerK (GAMMA, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p));
+WeakFormSharedPtr<double> wf_mass(new EulerEquationsWeakForm_Mass);
 
 
-	EulerBoundary wf_bdry(GAMMA,SIGMA,density_particle, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);	
+WeakFormSharedPtr<double> wf_bdry(new EulerBoundary(GAMMA,SIGMA,density_particle, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p));	
 	
-	EulerBoundary wf_bdry_low(GAMMA,SIGMA,density_particle, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, low_rho_g, low_rho_v_x_g,low_rho_v_y_g, low_rho_e_g,low_rho_p, low_rho_v_x_p, low_rho_v_y_p, low_rho_e_p);
+WeakFormSharedPtr<double> wf_bdry_low(new EulerBoundary(GAMMA,SIGMA,density_particle, bdry_rho_g,bdry_rho_v_x_g,bdry_rho_v_y_g, bdry_rho_e_g, bdry_rho_p,bdry_rho_v_x_p,bdry_rho_v_y_p, bdry_rho_e_p, low_rho_g, low_rho_v_x_g,low_rho_v_y_g, low_rho_e_g,low_rho_p, low_rho_v_x_p, low_rho_v_y_p, low_rho_e_p));
 
-EulerSource wf_source(density_particle,diameter,c_vg,c_vp,c_pg, Pr,mu, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p);
+WeakFormSharedPtr<double> wf_source(new EulerSource(density_particle,diameter,c_vg,c_vp,c_pg, Pr,mu, prev_rho_g, prev_rho_v_x_g, prev_rho_v_y_g, prev_rho_e_g,prev_rho_p, prev_rho_v_x_p, prev_rho_v_y_p, prev_rho_e_p));
 
 
 
   // Initialize the FE problem.
-  DiscreteProblem<double> dp_mass(&wf_mass,spaces);
+  DiscreteProblem<double> dp_mass(wf_mass,spaces);
  
-  DiscreteProblem<double> dp_conv(&wf_convection, spaces); 
+  DiscreteProblem<double> dp_conv(wf_convection, spaces); 
 
-  DiscreteProblem<double> dp_bdry(&wf_bdry, spaces); 
-  DiscreteProblem<double> dp_bdry_low(&wf_bdry_low, spaces); 
+  DiscreteProblem<double> dp_bdry(wf_bdry, spaces); 
+  DiscreteProblem<double> dp_bdry_low(wf_bdry_low, spaces); 
 
-  DiscreteProblem<double> dp_source(&wf_source, spaces);   
+  DiscreteProblem<double> dp_source(wf_source, spaces);   
 
 
 
@@ -540,25 +580,25 @@ lumpedProjection.project_lumped(spaces, init_slns, coeff_vec);
 		Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);
 		
 		
-		/*	MeshFunctionSharedPtr<double> pressure_g(new PressureFilter(prev_slns_g, GAMMA));
+		MeshFunctionSharedPtr<double> pressure_g(new PressureFilter(prev_slns_g, GAMMA));
 			MeshFunctionSharedPtr<double> mach_g(new MachNumberFilter(prev_slns_g, GAMMA));
 			MeshFunctionSharedPtr<double> alpha_p(new AlphaFilter(prev_slns_p, density_particle));
 			MeshFunctionSharedPtr<double> temp_p(new TempFilter(prev_slns_p, c_vp));
-			MeshFunctionSharedPtr<double> temp_g(new TempFilter(prev_slns_g, c_vg));*/
+			MeshFunctionSharedPtr<double> temp_g(new TempFilter(prev_slns_g, c_vg));
 
-Linearizer lin;	
-
-               /*     s1_g.show(prev_rho_g);                       
+Linearizer lin(FileExport);
+/*
+                  s1_g.show(prev_rho_g);                       
                         s2_g.show(prev_rho_v_x_g);
                         s3_g.show(prev_rho_v_y_g);
                         s4_g.show(prev_rho_e_g);
                         s1_p.show(prev_rho_p);
                         s2_p.show(prev_rho_v_x_p);
                         s3_p.show(prev_rho_v_y_p);
-                        s4_p.show(prev_rho_e_p);*/
+                        s4_p.show(prev_rho_e_p);
 
 
-//View::wait(HERMES_WAIT_KEYPRESS);
+View::wait(HERMES_WAIT_KEYPRESS);*/
 
 // Time stepping loop:
 	double current_time = 0.0; 
@@ -587,7 +627,7 @@ do
 			dp_conv.assemble(&matrixL);
 			dp_bdry.assemble(&bdry_matrix, &vec_bdry);
 
-CSCMatrix<double>* diff = NULL;	
+CSCMatrix<double>* diff = nullptr;	
 assemble_source(space_rho_g,prev_slns, ndof, dof_rho*4., dof_rho, coeff_vec_2, &matrix,lumped_matrix_proj);
 lumped_matrix_proj->multiply_with_vector(coeff_vec_2, source_vec);
 
@@ -623,11 +663,11 @@ matrix.add_sparse_matrix(&bdry_matrix); // source + bdry
 				e.print_msg();
 			}	
 	
-		for(int i=0; i<ndof;i++)	
-				coeff_vec[i]+= solver->get_sln_vector()[i];		
+		//for(int i=0; i<ndof;i++)	
+				//coeff_vec[i]+= solver->get_sln_vector()[i];		
 	
 		
-/*
+
 	for(int i=0; i<ndof;i++)	
 								u_L[i] = solver->get_sln_vector()[i] + coeff_vec[i];	
 	
@@ -641,21 +681,17 @@ antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,source_vec
 	
 		for(int i=0; i<ndof;i++)		
 					coeff_vec[i] = u_L[i] + flux_vec[i]*time_step/lumped_matrix->get(i,i);
-*/
+
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);				
 			
 
 	
 	// Visualize the solution.
-/*Hermes::Mixins::Loggable::Static::info("Visualize"); 									
+/*Hermes::Mixins::Loggable::Static::info("Visualize"); 							
+
 					
-					
-							sprintf(title, "density_particle: ts=%i",ts);
-            s1_p.set_title(title);
-            s1_p.show(prev_rho_p);
-					
-            sprintf(title, "Pressure gas: ts=%i",ts);
+          sprintf(title, "Pressure gas: ts=%i",ts);
             pressure_view_g.set_title(title);
             pressure_g->reinit();
             pressure_view_g.show(pressure_g);
@@ -676,7 +712,13 @@ antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,source_vec
             temp_g->reinit();
             temp_view_g.show(temp_g);
 
-          /*  sprintf(title, "Temp particle: ts=%i",ts);
+      /*    
+			  					
+							sprintf(title, "density_particle: ts=%i",ts);
+            s1_p.set_title(title);
+            s1_p.show(prev_rho_p);
+            
+			   sprintf(title, "Temp particle: ts=%i",ts);
             temp_view_p.set_title(title);
             temp_p->reinit();
             temp_view_p.show(temp_p);
@@ -719,15 +761,15 @@ antidiffusiveFlux(&mass_matrix,lumped_matrix,diff,&matrixL, &vec_bdry,source_vec
 	if(ts%200 ==0)
 {
 
-			/*	alpha_p->reinit();
+				alpha_p->reinit();
 sprintf(filename, "alpha_p-%i.vtk", ts );  
-			lin.save_solution_vtk(alpha_p, filename, "alpha_particle", false);*/
-			sprintf(filename, "rho_p-%i.vtk", ts );  
-			lin.save_solution_vtk(prev_rho_p, filename, "alpha_particle", false);
+			lin.save_solution_vtk(alpha_p, filename, "alpha_particle", false);
+			//sprintf(filename, "rho_p-%i.vtk", ts );  
+			//lin.save_solution_vtk(prev_rho_p, filename, "alpha_particle", false);
 
 }
 
-/*	if(ts%1000 ==0)
+if(ts%1000 ==0)
 {
 				pressure_g->reinit();
 				mach_g->reinit();
@@ -743,7 +785,7 @@ sprintf(filename, "rho_g-%i.vtk", ts );
 			lin.save_solution_vtk(prev_slns[0], filename, "density_gas", false);
 
 
-}*/
+}
 
 
 
@@ -755,7 +797,7 @@ sprintf(filename, "rho_g-%i.vtk", ts );
 
 		delete solver;
 		//matrix.free();
-		if(diff!=NULL) delete diff;
+		if(diff!=nullptr) delete diff;
  
 
 

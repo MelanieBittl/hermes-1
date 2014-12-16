@@ -33,30 +33,31 @@ return to_return;
 //----------------------------------------------------------------------------------
 //----------------------Filters.--------------------------------------
 //----------------------------------------------------------------------------------
-/*void MachNumberFilter::filter_fn(int n, const std::vector<double*>& values, double* result) 
+void MachNumberFilter::filter_fn(int n, const std::vector<const double*>& values, double* result) 
 {
   for (int i = 0; i < n; i++)
     result[i] = std::sqrt((values.at(1)[i] / values.at(0)[i])*(values.at(1)[i] / values.at(0)[i]) + (values.at(2)[i] / values.at(0)[i])*(values.at(2)[i] / values.at(0)[i]))
     / std::sqrt(gamma * QuantityCalculator::calc_pressure(values.at(0)[i], values.at(1)[i], values.at(2)[i], values.at(3)[i], gamma) / values.at(0)[i]);
 }
 
-void TempFilter::filter_fn(int n, const std::vector<double*>& values, double* result) 
+void TempFilter::filter_fn(int n, const std::vector<const double*>& values, double* result) 
 {
   for (int i = 0; i < n; i++)
     result[i] = 1./cv*(values.at(3)[i]/values.at(0)[i]-0.5*(values.at(1)[i]*values.at(1)[i]  + values.at(2)[i] *values.at(2)[i])/(values.at(0)[i]*values.at(0)[i]));
 }
-void PressureFilter::filter_fn(int n, const std::vector<double*>& values, double* result) 
+
+void PressureFilter::filter_fn(int n, const std::vector<const double*>& values, double* result) 
 {
   for (int i = 0; i < n; i++)
     result[i] = (gamma - 1.) * (values.at(3)[i] - (values.at(1)[i]*values.at(1)[i] + values.at(2)[i]*values.at(2)[i])/(2*values.at(0)[i]));
 }
 
-void AlphaFilter::filter_fn(int n, const std::vector<double*>& values, double* result) 
+void AlphaFilter::filter_fn(int n, const std::vector<const double*>& values, double* result) 
 { 
   for (int i = 0; i < n; i++)
     result[i] = values.at(0)[i]/rho_p;
 }
-*/
+
 //-----------------------------------------------------
 //-------------------RiemannInvariants-----------------------
 //-----------------------------------------------------
@@ -374,12 +375,12 @@ if(solid==true){  //solid wall
 int RiemannInvariants::get_bdry_info_short(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, double t_x, double t_y,
 					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext,  bool solid){
 
-	double lambda_1 = RiemannInvariants::get_ev1(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+	/*double lambda_1 = RiemannInvariants::get_ev1(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
 	double lambda_2_3 = RiemannInvariants::get_ev2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
-	double lambda_4 = RiemannInvariants::get_ev4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
-	/*	double lambda_1 = RiemannInvariants::get_ev1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+	double lambda_4 = RiemannInvariants::get_ev4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);*/
+	double lambda_1 = RiemannInvariants::get_ev1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
 	double lambda_2_3 = RiemannInvariants::get_ev2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-	double lambda_4 = RiemannInvariants::get_ev4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);*/
+	double lambda_4 = RiemannInvariants::get_ev4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
 		double w_1,w_2,w_3,w_4;	
 
 	if( solid==true){
@@ -396,7 +397,7 @@ int RiemannInvariants::get_bdry_info_short(double rho, double rho_v_x, double rh
 	}else if((lambda_1<0)&&(lambda_2_3>=0)&&(lambda_4>=0)){//subsonic outlet
 		return 4;	
 	}else{ 
-				printf("get_bdry_info: eigenvalues = %f, %f, %f", lambda_1, lambda_2_3, lambda_4);
-	return 5;
+				//printf("get_bdry_info: eigenvalues = %f, %f, %f", lambda_1, lambda_2_3, lambda_4);
+	return 1;
 	 }
 }

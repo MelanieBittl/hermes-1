@@ -19,7 +19,6 @@ double vel_coeff = 1.05;
 
 double cvp = 1300.;
 //------------------- Initial condition ----------------
-
  void CustomInitialCondition_rho::derivatives(double x, double y, double& dx, double& dy) const {      
 	
 		dx =0.;
@@ -86,6 +85,7 @@ else v_x =	std::sqrt(gamma*pressure/rho)*mach;
 }*/
 
 v_x =	std::sqrt(gamma*pressure/rho)*mach;
+if(particle) v_x*=0.9;
 return (rho*v_x);	
 };
 
@@ -165,6 +165,7 @@ if(!particle){
 if((y<y_max)&&(x>=1.2)&&(x<=1.8)) v_x=0;
 else v_x =	std::sqrt(gamma*pressure/rho)*mach;
 }
+if(particle) v_x*=0.9;
 double v_y =0.; 
  mach =mach_volcano;
 if((y<y_max)&&(x>=1.2)&&(x<=1.8)){
@@ -218,8 +219,9 @@ return new CustomInitialCondition_e(this->mesh,gamma,this->particle);
 	{    			
 double rho = pressure_init/(temp_init*R_gas);
 	if((y<=y_max)&&(x>=1.2)&&(x<=1.8)){
-		if(particle)rho=rho_p*alpha;	
-		else rho =(1-alpha)*rho_g;
+		double factor =-1./22.5*(x-1.5)*(x-1.5)+1.;
+		if(particle)rho=rho_p*alpha*factor;	
+		else rho =(1-alpha)*rho_g*factor;
 	}else{ 
 		if(particle)	rho = rho_p*alpha_2;
 		else rho*=(1-alpha_2);	
@@ -249,8 +251,9 @@ return rho;
 	{   
 double rho = pressure_init/(temp_init*R_gas);
 	if((y<=y_max)&&(x>=1.2)&&(x<=1.8)){
-		if(particle)rho=rho_p*alpha;	
-		else rho =(1-alpha)*rho_g;
+			double factor = -1./22.5*(x-1.5)*(x-1.5)+1.;
+		if(particle)rho=rho_p*alpha*factor;	
+		else rho =(1-alpha)*rho_g*factor;
 	}else{ 
 		if(particle)	rho = rho_p*alpha_2;
 		else rho*=(1-alpha_2);	
@@ -262,8 +265,7 @@ double pressure = pressure_init;
 double mach =mach_left;
 if(!particle){
 if((y<=y_max)&&(x>=1.2)&&(x<=1.8)) v_x=0;
-else v_x =	std::sqrt(gamma*pressure/rho)*mach;
-
+else v_x =	std::sqrt(gamma*pressure*(1-alpha_2)/rho)*mach;
 }
 
 
@@ -290,9 +292,10 @@ return (rho*v_x);
  double BoundaryCondition_rho_v_y::value(double x, double y) const 
 	{   
 double rho = pressure_init/(temp_init*R_gas);
-	if((y<=y_max)&&(x>=1.2)&&(x<=1.8)){
-		if(particle)rho=rho_p*alpha;	
-		else rho =(1-alpha)*rho_g;
+double factor = -1./22.5*(x-1.5)*(x-1.5)+1.;
+	if((y<=y_max)&&(x>=1.2)&&(x<=1.8)){			
+		if(particle)rho=rho_p*alpha*factor;	
+		else rho =(1-alpha)*rho_g*factor;
 	}else{ 
 		if(particle)	rho = rho_p*alpha_2;
 		else rho*=(1-alpha_2);	
@@ -305,9 +308,9 @@ double v_y =0.;
 double pressure = pressure_init;
 double mach =mach_volcano;
 if((y<=y_max)&&(x>=1.2)&&(x<=1.8)){
-	pressure = pressure_coeff*pressure_init;
-	if(!particle) v_y=std::sqrt(gamma*pressure/rho)*mach*vel_coeff;
-	if(particle) v_y =std::sqrt(gamma*pressure/rho)*mach;
+	pressure = pressure_coeff*pressure_init*factor;
+	if(!particle) v_y=std::sqrt(gamma*pressure*(1-alpha)/rho)*mach*vel_coeff;
+	if(particle) v_y =std::sqrt(gamma*pressure*alpha/rho)*mach;
 }
 
 
@@ -331,11 +334,11 @@ return (rho*v_y);
 
  double BoundaryCondition_rho_e::value(double x, double y) const 
 	{  
-	
+double factor = -1./22.5*(x-1.5)*(x-1.5)+1.;	
 double rho = pressure_init/(temp_init*R_gas);
 	if((y<=y_max)&&(x>=1.2)&&(x<=1.8)){
-		if(particle)rho=rho_p*alpha;	
-		else rho =(1-alpha)*rho_g;
+		if(particle)rho=rho_p*alpha*factor;	
+		else rho =(1-alpha)*rho_g*factor;
 	}else{ 
 		if(particle)	rho = rho_p*alpha_2;
 		else rho*=(1-alpha_2);	
@@ -345,20 +348,20 @@ double rho = pressure_init/(temp_init*R_gas);
 	
 double v_x =0.; 
 double pressure = pressure_init;
-if((y<=y_max)&&(x>=1.2)&&(x<=1.8)) pressure = pressure_coeff*pressure_init;
+if((y<=y_max)&&(x>=1.2)&&(x<=1.8)) pressure = pressure_coeff*pressure_init*factor;
 double mach =mach_left;
 if(!particle){
 if((y<=y_max)&&(x>=1.2)&&(x<=1.8)) v_x=0;
-else v_x =	std::sqrt(gamma*pressure/rho)*mach;
+else v_x =	std::sqrt(gamma*pressure*(1-alpha_2)/rho)*mach;
 
 }	
 
 double v_y =0.; 
 mach =mach_volcano;
 if((y<=y_max)&&(x>=1.2)&&(x<=1.8)){
-	pressure = pressure_coeff*pressure_init;
-	if(!particle) v_y=std::sqrt(gamma*pressure/rho)*mach*vel_coeff;
-	if(particle) v_y =std::sqrt(gamma*pressure/rho)*mach;
+	pressure = pressure_coeff*pressure_init*factor;
+	if(!particle) v_y=std::sqrt(gamma*pressure*(1-alpha)/rho)*mach*vel_coeff;
+	if(particle) v_y =std::sqrt(gamma*pressure*alpha/rho)*mach;
 }
 
 

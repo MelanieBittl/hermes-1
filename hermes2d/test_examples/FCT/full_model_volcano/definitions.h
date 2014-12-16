@@ -4,9 +4,7 @@
 #include "euler_util.h"
 #include "euler_flux.h"
 #include "hermes2d.h"
- #define PI (3.141592653589793)   
-
-
+ #define PI (3.141592653589793) 
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -32,7 +30,7 @@ public:
   EulerK(double gamma,
 MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations = 8);
 
-	~EulerK();
+	virtual ~EulerK();
 
     WeakForm<double>* clone() const;
 
@@ -64,10 +62,10 @@ protected:
 
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomVol<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     MatrixFormVol<double>* clone() const;
@@ -87,10 +85,10 @@ bool particle;
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomVol<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     VectorFormVol<double>* clone() const;
@@ -111,7 +109,7 @@ public:
 
   EulerSource(double particle_density, double d, double c_vg,double c_vp, double c_pg, double Pr, double mu, MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p, int num_of_equations = 8);
 
-	~EulerSource();
+	virtual ~EulerSource();
 
     WeakForm<double>* clone() const;
 
@@ -146,10 +144,10 @@ protected:
 
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomVol<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     MatrixFormVol<double>* clone() const;
@@ -168,10 +166,10 @@ protected:
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomVol<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomVol<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     VectorFormVol<double>* clone() const;
@@ -193,7 +191,7 @@ public:
   EulerBoundary(double gamma,double sigma,double particle_density,MeshFunctionSharedPtr<double>  rho_ext_g, MeshFunctionSharedPtr<double>  v1_ext_g, MeshFunctionSharedPtr<double>  v2_ext_g, MeshFunctionSharedPtr<double>  energy_ext_g,MeshFunctionSharedPtr<double>  rho_ext_p, MeshFunctionSharedPtr<double>  v1_ext_p, MeshFunctionSharedPtr<double>  v2_ext_p, MeshFunctionSharedPtr<double>  energy_ext_p, 
 MeshFunctionSharedPtr<double>  prev_density_g, MeshFunctionSharedPtr<double>  prev_density_vel_x_g,  MeshFunctionSharedPtr<double>  prev_density_vel_y_g, MeshFunctionSharedPtr<double>  prev_energy_g,MeshFunctionSharedPtr<double>  prev_density_p, MeshFunctionSharedPtr<double>  prev_density_vel_x_p,  MeshFunctionSharedPtr<double>  prev_density_vel_y_p, MeshFunctionSharedPtr<double>  prev_energy_p,double eps = 1e-8,  int num_of_equations = 8);
 
-	~EulerBoundary();
+	virtual ~EulerBoundary();
 
     WeakForm<double>* clone() const;
 
@@ -238,10 +236,10 @@ protected:
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomSurf<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     MatrixFormSurf<double>* clone() const;
@@ -263,10 +261,10 @@ protected:
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomSurf<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     VectorFormSurf<double>* clone() const;
@@ -285,10 +283,10 @@ protected:
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *u, Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomSurf<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *u, Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     MatrixFormSurf<double>* clone() const;
@@ -309,10 +307,10 @@ protected:
      
 
     double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v, 
-      Geom<double> *e, Func<double>  **ext) const; 
+      GeomSurf<double> *e, Func<double>  **ext) const; 
 
 
-    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, Geom<Ord> *e, 
+    Ord ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v, GeomSurf<Ord> *e, 
       Func<Ord>  **ext) const; 
 
     VectorFormSurf<double>* clone() const;

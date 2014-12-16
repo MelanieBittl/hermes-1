@@ -20,7 +20,6 @@ int i;
 	 lumped_matrix->create(size, size, col, row, diag);  //lumped Matrix aufstellen
 	return lumped_matrix;
 }
-
 //Mass lumping an den Stellen von fct, sonst standard Massmatrix
 template<typename Scalar>
 CSCMatrix<Scalar>* massLumping(bool* fct, CSCMatrix<Scalar>* mass_matrix)

@@ -3,7 +3,6 @@
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
-
 //--------------------Euler-Fluxes: Matizen A1 ( = dF_x/dU) ,A2 (= dF_y/dU)-------------------------
 
  inline double A_1_0_0(double rho, double rho_v_x, double rho_v_y, double rho_energy , double gamma) {
