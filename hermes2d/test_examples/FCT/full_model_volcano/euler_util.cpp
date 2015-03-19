@@ -375,12 +375,12 @@ if(solid==true){  //solid wall
 int RiemannInvariants::get_bdry_info_short(double rho, double rho_v_x, double rho_v_y, double rho_energy, double n_x, double n_y, double t_x, double t_y,
 					double rho_ext, double rho_v_x_ext, double rho_v_y_ext, double rho_energy_ext,  bool solid){
 
-	/*double lambda_1 = RiemannInvariants::get_ev1(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+	double lambda_1 = RiemannInvariants::get_ev1(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
 	double lambda_2_3 = RiemannInvariants::get_ev2(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
-	double lambda_4 = RiemannInvariants::get_ev4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);*/
-	double lambda_1 = RiemannInvariants::get_ev1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+	double lambda_4 = RiemannInvariants::get_ev4(rho, rho_v_x, rho_v_y, rho_energy, n_x, n_y);
+	/*double lambda_1 = RiemannInvariants::get_ev1(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
 	double lambda_2_3 = RiemannInvariants::get_ev2(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
-	double lambda_4 = RiemannInvariants::get_ev4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);
+	double lambda_4 = RiemannInvariants::get_ev4(rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext, n_x, n_y);*/
 		double w_1,w_2,w_3,w_4;	
 
 	if( solid==true){

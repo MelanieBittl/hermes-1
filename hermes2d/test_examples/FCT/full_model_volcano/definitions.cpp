@@ -1,8 +1,8 @@
 #include "definitions.h"
 
-double y_top = 40;
-double x_left = -14;
-double x_right = 17;
+double y_top = 5.5;
+double x_left = -9; // 1.5;
+double x_right = 12;
 double y_inlet = 1.;
 int bdry_vent =  3;
 int bdry_left = 1;
@@ -601,12 +601,12 @@ wf->ext.push_back(ext);
 				rho_energy_ext = ext[7]->val[i];
 		//printf("nx =%3.5f", e->nx[i]);
 		
-	/*	if((bdry!=0)&&(bdry!=2)) 
+		if((bdry!=0)&&(bdry!=2)) 
 			bdry = (static_cast<EulerBoundary*>(wf))->riemann_invariants->get_bdry_info_short( rho, rho_v_x, rho_v_y, rho_energy,	e->nx[i],e->ny[i], e->tx[i], e->ty[i],
 					rho_ext,rho_v_x_ext, rho_v_y_ext, rho_energy_ext,false);
 			
 		if((e->y[i]==y_inlet)&&(e->x[i]>=1.2)&&(e->x[i]<=1.8))	
-			bdry = bdry_vent;*/
+			bdry = bdry_vent;
 		
 
 
@@ -772,14 +772,14 @@ int bdry;
 			bdry = bdry_vent;
 		
 		
-		/*
-				if((bdry!=0)&&(bdry!=2)) 
+		
+		if((bdry!=0)&&(bdry!=2)) 
 			bdry=(static_cast<EulerBoundary*>(wf))->riemann_invariants->get_bdry_info_short( rho, rho_v_x, rho_v_y, rho_energy, 
 										e->nx[i],e->ny[i], e->tx[i], e->ty[i],
 					rho_ext,rho_v_x_ext, rho_v_y_ext, rho_energy_ext,false);
 			
 		if((e->y[i]==y_inlet)&&(e->x[i]>=1.2)&&(e->x[i]<=1.8))	
-			bdry = bdry_vent;*/
+			bdry = bdry_vent;
 
 	//----------particle---------------------
 	if(particle)
