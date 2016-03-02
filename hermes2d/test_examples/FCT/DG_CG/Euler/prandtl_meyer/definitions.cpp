@@ -236,39 +236,73 @@ else constant = 0.5;
 			}
 			
 		 }else{
+			 
+			 double nx = e->nx[i]; double ny = e->ny[i];
+ 
 				if(entry_i==1)
 				{
 						if(entry_j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->nx[i]*
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*nx*
 						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);		
 	
 						}else if(entry_j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->nx[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*nx;
 						}else if(entry_j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->nx[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*nx;
 						}else if(entry_j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->nx[i];
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*nx;
 						}
+
+						
 				}else if(entry_i==2)
 				{
 						if(entry_j==0){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*e->ny[i]*
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*0.5*ny*
 						(ext[1]->val[i]*ext[1]->val[i]+ext[2]->val[i]*ext[2]->val[i])/(ext[0]->val[i]*ext[0]->val[i]);			
 						}else if(entry_j==1){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*e->ny[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[1]->val[i]/ext[0]->val[i]*ny;
 						}else if(entry_j==2){
-							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*e->ny[i];
+							result -= wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ext[2]->val[i]/ext[0]->val[i]*ny;
 						}else if(entry_j==3){
-							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*e->ny[i];
+							result += wt[i]*v->val[i] *u->val[i]*(kappa-1.)*ny;
 						}
-
+						
 				}
 			}
-    }
+    
+    
+  //penalty  
+    if(solid){
+			 
+			 double nx = e->nx[i]; double ny = e->ny[i]; 
+			 double eps = 1e-8; double sigma = 10;
+			 		double vn = (ext[1]->val[i]*nx+ ext[2]->val[i]*ny)/ext[0]->val[i];
+		double factor = ((2.*vn*vn+eps)/(std::sqrt(vn*vn+eps)))*sigma;
+		
+				if(entry_i==1)
+				{
+						if(entry_j==1){
+							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(nx)*factor;
+						}else if(entry_j==2){
+							result += wt[i]*v->val[i] *u->val[i]*ny*nx*factor;
+						}
+				}else if(entry_i==2)
+				{
+					 if(entry_j==1){
+							result += wt[i]*v->val[i] *u->val[i]*ny*nx*factor;
+						}else if(entry_j==2){
+							result += wt[i]*v->val[i] *u->val[i]*Hermes::sqr(ny)*factor;
+						}
+				}
+		 
+		 
+	 }
+  
+}
 		delete [] ghost_state;
 		delete [] A_n;
 		delete [] dudu_j;
-
+//if(solid==false) result = 0.;
       return (-result);
   }  
 
@@ -301,7 +335,7 @@ else constant = 0.5;
 		double* new_variables = new double[4];
 		double rho_ext, rho_v_x_ext, rho_v_y_ext, rho_energy_ext;
 		double rho, rho_v_x, rho_v_y, rho_energy;
-int bdry; bool solid = false;
+	int bdry; bool solid = false;   double w_L[4];
   double result = 0.;
   for (int i = 0;i < n;i++) 
 {
@@ -332,8 +366,12 @@ else if(e->y[i]==1.){	solid = true; bdry =0;}
 (static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
 					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];	
-
-				for(int k =0; k<4;k++)
+		 w_L[0] = ext[0]->val[i];
+        w_L[1] = ext[1]->val[i];
+        w_L[2] = ext[2]->val[i];
+        w_L[3] = ext[3]->val[i];
+		  
+			for(int k =0; k<4;k++)
 				{
 							  result += wt[i] *e->nx[i]*v->val[i]*0.5* (new_variables[k]*
 							   (static_cast<EulerS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,0,entry_i,k) 
@@ -350,14 +388,30 @@ else if(e->y[i]==1.){	solid = true; bdry =0;}
 			result -= wt[i]*v->val[i]* 0.5 * 
 								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
 
-
+	//	result += wt[i] * (static_cast<EulerS*>(wf))->num_flux->numerical_flux_i(this->i,w_L , new_variables, e->nx[i], e->ny[i]) * v->val[i];	
 				}else{//solid wall ->no mirror
+
+
 						if(entry_i==1)
 							result += wt[i]*v->val[i]*e->nx[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
 						else if(entry_i==2)
 							result += wt[i]*v->val[i]*e->ny[i]*QuantityCalculator::calc_pressure(rho, rho_v_x, rho_v_y, rho_energy, kappa);
-				}
+
 			
+			
+		}
+		
+		if(solid)
+		{
+			//penalty				
+		double sigma = 10;				
+		double vn = (ext[1]->val[i]*e->nx[i] + ext[2]->val[i]*e->ny[i]);			
+				if(entry_i==1)
+					result += sigma*wt[i]*v->val[i]*e->nx[i]*vn*std::fabs(vn);
+				else if(entry_i==2)
+					result += sigma*wt[i]*v->val[i]*e->ny[i]*vn*std::fabs(vn);
+						
+		}			
 			
 		}
 		delete [] new_variables;

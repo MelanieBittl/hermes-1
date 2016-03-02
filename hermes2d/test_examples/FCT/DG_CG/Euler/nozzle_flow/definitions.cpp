@@ -241,9 +241,9 @@ double norm = normalized(1,m);
 	
 				if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0;}
 				else if(e->x[i]==8.){ //continue;
-					bdry=4;solid==false; //sub out
+					bdry=4;solid==false;//bdry=1; //sub out 	
 				}else if(e->x[i]==-2.){ //continue;
-					bdry =3.;solid==false;  //sub in
+					bdry =3.;solid==false;// bdry=2; //sub in
 				}else throw Hermes::Exceptions::Exception("boundary");
 
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
@@ -436,9 +436,9 @@ double norm = normalized(1,m);
 
 			if((e->x[i]<8.)&&(e->x[i]>-2.))	{	solid = true; bdry =0; }
 				else if(e->x[i]==8.){ 
-						bdry=4; solid==false; 				
+						bdry=4; solid==false; 	//bdry=1;			
 				}else if(e->x[i]==-2.){ 
-						bdry =3.; solid==false;					
+						bdry =3.; solid==false;	//bdry=2;				
 				}else throw Hermes::Exceptions::Exception("boundary");
 
 			rho = ext[0]->val[i];  

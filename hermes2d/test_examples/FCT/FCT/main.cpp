@@ -16,7 +16,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_NUM =5;                   // Number of initial refinements.
 const int P_INIT =1;       						// Initial polynomial degree.                      
-const double time_step =125e-6;                           // Time step.
+const double time_step =1e-3;                           // Time step.
 const double T_FINAL = 2*PI;                       // Time interval length. 
 
 
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("unit.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_NUM; i++) basemesh->refine_all_elements();
@@ -91,7 +91,7 @@ CustomWeakFormStreamlineDiffusion sd(mesh);
 	ScalarView sview("Solution", new WinGeom(0, 500, 500, 400));
 	ScalarView pview("projezierter Anfangswert", new WinGeom(500, 0, 500, 400));
 	MeshView mview("mesh", new WinGeom(0, 0, 500, 400));
-	mview.show(mesh);
+	//mview.show(mesh);
 OrderView oview("order", new WinGeom(500,500,500,400));
 //Lowview.show(u_prev_time);
 		  // Initialize
@@ -196,9 +196,10 @@ int time_counter =1.;
 lumped_flux_limiter(mass_matrix, lumped_matrix, coeff_vec, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,Q_plus_old, Q_minus_old, R_plus, R_minus);
 
 
-		Solution<double>::vector_to_solution(coeff_vec, space, u_new);
-		//Solution<double>::vector_to_solution(coeff_vec, space, u_proj);
-sview.show(u_new);
+		//Solution<double>::vector_to_solution(coeff_vec, space, u_new);
+		Solution<double>::vector_to_solution(coeff_vec, space, u_proj);
+sview.show(high_sln);
+pview.show(u_proj);
 
 /*
 	Linearizer lin;
@@ -213,7 +214,7 @@ lin.save_solution_vtk(high_sln, "hi2d.vtk", "solution", false);
 //lin.save_solution_vtk(u_prev_time, "init2d.vtk", "solution", false);*/
 
 		//mview.show(space->get_mesh());
-  			//View::wait();
+  			View::wait();
 //Timestep loop
 do
 {	 
@@ -308,7 +309,7 @@ antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, coeff_vec
 while (current_time < T_FINAL);
 
 calc_error_total(u_new, u_prev_time,space);
-calc_error_proj(u_new, u_proj,space);
+//calc_error_proj(u_new, u_proj,space);
 
 
 	delete mass_matrix;  

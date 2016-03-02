@@ -27,9 +27,9 @@ const double theta = 1.;
 
 // Equation parameters.  
  
-const bool DG = false;
+const bool DG = true;
      
-const bool serendipity= false;
+const bool serendipity= true;
 // Kappa.
 const double KAPPA = 1.4; 
     
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain2.mesh", basemesh);
 Element* e = NULL;Node* vn=NULL;
 
  //for_all_active_elements(e, basemesh)
@@ -100,22 +100,22 @@ printf("CFL = %f \n", CFL);
    View::wait();*/
 
 
-
+/*
 SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
 /*	
+
+	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));*/
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(mesh, P_INIT, serendipity));
 
-	SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
-*/
 
 	int dof_rho = space_rho->get_num_dofs();
 	int dof_v_x = space_rho_v_x->get_num_dofs();

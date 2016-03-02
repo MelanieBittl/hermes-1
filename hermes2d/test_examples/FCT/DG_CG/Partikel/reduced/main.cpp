@@ -18,7 +18,7 @@ using namespace Hermes::Solvers;
 #include "artificial_diffusion.cpp"
 #include "fct.cpp"
 */
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =2;                   // Number of initial refinements.
 const int P_INIT =2;       						// Initial polynomial degree.
 const double time_step = 1e-2;
 const double T_FINAL = 20;                       // Time interval length. 
@@ -321,7 +321,7 @@ double norm_rel = 1000;
 		  dp_mass.assemble(&mass_matrix);
 mass_matrix.multiply_with_Scalar(1./time_step);
 CSCMatrix<double> * lumped_matrix;
-
+			  char filename[40];
 
 double mach = 0.; double residual = 10000;
 //Timestep loop
@@ -444,7 +444,7 @@ if(mach<0.09)
 {
 				pressure_g->reinit();
 				mach_g->reinit();
-			  char filename[40];
+
 			  sprintf(filename, "p-%i.vtk", ts );       
 			lin.save_solution_vtk(pressure_g, filename, "pressure", false);
 sprintf(filename, "m-%i.vtk", ts );      

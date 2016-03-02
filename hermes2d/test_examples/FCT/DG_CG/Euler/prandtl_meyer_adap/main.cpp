@@ -21,7 +21,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const double time_step = 0.0001;
+const double time_step = 0.001;
 const double T_FINAL = 30000000.;                       // Time interval length. 
 
 const double theta = 1.;
@@ -73,8 +73,8 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("quad.mesh", basemesh);
-
+ // mloader.load("quad.mesh", basemesh);
+mloader.load("domain.mesh", basemesh);
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
 
@@ -82,9 +82,9 @@ Element* e;
 
  	 mesh->copy(basemesh);
 	 
-	 MeshSharedPtr rho_mesh(new Mesh), v_x_mesh(new Mesh), v_y_mesh(new Mesh), e_mesh(new Mesh);
+	 MeshSharedPtr rho_mesh(new Mesh);//, v_x_mesh(new Mesh), v_y_mesh(new Mesh), e_mesh(new Mesh);
 	 
-	rho_mesh->copy(basemesh);v_x_mesh->copy(basemesh); v_y_mesh->copy(basemesh); e_mesh->copy(basemesh); 
+	rho_mesh->copy(basemesh);//v_x_mesh->copy(basemesh); v_y_mesh->copy(basemesh); e_mesh->copy(basemesh); 
 
 double delta_x = 100; double delta_max= 0.; 
 for_all_active_elements(e, basemesh)
@@ -102,20 +102,18 @@ printf("CFL = %f \n", CFL);
 
 
 SpaceSharedPtr<double> space_rho(new L2_SEMI_CG_Space<double>(rho_mesh, P_INIT, serendipity));	
-SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(v_x_mesh, P_INIT, serendipity));	
+SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(rho_mesh, P_INIT, serendipity));	
+SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(rho_mesh, P_INIT, serendipity));	
+SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(rho_mesh, P_INIT, serendipity));
+/*SpaceSharedPtr<double> space_rho_v_x(new L2_SEMI_CG_Space<double>(v_x_mesh, P_INIT, serendipity));	
 SpaceSharedPtr<double> space_rho_v_y(new L2_SEMI_CG_Space<double>(v_y_mesh, P_INIT, serendipity));	
-SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(e_mesh, P_INIT, serendipity));
-/*
-SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
+SpaceSharedPtr<double> space_e(new L2_SEMI_CG_Space<double>(e_mesh, P_INIT, serendipity));*/
 
-SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
-*/
+		SpaceSharedPtr<double> space_rho_h1(new H1Space<double>(basemesh, 1));	
+		SpaceSharedPtr<double> space_rho_v_x_h1(new H1Space<double>(basemesh,1));	
+		SpaceSharedPtr<double> space_rho_v_y_h1(new H1Space<double>(basemesh, 1));	
+		SpaceSharedPtr<double> space_e_h1(new H1Space<double>(basemesh, 1));
+
 	/*int dof_rho = space_rho->get_num_dofs();
 	int dof_v_x = space_rho_v_x->get_num_dofs();
 	int dof_v_y = space_rho_v_y->get_num_dofs();
@@ -127,10 +125,20 @@ SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));
   Hermes::Mixins::Loggable::Static::info("ndof: %d \n", ndof);
 
   // Initialize solutions, set initial conditions.
- MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(rho_mesh,KAPPA));	
+/* MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(rho_mesh,KAPPA));	
   MeshFunctionSharedPtr<double> init_rho_v_x(new  ConstantSolution<double>(v_x_mesh,  V1_EXT));	
   MeshFunctionSharedPtr<double> init_rho_v_y(new  ConstantSolution<double>(v_y_mesh,  V2_EXT));	
-  MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(e_mesh,KAPPA));
+  MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(e_mesh,KAPPA));*/
+
+  	MeshFunctionSharedPtr<double> init_rho(new Solution<double>);
+    MeshFunctionSharedPtr<double> init_rho_v_x(new Solution<double>);
+    MeshFunctionSharedPtr<double> init_rho_v_y(new Solution<double>);
+    MeshFunctionSharedPtr<double> init_e(new Solution<double>); 
+  dynamic_cast<Solution<double>* >(init_rho.get())->load("rho.xml",space_rho_h1); 
+dynamic_cast<Solution<double>* >(init_rho_v_x.get())->load("v_x.xml",space_rho_v_x_h1); 
+dynamic_cast<Solution<double>* >(init_rho_v_y.get())->load("v_y.xml",space_rho_v_y_h1); 
+dynamic_cast<Solution<double>* >(init_e.get())->load("energy.xml",space_e_h1);
+
 
   	MeshFunctionSharedPtr<double> prev_rho(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_x(new Solution<double>);
@@ -149,9 +157,9 @@ SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));
 
 
   MeshFunctionSharedPtr<double> boundary_rho(new CustomInitialCondition_rho(rho_mesh,KAPPA));	
-  MeshFunctionSharedPtr<double> boundary_v_x(new  ConstantSolution<double>(v_x_mesh,  V1_EXT));	
-  MeshFunctionSharedPtr<double> boundary_v_y(new  ConstantSolution<double>(v_y_mesh, V2_EXT));	
-  MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(e_mesh,KAPPA));	
+  MeshFunctionSharedPtr<double> boundary_v_x(new  ConstantSolution<double>(rho_mesh,  V1_EXT));	
+  MeshFunctionSharedPtr<double> boundary_v_y(new  ConstantSolution<double>(rho_mesh, V2_EXT));	
+  MeshFunctionSharedPtr<double> boundary_e(new CustomInitialCondition_e(rho_mesh,KAPPA));	
 
   	MeshFunctionSharedPtr<double> diff_rho(new Solution<double>);
     MeshFunctionSharedPtr<double> diff_rho_v_x(new Solution<double>);
@@ -185,7 +193,9 @@ mach_view.set_min_max_range(2.5, 3.26);
 		OrderView ref_mview("ref_mesh", new WinGeom(500, 0, 500, 400));
   ScalarView s5("diff_rho", new WinGeom(700, 0, 600, 300));
 
-
+/*s1.show(init_rho);
+s2.show(init_rho_v_x);
+s3.show(init_rho_v_y);*/
 
 //------------
 
@@ -278,7 +288,7 @@ do
 Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res = %e", ts, current_time, ndof, residual); 
     // Periodic global derefinement. 
    if ((ts > 1 && ts % UNREF_FREQ == 0)||(Space<double>::get_num_dofs(spaces) >= NDOF_STOP)) 
-    { 	rho_mesh->copy(basemesh);v_x_mesh->copy(basemesh); v_y_mesh->copy(basemesh); e_mesh->copy(basemesh); 
+    { 	rho_mesh->copy(basemesh);//v_x_mesh->copy(basemesh); v_y_mesh->copy(basemesh); e_mesh->copy(basemesh); 
 		 for(int i=0;i<4;i++) spaces[i]->set_uniform_order(P_INIT);     
     Space<double>::assign_dofs(spaces);	      
     }
@@ -293,7 +303,14 @@ Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res
     Space<double>::ReferenceSpaceCreator rho_ref_space_creator(space_rho, rho_ref_mesh);
     SpaceSharedPtr<double> rho_ref_space = rho_ref_space_creator.create_ref_space();
 	
-		 Mesh::ReferenceMeshCreator x_ref_mesh_creator(v_x_mesh);
+		    Space<double>::ReferenceSpaceCreator rho_v_x_ref_space_creator(space_rho_v_x, rho_ref_mesh);
+    SpaceSharedPtr<double> rho_v_x_ref_space = rho_v_x_ref_space_creator.create_ref_space();
+			    Space<double>::ReferenceSpaceCreator rho_v_y_ref_space_creator(space_rho_v_y, rho_ref_mesh);
+    SpaceSharedPtr<double> rho_v_y_ref_space = rho_v_y_ref_space_creator.create_ref_space();
+	 			    Space<double>::ReferenceSpaceCreator rho_e_ref_space_creator(space_e, rho_ref_mesh);
+    SpaceSharedPtr<double> rho_e_ref_space = rho_e_ref_space_creator.create_ref_space();
+	
+		/* Mesh::ReferenceMeshCreator x_ref_mesh_creator(v_x_mesh);
     MeshSharedPtr x_ref_mesh = x_ref_mesh_creator.create_ref_mesh();
 	    Space<double>::ReferenceSpaceCreator rho_v_x_ref_space_creator(space_rho, x_ref_mesh);
     SpaceSharedPtr<double> rho_v_x_ref_space = rho_v_x_ref_space_creator.create_ref_space();
@@ -306,7 +323,7 @@ Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res
 			 Mesh::ReferenceMeshCreator e_ref_mesh_creator(e_mesh);
     MeshSharedPtr e_ref_mesh = e_ref_mesh_creator.create_ref_mesh(); 
 	Space<double>::ReferenceSpaceCreator rho_e_ref_space_creator(space_rho, e_ref_mesh);
-    SpaceSharedPtr<double> rho_e_ref_space = rho_e_ref_space_creator.create_ref_space();
+    SpaceSharedPtr<double> rho_e_ref_space = rho_e_ref_space_creator.create_ref_space();*/
 
 	/*int ref_dof_rho = rho_ref_space->get_num_dofs();
 	int ref_dof_dof_v_x = rho_v_x_ref_space->get_num_dofs();
@@ -326,6 +343,7 @@ Hermes::Mixins::Loggable::Static::info("Time step %d,  time %3.5f, ndofs=%i, res
 		SimpleVector<double> * vec_conv = new SimpleVector<double> (ref_ndof);
 		double* coeff_vec = new double[ref_ndof];	
 		double* coeff_vec_2 = new double[ref_ndof];
+		
 	if(ts==1){
 		  ogProjection.project_global(ref_spaces,init_slns, coeff_vec, norms_l2 );
 		  	Space<double>::assign_dofs(ref_spaces);
@@ -364,7 +382,7 @@ dp_bdry.set_spaces(ref_spaces);
 		
 		
 		//(M-theta(K+ds))u(n+1) = Sn +Ku(n) +(M-theta(Kn+ds))u(n)
-  Hermes::Mixins::Loggable::Static::info("step1 \n");
+  //Hermes::Mixins::Loggable::Static::info("step1 \n");
 		if(DG) {
 			matrix->create(dg_matrix->get_size(),dg_matrix->get_nnz(), dg_matrix->get_Ap(), dg_matrix->get_Ai(),dg_matrix->get_Ax());
 			matrix->add_sparse_matrix(K_matrix);
@@ -372,7 +390,7 @@ dp_bdry.set_spaces(ref_spaces);
 			matrix->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());//L(U) = KU+SU
 		}
 
-  Hermes::Mixins::Loggable::Static::info("step2 \n");
+  //Hermes::Mixins::Loggable::Static::info("step2 \n");
 		matrix->add_sparse_matrix(dS_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 
@@ -381,7 +399,7 @@ dp_bdry.set_spaces(ref_spaces);
 
 matrix->add_sparse_matrix(mass_matrix); 
 
-  Hermes::Mixins::Loggable::Static::info("step3 \n");
+  //Hermes::Mixins::Loggable::Static::info("step3 \n");
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
 		vec_rhs->zero(); 
 		if(DG)  vec_rhs->add_vector(vec_dg); 
@@ -396,10 +414,10 @@ for(int i=0; i<ref_ndof;i++)
 					coeff_vec_2[i] =vec_res->get(i);
 Solution<double>::vector_to_solutions(coeff_vec_2, ref_spaces, diff_slns);	
  MeshFunctionSharedPtr<double> sln_zero1(new ZeroSolution<double>(rho_ref_mesh));
-  MeshFunctionSharedPtr<double> sln_zero2(new ZeroSolution<double>(x_ref_mesh));
+  /*MeshFunctionSharedPtr<double> sln_zero2(new ZeroSolution<double>(x_ref_mesh));
    MeshFunctionSharedPtr<double> sln_zero3(new ZeroSolution<double>(y_ref_mesh));
-	 MeshFunctionSharedPtr<double> sln_zero4(new ZeroSolution<double>(e_ref_mesh));
- Hermes::vector<MeshFunctionSharedPtr<double> > zero_slns(sln_zero1, sln_zero2, sln_zero3, sln_zero4);
+	 MeshFunctionSharedPtr<double> sln_zero4(new ZeroSolution<double>(e_ref_mesh));*/
+ Hermes::vector<MeshFunctionSharedPtr<double> > zero_slns(sln_zero1, sln_zero1, sln_zero1, sln_zero1);
 
 errorCalculator_l2.calculate_errors(diff_slns, zero_slns);
 double err_l2_2 = errorCalculator_l2.get_total_error_squared();

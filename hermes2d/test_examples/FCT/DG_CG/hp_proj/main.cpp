@@ -17,7 +17,7 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 										//Maximal polynomial degree.           
 
@@ -26,6 +26,8 @@ const bool serendipity = true;
 const double EPS_smooth = 1e-10;   		//constant for the smoothness indicator (a<b => a+eps<=b)
 
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
+
+bool h_only = true;
 
 // Adaptivity
  
@@ -59,7 +61,7 @@ int main(int argc, char* argv[])
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
   mloader.load("unit.mesh", basemesh);
- //mloader.load("tri.mesh", basemesh);
+   // mloader.load("tri.mesh", basemesh);
 
 
   // Perform initial mesh refinements (optional).
@@ -126,26 +128,27 @@ int main(int argc, char* argv[])
     	{			ndof = space->get_num_dofs();  
 		  		Hermes::Mixins::Loggable::Static::info("adap_step %i, dof = %i,", as, ndof);				
 							
- 	
-			    		
+ 	      // Construct reference mesh and setup reference space->
+	     		 MeshSharedPtr ref_mesh(new Mesh);
+      ref_mesh->copy(space->get_mesh()); 
+	  SpaceSharedPtr<double> ref_space =NULL;
+	if(h_only){
+		ref_mesh->refine_all_elements();
+		      Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
+       ref_space = ref_space_creator.create_ref_space();
+	}else{
+		
 		double* coeff_vec_smooth = new double[ndof];
-			int* smooth_elem_ref;	
-							
+			int* smooth_elem_ref;					
 
 //      Hermes::Mixins::Loggable::Static::info("Projecting...");
 				ogProjection.project_global(space,exact_solution, coeff_vec_smooth, HERMES_L2_NORM);		
-
 			
    Hermes::Mixins::Loggable::Static::info("Calling get_smooth_elems()...");		
 			smooth_elem_ref =regEst.get_smooth_elems(space,coeff_vec_smooth);
-
-      // Construct reference mesh and setup reference space->
-	     		 MeshSharedPtr ref_mesh(new Mesh);
-      ref_mesh->copy(space->get_mesh()); 
-		//ref_mesh->refine_all_elements();  ///for h-adapt only
+      // Construct  reference space->
       Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
-      SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
-
+      ref_space = ref_space_creator.create_ref_space();
 
    HPAdapt* adapting = new HPAdapt(ref_space);	
 							// increase p in smooth regions, h refine in non-smooth regions 
@@ -155,6 +158,7 @@ int main(int argc, char* argv[])
 									      
 			delete adapting;
 			delete [] coeff_vec_smooth; 	
+	}
 			    
 
 			ref_ndof = ref_space->get_num_dofs();
@@ -185,9 +189,11 @@ int main(int argc, char* argv[])
 
 			//--------- Project 	
 			// coeff_vec : FCT -Projection, coeff_vec_2: L2 Projection (ogProjection)	
-
-				fluxCorrection.project_FCT(exact_solution, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,&ogProjection,&lumpedProjection, &regEst);			
-
+if(h_only){
+			fluxCorrection.project_FCT(exact_solution, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,&ogProjection,&lumpedProjection);	
+}else{
+		fluxCorrection.project_FCT(exact_solution, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,&ogProjection,&lumpedProjection, &regEst);			
+}
 			Solution<double>::vector_to_solution(coeff_vec, ref_space, ref_sln);			
 			
 			
@@ -230,7 +236,7 @@ int main(int argc, char* argv[])
    	{
 			calc_error_total(ref_sln, exact_solution,ref_space);
 					ord.save_mesh_vtk(ref_space, "end_ref_mesh.vtk");
-		ord.save_orders_vtk(ref_space, "end_ref_order.vtk");	
+		if(h_only==false) ord.save_orders_vtk(ref_space, "end_ref_order.vtk");	
 		lin.save_solution_vtk(ref_sln, "end_ref_solution2d.vtk", "solution", false);
    	lin.save_solution_vtk(ref_sln, "end_ref_solution3d.vtk", "solution", mode_3D);
 	

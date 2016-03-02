@@ -431,7 +431,7 @@ if(mach<particle_start)
 }
 //if((ts>100)&&(mach < particle_start)) mach = 1.;
 			// Visualize the solution.
- 	 /*	Hermes::Mixins::Loggable::Static::info("Visualize"); 	
+ 		Hermes::Mixins::Loggable::Static::info("Visualize"); 	
                        sprintf(title, "Pressure gas: ts=%i",ts);
                         pressure_view_g.set_title(title);
                         pressure_g->reinit();
@@ -463,7 +463,7 @@ if(mach<particle_start)
                         s1_p.set_title(title);
                         s1_p.show(prev_rho_p);
 								
-*/
+
 
 
 	//View::wait(HERMES_WAIT_KEYPRESS);

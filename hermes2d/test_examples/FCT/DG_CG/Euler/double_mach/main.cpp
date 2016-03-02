@@ -9,7 +9,6 @@
 
 
 
-
 using namespace RefinementSelectors;
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
@@ -20,7 +19,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 1e-5;
+const double time_step = 1e-6;
 const double T_FINAL = 0.2;                       // Time interval length. 
 
 const double theta = 0.5;
@@ -34,6 +33,8 @@ const double V2_EXT = 0.0;
 // Kappa.
 const double KAPPA = 1.4;  
 
+const bool mirror = true;
+
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
 
@@ -41,8 +42,6 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 #include "mass_lumping.cpp"
 #include "artificial_diffusion.cpp"
 #include "fct.cpp"    
-
-
      
 
 // Set visual output for every nth step.
@@ -72,7 +71,6 @@ SpaceSharedPtr<double> space_rho(new L2Space<double>(mesh, P_INIT));
 SpaceSharedPtr<double> space_rho_v_x(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_rho_v_y(new L2Space<double>(mesh, P_INIT));	
 SpaceSharedPtr<double> space_e(new L2Space<double>(mesh, P_INIT));
-
 */
 
 
@@ -291,11 +289,11 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 
 
 	EulerK wf_convection(KAPPA,  prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,true);
-	//EulerS wf_bdry(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,false);
+	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,mirror);
+
 
 	EulerK wf_convection_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,true);
+	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,mirror);
 
 	
 		DiscreteProblem<double> dp(&wf_convection, spaces); 
@@ -340,7 +338,13 @@ do
  	
  	 if(ts!=1){
 			dp.assemble(K_matrix, vec_conv);
-			dp_bdry.assemble(dS_matrix, vec_bdry);				
+				//dp_bdry.assemble(vec_bdry);	
+	dynamic_cast<CustomBoundaryCondition_rho*>(boundary_rho.get())->set_time(current_time);
+	dynamic_cast<CustomBoundaryCondition_v_x*>(boundary_v_x.get())->set_time(current_time);
+	dynamic_cast<CustomBoundaryCondition_v_y*>(boundary_v_y.get())->set_time(current_time);
+	dynamic_cast<CustomBoundaryCondition_e*>(boundary_e.get())->set_time(current_time);
+	//wf_bdry.set_ext(Hermes::vector<MeshFunctionSharedPtr<double> >( prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e));
+			dp_bdry.assemble(dS_matrix,vec_bdry);		
 		  	if(DG) dp_DG.assemble(dg_matrix,vec_dg);	
 		}else{
 			dp_init.assemble(K_matrix, vec_conv);
@@ -386,8 +390,8 @@ matrix->add_sparse_matrix(K_matrix);
 
 			// Visualize the solution.
 
-
-	/*	sprintf(title, "vx: ts=%i",ts);	
+/*
+	sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);
 			sprintf(title, "vy: ts=%i",ts);	
 			s3.set_title(title);
@@ -412,10 +416,7 @@ matrix->add_sparse_matrix(K_matrix);
 	  // Update global time.
   current_time += time_step;
   
-	dynamic_cast<CustomBoundaryCondition_rho*>(boundary_rho.get())->set_time(current_time);
-	dynamic_cast<CustomBoundaryCondition_v_x*>(boundary_v_x.get())->set_time(current_time);
-	dynamic_cast<CustomBoundaryCondition_v_y*>(boundary_v_y.get())->set_time(current_time);
-	dynamic_cast<CustomBoundaryCondition_e*>(boundary_e.get())->set_time(current_time);
+
 
   // Increase time step counter
   ts++;

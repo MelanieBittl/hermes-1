@@ -176,7 +176,7 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
     }
 
 //---------------------------Boundary only------------------------
-	EulerS::EulerS(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy, bool mirror_condition,int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa)),kappa(kappa), riemann_invariants(new RiemannInvariants(kappa)), mirror_condition(mirror_condition),
+	EulerS::EulerS(double kappa,MeshFunctionSharedPtr<double>  rho_ext, MeshFunctionSharedPtr<double>  v1_ext, MeshFunctionSharedPtr<double>  v2_ext, MeshFunctionSharedPtr<double>  energy_ext, MeshFunctionSharedPtr<double>  prev_density, MeshFunctionSharedPtr<double>  prev_density_vel_x,  MeshFunctionSharedPtr<double>  prev_density_vel_y, MeshFunctionSharedPtr<double>  prev_energy,  NumericalFlux* num_flux, bool mirror_condition,int num_of_equations): WeakForm<double>(num_of_equations), euler_fluxes(new EulerFluxes(kappa)),kappa(kappa), riemann_invariants(new RiemannInvariants(kappa)), mirror_condition(mirror_condition),num_flux(num_flux),
     prev_density(prev_density), prev_density_vel_x(prev_density_vel_x), prev_density_vel_y(prev_density_vel_y), prev_energy(prev_energy), rho_ext(rho_ext), v1_ext (v1_ext), v2_ext(v2_ext), energy_ext (energy_ext) 
 	{
 
@@ -204,7 +204,7 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
 	WeakForm<double>* EulerS::clone() const
     {
     EulerS* wf;
-    wf = new EulerS(this->kappa,this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy, this->mirror_condition,4);
+    wf = new EulerS(this->kappa,this->rho_ext, this->v1_ext, this->v2_ext, this->energy_ext, this->prev_density, this->prev_density_vel_x, this->prev_density_vel_y, this->prev_energy,this->num_flux, this->mirror_condition,4);
 
     wf->ext.clear();
 
@@ -319,7 +319,7 @@ else constant = 0.5;
 		delete [] ghost_state;
 		delete [] A_n;
 		delete [] dudu_j;
-
+if(solid==false) result = 0;
       return (-result);
   }  
 
@@ -356,6 +356,7 @@ else constant = 0.5;
 		double rho, rho_v_x, rho_v_y, rho_energy;
 int bdry; bool solid = false;
   double result = 0.;
+   double w_L[4];
   for (int i = 0;i < n;i++) 
 {
 				if((e->x[i]==-0.5)||(e->x[i]==0.5))	{	solid = true; bdry =0;}
@@ -383,7 +384,11 @@ int bdry; bool solid = false;
 
 (static_cast<EulerS*>(wf))->riemann_invariants->get_ghost_state( bdry,ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], e->nx[i],e->ny[i],e->tx[i],e->ty[i], ext[4]->val[i], ext[5]->val[i], ext[6]->val[i],ext[7]->val[i], new_variables, solid);
 
-					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];	
+					rho_new=new_variables[0]; rho_v_x_new=new_variables[1]; rho_v_y_new=new_variables[2]; rho_energy_new=new_variables[3];
+		 w_L[0] = ext[0]->val[i];
+        w_L[1] = ext[1]->val[i];
+        w_L[2] = ext[2]->val[i];
+        w_L[3] = ext[3]->val[i];
 
 				for(int k =0; k<4;k++)
 				{
@@ -402,6 +407,8 @@ int bdry; bool solid = false;
 			result -= wt[i]*v->val[i]* 0.5 * 
 								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
 
+			
+	//	result += wt[i] * (static_cast<EulerS*>(wf))->num_flux->numerical_flux_i(this->i,w_L , new_variables, e->nx[i], e->ny[i]) * v->val[i];	
 
 				}else{//solid wall ->no mirror
 						if(entry_i==1)

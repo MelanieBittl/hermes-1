@@ -1,10 +1,10 @@
 #include "definitions.h"
 
 const double EPS = 1e-3;
-const double penalty_parameter = 1.;
+const double penalty_parameter = 10.;
 
 enum DG_TYPE {Baumann_Oden,IP,NIPG, NONE};
-DG_TYPE type =Baumann_Oden;
+DG_TYPE type =IP;
 
 
 double calc_abs_v(Element* e)

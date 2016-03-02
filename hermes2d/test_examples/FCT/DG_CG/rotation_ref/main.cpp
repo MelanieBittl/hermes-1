@@ -29,11 +29,11 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =5;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 										//Maximal polynomial degree.
                       
-const double time_step = 1e-3;                           // Time step.
+const double time_step = 2e-3;                           // Time step.
 const double T_FINAL = 0.8;                       // Time interval length.
 
 const bool serendipity = true;
@@ -41,7 +41,7 @@ const bool serendipity = true;
 const double EPS_smooth = 1e-10;   		//constant for the smoothness indicator (a<b => a+eps<=b)
 const double theta = 0.5;   			 // theta-scheme for time (theta =0 -> explizit, theta=1 -> implizit)
 
-
+const bool h_only = false;
 MatrixSolverType matrix_solver = SOLVER_UMFPACK; 
 
 
@@ -59,14 +59,14 @@ const double CONV_EXP = 1.0;                      // Default value is 1.0. This 
                                                   // cancidates in hp-adaptivity. See get_optimal_refinement() for details.
 const double ERR_STOP = 1.0;                      // Stopping criterion for adaptivity (rel. error tolerance between the
                                                   // fine mesh and coarse mesh solution in percent).
-const int NDOF_STOP = 60000;                      // Adaptivity process stops when the number of degrees of freedom grows
+const int NDOF_STOP = 200000;                      // Adaptivity process stops when the number of degrees of freedom grows
                                                   // over this limit. This is to prevent h-adaptivity to go on forever.
 
 const int ADAPSTEP_MAX = 2;												// max. numbers of adaptivity steps
 
 
 //Visualization
-const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
+const bool HERMES_VISUALIZATION = false;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION =true;              // Set to "true" to enable VTK output.
 const int VTK_FREQ = 70000000;													//Every VTK_FREQth time step the solution is saved as VTK output.
 
@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  //mloader.load("domain.mesh", basemesh);
- mloader.load("tri.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
+ //mloader.load("tri.mesh", basemesh);
  /*  MeshView meshview("mesh", new WinGeom(0, 0, 500, 400));
  meshview.show(basemesh);
    View::wait();*/
@@ -190,13 +190,18 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 	
     do 
     	{			ndof = space->get_num_dofs();  
-		  		Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i, dof = %i,", ts, as, ndof);				
-							
- 	
-				    		
-			double* coeff_vec_smooth = new double[ndof];
-			int* smooth_elem_ref;	
-							
+		  		Hermes::Mixins::Loggable::Static::info("Time step %i, adap_step %i, dof = %i,", ts, as, ndof);		
+				
+				      // Construct reference mesh and setup reference space->
+	     		 MeshSharedPtr ref_mesh(new Mesh);
+      ref_mesh->copy(space->get_mesh()); 
+if(h_only)		ref_mesh->refine_all_elements();  ///for h-adapt only
+      Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
+      SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
+
+if(!h_only)
+{ 			double* coeff_vec_smooth = new double[ndof];int* smooth_elem_ref;
+						
 			//smoothness-check for projected data		
 //      Hermes::Mixins::Loggable::Static::info("Projecting...");
 			if(ts==1)
@@ -207,24 +212,16 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
    Hermes::Mixins::Loggable::Static::info("Calling get_smooth_elems()...");		
 			smooth_elem_ref =regEst.get_smooth_elems(space,coeff_vec_smooth);
 
-      // Construct reference mesh and setup reference space->
-	     		 MeshSharedPtr ref_mesh(new Mesh);
-      ref_mesh->copy(space->get_mesh()); 
-		//ref_mesh->refine_all_elements();  ///for h-adapt only
-      Space<double>::ReferenceSpaceCreator ref_space_creator(space, ref_mesh, 0);
-      SpaceSharedPtr<double> ref_space = ref_space_creator.create_ref_space();
-
-
     HPAdapt* adapting = new HPAdapt(ref_space);	
 							// increase p in smooth regions, h refine in non-smooth regions 
     //  Hermes::Mixins::Loggable::Static::info("Calling adapt_smooth()...");
 			if(adapting->adapt_smooth(smooth_elem_ref, P_MAX)==false) 
-				throw Exceptions::Exception("reference space couldn't be constructed");							
-									      
-			delete adapting;
-			delete [] coeff_vec_smooth; 	
-			    
-
+				throw Exceptions::Exception("reference space couldn't be constructed");								      
+			delete adapting;	
+		    
+	delete [] coeff_vec_smooth; 	
+	}
+	
 			ref_ndof = ref_space->get_num_dofs();
 			
 			if(HERMES_VISUALIZATION) 
@@ -269,17 +266,25 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 
 			//--------- Project the previous timestep solution on the FE space (FCT is applied )----------------			
 			// coeff_vec : FCT -Projection, coeff_vec_2: L2 Projection (ogProjection)	
-			if(ts==1)
-				//fluxCorrection.project_FCT(zero_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);	
-				fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);	
-			else		
-				fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);			
+			if(ts==1){	
+				if(h_only)
+					fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);
+					else	fluxCorrection.project_FCT(initial_condition, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);	
+			}else{	
+				if(h_only)
+					fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection);
+					else
+				fluxCorrection.project_FCT(u_prev_time, coeff_vec, coeff_vec_2,mass_matrix,lumped_matrix,time_step,&ogProjection,&lumpedProjection, &regEst);
+			}
 	//------------------------- lower order solution------------					
 			u_L = lowOrder.solve_Low_Order(lumped_matrix, coeff_vec,surf_rhs,time_step);								
 	//-------------high order solution (standard galerkin) ------				
 			u_H = highOrd.solve_High_Order(coeff_vec,surf_rhs);		
 		//------------------------------Assemble antidiffusive fluxes and limit these-----------------------------------	
-			fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step,&regEst);
+			if(h_only)
+				fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step);
+				else
+					fluxCorrection.antidiffusiveFlux(mass_matrix,lumped_matrix,conv_matrix,diffusion,u_H, u_L,coeff_vec, limited_flux,time_step,&regEst);
 	//-------------Compute final solution ---------------			
 				ref_sln_double = lowOrder.explicit_Correction(limited_flux);
 			Solution<double>::vector_to_solution(ref_sln_double, ref_space, ref_sln);	

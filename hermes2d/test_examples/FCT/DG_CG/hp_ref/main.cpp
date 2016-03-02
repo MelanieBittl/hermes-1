@@ -29,11 +29,11 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =8;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
 const int P_MAX = 2; 										//Maximal polynomial degree.
                       
-const double time_step = 2e-4;                           // Time step.
+const double time_step = 125e-5/2.;                           // Time step.
 const double T_FINAL = 0.3;                       // Time interval length.
 
 const bool serendipity = true;
@@ -103,6 +103,7 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
   MeshFunctionSharedPtr<double>initial_condition(new CustomInitialCondition(mesh,false));
   MeshFunctionSharedPtr<double>exact_solution(new CustomInitialCondition(mesh, true));
    // MeshFunctionSharedPtr<double> zero_condition(new ZeroSolution<double>(mesh));
+  
 	
   // Initialize the weak formulation.
 	CustomWeakFormMassmatrix  massmatrix(time_step);
@@ -112,9 +113,13 @@ MeshFunctionSharedPtr<double>u_prev_time(new Solution<double>);
 
 
   // Output solution in VTK format.
-	Linearizer lin;
+	Linearizer lin;	bool mode_3D = true;
+			/*lin.save_solution_vtk(initial_condition, "init2d.vtk", "solution", false);
+   	lin.save_solution_vtk(initial_condition, "init3d.vtk", "solution", mode_3D);
+					lin.save_solution_vtk(exact_solution, "exact_end2d.vtk", "solution", false);
+   	lin.save_solution_vtk(exact_solution, "exact_end3d.vtk", "solution", mode_3D);*/
 	Orderizer ord;
-	bool mode_3D = true;
+
 	char filename[40];
 	char title[100];
 //Hermes Visualization

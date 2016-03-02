@@ -12,9 +12,9 @@ using namespace Hermes::Hermes2D;
 using namespace Hermes::Hermes2D::Views;
 using namespace Hermes::Solvers;
 
-const int INIT_REF_NUM =3;                   // Number of initial refinements.
+const int INIT_REF_NUM =4;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const double time_step = 1e-4;
+const double time_step = 1e-3;
 const double T_FINAL = 0.231;                       // Time interval length. 
 
 const double theta = 1.;
@@ -43,23 +43,23 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain.mesh", basemesh);
+  mloader.load("domain2.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
  	 mesh->copy(basemesh);
 
-	/*	SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
+		SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));	*/
+		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));	
 
-
+/*
 		SpaceSharedPtr<double> space_rho(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));
-
+*/
 		int dof_rho = space_rho->get_num_dofs();
 		int dof_v_x = space_rho_v_x->get_num_dofs();
 		int dof_v_y = space_rho_v_y->get_num_dofs();
@@ -142,7 +142,7 @@ Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho
 			double* Q_plus = new double[ndof]; double* Q_minus = new double[ndof];
 			double* R_plus = new double[ndof]; double* R_minus = new double[ndof];	
 
-
+int k = 1;
 
 ///-----------Assembling mass matrix
     dp_mass.assemble(mass_matrix);
@@ -165,13 +165,15 @@ Hermes::vector<MeshFunctionSharedPtr<double> > (prev_rho, prev_rho_v_x, prev_rho
   MeshFunctionSharedPtr<double>  vel_y(new VelocityFilter(prev_slns, 2));
 
 			// Visualize the solution.
-			s1.show(prev_rho);
+		//	s1.show(prev_rho);
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 // Time stepping loop:
 	double current_time = 0.0; 
 	int ts = 1;
 	char title[100];
+		char filename[40];
+	Linearizer lin_p, lin_v_x, lin_v_y, lin_rho;
 
 
 Space<double>::assign_dofs(spaces);
@@ -281,6 +283,23 @@ do
 
   // Increase time step counter
   ts++;
+  
+  if((current_time >= 0.1*k)&&(current_time < 0.1*k +time_step))
+{
+				pressure->reinit();
+				vel_x->reinit();
+				vel_y->reinit();
+				sprintf(filename, "pressure-%i.vtk", ts );
+			lin_p.save_solution_vtk(pressure, filename, "pressure", false);
+        sprintf(filename, "v_x-%i.vtk", ts );
+			lin_v_x.save_solution_vtk(vel_x, filename, "velocity_x", false);
+  sprintf(filename, "v_y-%i.vtk", ts );
+			lin_v_y.save_solution_vtk(vel_y,filename, "velocity_y",false);
+       sprintf(filename, "rho-%i.vtk", ts );
+			lin_rho.save_solution_vtk(prev_slns[0], filename, "density", false);
+			k++;
+
+}
 
 
 
@@ -290,14 +309,10 @@ while (current_time < T_FINAL);
 				pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
-        Linearizer lin_p;
-			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", true);
-        Linearizer lin_v_x;
-			lin_v_x.save_solution_vtk(vel_x, "vx_end.vtk", "velocity_x", true);
-        Linearizer lin_v_y;
-			lin_v_y.save_solution_vtk(vel_y, "vy_end.vtk", "velocity_y",true);
-        Linearizer lin_rho;
-			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
+			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", false);
+			lin_v_x.save_solution_vtk(vel_x, "vx_end.vtk", "velocity_x", false);
+			lin_v_y.save_solution_vtk(vel_y, "vy_end.vtk", "velocity_y",false);
+			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", false);
 
 
 delete dp_boundary; delete dp_K; delete wf_K; delete wf_boundary;

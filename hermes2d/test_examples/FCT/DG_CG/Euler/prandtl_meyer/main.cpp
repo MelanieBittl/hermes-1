@@ -21,7 +21,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
-const double time_step = 0.0001;
+const double time_step = 0.01;
 const double T_FINAL = 30000000.;                       // Time interval length. 
 
 const double theta = 1.;
@@ -43,6 +43,8 @@ MatrixSolverType matrix_solver = SOLVER_UMFPACK;
 // Set visual output for every nth step.
 const unsigned int EVERY_NTH_STEP = 1;
 
+const std::string BDY_SOLID = "solid";
+
 int main(int argc, char* argv[])
 {
 
@@ -50,7 +52,8 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("quad.mesh", basemesh);
+ //mloader.load("quad.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -89,7 +92,13 @@ SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));
-*/
+*/		
+		
+		SpaceSharedPtr<double> space_rho_h1(new H1Space<double>(basemesh, 1));	
+		SpaceSharedPtr<double> space_rho_v_x_h1(new H1Space<double>(basemesh,1));	
+		SpaceSharedPtr<double> space_rho_v_y_h1(new H1Space<double>(basemesh, 1));	
+		SpaceSharedPtr<double> space_e_h1(new H1Space<double>(basemesh, 1));
+
 	int dof_rho = space_rho->get_num_dofs();
 	int dof_v_x = space_rho_v_x->get_num_dofs();
 	int dof_v_y = space_rho_v_y->get_num_dofs();
@@ -101,10 +110,20 @@ SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));
   Hermes::Mixins::Loggable::Static::info("ndof: %d \n", ndof);
 
   // Initialize solutions, set initial conditions.
- MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
+/* MeshFunctionSharedPtr<double> init_rho(new CustomInitialCondition_rho(mesh,KAPPA));	
   MeshFunctionSharedPtr<double> init_rho_v_x(new  ConstantSolution<double>(mesh,  V1_EXT));	
   MeshFunctionSharedPtr<double> init_rho_v_y(new  ConstantSolution<double>(mesh,  V2_EXT));	
   MeshFunctionSharedPtr<double> init_e(new CustomInitialCondition_e(mesh,KAPPA));
+ */	MeshFunctionSharedPtr<double> init_rho(new Solution<double>);
+    MeshFunctionSharedPtr<double> init_rho_v_x(new Solution<double>);
+    MeshFunctionSharedPtr<double> init_rho_v_y(new Solution<double>);
+    MeshFunctionSharedPtr<double> init_e(new Solution<double>);  
+  
+  dynamic_cast<Solution<double>* >(init_rho.get())->load("rho.xml",space_rho_h1); 
+dynamic_cast<Solution<double>* >(init_rho_v_x.get())->load("v_x.xml",space_rho_v_x_h1); 
+dynamic_cast<Solution<double>* >(init_rho_v_y.get())->load("v_y.xml",space_rho_v_y_h1); 
+dynamic_cast<Solution<double>* >(init_e.get())->load("energy.xml",space_e_h1);
+
 
   	MeshFunctionSharedPtr<double> prev_rho(new Solution<double>);
     MeshFunctionSharedPtr<double> prev_rho_v_x(new Solution<double>);
@@ -146,8 +165,11 @@ mach_view.set_min_max_range(2.5, 3.26);
 
 
   ScalarView s5("diff_rho", new WinGeom(700, 0, 600, 300));
-
-
+/*
+s1.show(init_rho);
+s2.show(init_rho_v_x);
+s3.show(init_rho_v_y);*/
+  //View::wait();
 
 //------------
 
@@ -169,11 +191,11 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 	EulerK wf_convection(KAPPA, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
   EulerEquationsWeakForm_Mass wf_mass;
 
-	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, false);
+	/*EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, false);
 	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, false);
-  
-  //	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, true);
-	//EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, true);
+  */
+  	EulerS wf_bdry_init(KAPPA,mesh,num_flux, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e, false);
+	EulerS wf_bdry(KAPPA,mesh, num_flux,boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e, false);
 
 
 
@@ -193,9 +215,35 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 	CSCMatrix<double> * dS_matrix = new CSCMatrix<double>;  
 CSCMatrix<double> * dg_matrix = new CSCMatrix<double>; 
 CSCMatrix<double> * K_matrix = new CSCMatrix<double>; 
-	CSCMatrix<double> * matrix_2 = new CSCMatrix<double>;  
+	CSCMatrix<double> * matrix_2 = new CSCMatrix<double>;  	
+	
+	
+	
 
     OGProjection<double> ogProjection;
+
+	 /*int vn_id=-1; bool vn_id_set=false;
+for_all_active_elements(e, mesh)
+{
+		for(int i = 0; i<e->get_nvert(); i++)
+		{
+			if((e->vn[i]->x==0)&&(e->vn[i]->y==0))
+			{vn_id = e->vn[i]->id; break;}
+		}
+		if(vn_id_set) break;
+}
+mesh->refine_towards_vertex(vn_id,1);
+ for(int i=0;i<4;i++) spaces[i]->set_uniform_order(P_INIT);  
+//mesh->refine_towards_boundary(BDY_SOLID, 2);
+Space<double>::assign_dofs(spaces);
+ndof = Space<double>::get_num_dofs(spaces);
+	 
+	 mesh->refine_all_elements();
+	 for(int i=0;i<4;i++) spaces[i]->set_uniform_order(P_INIT);   
+	 Space<double>::assign_dofs(spaces);
+ndof = Space<double>::get_num_dofs(spaces);
+	 
+	*/ 
 		SimpleVector<double> * vec_dg = new SimpleVector<double> (ndof);
 		SimpleVector<double> * vec_rhs = new SimpleVector<double> (ndof);
 		SimpleVector<double> * vec_res = new SimpleVector<double> (ndof);
@@ -206,15 +254,16 @@ CSCMatrix<double> * K_matrix = new CSCMatrix<double>;
 
 
 
-
 //Projection of the initial condition
   ogProjection.project_global(spaces,init_slns, coeff_vec, norms_l2 );
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
+			
+	 //mesh->refine_all_elements();		
 
-/*
+
 MeshFunctionSharedPtr<double> mach_2(new  MachNumberFilter(prev_slns, KAPPA));
-		s1.show(prev_rho);
-		mach_view.show(mach_2);*/
+	//	s1.show(prev_rho);
+		//mach_view.show(mach_2);
 //View::wait(HERMES_WAIT_KEYPRESS);
 
 // Time stepping loop:
@@ -346,7 +395,7 @@ for(int i=0; i<ndof;i++)
 	
 
 			// Visualize the solution.
-               /*MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
+           /*  MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
                 MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));
                         sprintf(title, "vx: ts=%i",ts);        
                         s2.set_title(title);
@@ -360,7 +409,7 @@ for(int i=0; i<ndof;i++)
                         sprintf(title, "Pressure: ts=%i",ts);
                         pressure_view.set_title(title);
                         pressure->reinit();
-                        pressure_view.show(pressure);*/
+                        pressure_view.show(pressure);
 
                         MeshFunctionSharedPtr<double> mach(new MachNumberFilter(prev_slns, KAPPA));
                         sprintf(title, "Mach: ts=%i",ts);
@@ -372,7 +421,7 @@ for(int i=0; i<ndof;i++)
                         s1.set_title(title);
                         s1.show(prev_rho);
 				s5.show(diff_slns[0]);
-
+*/
 	//View::wait(HERMES_WAIT_KEYPRESS);
 
 	  // Update global time.
@@ -397,12 +446,14 @@ for(int i = 0;	i<10; i++)
 	if(residual_norm < 1./std::pow(10,i)) bound = i;
 	else break;
 }
-Hermes::Mixins::Loggable::Static::info("res_norm = %e < 10^(-%i)", residual_norm, bound); 	  
+Hermes::Mixins::Loggable::Static::info("res_norm = %e < 10^(-%i), norm = %e", residual_norm, bound, norm); 	  
  	
 
-pFile = fopen ("residual_norm.txt","a");
+//pFile = fopen ("residual_norm.txt","a");
+pFile = fopen ("norm.txt","a");
+fprintf (pFile,"%i: norm =%e, norm_rel = %e \n",ts, norm, norm_rel);
    // fprintf (pFile,"%i: res = %e < 10^(-%i),residual_norm=%e,  norm =%e, norm_rel = %e \n",ts, residual, bound,residual_norm, norm, norm_rel);
-	     fprintf (pFile,"%i: %e\n",ts,residual_norm);
+	     //fprintf (pFile,"%i: %e\n",ts,residual_norm);
 fclose (pFile);
 
 pFile = fopen ("residual.txt","a");
@@ -413,7 +464,7 @@ fclose (pFile);
 
 }//while ((current_time < T_FINAL)||(  norm <1e-12)||(norm_rel<1e-08));
 //while ((ts < 1000)&&(residual_norm>1e-10));
-while (ts < 100);
+while ((ts < 1000)&&(norm >1e-12)&&(norm_rel>1e-08));
 
 
 if(residual<=1e-8) printf("Residual small enough");
@@ -433,9 +484,9 @@ Linearizer lin;
 			lin.save_solution_vtk(mach, "m_end2d.vtk", "mach", false);
 			lin.save_solution_vtk(prev_slns[0], "rho_end2d.vtk", "density", false);
 			
-		lin.save_solution_vtk(pressure, "p_end3d.vtk", "pressure", true);    
+	/*	lin.save_solution_vtk(pressure, "p_end3d.vtk", "pressure", true);    
 			lin.save_solution_vtk(mach, "m_end3d.vtk", "mach", true);
-			lin.save_solution_vtk(prev_slns[0], "rho_end3d.vtk", "density", true);
+			lin.save_solution_vtk(prev_slns[0], "rho_end3d.vtk", "density", true);*/
 
 
 		//Cleanup

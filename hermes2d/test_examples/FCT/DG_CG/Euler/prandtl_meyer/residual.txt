@@ -1,0 +1,181 @@
+DOFS:8212, CFL=1.020000 
+2: res = 4.720963e+00 < 10^(-1),residual_norm=1.321669e-02, 
+3: res = 4.436497e+00 < 10^(-1),residual_norm=1.309552e-02, 
+4: res = 4.139612e+00 < 10^(-1),residual_norm=1.295313e-02, 
+5: res = 3.840134e+00 < 10^(-1),residual_norm=1.280580e-02, 
+6: res = 3.549251e+00 < 10^(-1),residual_norm=1.267122e-02, 
+7: res = 3.278572e+00 < 10^(-1),residual_norm=1.256687e-02, 
+8: res = 3.038726e+00 < 10^(-1),residual_norm=1.250825e-02, 
+9: res = 2.838057e+00 < 10^(-1),residual_norm=1.250723e-02, 
+10: res = 2.681766e+00 < 10^(-1),residual_norm=1.257054e-02, 
+11: res = 2.571513e+00 < 10^(-1),residual_norm=1.269876e-02, 
+12: res = 2.505561e+00 < 10^(-1),residual_norm=1.288606e-02, 
+13: res = 2.479213e+00 < 10^(-1),residual_norm=1.312081e-02, 
+14: res = 2.485447e+00 < 10^(-1),residual_norm=1.338709e-02, 
+15: res = 2.515608e+00 < 10^(-1),residual_norm=1.366670e-02, 
+16: res = 2.560276e+00 < 10^(-1),residual_norm=1.394107e-02, 
+17: res = 2.609945e+00 < 10^(-1),residual_norm=1.419300e-02, 
+18: res = 2.655739e+00 < 10^(-1),residual_norm=1.440769e-02, 
+19: res = 2.689990e+00 < 10^(-1),residual_norm=1.457354e-02, 
+20: res = 2.706720e+00 < 10^(-1),residual_norm=1.468247e-02, 
+DOFS:8212, CFL=1.200000 
+2: res = 4.720963e+00 < 10^(-1),residual_norm=1.321669e-02, 
+DOFS:8212, CFL=1.200000 
+2: res = 4.720963e+00 < 10^(-1),residual_norm=1.321669e-02, 
+DOFS:32548, CFL=1.400000 
+2: res = 2.427287e+00 < 10^(-2),residual_norm=4.752306e-03, 
+DOFS:32548, CFL=1.400000 
+2: res = 2.427287e+00 < 10^(-2),residual_norm=4.752306e-03, 
+DOFS:32548, CFL=1.400000 
+2: res = 3.380775e-01 < 10^(-2),residual_norm=1.100258e-03, 
+DOFS:32548, CFL=1.400000 
+2: res = 5.409240e+00 < 10^(-2),residual_norm=8.641327e-03, 
+DOFS:2660, CFL=1.020000 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 9.647029e-02 < 10^(-2),residual_norm=3.035190e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 9.647029e-02 < 10^(-2),residual_norm=3.035190e-03, 
+4: res = 9.215735e-02 < 10^(-2),residual_norm=3.016700e-03, 
+5: res = 8.809129e-02 < 10^(-2),residual_norm=3.000128e-03, 
+6: res = 8.436876e-02 < 10^(-2),residual_norm=2.986381e-03, 
+7: res = 8.107923e-02 < 10^(-2),residual_norm=2.976176e-03, 
+8: res = 7.829794e-02 < 10^(-2),residual_norm=2.969994e-03, 
+9: res = 7.607938e-02 < 10^(-2),residual_norm=2.968053e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 9.647029e-02 < 10^(-2),residual_norm=3.035190e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+DOFS:8212, CFL=1.020000 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+DOFS:10436, CFL=1.040000 
+DOFS:10436, CFL=1.040000 
+DOFS:10436, CFL=1.040000 
+DOFS:10436, CFL=1.040000 
+2: res = 3.042698e+00 < 10^(-2),residual_norm=9.996375e-03, 
+3: res = 3.089956e+00 < 10^(-2),residual_norm=9.942954e-03, 
+DOFS:2660, CFL=1.020000 
+DOFS:2660, CFL=1.020000 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 9.647029e-02 < 10^(-2),residual_norm=3.035190e-03, 
+4: res = 9.215735e-02 < 10^(-2),residual_norm=3.016700e-03, 
+5: res = 8.809129e-02 < 10^(-2),residual_norm=3.000128e-03, 
+6: res = 8.436876e-02 < 10^(-2),residual_norm=2.986381e-03, 
+7: res = 8.107923e-02 < 10^(-2),residual_norm=2.976176e-03, 
+8: res = 7.829794e-02 < 10^(-2),residual_norm=2.969994e-03, 
+9: res = 7.607938e-02 < 10^(-2),residual_norm=2.968053e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 9.647029e-02 < 10^(-2),residual_norm=3.035190e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.464349e+02 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 1.459232e+01 < 10^(-2),residual_norm=3.026185e-03, 
+4: res = 1.766613e+00 < 10^(-2),residual_norm=3.045964e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.458693e+02 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 4.601709e+04 < 10^(-2),residual_norm=2.841786e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.464349e+02 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 1.459232e+01 < 10^(-2),residual_norm=3.026185e-03, 
+4: res = 1.766613e+00 < 10^(-2),residual_norm=3.045964e-03, 
+5: res = 3.450378e-01 < 10^(-2),residual_norm=3.055092e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.469920e+02 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.453147e+02 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.646496e+00 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 8.702640e+00 < 10^(-2),residual_norm=2.911445e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.478769e+00 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.533159e+00 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.589721e+00 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 1.019901e+01 < 10^(-2),residual_norm=2.905177e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 2.589721e+00 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.283614e-01 < 10^(-2),residual_norm=3.054579e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.009281e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 9.647029e-02 < 10^(-2),residual_norm=3.035190e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.283614e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 8.899282e-02 < 10^(-2),residual_norm=3.013499e-03, 
+4: res = 8.508941e-02 < 10^(-2),residual_norm=2.999810e-03, 
+5: res = 8.171230e-02 < 10^(-2),residual_norm=2.988498e-03, 
+6: res = 7.880792e-02 < 10^(-2),residual_norm=2.979511e-03, 
+7: res = 7.636840e-02 < 10^(-2),residual_norm=2.972903e-03, 
+8: res = 7.438541e-02 < 10^(-2),residual_norm=2.968713e-03, 
+9: res = 7.283986e-02 < 10^(-2),residual_norm=2.966896e-03, 
+10: res = 7.169866e-02 < 10^(-2),residual_norm=2.967326e-03, 
+11: res = 7.091925e-02 < 10^(-2),residual_norm=2.969773e-03, 
+12: res = 7.045260e-02 < 10^(-2),residual_norm=2.973958e-03, 
+13: res = 7.024591e-02 < 10^(-2),residual_norm=2.979576e-03, 
+14: res = 7.024600e-02 < 10^(-2),residual_norm=2.986308e-03, 
+15: res = 7.039963e-02 < 10^(-2),residual_norm=2.993818e-03, 
+16: res = 7.065642e-02 < 10^(-2),residual_norm=3.001768e-03, 
+17: res = 7.096981e-02 < 10^(-2),residual_norm=3.009826e-03, 
+18: res = 7.129788e-02 < 10^(-2),residual_norm=3.017674e-03, 
+19: res = 7.160392e-02 < 10^(-2),residual_norm=3.025019e-03, 
+20: res = 7.185660e-02 < 10^(-2),residual_norm=3.031595e-03, 
+21: res = 7.203011e-02 < 10^(-2),residual_norm=3.037177e-03, 
+22: res = 7.210416e-02 < 10^(-2),residual_norm=3.041581e-03, 
+23: res = 7.206398e-02 < 10^(-2),residual_norm=3.044666e-03, 
+24: res = 7.190025e-02 < 10^(-2),residual_norm=3.046339e-03, 
+25: res = 7.160888e-02 < 10^(-2),residual_norm=3.046553e-03, 
+26: res = 7.119099e-02 < 10^(-2),residual_norm=3.045304e-03, 
+27: res = 7.065219e-02 < 10^(-2),residual_norm=3.042631e-03, 
+28: res = 7.000212e-02 < 10^(-2),residual_norm=3.038605e-03, 
+29: res = 6.925366e-02 < 10^(-2),residual_norm=3.033329e-03, 
+30: res = 6.842218e-02 < 10^(-2),residual_norm=3.026926e-03, 
+31: res = 6.752468e-02 < 10^(-2),residual_norm=3.019538e-03, 
+32: res = 6.657904e-02 < 10^(-2),residual_norm=3.011316e-03, 
+33: res = 6.560313e-02 < 10^(-2),residual_norm=3.002414e-03, 
+34: res = 6.461413e-02 < 10^(-2),residual_norm=2.992984e-03, 
+35: res = 6.362799e-02 < 10^(-2),residual_norm=2.983174e-03, 
+36: res = 6.265888e-02 < 10^(-2),residual_norm=2.973121e-03, 
+37: res = 6.171891e-02 < 10^(-2),residual_norm=2.962949e-03, 
+38: res = 6.081791e-02 < 10^(-2),residual_norm=2.952769e-03, 
+39: res = 5.996336e-02 < 10^(-2),residual_norm=2.942673e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.227051e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 2.716848e-01 < 10^(-2),residual_norm=3.075462e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.283614e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 8.899282e-02 < 10^(-2),residual_norm=3.013499e-03, 
+4: res = 8.508941e-02 < 10^(-2),residual_norm=2.999810e-03, 
+5: res = 8.171230e-02 < 10^(-2),residual_norm=2.988498e-03, 
+6: res = 7.880792e-02 < 10^(-2),residual_norm=2.979511e-03, 
+7: res = 7.636840e-02 < 10^(-2),residual_norm=2.972903e-03, 
+8: res = 7.438541e-02 < 10^(-2),residual_norm=2.968713e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.283614e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 9.279702e-02 < 10^(-2),residual_norm=3.016465e-03, 
+4: res = 8.701382e-02 < 10^(-2),residual_norm=2.997684e-03, 
+5: res = 8.309287e-02 < 10^(-2),residual_norm=2.984962e-03, 
+6: res = 7.983218e-02 < 10^(-2),residual_norm=2.976117e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.610526e+01 < 10^(-1),residual_norm=1.321669e-02, 
+3: res = 3.820776e+00 < 10^(-1),residual_norm=1.280897e-02, 
+4: res = 4.626708e+01 < 10^(-1),residual_norm=1.272330e-02, 
+DOFS:32548, CFL=1.040000 
+2: res = 8.280533e+00 < 10^(-2),residual_norm=4.752306e-03, 
+DOFS:32548, CFL=1.040000 
+2: res = 8.280533e+00 < 10^(-2),residual_norm=4.752306e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.283614e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 1.000828e-01 < 10^(-2),residual_norm=3.023836e-03, 
+DOFS:8212, CFL=1.020000 
+2: res = 1.283614e-01 < 10^(-2),residual_norm=3.054579e-03, 
+3: res = 1.000828e-01 < 10^(-2),residual_norm=3.023836e-03, 

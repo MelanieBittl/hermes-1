@@ -18,7 +18,7 @@ using namespace Hermes::Solvers;
 
 
 
-const int INIT_REF_NUM =4;                   // Number of initial refinements.
+const int INIT_REF_NUM =5;                   // Number of initial refinements.
 const int P_INIT = 2;       						// Initial polynomial degree.
 const double time_step = 1e-4;
 const double T_FINAL = 0.231;                       // Time interval length. 
@@ -55,7 +55,8 @@ int main(int argc, char* argv[])
    // Load the mesh->
   MeshSharedPtr mesh(new Mesh), basemesh(new Mesh);
   MeshReaderH2D mloader;
-  mloader.load("domain2.mesh", basemesh);
+  mloader.load("domain.mesh", basemesh);
+  //mloader.load("domain2.mesh", basemesh);
 
   // Perform initial mesh refinements (optional).
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
@@ -156,7 +157,7 @@ Space<double>::assign_dofs(spaces);
 	CSCMatrix<double> * dS_matrix = new CSCMatrix<double>;  
 CSCMatrix<double> * dg_matrix = new CSCMatrix<double>; 
 CSCMatrix<double> * K_matrix = new CSCMatrix<double>; 
-	CSCMatrix<double> * matrix_2 = new CSCMatrix<double>;  
+
  
     OGProjection<double> ogProjection;
 	Lumped_Projection lumpedProjection;
@@ -276,6 +277,7 @@ View::wait(HERMES_WAIT_KEYPRESS);
 	double current_time = 0.0; 
 	int ts = 1;
 	char title[100];	
+	char filename[40];
 
 
 	dp_mass.assemble(mass_matrix);
@@ -286,8 +288,8 @@ View::wait(HERMES_WAIT_KEYPRESS);
  
 
 //NumericalFlux* num_flux =new ApproxRoeNumericalFlux(KAPPA, euler_fluxes); 
-NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
-//NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
+//NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
+NumericalFlux* num_flux =new VijayasundaramNumericalFlux(KAPPA);
 
 
 	RiemannInvariants* riemann_invariants = new RiemannInvariants(KAPPA);
@@ -297,7 +299,7 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 
 
 	EulerK wf_convection(KAPPA,  prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
-	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e);
+	EulerS wf_bdry(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, prev_rho, prev_rho_v_x, prev_rho_v_y, prev_e,num_flux,false);
 
 	DiscreteProblem<double> dp(&wf_convection, spaces); 
 	DiscreteProblem<double> dp_DG(&wf_DG, spaces);
@@ -305,7 +307,7 @@ NumericalFlux* num_flux =new LaxFriedrichsNumericalFlux(KAPPA);
 
 
 	EulerK wf_convection_init(KAPPA, init_rho, init_rho_v_x, init_rho_v_y, init_e);
-	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e);
+	EulerS wf_bdry_init(KAPPA, boundary_rho, boundary_v_x, boundary_v_y,  boundary_e, init_rho, init_rho_v_x, init_rho_v_y, init_e,num_flux,false);
 
   DiscreteProblem<double> dp_init(&wf_convection_init,spaces);
   DiscreteProblem<double> dp_DG_init(&wf_DG_init, spaces);
@@ -355,7 +357,11 @@ Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);*/
 			//m1view.show(spaces[0]);
 //View::wait(HERMES_WAIT_KEYPRESS);
 Linearizer lin_p, lin_v_x, lin_v_y, lin_rho;
-
+		/*	lin_p.save_solution_vtk(pressure, "p_init.vtk", "pressure", false);        
+			lin_v_x.save_solution_vtk(vel_x, "vx_init.vtk", "velocity_x", false); 
+			lin_v_y.save_solution_vtk(vel_y, "vy_init.vtk", "velocity_y",false);     
+			lin_rho.save_solution_vtk(prev_slns[0], "rho_init.vtk", "density", false);*/
+int k = 1;
 //Timestep loop
 do
 {	 
@@ -383,18 +389,9 @@ matrix->add_sparse_matrix(K_matrix);
 		matrix->multiply_with_Scalar(-theta);  //-theta L(U)	
 		matrix->add_sparse_matrix(mass_matrix); 			//M/t - theta L(U)
 
-		/*
-matrix_2->create(K_matrix->get_size(),K_matrix->get_nnz(), K_matrix->get_Ap(), K_matrix->get_Ai(),K_matrix->get_Ax());
-matrix_2->zero();
-matrix_2->add_sparse_matrix(dS_matrix);
-matrix_2->multiply_with_Scalar(-theta);
-matrix_2->add_sparse_matrix(mass_matrix); 
-*/
 
 	//-------------rhs: M/tau+ (1-theta)(L) u^n------------		
-		//matrix_2->multiply_with_vector(coeff_vec, coeff_vec_2);
-		vec_rhs->zero(); 
-		//vec_rhs->add_vector(coeff_vec_2); 
+		vec_rhs->zero();
 		if(DG) vec_rhs->add_vector(vec_dg); 
 		vec_rhs->add_vector(vec_bdry); 
 		vec_rhs->add_vector(vec_conv); 
@@ -419,7 +416,7 @@ matrix_2->add_sparse_matrix(mass_matrix);
 			// Visualize the solution.
 
 
-		/*	sprintf(title, "vx: ts=%i",ts);	
+	/*	sprintf(title, "vx: ts=%i",ts);	
 			s2.set_title(title);
 			sprintf(title, "vy: ts=%i",ts);	
 			s3.set_title(title);
@@ -449,45 +446,35 @@ matrix_2->add_sparse_matrix(mass_matrix);
 
 		delete solver;
 		matrix->free();
-		matrix_2->free();
-if((current_time >= 0.12)&&(current_time < 0.121))
+		
+if((current_time >= 0.1*k)&&(current_time < 0.1*k +time_step))
 {
 				pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
-			lin_p.save_solution_vtk(pressure, "p_12.vtk", "pressure", true);
-        
-			lin_v_x.save_solution_vtk(vel_x, "vx_12.vtk", "velocity_x", true);
- 
-			lin_v_y.save_solution_vtk(vel_y, "vy_12.vtk", "velocity_y",true);
-     
-			lin_rho.save_solution_vtk(prev_slns[0], "rho_12.vtk", "density", true);
+				sprintf(filename, "pressure-%i.vtk", ts );
+			lin_p.save_solution_vtk(pressure, filename, "pressure", false);
+        sprintf(filename, "v_x-%i.vtk", ts );
+			lin_v_x.save_solution_vtk(vel_x, filename, "velocity_x", false);
+  sprintf(filename, "v_y-%i.vtk", ts );
+			lin_v_y.save_solution_vtk(vel_y,filename, "velocity_y",false);
+       sprintf(filename, "rho-%i.vtk", ts );
+			lin_rho.save_solution_vtk(prev_slns[0], filename, "density", false);
+			k++;
 
 }
 
 }while (current_time < T_FINAL);
 
 
-	
-
-
-
-
-		//MeshFunctionSharedPtr<double> pressure(new PressureFilter(prev_slns, KAPPA));
-		//MeshFunctionSharedPtr<double> vel_x(new VelocityFilter_x(prev_slns));
-		//MeshFunctionSharedPtr<double> vel_y (new VelocityFilter_y(prev_slns));	
-
 				pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
         
-			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", true);
-        
-			lin_v_x.save_solution_vtk(vel_x, "vx_end.vtk", "velocity_x", true);
- 
-			lin_v_y.save_solution_vtk(vel_y, "vy_end.vtk", "velocity_y",true);
-     
-			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", true);
+			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", false);        
+			lin_v_x.save_solution_vtk(vel_x, "vx_end.vtk", "velocity_x", false); 
+			lin_v_y.save_solution_vtk(vel_y, "vy_end.vtk", "velocity_y",false);     
+			lin_rho.save_solution_vtk(prev_slns[0], "rho_end.vtk", "density", false);
 
 
 
@@ -498,7 +485,7 @@ if((current_time >= 0.12)&&(current_time < 0.121))
 delete dS_matrix;
 delete dg_matrix;
 delete K_matrix;
-delete matrix_2;
+
 
 
 

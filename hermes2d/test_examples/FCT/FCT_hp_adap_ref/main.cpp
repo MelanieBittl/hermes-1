@@ -131,7 +131,6 @@ SpaceSharedPtr<double> space(new H1Space<double>(mesh,&bcs, P_INIT));
 	
 	  // Create a refinement selector.
   H1ProjBasedSelector<double> selector(CAND_LIST);
-	//L2ProjBasedSelector<double> selector(CAND_LIST);
        selector.set_error_weights(1.0,1.0,1.0); 
 
 	  DefaultErrorCalculator<double, HERMES_H1_NORM> error_calculator(RelativeErrorToGlobalNorm, 1);

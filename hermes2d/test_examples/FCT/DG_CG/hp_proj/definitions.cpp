@@ -181,12 +181,27 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
 		}	
  
 	}
+/*	dx =0;
+		dy =0;
+		
+		int k =2;
+				double arg = PI*(x-y-0.4)/0.8;	
+ 
+	if((x-y>0)&&(x-y<0.8))
+	{	dx= -std::sin(arg)*PI/0.8;
+		dy=	std::sin(arg)*PI/0.8;		
+		dx*= k*std::pow(std::cos(arg),k-1);
+		dy *=k*std::pow(std::cos(arg),k-1);
+	}*/
+
+
+
 };
 
  double CustomInitialCondition::value(double x, double y) const 
 {
   double result = 0.0;
-	double radius;
+double radius;
         //hump
 	double x_0 =0.25;
 	double y_0= 0.5;	
@@ -215,6 +230,19 @@ void CustomInitialCondition::derivatives(double x, double y, double& dx, double&
 	}
 	
 return result;
+
+/*
+int k =2;
+		double arg = PI*(x-y-0.4)/0.8;
+
+	if((x-y>0)&&(x-y<0.8))
+			{	result= std::cos(arg);			
+				result= std::pow(result,k);		
+			}
+
+	
+return result;
+*/
 
 };
 

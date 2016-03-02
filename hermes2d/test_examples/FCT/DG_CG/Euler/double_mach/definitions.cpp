@@ -226,13 +226,16 @@ add_vector_form(new EulerK::EulerEquationsLinearForm(k,kappa));
       Geom<double> *e, Func<double>  **ext) const
 {
 	int bdry =0;
-	double* ghost_state = new double[4];for(int l=0;l<4;l++) ghost_state[l]=0.;
+	double* ghost_state = new double[4];
+	for(int l=0;l<4;l++) ghost_state[l]=0.;
 	double * A_n = new double[4];
 	double* dudu_j= new double[4];
 	bool solid = false;
 	double constant = 1.;
   double result = 0.;
 double nx, ny, tx, ty;
+      double w_L[4];
+		
   for (int i = 0;i < n;i++) 
   {		
 		if((e->x[i]>= (1./6.))&&(e->y[i]==0)){
@@ -243,6 +246,11 @@ nx = e->nx[i];
 ny = e->ny[i];
 tx = e->tx[i];
 ty = e->ty[i];
+
+		 w_L[0] = ext[0]->val[i];
+        w_L[1] = ext[1]->val[i];
+        w_L[2] = ext[2]->val[i];
+        w_L[3] = ext[3]->val[i];
 
 		 if(((static_cast<EulerS*>(wf))->mirror_condition==true)||(solid==false)){ 
 				if((e->x[i]>= (1./6.))&&(e->y[i]==0)){
@@ -258,7 +266,8 @@ ty = e->ty[i];
 					//if(bdry==4) bdry =1;
 				
 				if(ext[5]->val[i]==0) bdry =1;
-				else bdry=2;
+				else 
+					bdry=2;
 				}
 
 
@@ -267,7 +276,7 @@ ty = e->ty[i];
 if(bdry==1) constant =1.;
 else constant = 0.5;
 
-
+/*
 			if(bdry!=1){
 					Boundary_helpers::calculate_A_n(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny , ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3], kappa, entry_i,A_n); //ite-Zeile A_n
 
@@ -275,7 +284,7 @@ else constant = 0.5;
 				{
 						(static_cast<EulerS*>(wf))->riemann_invariants->get_du_du(ext[0]->val[i], ext[1]->val[i], ext[2]->val[i],ext[3]->val[i], nx,ny ,tx, ty, ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],bdry,entry_j,dudu_j);//j-te Spalte
 				}
-			}
+			}*/
 
 				
         result += wt[i] * u->val[i] *v->val[i]* constant*
@@ -285,10 +294,10 @@ else constant = 0.5;
           * ny);
 					 	
 
-			if (bdry==2)
+		/*	if (bdry==2)
 	      		result += wt[i]*v->val[i] *u->val[i]*0.5* A_n[entry_j];
 			else if(bdry!=1){ 
-			 	result += wt[i]*v->val[i] *u->val[i]*0.5* A_n[entry_j];
+				result += wt[i]*v->val[i] *u->val[i]*0.5* A_n[entry_j];
 				for(int k =0;k<4;k++)
 				{result += wt[i]*v->val[i] *u->val[i]*0.5*(
 					((static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],0,entry_i,k) 
@@ -296,8 +305,23 @@ else constant = 0.5;
 					(static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],1,entry_i,k) 
 									  * ny -A_n[k])* dudu_j[k]);
 				} 
+			}*/
+//%%%%%%%%%%%%%%%%%%%%%%%%Lax flux%%%%%%%%%
+	double s_right = std::fabs(((nx * ghost_state[1]) + (ny * ghost_state[2])) / ghost_state[0]) + QuantityCalculator::calc_sound_speed(ghost_state[0], ghost_state[1], ghost_state[2], ghost_state[3], this->kappa);
+	double s_left = std::fabs(((nx * w_L[1]) + (ny * w_L[2])) / w_L[0]) + QuantityCalculator::calc_sound_speed(w_L[0], w_L[1], w_L[2], w_L[3], this->kappa);
+	
+	if(bdry!=1){ 
+        result += wt[i] * u->val[i] *v->val[i]* constant*
+        ( (static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],0,entry_i,entry_j) 
+          * nx +
+         (static_cast<EulerS*>(wf))->euler_fluxes->A(ghost_state[0], ghost_state[1], ghost_state[2],ghost_state[3],1,entry_i,entry_j)  
+          * ny);
 			}
-			
+	
+		if(entry_i==entry_j) result += wt[i]* u->val[i] *v->val[i]* std::max(s_left, s_right)*0.5;
+
+///%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%		
+		
 		 }else{
 				if(entry_i==1)
 				{
@@ -398,8 +422,9 @@ int bdry; bool solid = false;
 						bdry=2;
 					if(bdry==4) bdry =1;*/
 	
-					if(ext[5]->val[i]==0) bdry =1;
-				else bdry=2;
+				if(ext[5]->val[i]==0) bdry =1;
+				else 
+					bdry=2;
 				}
 
 		
@@ -412,7 +437,7 @@ int bdry; bool solid = false;
         w_L[2] = ext[2]->val[i];
         w_L[3] = ext[3]->val[i];
 
-				for(int k =0; k<4;k++)
+		/*		for(int k =0; k<4;k++)
 				{
 							  result += wt[i] *e->nx[i]*v->val[i]*0.5* (new_variables[k]*
 							   (static_cast<EulerS*>(wf))->euler_fluxes->A(rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new,0,entry_i,k) 
@@ -427,10 +452,10 @@ int bdry; bool solid = false;
 
 		if(bdry!=1)		
 			result -= wt[i]*v->val[i]* 0.5 * 
-								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);
+								Boundary_helpers::calculate_A_n_U(rho, rho_v_x, rho_v_y, rho_energy, e->nx[i], e->ny[i],  rho_new, rho_v_x_new, rho_v_y_new, rho_energy_new, kappa, entry_i);*/
 
 			
-	//	result += wt[i] * (static_cast<EulerS*>(wf))->num_flux->numerical_flux_i(this->i,w_L , new_variables, e->nx[i], e->ny[i]) * v->val[i];	
+		result += wt[i] * (static_cast<EulerS*>(wf))->num_flux->numerical_flux_i(this->i,w_L , new_variables, e->nx[i], e->ny[i]) * v->val[i];	
 
 				}else{//solid wall ->no mirror
 						if(entry_i==1)

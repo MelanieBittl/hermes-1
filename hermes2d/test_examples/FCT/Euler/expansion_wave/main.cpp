@@ -14,7 +14,7 @@ using namespace Hermes::Solvers;
 
 const int INIT_REF_NUM =3;                   // Number of initial refinements.
 const int P_INIT = 1;       						// Initial polynomial degree.
-const double time_step = 2e-4;
+const double time_step = 2e-3;
 const double T_FINAL = 3.;                       // Time interval length. 
 
 const double theta = 0.5;
@@ -49,16 +49,16 @@ int main(int argc, char* argv[])
   for (int i=0; i < INIT_REF_NUM; i++) basemesh->refine_all_elements();
  	 mesh->copy(basemesh);
 
-	/*	SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
+	SpaceSharedPtr<double> space_rho(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new H1Space<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new H1Space<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));	*/
+		SpaceSharedPtr<double> space_e(new H1Space<double>(mesh, P_INIT));	
 
-
+/*
 		SpaceSharedPtr<double> space_rho(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_x(new SpaceBB<double>(mesh, P_INIT));	
 		SpaceSharedPtr<double> space_rho_v_y(new SpaceBB<double>(mesh, P_INIT));	
-		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));
+		SpaceSharedPtr<double> space_e(new SpaceBB<double>(mesh, P_INIT));*/
 
 		int dof_rho = space_rho->get_num_dofs();
 		int dof_v_x = space_rho_v_x->get_num_dofs();
@@ -229,7 +229,7 @@ for(int i=0; i<ndof; i++)
 			u_L = lowOrd->get_sln_vector();  
       Solution<double>::vector_to_solutions(u_L, spaces,low_slns);
 
-			dp_boundary_low->assemble(matrix_dS_low);	
+	/*		dp_boundary_low->assemble(matrix_dS_low);	
     	dp_K_low->assemble(matrix_L_low);
 			CSCMatrix<double> * diffusion_low = artificialDiffusion(KAPPA,u_L,spaces, dof_rho, dof_v_x, dof_v_y,dof_e, matrix_L_low);
 			matrix_L_low->add_sparse_matrix(diffusion_low); //L(U)
@@ -240,14 +240,17 @@ for(int i=0; i<ndof; i++)
 		antidiffusiveFlux(mass_matrix,lumped_matrix,diffusion, matrix_L_low, u_L, coeff_vec_2, P_plus, P_minus, Q_plus, Q_minus,R_plus, R_minus, dof_rho, dof_v_x, dof_v_y,dof_e);
 
 		for(int i=0; i<ndof;i++)
-					coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);					
+					coeff_vec[i] = u_L[i]+ coeff_vec_2[i]*time_step/lumped_matrix->get(i,i);	*/
+		
+		for(int i=0; i<ndof;i++)
+					coeff_vec[i] = u_L[i];
 
 			Solution<double>::vector_to_solutions(coeff_vec, spaces, prev_slns);	
 	
 
 			 // Visualize the solution.
 				
-				pressure->reinit();
+			/*	pressure->reinit();
 				vel_x->reinit();
 				vel_y->reinit();
 				sprintf(title, "pressure: ts=%i",ts);
@@ -266,7 +269,7 @@ for(int i=0; i<ndof; i++)
 			sprintf(title, "Mach: ts=%i",ts);
 			mach_view.set_title(title);
 			mach->reinit();
-			mach_view.show(mach);
+			mach_view.show(mach);*/
 
   		
 
@@ -292,7 +295,7 @@ for(int i=0; i<ndof; i++)
 
 		delete lowOrd;
 		delete diffusion;
-		delete diffusion_low;
+		//delete diffusion_low;
 		low_matrix->free();
 
 
@@ -310,6 +313,11 @@ while (current_time < T_FINAL);
 
 				pressure->reinit();
 				mach->reinit();
+
+dynamic_cast<Solution<double>* >(prev_rho.get())->save("rho.xml"); 
+dynamic_cast<Solution<double>* >(prev_rho_v_x.get())->save("v_x.xml"); 
+dynamic_cast<Solution<double>* >(prev_rho_v_y.get())->save("v_y.xml"); 
+dynamic_cast<Solution<double>* >(prev_e.get())->save("energy.xml");
 
         Linearizer lin_p;
 			lin_p.save_solution_vtk(pressure, "p_end.vtk", "pressure", true);

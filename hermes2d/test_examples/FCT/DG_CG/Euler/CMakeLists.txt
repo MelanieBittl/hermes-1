@@ -4,7 +4,11 @@ add_subdirectory("prandtl_meyer")
 add_subdirectory("prandtl_meyer_adap")
 add_subdirectory("rad_sym")
 add_subdirectory("nozzle_flow")
+add_subdirectory("nozzle_flow_2")
 add_subdirectory("ringleb")
 add_subdirectory("test")
 add_subdirectory("SFB_nozzle_2")
+add_subdirectory("double_mach")
+add_subdirectory("gamm_channel")
+
 

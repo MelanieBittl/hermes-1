@@ -13,3 +13,16 @@ DOFS:612, CFL=1.002000
 DOFS:612, CFL=1.002000 
 DOFS:612, CFL=1.002000 
 DOFS:612, CFL=1.002000 
+DOFS:612, CFL=1.002000 
+2: res = 2.427287e+00 < 10^(-1),residual_norm=1.030651e-02, 
+3: res = 2.422387e+00 < 10^(-1),residual_norm=1.030405e-02, 
+DOFS:1300, CFL=1.002000 
+2: res = 5.809455e-02 < 10^(-2),residual_norm=1.060683e-03, 
+DOFS:1300, CFL=1.002000 
+2: res = 5.809455e-02 < 10^(-2),residual_norm=1.060683e-03, 
+DOFS:1300, CFL=1.020000 
+2: res = 5.809455e-02 < 10^(-2),residual_norm=1.060683e-03, 
+3: res = 5.319837e-02 < 10^(-2),residual_norm=1.048446e-03, 
+DOFS:1300, CFL=1.020000 
+2: res = 5.809455e-02 < 10^(-2),residual_norm=1.060683e-03, 
+3: res = 5.319837e-02 < 10^(-2),residual_norm=1.048446e-03, 
